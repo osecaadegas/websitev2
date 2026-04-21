@@ -3,8 +3,18 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 const GAMES = [
+  {
+    id: "crime-empire",
+    title: "Crime Empire",
+    description: "Constrói o teu império criminal neste jogo de estratégia",
+    icon: "👑",
+    color: "from-red-600/20 to-red-500/10",
+    borderColor: "#dc2626",
+    soon: false,
+  },
   {
     id: "memory",
     title: "Jogo da Memória",
@@ -44,6 +54,17 @@ const GAMES = [
 ];
 
 export default function JogosPage() {
+  const router = useRouter();
+
+  const handleGameClick = (gameId: string, isSoon: boolean) => {
+    if (isSoon) return;
+    
+    if (gameId === "crime-empire") {
+      router.push("/jogos/crime-empire");
+    } else {
+      setSelectedGame(gameId);
+    }
+  };
   const [selectedGame, setSelectedGame] = useState<string | null>(null);
 
   return (
@@ -69,7 +90,7 @@ export default function JogosPage() {
             className="inline-flex items-center gap-2 mt-6 text-[#ff6a00] hover:text-[#ff8533] transition-colors text-sm"
           >
             ← Voltar à Comunidade
-          </Link>
+          </Link>handleGameClick(game.id, game.soon
         </div>
 
         {/* Games Grid */}
