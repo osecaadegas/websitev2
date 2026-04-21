@@ -66,8 +66,8 @@ create table if not exists crime_players (
   last_login timestamptz not null default now()
 );
 
-create index idx_crime_players_user_id on crime_players(user_id);
-create index idx_crime_players_level on crime_players(level desc);
+create index if not exists idx_crime_players_user_id on crime_players(user_id);
+create index if not exists idx_crime_players_level on crime_players(level desc);
 
 -- ============================================================
 -- 2. CRIME SYSTEM
@@ -124,7 +124,7 @@ create table if not exists player_crime_experience (
   unique(player_id, crime_id)
 );
 
-create index idx_player_crime_exp on player_crime_experience(player_id);
+create index if not exists idx_player_crime_exp on player_crime_experience(player_id);
 
 -- Crime Attempt History
 create table if not exists crime_attempts (
@@ -144,7 +144,7 @@ create table if not exists crime_attempts (
   created_at timestamptz not null default now()
 );
 
-create index idx_crime_attempts_player on crime_attempts(player_id, created_at desc);
+create index if not exists idx_crime_attempts_player on crime_attempts(player_id, created_at desc);
 
 -- ============================================================
 -- 3. JAIL SYSTEM
@@ -166,7 +166,7 @@ create table if not exists jail_records (
   created_at timestamptz not null default now()
 );
 
-create index idx_jail_records_player on jail_records(player_id);
+create index if not exists idx_jail_records_player on jail_records(player_id);
 
 -- ============================================================
 -- 4. BUSINESS SYSTEM
@@ -236,7 +236,7 @@ create table if not exists player_businesses (
   unique(player_id, business_id)
 );
 
-create index idx_player_businesses on player_businesses(player_id);
+create index if not exists idx_player_businesses on player_businesses(player_id);
 
 -- Business Income History
 create table if not exists business_collections (
@@ -302,7 +302,7 @@ create table if not exists player_inventory (
   unique(player_id, item_id)
 );
 
-create index idx_player_inventory on player_inventory(player_id);
+create index if not exists idx_player_inventory on player_inventory(player_id);
 
 -- ============================================================
 -- 6. PVP SYSTEM
@@ -332,8 +332,8 @@ create table if not exists pvp_battles (
   created_at timestamptz not null default now()
 );
 
-create index idx_pvp_attacker on pvp_battles(attacker_id, created_at desc);
-create index idx_pvp_defender on pvp_battles(defender_id, created_at desc);
+create index if not exists idx_pvp_attacker on pvp_battles(attacker_id, created_at desc);
+create index if not exists idx_pvp_defender on pvp_battles(defender_id, created_at desc);
 
 -- PvP Protection Cooldown
 create table if not exists pvp_cooldowns (
@@ -401,7 +401,7 @@ create table if not exists contract_attempts (
   created_at timestamptz not null default now()
 );
 
-create index idx_contract_attempts_player on contract_attempts(player_id);
+create index if not exists idx_contract_attempts_player on contract_attempts(player_id);
 
 -- Daily Contract Tracking
 create table if not exists daily_contract_limits (
@@ -446,7 +446,7 @@ create table if not exists brothel_workers (
   hired_at timestamptz not null default now()
 );
 
-create index idx_brothel_workers_player on brothel_workers(player_id);
+create index if not exists idx_brothel_workers_player on brothel_workers(player_id);
 
 -- Brothel Income Collection
 create table if not exists brothel_collections (
@@ -532,20 +532,45 @@ alter table businesses enable row level security;
 alter table items enable row level security;
 alter table contracts enable row level security;
 
+drop policy if exists "Public read crimes" on crimes;
+drop policy if exists "Public read businesses" on businesses;
+drop policy if exists "Public read items" on items;
+drop policy if exists "Public read contracts" on contracts;
+
 create policy "Public read crimes" on crimes for select using (true);
 create policy "Public read businesses" on businesses for select using (true);
 create policy "Public read items" on items for select using (true);
 create policy "Public read contracts" on contracts for select using (true);
 
 -- Players can read/update their own data
+drop policy if exists "Players read own data" on crime_players;
+drop policy if exists "Players insert own data" on crime_players;
+drop policy if exists "Players update own data" on crime_players;
+
 create policy "Players read own data" on crime_players for select using (true);
 create policy "Players insert own data" on crime_players for insert with check (true);
 create policy "Players update own data" on crime_players for update using (true);
 
 -- Similar policies for other player tables (simplified for now)
+drop policy if exists "Players manage own experience" on player_crime_experience;
+drop policy if exists "Players manage own attempts" on crime_attempts;
+drop policy if exists "Players read jail records" on jail_records;
+drop policy if exists "Players insert jail records" on jail_records;
+drop policy if exists "Players manage businesses" on player_businesses;
+drop policy if exists "Players manage inventory" on player_inventory;
+drop policy if exists "Players read pvp" on pvp_battles;
+drop policy if exists "Players insert pvp" on pvp_battles;
+drop policy if exists "Players manage contracts" on contract_attempts;
+drop policy if exists "Players manage brothel" on brothel_workers;
+drop policy if exists "Players manage black market" on black_market_transactions;
+drop policy if exists "Players read stats" on player_stats;
+drop policy if exists "Players update stats" on player_stats;
+drop policy if exists "Players insert stats" on player_stats;
+
 create policy "Players manage own experience" on player_crime_experience for all using (true);
 create policy "Players manage own attempts" on crime_attempts for all using (true);
 create policy "Players read jail records" on jail_records for select using (true);
+create policy "Players insert jail records" on jail_records for insert with check (true);
 create policy "Players manage businesses" on player_businesses for all using (true);
 create policy "Players manage inventory" on player_inventory for all using (true);
 create policy "Players read pvp" on pvp_battles for select using (true);
@@ -555,6 +580,7 @@ create policy "Players manage brothel" on brothel_workers for all using (true);
 create policy "Players manage black market" on black_market_transactions for all using (true);
 create policy "Players read stats" on player_stats for select using (true);
 create policy "Players update stats" on player_stats for update using (true);
+create policy "Players insert stats" on player_stats for insert with check (true);
 
 -- ============================================================
 -- SEED DATA
