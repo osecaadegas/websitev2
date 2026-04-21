@@ -22,17 +22,43 @@ interface Player {
   class: string;
 }
 
-const GAME_LINKS = [
-  { href: "/jogos/crime-empire/dashboard", label: "Dashboard", icon: "🏠" },
-  { href: "/jogos/crime-empire/crimes", label: "Crimes", icon: "💰" },
-  { href: "/jogos/crime-empire/businesses", label: "Negócios", icon: "🏢" },
-  { href: "/jogos/crime-empire/black-market", label: "Black Market", icon: "💎" },
-  { href: "/jogos/crime-empire/rua-das-luzes", label: "Rua das Luzes", icon: "💋" },
-  { href: "/jogos/crime-empire/inventory", label: "Inventário", icon: "🎒" },
-  { href: "/jogos/crime-empire/jail", label: "Prisão", icon: "🚔" },
-  { href: "/jogos/crime-empire/hospital", label: "Hospital", icon: "🏥" },
-  { href: "/jogos/crime-empire/pvp", label: "PvP", icon: "⚔️" },
-  { href: "/jogos/crime-empire/stats", label: "Estatísticas", icon: "📊" },
+const GAME_SECTIONS = [
+  {
+    section: null,
+    links: [
+      { href: "/jogos/crime-empire/dashboard", label: "Dashboard", icon: "🏠" },
+    ],
+  },
+  {
+    section: "Crime",
+    links: [
+      { href: "/jogos/crime-empire/crimes", label: "Crimes", icon: "💰" },
+      { href: "/jogos/crime-empire/businesses", label: "Negócios", icon: "🏢" },
+      { href: "/jogos/crime-empire/black-market", label: "Black Market", icon: "💎" },
+      { href: "/jogos/crime-empire/rua-das-luzes", label: "Rua das Luzes", icon: "💋" },
+    ],
+  },
+  {
+    section: "Gambling",
+    links: [
+      { href: "/jogos/crime-empire/gambling", label: "Casino", icon: "🎰" },
+    ],
+  },
+  {
+    section: "Personagem",
+    links: [
+      { href: "/jogos/crime-empire/inventory", label: "Inventário", icon: "🎒" },
+      { href: "/jogos/crime-empire/pvp", label: "PvP", icon: "⚔️" },
+      { href: "/jogos/crime-empire/stats", label: "Estatísticas", icon: "📊" },
+    ],
+  },
+  {
+    section: "Outros",
+    links: [
+      { href: "/jogos/crime-empire/jail", label: "Prisão", icon: "🚔" },
+      { href: "/jogos/crime-empire/hospital", label: "Hospital", icon: "🏥" },
+    ],
+  },
 ];
 
 export function CrimeEmpireSidebar({ open, onClose }: Props) {
@@ -120,25 +146,36 @@ export function CrimeEmpireSidebar({ open, onClose }: Props) {
           )}
 
           {/* Game Navigation */}
-          <nav className="space-y-1">
-            {GAME_LINKS.map((link) => {
-              const isActive = pathname === link.href;
-              return (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  onClick={() => onClose()}
-                  className={`block px-3 py-2 rounded-lg text-sm font-medium transition-all ${
-                    isActive
-                      ? "bg-[#ff6a00] text-white shadow-lg shadow-[#ff6a00]/20"
-                      : "text-[#888888] hover:text-white hover:bg-[#1a1a1a]"
-                  }`}
-                >
-                  <span className="mr-2">{link.icon}</span>
-                  {link.label}
-                </Link>
-              );
-            })}
+          <nav className="space-y-4">
+            {GAME_SECTIONS.map((group, i) => (
+              <div key={i}>
+                {group.section && (
+                  <p className="px-3 mb-1 text-[10px] font-bold uppercase tracking-widest text-[#ff6a00]/60">
+                    {group.section}
+                  </p>
+                )}
+                <div className="space-y-1">
+                  {group.links.map((link) => {
+                    const isActive = pathname === link.href;
+                    return (
+                      <Link
+                        key={link.href}
+                        href={link.href}
+                        onClick={() => onClose()}
+                        className={`block px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                          isActive
+                            ? "bg-[#ff6a00] text-white shadow-lg shadow-[#ff6a00]/20"
+                            : "text-[#888888] hover:text-white hover:bg-[#1a1a1a]"
+                        }`}
+                      >
+                        <span className="mr-2">{link.icon}</span>
+                        {link.label}
+                      </Link>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
           </nav>
 
           {/* Return to Website */}
