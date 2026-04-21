@@ -451,11 +451,48 @@ insert into items (name, description, category, base_price) values
   ('Diamante Contrabandeado', 'Diamante roubado de alto valor', 'material', 5000)
 on conflict (name) do nothing;
 
-insert into items (name, description, category, power_bonus, intelligence_bonus, charisma_bonus, base_price) values
-  ('Pistola', 'Arma básica', 'weapon', 5, 0, 0, 1000),
-  ('Colete à Prova de Bala', 'Proteção básica', 'armor', 0, 0, 0, 2000),
-  ('Laptop Hackeado', 'Aumenta inteligência', 'special', 0, 10, 0, 3000),
-  ('Fato de Luxo', 'Aumenta carisma', 'special', 0, 0, 10, 5000)
+insert into items (name, description, category, power_bonus, intelligence_bonus, charisma_bonus, hp_bonus, stamina_restore, base_price) values
+  -- WEAPONS (Power Bonus)
+  ('Pistola', 'Arma básica', 'weapon', 5, 0, 0, 0, 0, 1000),
+  ('Soco Inglês', 'Aumenta força em combate', 'weapon', 8, 0, 0, 0, 0, 2500),
+  ('Shotgun', 'Espingarda de cano serrado', 'weapon', 12, 0, 0, 0, 0, 5000),
+  ('Submetralhadora', 'Arma automática', 'weapon', 18, 0, 0, 0, 0, 15000),
+  ('Rifle de Assalto', 'Arma militar', 'weapon', 25, 0, 0, 0, 0, 35000),
+  ('Sniper Rifle', 'Rifle de precisão', 'weapon', 35, 0, 0, 0, 0, 75000),
+  ('RPG', 'Lança-rockets portátil', 'weapon', 50, 0, 0, 0, 0, 150000),
+  
+  -- ARMOR (HP Bonus)
+  ('Colete à Prova de Bala', 'Proteção básica', 'armor', 0, 0, 0, 20, 0, 2000),
+  ('Colete Tático', 'Proteção melhorada', 'armor', 0, 0, 0, 40, 0, 8000),
+  ('Armadura Reforçada', 'Proteção pesada', 'armor', 0, 0, 0, 70, 0, 25000),
+  ('Exo-Skeleton', 'Armadura de combate avançada', 'armor', 5, 0, 0, 120, 0, 100000),
+  
+  -- INTELLIGENCE ITEMS
+  ('Laptop Hackeado', 'Aumenta inteligência', 'special', 0, 10, 0, 0, 0, 3000),
+  ('Tablet Encriptado', 'Dispositivo de hacking avançado', 'special', 0, 15, 0, 0, 0, 10000),
+  ('Kit de Espionagem', 'Ferramentas de vigilância', 'special', 0, 22, 0, 0, 0, 30000),
+  ('Supercomputador Portátil', 'Hardware de elite', 'special', 0, 35, 0, 0, 0, 80000),
+  ('Implante Neural', 'Aumenta capacidade cerebral', 'special', 0, 50, 0, 0, 0, 200000),
+  
+  -- CHARISMA ITEMS
+  ('Fato de Luxo', 'Aumenta carisma', 'special', 0, 0, 10, 0, 0, 5000),
+  ('Relógio de Ouro', 'Símbolo de status', 'special', 0, 0, 15, 0, 0, 12000),
+  ('Carro Desportivo', 'Impressiona as pessoas', 'special', 0, 0, 22, 0, 0, 35000),
+  ('Mansão', 'Residência de luxo', 'special', 0, 0, 35, 0, 0, 100000),
+  ('Iate Privado', 'Símbolo máximo de riqueza', 'special', 0, 0, 50, 0, 0, 250000),
+  
+  -- CONSUMABLES (Healing & Stamina)
+  ('Kit Médico', 'Restaura 50 HP', 'consumable', 0, 0, 0, 0, 0, 500),
+  ('Bebida Energética', 'Restaura 20 stamina', 'consumable', 0, 0, 0, 0, 20, 200),
+  ('Estimulantes', 'Restaura 50 stamina', 'consumable', 0, 0, 0, 0, 50, 800),
+  ('Pack Médico Avançado', 'Restaura 150 HP', 'consumable', 0, 0, 0, 0, 0, 2000),
+  ('Injeção de Adrenalina', 'Restaura 100 stamina', 'consumable', 0, 0, 0, 0, 100, 3000),
+  
+  -- HYBRID ITEMS (Multiple Bonuses)
+  ('Kit do Ladrão', 'Ferramentas especializadas', 'special', 5, 8, 0, 0, 0, 15000),
+  ('Equipamento do Assassino', 'Arsenal completo', 'special', 15, 5, 0, 20, 0, 50000),
+  ('Identidade Falsa Premium', 'Passaporte e documentos', 'special', 0, 10, 15, 0, 0, 40000),
+  ('Bunker Secreto', 'Base de operações', 'special', 10, 15, 20, 50, 0, 500000)
 on conflict (name) do nothing;
 
 -- ═══════════════════════════════════════════════════════════
