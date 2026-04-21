@@ -90,7 +90,7 @@ export default function JogosPage() {
             className="inline-flex items-center gap-2 mt-6 text-[#ff6a00] hover:text-[#ff8533] transition-colors text-sm"
           >
             ← Voltar à Comunidade
-          </Link>handleGameClick(game.id, game.soon
+          </Link>
         </div>
 
         {/* Games Grid */}
@@ -101,7 +101,7 @@ export default function JogosPage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3, delay: index * 0.1 }}
-              onClick={() => !game.soon && setSelectedGame(game.id)}
+              onClick={() => handleGameClick(game.id, game.soon)}
               className={`relative rounded-2xl p-6 cursor-pointer transition-all duration-300 ${
                 game.soon ? "opacity-60 cursor-not-allowed" : ""
               }`}
