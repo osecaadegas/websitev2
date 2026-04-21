@@ -208,13 +208,13 @@ export default function CrimeDashboard() {
 
           <Link
             href="/jogos/crime-empire/businesses"
-            className="p-6 rounded-xl bg-gradient-to-br from-blue-600/20 to-blue-700/20 border-2 border-blue-600 hover:scale-105 transition-all group opacity-50 cursor-not-allowed"
+            className="p-6 rounded-xl bg-gradient-to-br from-blue-600/20 to-blue-700/20 border-2 border-blue-600 hover:scale-105 transition-all group"
           >
             <div className="text-4xl mb-3">🏢</div>
             <h3 className="text-xl font-bold mb-2">Negócios</h3>
             <p className="text-sm text-[#888888]">Gere os teus negócios ilegais</p>
             <div className="mt-4 text-blue-600 group-hover:text-blue-500 font-medium text-sm">
-              Em Breve
+              Gerir Negócios →
             </div>
           </Link>
 

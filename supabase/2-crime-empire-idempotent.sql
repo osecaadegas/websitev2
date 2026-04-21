@@ -165,8 +165,18 @@ create table if not exists player_businesses (
   income_multiplier numeric not null default 1.0,
   active boolean not null default true,
   last_collection timestamptz not null default now(),
+  last_wage_payment timestamptz not null default now(),
   purchased_at timestamptz not null default now(),
   unique(player_id, business_id)
+);
+
+create table if not exists business_item_production (
+  id uuid primary key default gen_random_uuid(),
+  player_business_id uuid not null references player_businesses(id) on delete cascade,
+  item_id uuid not null references items(id) on delete cascade,
+  quantity_produced integer not null default 0,
+  last_production timestamptz not null default now(),
+  unique(player_business_id, item_id)
 );
 
 create table if not exists items (
@@ -405,12 +415,25 @@ insert into crimes (name, description, difficulty, required_level, base_success_
 on conflict (name) do nothing;
 
 insert into businesses (name, type, description, purchase_price, base_income_per_hour, max_employees, employee_cost_per_hour, required_level) values
-  ('Quinta de Cannabis', 'weed_farm', 'Produz e vende cannabis', 10000, 500, 5, 50, 5),
-  ('Fábrica de Pílulas', 'pill_factory', 'Produz pílulas ilegais', 25000, 1200, 8, 100, 10),
-  ('Mining de Crypto', 'crypto_mining', 'Minera criptomoedas', 50000, 2000, 3, 150, 15),
-  ('Escritório de Scams', 'scam_office', 'Executa esquemas de fraude online', 35000, 1500, 10, 80, 12),
-  ('Nightclub', 'nightclub', 'Club noturno para lavagem de dinheiro', 100000, 5000, 15, 200, 20)
-on conflict (type) do nothing;
+  ('Quinta de Cannabis', 'weed_farm', 'Produz cannabis que podes vender. +1g por hora, +0.5g por worker.', 10000, 0, 5, 50, 5),
+  ('Fábrica de Pílulas', 'pill_factory', 'Produz pílulas ilegais. +2 pílulas por hora, +1 por worker.', 25000, 0, 8, 75, 10),
+  ('Mining de Crypto', 'crypto_mining', 'Minera criptomoedas. $500/h base, +$200/h por worker.', 50000, 500, 3, 100, 15),
+  ('Escritório de Scams', 'scam_office', 'Executa esquemas de fraude online. $400/h base, +$150/h por worker.', 35000, 400, 10, 60, 12),
+  ('Nightclub', 'nightclub', 'Club noturno para lavagem de dinheiro. $800/h base, +$300/h por worker.', 100000, 800, 15, 150, 20),
+  ('Lavandaria de Dinheiro', 'chop_shop', 'Converte dinheiro sujo em limpo. 60% taxa base, +3% por worker. Requer workers.', 75000, 0, 10, 120, 18),
+  ('Lab Contrafação', 'counterfeit_lab', 'Produz notas falsas. +$2000 por ciclo, +$800 por worker.', 120000, 2000, 6, 200, 25),
+  ('Casino Clandestino', 'casino', 'Casino ilegal. $1500/h base, +$500/h por worker.', 250000, 1500, 20, 250, 30)
+on conflict (type) do update set
+  description = excluded.description,
+  base_income_per_hour = excluded.base_income_per_hour,
+  employee_cost_per_hour = excluded.employee_cost_per_hour;
+
+-- Add drug items for businesses to produce
+insert into items (name, description, category, base_price) values
+  ('Cannabis (1g)', 'Grama de cannabis de alta qualidade', 'material', 50),
+  ('Pílulas Ilegais', 'Pílulas controladas', 'material', 100),
+  ('Notas Falsas ($1000)', 'Dinheiro contrafacto', 'material', 800)
+on conflict (name) do nothing;
 
 insert into items (name, description, category, power_bonus, intelligence_bonus, charisma_bonus, base_price) values
   ('Pistola', 'Arma básica', 'weapon', 5, 0, 0, 1000),
@@ -428,6 +451,7 @@ alter table player_crime_experience enable row level security;
 alter table crime_attempts enable row level security;
 alter table jail_records enable row level security;
 alter table player_businesses enable row level security;
+alter table business_item_production enable row level security;
 alter table player_inventory enable row level security;
 alter table pvp_battles enable row level security;
 alter table contract_attempts enable row level security;
@@ -452,6 +476,7 @@ create policy "Players manage own attempts" on crime_attempts for all using (tru
 create policy "Players read jail records" on jail_records for select using (true);
 create policy "Players insert jail records" on jail_records for insert with check (true);
 create policy "Players manage businesses" on player_businesses for all using (true);
+create policy "Players manage business production" on business_item_production for all using (true);
 create policy "Players manage inventory" on player_inventory for all using (true);
 create policy "Players read pvp" on pvp_battles for select using (true);
 create policy "Players insert pvp" on pvp_battles for insert with check (true);
