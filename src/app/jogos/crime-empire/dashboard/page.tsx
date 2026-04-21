@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { motion } from "framer-motion";
 import { useAuth } from "@/lib/auth-context";
 import { useRouter } from "next/navigation";
 
@@ -30,28 +29,11 @@ interface Player {
   boost_active: boolean;
 }
 
-interface Crime {
-  id: string;
-  name: string;
-  description: string;
-  difficulty: string;
-  base_success_rate: number;
-  jail_risk: number;
-  stamina_cost: number;
-  min_dirty_cash: number;
-  max_dirty_cash: number;
-  xp_reward: number;
-  required_level: number;
-}
-
 export default function CrimeDashboard() {
   const { user } = useAuth();
   const router = useRouter();
   const [player, setPlayer] = useState<Player | null>(null);
-  const [crimes, setCrimes] = useState<Crime[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedCrime, setSelectedCrime] = useState<string | null>(null);
-  const [crimeResult, setCrimeResult] = useState<any>(null);
 
   useEffect(() => {
     if (!user) {
@@ -59,7 +41,6 @@ export default function CrimeDashboard() {
       return;
     }
     fetchPlayer();
-    fetchCrimes();
   }, [user]);
 
   const fetchPlayer = async () => {
@@ -81,51 +62,6 @@ export default function CrimeDashboard() {
     }
   };
 
-  const fetchCrimes = async () => {
-    try {
-      const res = await fetch("/api/crime-empire/crimes");
-      const data = await res.json();
-      setCrimes(data.crimes || []);
-    } catch (error) {
-      console.error("Error fetching crimes:", error);
-    }
-  };
-
-  const commitCrime = async (crimeId: string) => {
-    if (!player || selectedCrime) return;
-    
-    setSelectedCrime(crimeId);
-    setCrimeResult(null);
-
-    try {
-      const res = await fetch("/api/crime-empire/crimes", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ crimeId }),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        alert(data.error);
-        setSelectedCrime(null);
-        return;
-      }
-
-      setCrimeResult(data);
-      
-      // Refresh player data
-      setTimeout(() => {
-        fetchPlayer();
-        setSelectedCrime(null);
-        setCrimeResult(null);
-      }, 3000);
-    } catch (error) {
-      console.error("Error committing crime:", error);
-      setSelectedCrime(null);
-    }
-  };
-
   if (loading) {
     return (
       <div className="flex-1 flex items-center justify-center">
@@ -136,27 +72,21 @@ export default function CrimeDashboard() {
 
   if (!player) return null;
 
-  const availableCrimes = crimes.filter(c => c.required_level <= player.level);
-
   return (
     <div className="flex-1 text-white py-12 px-6">
       <div className="max-w-7xl mx-auto">
-        <Link href="/jogos" className="inline-flex items-center gap-2 text-[#ff6a00] hover:text-[#ff8533] transition-colors text-sm mb-6">
-          ← Voltar aos Jogos
-        </Link>
 
         {/* Header */}
         <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }}>
           <h1 className="text-5xl md:text-6xl font-black mb-2 bg-gradient-to-r from-[#ff6a00] to-[#ff8533] bg-clip-text text-transparent">
             CRIME EMPIRE
           </h1>
-          <p className="text-lg text-[#888888] mb-1">
-            Bem-vindo, {player.display_name} - {player.class.toUpperCase()} Nível {player.level}
-          </p>
-          {player.boost_active && (
-            <p className="text-sm text-green-400">⚡ Bónus de Novo Jogador Ativo (+30% sucesso, +20% XP)</p>
-          )}
-        </motion.div>
+        <p className="text-lg text-[#888888] mb-1">
+          Bem-vindo, {player.display_name} - {player.class.toUpperCase()} Nível {player.level}
+        </p>
+        {player.boost_active && (
+          <p className="text-sm text-green-400">⚡ Bónus de Novo Jogador Ativo (+30% sucesso, +20% XP)</p>
+        )}
 
         {/* Jail Status */}
         {player.in_jail && (
@@ -203,87 +133,42 @@ export default function CrimeDashboard() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {availableCrimes.map((crime) => {
             const canAfford = player.stamina >= crime.stamina_cost;
-            const isProcessing = selectedCrime === crime.id;
+            Quick Actions */}
+        <h2 className="text-2xl font-bold mt-12 mb-6">Acções Rápidas</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <Link
+            href="/jogos/crime-empire/crimes"
+            className="p-6 rounded-xl bg-gradient-to-br from-[#ff6a00]/20 to-[#ff8533]/20 border-2 border-[#ff6a00] hover:scale-105 transition-all group"
+          >
+            <div className="text-4xl mb-3">💰</div>
+            <h3 className="text-xl font-bold mb-2">Cometer Crimes</h3>
+            <p className="text-sm text-[#888888]">Ganha dinheiro, XP e respeito</p>
+            <div className="mt-4 text-[#ff6a00] group-hover:text-[#ff8533] font-medium text-sm">
+              Ver Crimes →
+            </div>
+          </Link>
 
-            return (
-              <div
-                key={crime.id}
-                className={`p-4 rounded-xl border-2 transition-all ${
-                  canAfford && !player.in_jail
-                    ? "bg-[#121212] border-[#ff6a00] hover:bg-[#161616] cursor-pointer"
-                    : "bg-[#0a0a0a] border-[#222222] opacity-50"
-                }`}
-                onClick={() => canAfford && !player.in_jail && !isProcessing && commitCrime(crime.id)}
-              >
-                <h3 className="text-lg font-bold text-white mb-2">{crime.name}</h3>
-                <p className="text-sm text-[#888888] mb-3">{crime.description}</p>
-                
-                <div className="space-y-1 text-xs">
-                  <div className="flex justify-between">
-                    <span className="text-[#888888]">Sucesso Base:</span>
-                    <span className="text-green-400">{(crime.base_success_rate * 100).toFixed(0)}%</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-[#888888]">Risco Prisão:</span>
-                    <span className="text-red-400">{(crime.jail_risk * 100).toFixed(0)}%</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-[#888888]">Stamina:</span>
-                    <span className="text-blue-400">{crime.stamina_cost}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-[#888888]">Recompensa:</span>
-                    <span className="text-yellow-400">${crime.min_dirty_cash} - ${crime.max_dirty_cash}</span>
-                  </div>
-                </div>
+          <Link
+            href="/jogos/crime-empire/businesses"
+            className="p-6 rounded-xl bg-gradient-to-br from-blue-600/20 to-blue-700/20 border-2 border-blue-600 hover:scale-105 transition-all group opacity-50 cursor-not-allowed"
+          >
+            <div className="text-4xl mb-3">🏢</div>
+            <h3 className="text-xl font-bold mb-2">Negócios</h3>
+            <p className="text-sm text-[#888888]">Gere os teus negócios ilegais</p>
+            <div className="mt-4 text-blue-600 group-hover:text-blue-500 font-medium text-sm">
+              Em Breve
+            </div>
+          </Link>
 
-                {isProcessing && (
-                  <div className="mt-3 text-center">
-                    <span className="text-[#ff6a00] text-sm">⏳ A processar...</span>
-                  </div>
-                )}
-              </div>
-            );
-          })}
+          <Link
+            href="/jogos/crime-empire/pvp"
+            className="p-6 rounded-xl bg-gradient-to-br from-red-600/20 to-red-700/20 border-2 border-red-600 hover:scale-105 transition-all group opacity-50 cursor-not-allowed"
+          >
+            <div className="text-4xl mb-3">⚔️</div>
+            <h3 className="text-xl font-bold mb-2">PvP Arena</h3>
+            <p className="text-sm text-[#888888]">Desafia outros jogadores</p>
+            <div className="mt-4 text-red-600 group-hover:text-red-500 font-medium text-sm">
+              Em Breve
+            </div>
+          </Link>
         </div>
-
-        {/* Crime Result Modal */}
-        {crimeResult && (
-          <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50">
-            <motion.div
-              initial={{ scale: 0.8, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              className={`p-8 rounded-2xl max-w-md w-full mx-4 ${
-                crimeResult.success
-                  ? "bg-gradient-to-br from-green-900/40 to-green-800/40 border-2 border-green-500"
-                  : "bg-gradient-to-br from-red-900/40 to-red-800/40 border-2 border-red-500"
-              }`}
-            >
-              <h2 className="text-3xl font-black mb-4">
-                {crimeResult.success ? "✅ SUCESSO!" : "❌ FALHOU!"}
-              </h2>
-
-              {crimeResult.success && (
-                <div className="space-y-2 text-lg">
-                  <p className="text-green-400">+${crimeResult.dirty_cash_earned.toLocaleString()} Dinheiro Sujo</p>
-                  <p className="text-blue-400">+{crimeResult.xp_earned} XP</p>
-                  <p className="text-purple-400">+{crimeResult.respect_earned} Respeito</p>
-                  {crimeResult.leveled_up && (
-                    <p className="text-yellow-400 font-bold">🎉 SUBISTE PARA NÍVEL {crimeResult.new_level}!</p>
-                  )}
-                </div>
-              )}
-
-              {crimeResult.went_to_jail && (
-                <div className="mt-4 p-4 bg-red-900/40 rounded-lg">
-                  <p className="text-red-400 font-bold">🚔 Foste apanhado!</p>
-                  <p className="text-sm text-red-300">Prisão por {crimeResult.jail_time_minutes} minutos</p>
-                </div>
-              )}
-            </motion.div>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
