@@ -50,7 +50,7 @@ const CATEGORIES = [
     hoverColor: "hover:border-blue-500/50",
   },
   {
-    href: "/comunidade/jogos",
+    href: "/jogos",
     title: "Jogos da Comunidade",
     description: "Diverte-te com mini-jogos e compete com outros membros",
     icon: "🎮",

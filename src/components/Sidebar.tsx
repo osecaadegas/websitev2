@@ -46,9 +46,9 @@ const MAIN_LINKS: NavItem[] = [
       { href: "/liga-dos-secas", label: "Liga dos Secas" },
       { href: "/hall-of-victories", label: "Bruta do Mês" },
       { href: "/adivinha-o-resultado", label: "Adivinha o Resultado" },
-      { href: "/comunidade/jogos", label: "Jogos" },
     ],
   },
+  { href: "/jogos", label: "Jogos" },
   { href: "/loja", label: "Loja" },
   { href: "/sobre", label: "Sobre" },
 ];
