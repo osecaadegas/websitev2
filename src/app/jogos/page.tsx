@@ -54,6 +54,7 @@ const GAMES = [
 ];
 
 export default function JogosPage() {
+  const [selectedGame, setSelectedGame] = useState<string | null>(null);
   const router = useRouter();
 
   const handleGameClick = (gameId: string, isSoon: boolean) => {
@@ -65,7 +66,6 @@ export default function JogosPage() {
       setSelectedGame(gameId);
     }
   };
-  const [selectedGame, setSelectedGame] = useState<string | null>(null);
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-white py-20 px-6">
