@@ -24,6 +24,7 @@ interface Player {
   dirty_cash: number;
   cash: number;
   vcash: number;
+  crypto: number;
   stamina: number;
   max_stamina: number;
   in_jail: boolean;
@@ -166,6 +167,7 @@ export default function CrimeDashboard() {
           {[
             { label: "Dinheiro Sujo", value: `$${player.dirty_cash.toLocaleString()}`, icon: "💵", color: "text-green-400" },
             { label: "Dinheiro Limpo", value: `$${player.cash.toLocaleString()}`, icon: "💰", color: "text-yellow-400" },
+            { label: "Crypto", value: `₿${player.crypto.toLocaleString()}`, icon: "💎", color: "text-purple-400" },
             { label: "Stamina", value: `${player.stamina}/${player.max_stamina}`, icon: "⚡", color: "text-blue-400" },
             { label: "Respeito", value: player.respect.toLocaleString(), icon: "👑", color: "text-purple-400" },
           ].map((stat, idx) => (
@@ -215,6 +217,18 @@ export default function CrimeDashboard() {
             <p className="text-sm text-[#888888]">Gere os teus negócios ilegais</p>
             <div className="mt-4 text-blue-600 group-hover:text-blue-500 font-medium text-sm">
               Gerir Negócios →
+            </div>
+          </Link>
+
+          <Link
+            href="/jogos/crime-empire/black-market"
+            className="p-6 rounded-xl bg-gradient-to-br from-purple-600/20 to-purple-700/20 border-2 border-purple-600 hover:scale-105 transition-all group"
+          >
+            <div className="text-4xl mb-3">💎</div>
+            <h3 className="text-xl font-bold mb-2">Mercado Negro</h3>
+            <p className="text-sm text-[#888888]">Vende e compra itens com crypto</p>
+            <div className="mt-4 text-purple-600 group-hover:text-purple-500 font-medium text-sm">
+              Ver Mercado →
             </div>
           </Link>
 
