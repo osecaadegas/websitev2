@@ -51,6 +51,9 @@ on conflict (page_slug) do nothing;
 -- RLS Policies
 alter table page_settings enable row level security;
 
+drop policy if exists "Public read access" on page_settings;
+drop policy if exists "Admins can update" on page_settings;
+
 create policy "Public read access" on page_settings
   for select using (true);
 
@@ -77,6 +80,10 @@ create index if not exists idx_notifications_user on notifications(user_twitch_i
 
 -- RLS Policies
 alter table notifications enable row level security;
+
+drop policy if exists "Users can read own notifications" on notifications;
+drop policy if exists "System can insert notifications" on notifications;
+drop policy if exists "Users can update own notifications" on notifications;
 
 create policy "Users can read own notifications" on notifications
   for select using (true);  -- In production, add: user_twitch_id = auth.uid()
