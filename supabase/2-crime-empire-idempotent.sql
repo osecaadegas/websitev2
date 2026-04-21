@@ -33,6 +33,36 @@ do $$ begin
 exception when duplicate_object then null;
 end $$;
 
+-- Add new brothel types to existing enum if they don't exist
+do $$ 
+declare
+  enum_values text[];
+begin
+  select array_agg(enumlabel::text) into enum_values from pg_enum where enumtypid = 'business_type'::regtype;
+  
+  if not 'brothel_basic' = any(enum_values) then
+    alter type business_type add value 'brothel_basic';
+  end if;
+  
+  if not 'brothel_upgraded' = any(enum_values) then
+    alter type business_type add value 'brothel_upgraded';
+  end if;
+  
+  if not 'brothel_luxury' = any(enum_values) then
+    alter type business_type add value 'brothel_luxury';
+  end if;
+  
+  if not 'brothel_exclusive' = any(enum_values) then
+    alter type business_type add value 'brothel_exclusive';
+  end if;
+  
+  if not 'brothel_empire' = any(enum_values) then
+    alter type business_type add value 'brothel_empire';
+  end if;
+exception when others then
+  null; -- Type doesn't exist yet, will be created above
+end $$;
+
 do $$ begin
   create type item_category as enum ('weapon','armor','consumable','material','special');
 exception when duplicate_object then null;
