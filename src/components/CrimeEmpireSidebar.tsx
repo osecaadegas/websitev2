@@ -153,9 +153,7 @@ export function CrimeEmpireSidebar({ open, onClose }: Props) {
             {GAME_SECTIONS.map((group, i) => (
               <div key={i}>
                 {group.section && (
-                  <p className="px-3 mb-1 text-[10px] font-bold uppercase tracking-widest text-[#ff6a00]/60">
-                    {group.section}
-                  </p>
+                  <></>
                 )}
                 <div className="space-y-1">
                   {group.links.map((link) => {
@@ -182,9 +180,6 @@ export function CrimeEmpireSidebar({ open, onClose }: Props) {
 
             {/* Gambling — collapsible */}
             <div>
-              <p className="px-3 mb-1 text-[10px] font-bold uppercase tracking-widest text-[#ff6a00]/60">
-                Gambling
-              </p>
               <button
                 onClick={() => setGamblingOpen((v) => !v)}
                 className={`w-full flex items-center justify-between px-3 py-2 text-sm rounded-lg font-medium transition-all ${
