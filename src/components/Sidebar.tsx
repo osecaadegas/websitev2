@@ -48,19 +48,7 @@ const MAIN_LINKS: NavItem[] = [
       { href: "/adivinha-o-resultado", label: "Adivinha o Resultado" },
     ],
   },
-  {
-    href: "/jogos",
-    label: "Jogos",
-    children: [
-      { href: "/jogos/crime-empire/dashboard", label: "Crime Empire" },
-      { href: "/jogos/crime-empire/crimes", label: "Crimes" },
-      { href: "/jogos/crime-empire/businesses", label: "Negócios" },
-      { href: "/jogos/crime-empire/black-market", label: "Black Market" },
-      { href: "/jogos/crime-empire/inventory", label: "Inventário" },
-      { href: "/jogos/crime-empire/pvp", label: "PvP Arena" },
-      { href: "/jogos/crime-empire/stats", label: "Estatísticas" },
-    ],
-  },
+  { href: "/jogos/crime-empire/dashboard", label: "Crime Empire" },
   { href: "/loja", label: "Loja" },
   { href: "/sobre", label: "Sobre" },
 ];
@@ -171,7 +159,7 @@ const ICONS: Record<string, React.ReactNode> = {
       <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
     </svg>
   ),
-  "/jogos": (
+  "/jogos/crime-empire/dashboard": (
     <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.6}>
       <path strokeLinecap="round" strokeLinejoin="round" d="M11 4a2 2 0 114 0v1a1 1 0 001 1h3a1 1 0 011 1v3a1 1 0 01-1 1h-1a2 2 0 100 4h1a1 1 0 011 1v3a1 1 0 01-1 1h-3a1 1 0 01-1-1v-1a2 2 0 10-4 0v1a1 1 0 01-1 1H7a1 1 0 01-1-1v-3a1 1 0 00-1-1H4a2 2 0 110-4h1a1 1 0 001-1V7a1 1 0 011-1h3a1 1 0 001-1V4z" />
     </svg>
