@@ -3,7 +3,7 @@ import OfferPerformance from "@/components/analytics/OfferPerformance";
 
 export const metadata: Metadata = {
   title: "Ofertas — Analitics",
-  description: "Performance de ofertas da Secahub.",
+  description: "Performance de ofertas da SecaHub.",
 };
 
 export default function OfferPerformancePage() {

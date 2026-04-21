@@ -2,8 +2,8 @@
 import GiveawayArena from "@/components/GiveawayArena";
 
 export const metadata: Metadata = {
-  title: "Giveaways — Secahub",
-  description: "Participa nos giveaways da Secahub e ganha prémios incríveis.",
+  title: "Giveaways — SecaHub",
+  description: "Participa nos giveaways da SecaHub e ganha prémios incríveis.",
 };
 
 export default function GiveawaysPage() {

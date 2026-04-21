@@ -3,7 +3,7 @@ import { SpinWheel } from "@/components/SpinWheel";
 
 export const metadata: Metadata = {
   title: "Roda Diária",
-  description: "Roda da sorte diária da Secahub. Gira e ganha prémios todos os dias!",
+  description: "Roda da sorte diária da SecaHub. Gira e ganha prémios todos os dias!",
 };
 
 export default function RodaDiariaPage() {

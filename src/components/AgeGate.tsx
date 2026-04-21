@@ -65,7 +65,7 @@ export function AgeGate() {
           <div className="flex justify-center mb-5">
             <Image
               src="/images/logo.svg"
-              alt="Secahub"
+              alt="SecaHub"
               width={160}
               height={40}
               className="h-9 w-auto"

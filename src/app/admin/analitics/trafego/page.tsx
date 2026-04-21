@@ -3,7 +3,7 @@ import TrafficSources from "@/components/analytics/TrafficSources";
 
 export const metadata: Metadata = {
   title: "Tráfego — Analitics",
-  description: "Fontes de tráfego da Secahub.",
+  description: "Fontes de tráfego da SecaHub.",
 };
 
 export default function TrafficPage() {

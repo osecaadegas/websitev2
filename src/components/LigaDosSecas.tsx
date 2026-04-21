@@ -228,7 +228,7 @@ export default function LigaDosSecasContent() {
                 {/* Footer */}
                 <div className="liga-scroll-footer">
                   <div className="liga-wax-seal" />
-                  <p className="liga-footer-text">Secahub · SECAADEGAS</p>
+                  <p className="liga-footer-text">SecaHub · SECAADEGAS</p>
                 </div>
               </div>
             </motion.div>

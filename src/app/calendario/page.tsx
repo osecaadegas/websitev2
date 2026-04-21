@@ -3,9 +3,9 @@ import { StreamCalendar } from "@/components/StreamCalendar";
 
 export const metadata: Metadata = {
   title: "Calendário — Agenda de Streams",
-  description: "Calendário de streams e eventos da Secahub. Vê quando é a próxima live!",
+  description: "Calendário de streams e eventos da SecaHub. Vê quando é a próxima live!",
   openGraph: {
-    title: "Calendário de Streams | Secahub",
+    title: "Calendário de Streams | SecaHub",
     description: "Agenda completa de streams — próximas lives, bonus hunts, torneios e eventos especiais.",
   },
 };

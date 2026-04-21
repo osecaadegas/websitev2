@@ -14,7 +14,7 @@ const inter = Inter({
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: `${SITE_NAME} — Slots Drinks and Wins`,
+    default: SITE_NAME,
     template: `%s | ${SITE_NAME}`,
   },
   description: SITE_DESCRIPTION,
@@ -23,7 +23,7 @@ export const metadata: Metadata = {
     "igaming",
     "bonus hunt",
     "slots",
-    "secahub",
+    "SecaHub",
     "seca de adegas",
     "live stream",
     "casino bonus",
@@ -38,13 +38,13 @@ export const metadata: Metadata = {
     locale: "pt_PT",
     url: SITE_URL,
     siteName: SITE_NAME,
-    title: `${SITE_NAME} — Slots Drinks and Wins`,
+    title: SITE_NAME,
     description: SITE_DESCRIPTION,
     images: [{ url: "/images/og-image.jpg", width: 1200, height: 630, alt: SITE_NAME }],
   },
   twitter: {
     card: "summary_large_image",
-    title: `${SITE_NAME} — Slots Drinks and Wins`,
+    title: SITE_NAME,
     description: SITE_DESCRIPTION,
     images: ["/images/og-image.jpg"],
   },

@@ -6,7 +6,7 @@ export const metadata: Metadata = {
   title: "Sessão do Dia",
   description: "Acompanha a sessão de hoje em direto — depósitos, levantamentos, resultado líquido e o casino em destaque.",
   openGraph: {
-    title: "Sessão do Dia | Secahub",
+    title: "Sessão do Dia | SecaHub",
     description: "Sessão de streaming ao vivo — estatísticas, casino ativo e playlist.",
   },
 };

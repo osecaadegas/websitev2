@@ -7,7 +7,7 @@ export const metadata: Metadata = {
   title: "Live Stream",
   description: "Watch the gladiator battle live on Twitch. Real-time casino streaming, bonus hunts, and slot battles.",
   openGraph: {
-    title: "Live Stream | Secahub",
+    title: "Live Stream | SecaHub",
     description: "Watch the gladiator battle live on Twitch.",
   },
 };

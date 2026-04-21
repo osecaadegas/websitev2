@@ -5,7 +5,7 @@ export const metadata: Metadata = {
   title: "Destaques — Clips & VODs",
   description: "Os melhores clips e vídeos das streams. Momentos épicos, big wins e highlights atualizados automaticamente via Twitch.",
   openGraph: {
-    title: "Destaques — Clips & VODs | Secahub",
+    title: "Destaques — Clips & VODs | SecaHub",
     description: "Os melhores clips e vídeos das streams. Atualizado automaticamente via Twitch.",
   },
 };

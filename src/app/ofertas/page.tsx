@@ -5,7 +5,7 @@ export const metadata: Metadata = {
   title: "Ofertas",
   description: "As melhores ofertas e bónus exclusivos dos casinos online. Promoções verificadas e atualizadas.",
   openGraph: {
-    title: "Ofertas | Secahub",
+    title: "Ofertas | SecaHub",
     description: "As melhores ofertas e bónus exclusivos dos casinos online.",
   },
 };

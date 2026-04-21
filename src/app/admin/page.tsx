@@ -71,7 +71,7 @@ export default function AdminPage() {
             Admin Area
           </h1>
           <p className="text-arena-smoke/70 text-lg max-w-2xl mx-auto">
-            Painel de administração da Secahub
+            Painel de administração da SecaHub
           </p>
         </div>
 

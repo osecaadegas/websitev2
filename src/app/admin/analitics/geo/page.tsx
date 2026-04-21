@@ -3,7 +3,7 @@ import GeoAnalytics from "@/components/analytics/GeoAnalytics";
 
 export const metadata: Metadata = {
   title: "Geo — Analitics",
-  description: "Análise geográfica de visitantes da Secahub.",
+  description: "Análise geográfica de visitantes da SecaHub.",
 };
 
 export default function GeoPage() {

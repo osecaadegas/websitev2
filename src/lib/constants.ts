@@ -1,8 +1,8 @@
 ﻿/* Site-wide constants */
 
-export const SITE_NAME = "Secahub";
+export const SITE_NAME = "SecaHub";
 export const SITE_DESCRIPTION =
-  "Slots Drinks and Wins";
+  "A tua comunidade de casino streaming e entretenimento";
 export const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://websitev2-zeta-nine.vercel.app";
 export const TWITCH_CHANNEL = process.env.NEXT_PUBLIC_TWITCH_CHANNEL || "secaadegas";
 
