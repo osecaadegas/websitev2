@@ -22,6 +22,13 @@ interface Player {
   class: string;
 }
 
+const GAMBLING_LINKS = [
+  { href: "/jogos/crime-empire/gambling/blackjack", label: "Blackjack", icon: "🃏" },
+  { href: "/jogos/crime-empire/gambling/mines", label: "Mines", icon: "💣" },
+  { href: "/jogos/crime-empire/gambling/keno", label: "Keno", icon: "🎱" },
+  { href: "/jogos/crime-empire/gambling/stocks", label: "Stock Market", icon: "📈" },
+];
+
 const GAME_SECTIONS = [
   {
     section: null,
@@ -36,17 +43,6 @@ const GAME_SECTIONS = [
       { href: "/jogos/crime-empire/businesses", label: "Negócios", icon: "🏢" },
       { href: "/jogos/crime-empire/black-market", label: "Black Market", icon: "💎" },
       { href: "/jogos/crime-empire/rua-das-luzes", label: "Rua das Luzes", icon: "💋" },
-    ],
-  },
-  {
-    section: "Gambling",
-    links: [
-      { href: "/jogos/crime-empire/gambling", label: "Casino", icon: "🎰" },
-      { href: "/jogos/crime-empire/gambling/blackjack", label: "Blackjack", icon: "🃏", sub: true },
-      { href: "/jogos/crime-empire/gambling/mines", label: "Mines", icon: "💣", sub: true },
-      { href: "/jogos/crime-empire/gambling/plinko", label: "Plinko", icon: "🎯", sub: true },
-      { href: "/jogos/crime-empire/gambling/keno", label: "Keno", icon: "🎱", sub: true },
-      { href: "/jogos/crime-empire/gambling/stocks", label: "Mercado", icon: "📈", sub: true },
     ],
   },
   {
@@ -69,6 +65,8 @@ const GAME_SECTIONS = [
 export function CrimeEmpireSidebar({ open, onClose }: Props) {
   const pathname = usePathname();
   const [player, setPlayer] = useState<Player | null>(null);
+  const isGamblingActive = pathname.startsWith("/jogos/crime-empire/gambling");
+  const [gamblingOpen, setGamblingOpen] = useState(isGamblingActive);
 
   useEffect(() => {
     fetchPlayer();
@@ -162,19 +160,14 @@ export function CrimeEmpireSidebar({ open, onClose }: Props) {
                 <div className="space-y-1">
                   {group.links.map((link) => {
                     const isActive = pathname === link.href;
-                    const isSub = (link as { sub?: boolean }).sub;
                     return (
                       <Link
                         key={link.href}
                         href={link.href}
                         onClick={() => onClose()}
-                        className={`block rounded-lg font-medium transition-all ${
-                          isSub ? "px-3 py-1.5 text-xs pl-6" : "px-3 py-2 text-sm"
-                        } ${
+                        className={`block px-3 py-2 text-sm rounded-lg font-medium transition-all ${
                           isActive
                             ? "bg-[#ff6a00] text-white shadow-lg shadow-[#ff6a00]/20"
-                            : isSub
-                            ? "text-[#666] hover:text-[#aaa] hover:bg-[#1a1a1a]"
                             : "text-[#888888] hover:text-white hover:bg-[#1a1a1a]"
                         }`}
                       >
@@ -186,6 +179,56 @@ export function CrimeEmpireSidebar({ open, onClose }: Props) {
                 </div>
               </div>
             ))}
+
+            {/* Gambling — collapsible */}
+            <div>
+              <p className="px-3 mb-1 text-[10px] font-bold uppercase tracking-widest text-[#ff6a00]/60">
+                Gambling
+              </p>
+              <button
+                onClick={() => setGamblingOpen((v) => !v)}
+                className={`w-full flex items-center justify-between px-3 py-2 text-sm rounded-lg font-medium transition-all ${
+                  isGamblingActive
+                    ? "bg-[#ff6a00]/20 text-[#ff6a00]"
+                    : "text-[#888888] hover:text-white hover:bg-[#1a1a1a]"
+                }`}
+              >
+                <span><span className="mr-2">🎰</span>Gambling</span>
+                <span className={`text-xs transition-transform ${gamblingOpen ? "rotate-180" : ""}`}>▼</span>
+              </button>
+              <AnimatePresence initial={false}>
+                {gamblingOpen && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: "auto", opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.2 }}
+                    className="overflow-hidden"
+                  >
+                    <div className="mt-1 space-y-1">
+                      {GAMBLING_LINKS.map((link) => {
+                        const isActive = pathname === link.href;
+                        return (
+                          <Link
+                            key={link.href}
+                            href={link.href}
+                            onClick={() => onClose()}
+                            className={`block pl-6 pr-3 py-1.5 text-xs rounded-lg font-medium transition-all ${
+                              isActive
+                                ? "bg-[#ff6a00] text-white shadow-lg shadow-[#ff6a00]/20"
+                                : "text-[#666] hover:text-[#aaa] hover:bg-[#1a1a1a]"
+                            }`}
+                          >
+                            <span className="mr-2">{link.icon}</span>
+                            {link.label}
+                          </Link>
+                        );
+                      })}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
           </nav>
 
           {/* Return to Website */}
