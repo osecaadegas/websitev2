@@ -1,4 +1,4 @@
-/* ── Animation constants for consistent, heavy gladiator feel ─────── */
+﻿/* ── Animation constants for consistent, heavy gladiator feel ─────── */
 
 export const TRANSITION_SPRING = {
   type: "spring" as const,

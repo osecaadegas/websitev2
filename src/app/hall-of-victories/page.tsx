@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+﻿import type { Metadata } from "next";
 import HallOfVictoriesContent from "@/components/HallOfVictoriesContent";
 
 export const metadata: Metadata = {

@@ -1,4 +1,4 @@
-import type { UserRole } from "./supabase";
+﻿import type { UserRole } from "./supabase";
 
 /**
  * Role hierarchy — higher index = more privileges.

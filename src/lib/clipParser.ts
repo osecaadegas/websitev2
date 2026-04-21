@@ -1,4 +1,4 @@
-/**
+﻿/**
  * clipParser.ts
  * Safely parses any URL into an embed descriptor.
  * NEVER throws — always returns a valid EmbedResult.

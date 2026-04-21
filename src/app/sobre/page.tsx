@@ -1,11 +1,11 @@
-import type { Metadata } from "next";
+﻿import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "Sobre",
-  description: "Conhece a história por trás da Arena Gladiator. Quem somos, a nossa missão e o que nos move no mundo do iGaming.",
+  description: "Conhece a história por trás da Secahub. Quem somos, a nossa missão e o que nos move no mundo do iGaming.",
   openGraph: {
-    title: "Sobre | Arena Gladiator",
-    description: "Conhece a história por trás da Arena Gladiator.",
+    title: "Sobre | Secahub",
+    description: "Conhece a história por trás da Secahub.",
   },
 };
 
@@ -15,7 +15,7 @@ export default function SobrePage() {
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="mt-4 space-y-6 text-arena-smoke text-lg leading-relaxed">
           <p>
-            Bem-vindo à Arena Gladiator — a comunidade definitiva de iGaming em português. 
+            Bem-vindo à Secahub — a comunidade definitiva de iGaming em português. 
             Nascemos da paixão pelo entretenimento e pela adrenalina dos jogos de casino online.
           </p>
           <p>

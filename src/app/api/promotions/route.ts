@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+﻿import { NextResponse } from "next/server";
 import { getPromotions } from "@/lib/promotions";
 import type { CasinoPromotion } from "@/lib/promotions";
 

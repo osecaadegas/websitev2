@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+﻿import type { Metadata } from "next";
 import { Suspense } from "react";
 import DailySessionContent from "@/components/DailySession";
 
@@ -6,7 +6,7 @@ export const metadata: Metadata = {
   title: "Sessão do Dia",
   description: "Acompanha a sessão de hoje em direto — depósitos, levantamentos, resultado líquido e o casino em destaque.",
   openGraph: {
-    title: "Sessão do Dia | Arena Gladiator",
+    title: "Sessão do Dia | Secahub",
     description: "Sessão de streaming ao vivo — estatísticas, casino ativo e playlist.",
   },
 };

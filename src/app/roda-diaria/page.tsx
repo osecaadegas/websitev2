@@ -1,9 +1,9 @@
-import type { Metadata } from "next";
+﻿import type { Metadata } from "next";
 import { SpinWheel } from "@/components/SpinWheel";
 
 export const metadata: Metadata = {
   title: "Roda Diária",
-  description: "Roda da sorte diária da Arena Gladiator. Gira e ganha prémios todos os dias!",
+  description: "Roda da sorte diária da Secahub. Gira e ganha prémios todos os dias!",
 };
 
 export default function RodaDiariaPage() {

@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+﻿import { NextResponse } from "next/server";
 
 const SE_API = "https://api.streamelements.com/kappa/v2";
 

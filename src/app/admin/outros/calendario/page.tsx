@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+﻿import type { Metadata } from "next";
 import AdminCalendarioConfig from "@/components/AdminCalendarioConfig";
 
 export const metadata: Metadata = {

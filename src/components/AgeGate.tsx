@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect } from "react";
 import Image from "next/image";
@@ -65,7 +65,7 @@ export function AgeGate() {
           <div className="flex justify-center mb-5">
             <Image
               src="/images/logo.svg"
-              alt="Arena Gladiator"
+              alt="Secahub"
               width={160}
               height={40}
               className="h-9 w-auto"

@@ -1,11 +1,11 @@
-import type { Metadata } from "next";
+﻿import type { Metadata } from "next";
 import { OfferCards } from "@/components/OfferCard";
 
 export const metadata: Metadata = {
   title: "Ofertas",
   description: "As melhores ofertas e bónus exclusivos dos casinos online. Promoções verificadas e atualizadas.",
   openGraph: {
-    title: "Ofertas | Arena Gladiator",
+    title: "Ofertas | Secahub",
     description: "As melhores ofertas e bónus exclusivos dos casinos online.",
   },
 };

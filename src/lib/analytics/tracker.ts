@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 const STORAGE_KEY = "arena_cookie_consent";
 const QUEUE_KEY = "__arena_track_queue";

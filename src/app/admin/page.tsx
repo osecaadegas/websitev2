@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import type { Metadata } from "next";
 import Link from "next/link";
@@ -71,7 +71,7 @@ export default function AdminPage() {
             Admin Area
           </h1>
           <p className="text-arena-smoke/70 text-lg max-w-2xl mx-auto">
-            Painel de administração da Arena Gladiator
+            Painel de administração da Secahub
           </p>
         </div>
 

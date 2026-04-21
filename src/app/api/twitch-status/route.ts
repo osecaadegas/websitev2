@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+﻿import { NextResponse } from "next/server";
 
 /**
  * Twitch status API — checks if a channel is currently live.

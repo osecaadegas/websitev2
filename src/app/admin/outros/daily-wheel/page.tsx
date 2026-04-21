@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+﻿import type { Metadata } from "next";
 import AdminWheelConfig from "@/components/AdminWheelConfig";
 
 export const metadata: Metadata = {

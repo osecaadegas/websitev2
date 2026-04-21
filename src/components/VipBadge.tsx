@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 const VIP_LEVELS = [
   { level: 0, label: "Recruit", icon: "⚔️", color: "text-arena-ash", border: "border-arena-steel" },

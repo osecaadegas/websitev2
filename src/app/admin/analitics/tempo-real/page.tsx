@@ -1,9 +1,9 @@
-import type { Metadata } from "next";
+﻿import type { Metadata } from "next";
 import RealTimeActivity from "@/components/analytics/RealTimeActivity";
 
 export const metadata: Metadata = {
   title: "Tempo Real — Analitics",
-  description: "Atividade em tempo real da Arena Gladiator.",
+  description: "Atividade em tempo real da Secahub.",
 };
 
 export default function RealTimePage() {

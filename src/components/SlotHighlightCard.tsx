@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 interface SlotHighlightCardProps {
   label: string;          // "MELHOR" or "PIOR"

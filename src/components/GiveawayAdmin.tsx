@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useAuth } from "@/lib/auth-context";
 import { hasRole } from "@/lib/roles";

@@ -1,4 +1,4 @@
-import { HeroSection } from "@/components/HeroSection";
+﻿import { HeroSection } from "@/components/HeroSection";
 import { generateWebsiteSchema } from "@/lib/schema";
 import type { Metadata } from "next";
 import { SITE_NAME, SITE_DESCRIPTION, SITE_URL } from "@/lib/constants";

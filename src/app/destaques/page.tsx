@@ -1,11 +1,11 @@
-import type { Metadata } from "next";
+﻿import type { Metadata } from "next";
 import { DestaquesContent } from "@/components/DestaquesContent";
 
 export const metadata: Metadata = {
   title: "Destaques — Clips & VODs",
   description: "Os melhores clips e vídeos das streams. Momentos épicos, big wins e highlights atualizados automaticamente via Twitch.",
   openGraph: {
-    title: "Destaques — Clips & VODs | Arena Gladiator",
+    title: "Destaques — Clips & VODs | Secahub",
     description: "Os melhores clips e vídeos das streams. Atualizado automaticamente via Twitch.",
   },
 };

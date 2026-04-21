@@ -1,4 +1,4 @@
-/**
+﻿/**
  * JSON-LD schema generators for SEO structured data.
  * Used on casino review pages and the main site.
  */

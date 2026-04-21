@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 /**
  * WaxSealBadge — A realistic wax seal stamp overlay for papyrus-style cards.

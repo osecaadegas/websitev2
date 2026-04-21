@@ -1,4 +1,4 @@
-import GiveawayAdmin from "@/components/GiveawayAdmin";
+﻿import GiveawayAdmin from "@/components/GiveawayAdmin";
 
 export default function AdminGiveawaysPage() {
   return <GiveawayAdmin />;

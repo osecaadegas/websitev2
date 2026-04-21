@@ -6,7 +6,7 @@ export const metadata: Metadata = {
   title: "Liga dos Secas",
   description: "Liga dos Secas — vencedores mensais da comunidade.",
   openGraph: {
-    title: "Liga dos Secas | Arena Gladiator",
+    title: "Liga dos Secas | Secahub",
     description: "Liga dos Secas — os vencedores mensais da comunidade.",
   },
 };

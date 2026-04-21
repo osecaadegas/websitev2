@@ -1,4 +1,4 @@
-/* Portuguese Online Casino Promotions Data
+﻿/* Portuguese Online Casino Promotions Data
    Licensed brands regulated by SRIJ (Serviço de Regulação e Inspeção de Jogos)
    This data can be replaced with API calls to affiliate platforms or CMS */
 

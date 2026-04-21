@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+﻿import { NextResponse } from "next/server";
 import { SITE_URL } from "@/lib/constants";
 import { cookies } from "next/headers";
 import { supabase } from "@/lib/supabase";

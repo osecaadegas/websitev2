@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+﻿import type { Metadata } from "next";
 import AdminBrutaDoMesConfig from "@/components/AdminBrutaDoMesConfig";
 
 export const metadata: Metadata = {

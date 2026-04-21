@@ -1,4 +1,4 @@
-/* Gladiator rank configuration */
+﻿/* Gladiator rank configuration */
 
 export const RANKS = [
   { key: "recruit", label: "Recruit", min: 0, color: "#666", icon: "⚔️" },
