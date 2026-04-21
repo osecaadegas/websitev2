@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { useAuth } from "@/lib/auth-context";
+import { CrimeEmpireNav } from "@/components/CrimeEmpireNav";
 
 interface Player {
   id: string;
@@ -117,6 +118,8 @@ export default function CrimesPage() {
   return (
     <div className="flex-1 text-white py-12 px-6">
       <div className="max-w-7xl mx-auto">
+        <CrimeEmpireNav />
+        
         <h1 className="text-4xl font-black mb-4 bg-gradient-to-r from-[#ff6a00] to-[#ff8533] bg-clip-text text-transparent">
           💰 Crimes
         </h1>

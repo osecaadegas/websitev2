@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { CrimeEmpireNav } from "@/components/CrimeEmpireNav";
 
 interface Business {
   id: string;
@@ -110,6 +111,8 @@ export default function BusinessesPage() {
   return (
     <div className="flex-1 text-white py-12 px-6">
       <div className="max-w-7xl mx-auto">
+        <CrimeEmpireNav />
+        
         <div className="flex justify-between items-start mb-8">
           <div>
             <h1 className="text-4xl font-black mb-2 bg-gradient-to-r from-[#ff6a00] to-[#ff8533] bg-clip-text text-transparent">

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
 import { useRouter } from "next/navigation";
+import { CrimeEmpireNav } from "@/components/CrimeEmpireNav";
 
 interface Item {
   name: string;
@@ -218,6 +219,8 @@ export default function BlackMarket() {
   return (
     <div className="flex-1 text-white py-12 px-6">
       <div className="max-w-7xl mx-auto">
+        <CrimeEmpireNav />
+        
         {/* Header */}
         <div className="flex justify-between items-center mb-8">
           <div>
