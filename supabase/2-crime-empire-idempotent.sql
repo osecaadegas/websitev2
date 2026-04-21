@@ -9,7 +9,19 @@ do $$
 declare
   r record;
 begin
-  for r in (select policyname, tablename from pg_policies where schemaname = 'public' and policyname like '%crime%' or policyname like '%Players%') loop
+  -- Drop all policies on Crime Empire tables
+  for r in (
+    select policyname, tablename 
+    from pg_policies 
+    where schemaname = 'public' 
+    and tablename in (
+      'crime_players', 'player_crime_experience', 'crime_attempts', 'jail_records',
+      'player_businesses', 'business_item_production', 'player_inventory', 
+      'pvp_battles', 'contract_attempts', 'brothel_workers', 
+      'black_market_transactions', 'black_market_listings', 'black_market_trades',
+      'player_stats', 'prestige_history', 'crimes', 'businesses', 'items', 'contracts'
+    )
+  ) loop
     execute 'drop policy if exists "' || r.policyname || '" on ' || r.tablename;
   end loop;
 end $$;
