@@ -8,19 +8,23 @@
 -- ═══════════════════════════════════════════════════════════
 
 -- Player Classes
-create type player_class as enum (
-  'thief',
-  'hooligan', 
-  'businessman',
-  'hitman',
-  'scammer',
-  'brute',
-  'dealer',
-  'pimp'
-);
+do $$ begin
+  create type player_class as enum (
+    'thief',
+    'hooligan', 
+    'businessman',
+    'hitman',
+    'scammer',
+    'brute',
+    'dealer',
+    'pimp'
+  );
+exception
+  when duplicate_object then null;
+end $$;
 
 -- Players Table
-create table crime_players (
+create table if not exists crime_players (
   id uuid primary key default gen_random_uuid(),
   user_id text not null unique, -- Twitch user ID
   username text not null,
@@ -63,18 +67,22 @@ create table crime_players (
   last_login timestamptz not null default now()
 );
 
-create index idx_crime_players_user_id on crime_players(user_id);
-create index idx_crime_players_level on crime_players(level desc);
+create index if not exists idx_crime_players_user_id on crime_players(user_id);
+create index if not exists idx_crime_players_level on crime_players(level desc);
 
 -- ═══════════════════════════════════════════════════════════
 -- CRIME SYSTEM
 -- ═══════════════════════════════════════════════════════════
 
 -- Crime Difficulty Types
-create type crime_difficulty as enum ('petty', 'small', 'medium', 'big', 'legendary');
+do $$ begin
+  create type crime_difficulty as enum ('petty', 'small', 'medium', 'big', 'legendary');
+exception
+  when duplicate_object then null;
+end $$;
 
 -- Available Crimes
-create table crimes (
+create table if not exists crimes (
   id uuid primary key default gen_random_uuid(),
   name text not null,
   description text not null,
@@ -107,8 +115,9 @@ insert into crimes (name, description, difficulty, required_level, base_success_
   ('Roubar Carteira', 'Rouba a carteira de um turista distraído', 'petty', 1, 0.85, 0.05, 5, 50, 150, 10, 1),
   ('Assaltar Loja', 'Assalta uma loja de conveniência', 'small', 2, 0.70, 0.15, 10, 200, 500, 25, 3),
   ('Roubar Carro', 'Rouba um carro estacionado', 'small', 3, 0.65, 0.20, 15, 500, 1200, 40, 5),
+on conflict (name) do nothing
   ('Assaltar Casa', 'Invade uma casa e rouba objetos de valor', 'medium', 5, 0.55, 0.25, 20, 1000, 2500, 75, 8),
-  ('Assaltar Banco', 'Rouba um banco com uma equipa', 'big', 10, 0.40, 0.40, 30, 5000, 15000, 200, 20),
+  ('Assaltar if not exists Banco', 'Rouba um banco com uma equipa', 'big', 10, 0.40, 0.40, 30, 5000, 15000, 200, 20),
   ('Roubar Joalharia', 'Assalta uma joalharia de luxo', 'big', 15, 0.35, 0.45, 35, 10000, 25000, 350, 30),
   ('Heist do Casino', 'O maior assalto - rouba um casino', 'legendary', 25, 0.25, 0.55, 50, 50000, 150000, 1000, 100);
 
@@ -126,10 +135,10 @@ create table player_crime_experience (
   
   unique(player_id, crime_id)
 );
-
-create index idx_player_crime_exp on player_crime_experience(player_id);
+f not exists idx_player_crime_exp on player_crime_experience(player_id);
 
 -- Crime Attempt History
+create table if not existsempt History
 create table crime_attempts (
   id uuid primary key default gen_random_uuid(),
   player_id uuid not null references crime_players(id) on delete cascade,
@@ -146,13 +155,13 @@ create table crime_attempts (
   
   created_at timestamptz not null default now()
 );
-
-create index idx_crime_attempts_player on crime_attempts(player_id, created_at desc);
+f not exists idx_crime_attempts_player on crime_attempts(player_id, created_at desc);
 
 -- ═══════════════════════════════════════════════════════════
 -- JAIL SYSTEM
 -- ═══════════════════════════════════════════════════════════
 
+create table if not exists
 create table jail_records (
   id uuid primary key default gen_random_uuid(),
   player_id uuid not null references crime_players(id) on delete cascade,
@@ -168,26 +177,30 @@ create table jail_records (
   
   created_at timestamptz not null default now()
 );
-
-create index idx_jail_records_player on jail_records(player_id);
+f not exists idx_jail_records_player on jail_records(player_id);
 
 -- ═══════════════════════════════════════════════════════════
 -- BUSINESS SYSTEM
 -- ═══════════════════════════════════════════════════════════
 
 -- Business Types
-create type business_type as enum (
-  'weed_farm',
-  'pill_factory',
-  'crypto_mining',
-  'scam_office',
-  'chop_shop',
-  'counterfeit_lab',
-  'nightclub',
-  'casino'
-);
+do $$ begin
+  create type business_type as enum (
+    'weed_farm',
+    'pill_factory',
+    'crypto_mining',
+    'scam_office',
+    'chop_shop',
+    'counterfeit_lab',
+    'nightclub',
+    'casino'
+  );
+exception
+  when duplicate_object then null;
+end $$;
 
 -- Business Definitions
+create table if not existsDefinitions
 create table businesses (
   id uuid primary key default gen_random_uuid(),
   name text not null,
@@ -216,8 +229,9 @@ create table businesses (
 -- Seed businesses
 insert into businesses (name, type, description, purchase_price, base_income_per_hour, max_employees, employee_cost_per_hour, required_level) values
   ('Quinta de Cannabis', 'weed_farm', 'Produz e vende cannabis', 10000, 500, 5, 50, 5),
+on conflict (type) do nothing
   ('Fábrica de Pílulas', 'pill_factory', 'Produz pílulas ilegais', 25000, 1200, 8, 100, 10),
-  ('Mining de Crypto', 'crypto_mining', 'Minera criptomoedas', 50000, 2000, 3, 150, 15),
+  ('Mining deif not exists  Crypto', 'crypto_mining', 'Minera criptomoedas', 50000, 2000, 3, 150, 15),
   ('Escritório de Scams', 'scam_office', 'Executa esquemas de fraude online', 35000, 1500, 10, 80, 12),
   ('Nightclub', 'nightclub', 'Club noturno para lavagem de dinheiro', 100000, 5000, 15, 200, 20);
 
@@ -239,16 +253,20 @@ create table player_businesses (
   active boolean not null default true,
   last_collection timestamptz not null default now(),
   
-  purchased_at timestamptz not null default now(),
-  
-  unique(player_id, business_id)
-);
-
-create index idx_player_businesses on player_businesses(player_id);
+  purchased_atf not exists idx_player_businesses on player_businesses(player_id);
 
 -- ═══════════════════════════════════════════════════════════
 -- ITEMS SYSTEM
 -- ═══════════════════════════════════════════════════════════
+
+-- Item Categories
+do $$ begin
+  create type item_category as enum ('weapon', 'armor', 'consumable', 'material', 'special');
+exception
+  when duplicate_object then null;
+end $$;
+
+create table if not exists══════════════════════════════════════════════════
 
 -- Item Categories
 create type item_category as enum ('weapon', 'armor', 'consumable', 'material', 'special');
@@ -277,8 +295,9 @@ create table items (
   base_price integer not null default 100,
   
   tradeable boolean not null default true,
+on conflict (name) do nothing
   created_at timestamptz not null default now()
-);
+);if not exists 
 
 -- Seed items
 insert into items (name, description, category, power_bonus, intelligence_bonus, charisma_bonus, base_price) values
@@ -297,13 +316,13 @@ create table player_inventory (
   durability integer, -- current durability
   
   equipped boolean not null default false,
-  
-  acquired_at timestamptz not null default now(),
-  
-  unique(player_id, item_id)
-);
+  f not exists idx_player_inventory on player_inventory(player_id);
 
-create index idx_player_inventory on player_inventory(player_id);
+-- ═══════════════════════════════════════════════════════════
+-- PVP SYSTEM
+-- ═══════════════════════════════════════════════════════════
+
+create table if not exists idx_player_inventory on player_inventory(player_id);
 
 -- ═══════════════════════════════════════════════════════════
 -- PVP SYSTEM
@@ -328,17 +347,21 @@ create table pvp_battles (
   winner_id uuid not null references crime_players(id),
   dirty_cash_stolen integer not null default 0,
   respect_gained integer not null default 0,
-  xp_gained integer not null default 0,
-  
-  created_at timestamptz not null default now()
-);
-
-create index idx_pvp_attacker on pvp_battles(attacker_id, created_at desc);
-create index idx_pvp_defender on pvp_battles(defender_id, created_at desc);
+  xp_gained inf not exists idx_pvp_attacker on pvp_battles(attacker_id, created_at desc);
+create index if not exists idx_pvp_defender on pvp_battles(defender_id, created_at desc);
 
 -- ═══════════════════════════════════════════════════════════
 -- HITMAN CONTRACTS
 -- ═══════════════════════════════════════════════════════════
+
+-- Contract Difficulty
+do $$ begin
+  create type contract_difficulty as enum ('easy', 'medium', 'hard');
+exception
+  when duplicate_object then null;
+end $$;
+
+create table if not exists══════════════════════════════════════════════════
 
 -- Contract Difficulty
 create type contract_difficulty as enum ('easy', 'medium', 'hard');
@@ -363,7 +386,7 @@ create table contracts (
   xp_reward integer not null,
   respect_reward integer not null,
   power_reward integer not null default 0,
-  
+  if not exists 
   -- Availability
   daily_limit integer not null default 1,
   expires_at timestamptz not null,
@@ -378,16 +401,20 @@ create table contract_attempts (
   contract_id uuid not null references contracts(id) on delete cascade,
   
   success boolean not null,
-  
-  cash_earned integer not null default 0,
-  xp_earned integer not null default 0,
-  respect_earned integer not null default 0,
-  power_gained integer not null default 0,
-  
-  created_at timestamptz not null default now()
-);
+  f not exists idx_contract_attempts_player on contract_attempts(player_id);
 
-create index idx_contract_attempts_player on contract_attempts(player_id);
+-- ═══════════════════════════════════════════════════════════
+-- BROTHEL SYSTEM
+-- ═══════════════════════════════════════════════════════════
+
+-- Worker Status
+do $$ begin
+  create type worker_status as enum ('healthy', 'sick', 'leaving');
+exception
+  when duplicate_object then null;
+end $$;
+
+create table if not exists idx_contract_attempts_player on contract_attempts(player_id);
 
 -- ═══════════════════════════════════════════════════════════
 -- BROTHEL SYSTEM
@@ -404,13 +431,13 @@ create table brothel_workers (
   status worker_status not null default 'healthy',
   
   -- Income
-  income_per_hour integer not null default 100,
-  
-  -- Stats gained from worker
-  charisma_bonus integer not null default 1,
-  intelligence_bonus integer not null default 1,
-  respect_bonus integer not null default 1,
-  
+  income_per_hf not exists idx_brothel_workers_player on brothel_workers(player_id);
+
+-- ═══════════════════════════════════════════════════════════
+-- BLACK MARKET
+-- ═══════════════════════════════════════════════════════════
+
+create table if not exists
   -- Events
   next_event_at timestamptz,
   
@@ -431,7 +458,7 @@ create table black_market_transactions (
   transaction_type text not null check (transaction_type in ('buy', 'sell')),
   quantity integer not null,
   price_per_unit integer not null,
-  total_amount integer not null,
+  total_amounif not exists t integer not null,
   
   -- Risk
   caught boolean not null default false,
