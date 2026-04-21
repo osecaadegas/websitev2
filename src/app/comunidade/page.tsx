@@ -49,6 +49,15 @@ const CATEGORIES = [
     borderColor: "border-blue-500/30",
     hoverColor: "hover:border-blue-500/50",
   },
+  {
+    href: "/comunidade/jogos",
+    title: "Jogos da Comunidade",
+    description: "Diverte-te com mini-jogos e compete com outros membros",
+    icon: "🎮",
+    color: "from-orange-600/20 to-orange-500/10",
+    borderColor: "border-[#ff6a00]/30",
+    hoverColor: "hover:border-[#ff6a00]/50",
+  },
 ] as const;
 
 export default function ComunidadePage() {
