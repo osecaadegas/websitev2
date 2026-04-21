@@ -1,36 +1,32 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
+import { cookies } from "next/headers";
 
-const TWITCH_CLIENT_ID = process.env.TWITCH_CLIENT_ID!;
+export const dynamic = "force-dynamic";
 
-export async function GET(req: NextRequest) {
+async function getAuthUser() {
+  const cookieStore = await cookies();
+  const raw = cookieStore.get("twitch_session")?.value;
+  if (!raw) return null;
   try {
-    const accessToken = req.cookies.get("twitch_access_token")?.value;
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
+}
 
-    if (!accessToken) {
+export async function GET() {
+  try {
+    const user = await getAuthUser();
+    if (!user) {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
     }
-
-    // Validate Twitch token
-    const twitchRes = await fetch("https://api.twitch.tv/helix/users", {
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        "Client-Id": TWITCH_CLIENT_ID,
-      },
-    });
-
-    if (!twitchRes.ok) {
-      return NextResponse.json({ error: "Invalid token" }, { status: 401 });
-    }
-
-    const twitchData = await twitchRes.json();
-    const twitchUser = twitchData.data[0];
 
     // Get player
     const { data: player } = await supabase
       .from("crime_players")
       .select("*")
-      .eq("user_id", twitchUser.id)
+      .eq("user_id", user.id)
       .single();
 
     if (!player) {
@@ -73,30 +69,15 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const accessToken = req.cookies.get("twitch_access_token")?.value;
-
-    if (!accessToken) {
+    const user = await getAuthUser();
+    if (!user) {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
     }
-
-    const twitchRes = await fetch("https://api.twitch.tv/helix/users", {
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        "Client-Id": TWITCH_CLIENT_ID,
-      },
-    });
-
-    if (!twitchRes.ok) {
-      return NextResponse.json({ error: "Invalid token" }, { status: 401 });
-    }
-
-    const twitchData = await twitchRes.json();
-    const twitchUser = twitchData.data[0];
 
     const { data: player } = await supabase
       .from("crime_players")
       .select("*")
-      .eq("user_id", twitchUser.id)
+      .eq("user_id", user.id)
       .single();
 
     if (!player) {
