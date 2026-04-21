@@ -6,17 +6,21 @@
 -- 1. PLAYER SYSTEM
 -- ============================================================
 
--- Player Classes
-create type player_class as enum (
-  'thief',
-  'hooligan', 
-  'businessman',
-  'hitman',
-  'scammer',
-  'brute',
-  'dealer',
-  'pimp'
-);
+-- Player Classes (safe create if not exists)
+do $$ begin
+  create type player_class as enum (
+    'thief',
+    'hooligan', 
+    'businessman',
+    'hitman',
+    'scammer',
+    'brute',
+    'dealer',
+    'pimp'
+  );
+exception
+  when duplicate_object then null;
+end $$;
 
 -- Players Table
 create table if not exists crime_players (
@@ -69,8 +73,12 @@ create index idx_crime_players_level on crime_players(level desc);
 -- 2. CRIME SYSTEM
 -- ============================================================
 
--- Crime Types
-create type crime_difficulty as enum ('petty', 'small', 'medium', 'big', 'legendary');
+-- Crime Types (safe create if not exists)
+do $$ begin
+  create type crime_difficulty as enum ('petty', 'small', 'medium', 'big', 'legendary');
+exception
+  when duplicate_object then null;
+end $$;
 
 -- Available Crimes
 create table if not exists crimes (
@@ -164,16 +172,20 @@ create index idx_jail_records_player on jail_records(player_id);
 -- 4. BUSINESS SYSTEM
 -- ============================================================
 
-create type business_type as enum (
-  'weed_farm',
-  'pill_factory',
-  'crypto_mining',
-  'scam_office',
-  'chop_shop',
-  'counterfeit_lab',
-  'nightclub',
-  'casino'
-);
+do $$ begin
+  create type business_type as enum (
+    'weed_farm',
+    'pill_factory',
+    'crypto_mining',
+    'scam_office',
+    'chop_shop',
+    'counterfeit_lab',
+    'nightclub',
+    'casino'
+  );
+exception
+  when duplicate_object then null;
+end $$;
 
 -- Business Definitions
 create table if not exists businesses (
@@ -241,7 +253,11 @@ create table if not exists business_collections (
 -- 5. ITEMS SYSTEM
 -- ============================================================
 
-create type item_category as enum ('weapon', 'armor', 'consumable', 'material', 'special');
+do $$ begin
+  create type item_category as enum ('weapon', 'armor', 'consumable', 'material', 'special');
+exception
+  when duplicate_object then null;
+end $$;
 
 create table if not exists items (
   id uuid primary key default gen_random_uuid(),
@@ -334,7 +350,11 @@ create table if not exists pvp_cooldowns (
 -- 7. HITMAN CONTRACTS
 -- ============================================================
 
-create type contract_difficulty as enum ('easy', 'medium', 'hard');
+do $$ begin
+  create type contract_difficulty as enum ('easy', 'medium', 'hard');
+exception
+  when duplicate_object then null;
+end $$;
 
 create table if not exists contracts (
   id uuid primary key default gen_random_uuid(),
@@ -399,7 +419,11 @@ create table if not exists daily_contract_limits (
 -- 8. BROTHEL SYSTEM
 -- ============================================================
 
-create type worker_status as enum ('healthy', 'sick', 'leaving');
+do $$ begin
+  create type worker_status as enum ('healthy', 'sick', 'leaving');
+exception
+  when duplicate_object then null;
+end $$;
 
 create table if not exists brothel_workers (
   id uuid primary key default gen_random_uuid(),
