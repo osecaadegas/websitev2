@@ -287,6 +287,25 @@ create table if not exists player_stats (
 );
 
 -- ═══════════════════════════════════════════════════════════
+-- CONSTRAINTS (ensure they exist for idempotency)
+-- ═══════════════════════════════════════════════════════════
+
+do $$ begin
+  alter table crimes add constraint crimes_name_unique unique (name);
+exception when duplicate_object then null;
+end $$;
+
+do $$ begin
+  alter table businesses add constraint businesses_type_unique unique (type);
+exception when duplicate_object then null;
+end $$;
+
+do $$ begin
+  alter table items add constraint items_name_unique unique (name);
+exception when duplicate_object then null;
+end $$;
+
+-- ═══════════════════════════════════════════════════════════
 -- INDEXES
 -- ═══════════════════════════════════════════════════════════
 
