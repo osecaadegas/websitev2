@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
@@ -151,6 +151,7 @@ export function CrimeEmpireSidebar({ open, onClose }: Props) {
           {/* Game Navigation */}
           <nav className="space-y-1">
             {GAME_SECTIONS.map((group, i) => (
+              <React.Fragment key={i}>
               <div key={i}>
                 {group.section && (
                   <></>
@@ -176,53 +177,55 @@ export function CrimeEmpireSidebar({ open, onClose }: Props) {
                   })}
                 </div>
               </div>
-            ))}
-            {/* Gambling — collapsible */}
-            <div>
-              <button
-                onClick={() => setGamblingOpen((v) => !v)}
-                className={`w-full flex items-center justify-between px-3 py-2 text-sm rounded-lg font-medium transition-all ${
-                  isGamblingActive
-                    ? "bg-[#ff6a00]/20 text-[#ff6a00]"
-                    : "text-[#888888] hover:text-white hover:bg-[#1a1a1a]"
-                }`}
-              >
-                <span><span className="mr-2">🎰</span>Gambling</span>
-                <span className={`text-xs transition-transform ${gamblingOpen ? "rotate-180" : ""}`}>▼</span>
-              </button>
-              <AnimatePresence initial={false}>
-                {gamblingOpen && (
-                  <motion.div
-                    initial={{ height: 0, opacity: 0 }}
-                    animate={{ height: "auto", opacity: 1 }}
-                    exit={{ height: 0, opacity: 0 }}
-                    transition={{ duration: 0.2 }}
-                    className="overflow-hidden"
+              {i === 1 && (
+                <div>
+                  <button
+                    onClick={() => setGamblingOpen((v) => !v)}
+                    className={`w-full flex items-center justify-between px-3 py-2 text-sm rounded-lg font-medium transition-all ${
+                      isGamblingActive
+                        ? "bg-[#ff6a00]/20 text-[#ff6a00]"
+                        : "text-[#888888] hover:text-white hover:bg-[#1a1a1a]"
+                    }`}
                   >
-                    <div className="mt-1 space-y-1">
-                      {GAMBLING_LINKS.map((link) => {
-                        const isActive = pathname === link.href;
-                        return (
-                          <Link
-                            key={link.href}
-                            href={link.href}
-                            onClick={() => onClose()}
-                            className={`block pl-6 pr-3 py-1.5 text-xs rounded-lg font-medium transition-all ${
-                              isActive
-                                ? "bg-[#ff6a00] text-white shadow-lg shadow-[#ff6a00]/20"
-                                : "text-[#666] hover:text-[#aaa] hover:bg-[#1a1a1a]"
-                            }`}
-                          >
-                            <span className="mr-2">{link.icon}</span>
-                            {link.label}
-                          </Link>
-                        );
-                      })}
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
+                    <span><span className="mr-2">🎰</span>Gambling</span>
+                    <span className={`text-xs transition-transform ${gamblingOpen ? "rotate-180" : ""}`}>▼</span>
+                  </button>
+                  <AnimatePresence initial={false}>
+                    {gamblingOpen && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: "auto", opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.2 }}
+                        className="overflow-hidden"
+                      >
+                        <div className="mt-1 space-y-1">
+                          {GAMBLING_LINKS.map((link) => {
+                            const isActive = pathname === link.href;
+                            return (
+                              <Link
+                                key={link.href}
+                                href={link.href}
+                                onClick={() => onClose()}
+                                className={`block pl-6 pr-3 py-1.5 text-xs rounded-lg font-medium transition-all ${
+                                  isActive
+                                    ? "bg-[#ff6a00] text-white shadow-lg shadow-[#ff6a00]/20"
+                                    : "text-[#666] hover:text-[#aaa] hover:bg-[#1a1a1a]"
+                                }`}
+                              >
+                                <span className="mr-2">{link.icon}</span>
+                                {link.label}
+                              </Link>
+                            );
+                          })}
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              )}
+              </React.Fragment>
+            ))}
           </nav>
 
           {/* Return to Website */}
