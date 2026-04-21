@@ -1,0 +1,141 @@
+import { NextRequest, NextResponse } from "next/server";
+import { supabase } from "@/lib/supabase";
+import { getAdminUser, writeAuditLog } from "@/lib/ce-admin";
+
+export const dynamic = "force-dynamic";
+
+export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const admin = await getAdminUser();
+  if (!admin) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const { id } = await params;
+
+  const { data: player, error } = await supabase
+    .from("crime_players")
+    .select("*")
+    .eq("id", id)
+    .single();
+
+  if (error || !player) return NextResponse.json({ error: "Player não encontrado" }, { status: 404 });
+
+  // Inventory count
+  const { count: inventoryCount } = await supabase
+    .from("player_inventory")
+    .select("*", { count: "exact", head: true })
+    .eq("player_id", id);
+
+  // Businesses count
+  const { count: bizCount } = await supabase
+    .from("player_businesses")
+    .select("*", { count: "exact", head: true })
+    .eq("player_id", id);
+
+  // Crime stats
+  const { data: crimeStats } = await supabase
+    .from("crime_attempts")
+    .select("success")
+    .eq("player_id", id);
+
+  const total    = crimeStats?.length ?? 0;
+  const successes = crimeStats?.filter((c) => c.success).length ?? 0;
+
+  // Recent inventory
+  const { data: inventory } = await supabase
+    .from("player_inventory")
+    .select("quantity, equipped, item:items(id, name, category, rarity)")
+    .eq("player_id", id)
+    .limit(20);
+
+  return NextResponse.json({
+    player,
+    stats: {
+      inventory_count: inventoryCount ?? 0,
+      businesses_count: bizCount ?? 0,
+      crimes_total: total,
+      crimes_success: successes,
+    },
+    inventory: inventory || [],
+  });
+}
+
+export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const admin = await getAdminUser();
+  if (!admin) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const { id } = await params;
+  const { action, amount, itemId } = await req.json();
+
+  const { data: player, error: fetchErr } = await supabase
+    .from("crime_players")
+    .select("id, username, cash, dirty_cash, hp, max_hp, addiction")
+    .eq("id", id)
+    .single();
+
+  if (fetchErr || !player) return NextResponse.json({ error: "Player não encontrado" }, { status: 404 });
+
+  switch (action) {
+    case "give_cash": {
+      const val = Math.max(0, Number(amount) || 0);
+      await supabase.from("crime_players").update({ cash: player.cash + val }).eq("id", id);
+      await writeAuditLog(admin, "player_action", "player", id, player.username, { action, amount: val });
+      return NextResponse.json({ success: true, message: `+${val} dinheiro limpo dado` });
+    }
+    case "take_cash": {
+      const val = Math.max(0, Number(amount) || 0);
+      const newVal = Math.max(0, player.cash - val);
+      await supabase.from("crime_players").update({ cash: newVal }).eq("id", id);
+      await writeAuditLog(admin, "player_action", "player", id, player.username, { action, amount: val });
+      return NextResponse.json({ success: true, message: `-${val} dinheiro limpo removido` });
+    }
+    case "give_dirty_cash": {
+      const val = Math.max(0, Number(amount) || 0);
+      await supabase.from("crime_players").update({ dirty_cash: player.dirty_cash + val }).eq("id", id);
+      await writeAuditLog(admin, "player_action", "player", id, player.username, { action, amount: val });
+      return NextResponse.json({ success: true, message: `+${val} dinheiro sujo dado` });
+    }
+    case "take_dirty_cash": {
+      const val = Math.max(0, Number(amount) || 0);
+      const { data: fresh } = await supabase.from("crime_players").select("dirty_cash").eq("id", id).single();
+      const newVal = Math.max(0, (fresh?.dirty_cash ?? 0) - val);
+      await supabase.from("crime_players").update({ dirty_cash: newVal }).eq("id", id);
+      await writeAuditLog(admin, "player_action", "player", id, player.username, { action, amount: val });
+      return NextResponse.json({ success: true, message: `-${val} dinheiro sujo removido` });
+    }
+    case "heal": {
+      await supabase.from("crime_players").update({ hp: player.max_hp }).eq("id", id);
+      await writeAuditLog(admin, "player_action", "player", id, player.username, { action });
+      return NextResponse.json({ success: true, message: "Player curado ao máximo de HP" });
+    }
+    case "free_jail": {
+      await supabase.from("crime_players").update({ in_jail: false, jail_release_at: null }).eq("id", id);
+      await writeAuditLog(admin, "player_action", "player", id, player.username, { action });
+      return NextResponse.json({ success: true, message: "Player libertado da prisão" });
+    }
+    case "set_addiction": {
+      const val = Math.min(100, Math.max(0, Number(amount) || 0));
+      await supabase.from("crime_players").update({ addiction: val }).eq("id", id);
+      await writeAuditLog(admin, "player_action", "player", id, player.username, { action, addiction: val });
+      return NextResponse.json({ success: true, message: `Adição definida para ${val}` });
+    }
+    case "give_item": {
+      if (!itemId) return NextResponse.json({ error: "itemId obrigatório" }, { status: 400 });
+      const { data: existing } = await supabase
+        .from("player_inventory")
+        .select("id, quantity")
+        .eq("player_id", id)
+        .eq("item_id", itemId)
+        .single();
+
+      if (existing) {
+        await supabase.from("player_inventory").update({ quantity: existing.quantity + 1 }).eq("id", existing.id);
+      } else {
+        await supabase.from("player_inventory").insert({ player_id: id, item_id: itemId, quantity: 1 });
+      }
+      const { data: item } = await supabase.from("items").select("name").eq("id", itemId).single();
+      await writeAuditLog(admin, "player_action", "player", id, player.username, { action, item: item?.name });
+      return NextResponse.json({ success: true, message: `Item "${item?.name}" dado ao player` });
+    }
+    default:
+      return NextResponse.json({ error: "Acção desconhecida" }, { status: 400 });
+  }
+}

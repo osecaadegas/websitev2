@@ -59,6 +59,15 @@ const ADMIN_CATEGORIES = [
     borderColor: "border-red-500/30",
     hoverColor: "hover:border-red-500/50",
   },
+  {
+    href: "/admin/crime-empire",
+    title: "Crime Empire",
+    description: "Gestão completa do jogo Crime Empire",
+    icon: "🕴️",
+    color: "from-red-600/20 to-red-500/10",
+    borderColor: "border-red-500/30",
+    hoverColor: "hover:border-red-500/50",
+  },
 ] as const;
 
 export default function AdminPage() {
