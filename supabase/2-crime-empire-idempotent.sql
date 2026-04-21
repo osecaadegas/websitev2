@@ -626,4 +626,65 @@ create policy "Players insert stats" on player_stats for insert with check (true
 create policy "Players read prestige history" on prestige_history for select using (true);
 create policy "Players insert prestige history" on prestige_history for insert with check (true);
 
+-- ═══════════════════════════════════════════════════════════
+-- CASINO / GAMBLING
+-- ═══════════════════════════════════════════════════════════
+
+-- Stateful game sessions (Blackjack, Mines)
+create table if not exists casino_sessions (
+  id uuid primary key default gen_random_uuid(),
+  player_id uuid not null references crime_players(id) on delete cascade,
+  game_type text not null check (game_type in ('blackjack', 'mines')),
+  state jsonb not null default '{}',
+  bet numeric not null default 0,
+  status text not null default 'active' check (status in ('active', 'finished')),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+create index if not exists idx_casino_sessions_player on casino_sessions(player_id);
+create index if not exists idx_casino_sessions_active on casino_sessions(player_id, status) where status = 'active';
+
+-- Stock market positions
+create table if not exists stock_positions (
+  id uuid primary key default gen_random_uuid(),
+  player_id uuid not null references crime_players(id) on delete cascade,
+  display_name text not null,
+  display_symbol text not null,
+  real_coin_id text not null,
+  bought_price numeric not null,
+  quantity numeric not null default 1,
+  dirty_cash_invested numeric not null,
+  created_at timestamptz not null default now()
+);
+create index if not exists idx_stock_positions_player on stock_positions(player_id);
+
+-- Gambling history
+create table if not exists gambling_history (
+  id uuid primary key default gen_random_uuid(),
+  player_id uuid not null references crime_players(id) on delete cascade,
+  game_type text not null,
+  bet_amount numeric not null,
+  payout numeric not null,
+  profit numeric not null,
+  created_at timestamptz not null default now()
+);
+create index if not exists idx_gambling_history_player on gambling_history(player_id, created_at desc);
+
+-- RLS
+alter table casino_sessions enable row level security;
+alter table stock_positions enable row level security;
+alter table gambling_history enable row level security;
+
+do $$ begin
+  if not exists (select 1 from pg_policies where tablename = 'casino_sessions' and policyname = 'Players manage casino sessions') then
+    create policy "Players manage casino sessions" on casino_sessions for all using (true) with check (true);
+  end if;
+  if not exists (select 1 from pg_policies where tablename = 'stock_positions' and policyname = 'Players manage stock positions') then
+    create policy "Players manage stock positions" on stock_positions for all using (true) with check (true);
+  end if;
+  if not exists (select 1 from pg_policies where tablename = 'gambling_history' and policyname = 'Players manage gambling history') then
+    create policy "Players manage gambling history" on gambling_history for all using (true) with check (true);
+  end if;
+end $$;
+
 select 'Crime Empire schema created successfully!' as status;

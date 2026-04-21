@@ -42,6 +42,11 @@ const GAME_SECTIONS = [
     section: "Gambling",
     links: [
       { href: "/jogos/crime-empire/gambling", label: "Casino", icon: "🎰" },
+      { href: "/jogos/crime-empire/gambling/blackjack", label: "Blackjack", icon: "🃏", sub: true },
+      { href: "/jogos/crime-empire/gambling/mines", label: "Mines", icon: "💣", sub: true },
+      { href: "/jogos/crime-empire/gambling/plinko", label: "Plinko", icon: "🎯", sub: true },
+      { href: "/jogos/crime-empire/gambling/keno", label: "Keno", icon: "🎱", sub: true },
+      { href: "/jogos/crime-empire/gambling/stocks", label: "Mercado", icon: "📈", sub: true },
     ],
   },
   {
@@ -157,14 +162,19 @@ export function CrimeEmpireSidebar({ open, onClose }: Props) {
                 <div className="space-y-1">
                   {group.links.map((link) => {
                     const isActive = pathname === link.href;
+                    const isSub = (link as { sub?: boolean }).sub;
                     return (
                       <Link
                         key={link.href}
                         href={link.href}
                         onClick={() => onClose()}
-                        className={`block px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                        className={`block rounded-lg font-medium transition-all ${
+                          isSub ? "px-3 py-1.5 text-xs pl-6" : "px-3 py-2 text-sm"
+                        } ${
                           isActive
                             ? "bg-[#ff6a00] text-white shadow-lg shadow-[#ff6a00]/20"
+                            : isSub
+                            ? "text-[#666] hover:text-[#aaa] hover:bg-[#1a1a1a]"
                             : "text-[#888888] hover:text-white hover:bg-[#1a1a1a]"
                         }`}
                       >
