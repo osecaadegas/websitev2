@@ -137,7 +137,7 @@ export default function ShopPage() {
         <div className="mb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
             <h1 className="text-4xl font-black bg-gradient-to-r from-[#ff6a00] to-[#ff8533] bg-clip-text text-transparent">
-              🏪 Loja
+              🏪 Loja do Chinês
             </h1>
             <p className="text-[#888] mt-1">Compra armas, armaduras e equipamentos com dinheiro limpo.</p>
           </div>
