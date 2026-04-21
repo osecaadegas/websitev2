@@ -38,6 +38,9 @@ end $$;
 -- ALTER TYPE business_type ADD VALUE IF NOT EXISTS 'brothel_luxury';
 -- ALTER TYPE business_type ADD VALUE IF NOT EXISTS 'brothel_exclusive';
 -- ALTER TYPE business_type ADD VALUE IF NOT EXISTS 'brothel_empire';
+ALTER TYPE business_type ADD VALUE IF NOT EXISTS 'mining_pool';
+ALTER TYPE business_type ADD VALUE IF NOT EXISTS 'crypto_exchange';
+ALTER TYPE business_type ADD VALUE IF NOT EXISTS 'shell_company';
 
 do $$ begin
   create type player_class as enum ('thief','hooligan','businessman','hitman','scammer','brute','dealer','pimp');
@@ -50,7 +53,7 @@ exception when duplicate_object then null;
 end $$;
 
 do $$ begin
-  create type business_type as enum ('weed_farm','pill_factory','crypto_mining','scam_office','chop_shop','counterfeit_lab','nightclub','casino','weapon_smuggling','car_chop_shop','fight_club','identity_ring','cyber_network','diamond_smuggling','offshore_bank','arms_dealing','drug_cartel','empire_hq','brothel_basic','brothel_upgraded','brothel_luxury','brothel_exclusive','brothel_empire');
+  create type business_type as enum ('weed_farm','pill_factory','crypto_mining','scam_office','chop_shop','counterfeit_lab','nightclub','casino','weapon_smuggling','car_chop_shop','fight_club','identity_ring','cyber_network','diamond_smuggling','offshore_bank','arms_dealing','drug_cartel','empire_hq','brothel_basic','brothel_upgraded','brothel_luxury','brothel_exclusive','brothel_empire','mining_pool','crypto_exchange','shell_company');
 exception when duplicate_object then null;
 end $$;
 
