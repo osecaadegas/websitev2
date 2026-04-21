@@ -149,13 +149,13 @@ export function CrimeEmpireSidebar({ open, onClose }: Props) {
           )}
 
           {/* Game Navigation */}
-          <nav className="space-y-4">
+          <nav className="space-y-1">
             {GAME_SECTIONS.map((group, i) => (
               <div key={i}>
                 {group.section && (
                   <></>
                 )}
-                <div className="space-y-1">
+                <div className="">
                   {group.links.map((link) => {
                     const isActive = pathname === link.href;
                     return (
@@ -177,7 +177,6 @@ export function CrimeEmpireSidebar({ open, onClose }: Props) {
                 </div>
               </div>
             ))}
-
             {/* Gambling — collapsible */}
             <div>
               <button
