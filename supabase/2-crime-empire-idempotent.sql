@@ -29,7 +29,7 @@ exception when duplicate_object then null;
 end $$;
 
 do $$ begin
-  create type business_type as enum ('weed_farm','pill_factory','crypto_mining','scam_office','chop_shop','counterfeit_lab','nightclub','casino');
+  create type business_type as enum ('weed_farm','pill_factory','crypto_mining','scam_office','chop_shop','counterfeit_lab','nightclub','casino','weapon_smuggling','car_chop_shop','fight_club','identity_ring','cyber_network','diamond_smuggling','offshore_bank','arms_dealing','drug_cartel','empire_hq');
 exception when duplicate_object then null;
 end $$;
 
@@ -417,22 +417,38 @@ on conflict (name) do nothing;
 insert into businesses (name, type, description, purchase_price, base_income_per_hour, max_employees, employee_cost_per_hour, required_level) values
   ('Quinta de Cannabis', 'weed_farm', 'Produz cannabis que podes vender. +1g por hora, +0.5g por worker.', 10000, 0, 5, 50, 5),
   ('Fábrica de Pílulas', 'pill_factory', 'Produz pílulas ilegais. +2 pílulas por hora, +1 por worker.', 25000, 0, 8, 75, 10),
-  ('Mining de Crypto', 'crypto_mining', 'Minera criptomoedas. $500/h base, +$200/h por worker.', 50000, 500, 3, 100, 15),
   ('Escritório de Scams', 'scam_office', 'Executa esquemas de fraude online. $400/h base, +$150/h por worker.', 35000, 400, 10, 60, 12),
-  ('Nightclub', 'nightclub', 'Club noturno para lavagem de dinheiro. $800/h base, +$300/h por worker.', 100000, 800, 15, 150, 20),
+  ('Mining de Crypto', 'crypto_mining', 'Minera criptomoedas. $500/h base, +$200/h por worker.', 50000, 500, 3, 100, 15),
   ('Lavandaria de Dinheiro', 'chop_shop', 'Converte dinheiro sujo em limpo. 60% taxa base, +3% por worker. Requer workers.', 75000, 0, 10, 120, 18),
+  ('Nightclub', 'nightclub', 'Club noturno para lavagem de dinheiro. $800/h base, +$300/h por worker.', 100000, 800, 15, 150, 20),
   ('Lab Contrafação', 'counterfeit_lab', 'Produz notas falsas. +$2000 por ciclo, +$800 por worker.', 120000, 2000, 6, 200, 25),
-  ('Casino Clandestino', 'casino', 'Casino ilegal. $1500/h base, +$500/h por worker.', 250000, 1500, 20, 250, 30)
+  ('Casino Clandestino', 'casino', 'Casino ilegal. $1500/h base, +$500/h por worker.', 250000, 1500, 20, 250, 30),
+  ('Contrabando de Armas', 'weapon_smuggling', 'Contrabandeia armas pela fronteira. +2 armas/h, +1 por worker.', 350000, 0, 12, 300, 35),
+  ('Desmanche de Carros', 'car_chop_shop', 'Desmonta carros roubados. $2000/h base, +$800/h por worker.', 450000, 2000, 10, 350, 40),
+  ('Clube de Luta', 'fight_club', 'Organiza lutas ilegais. $2500/h base, +$900/h por worker.', 600000, 2500, 15, 400, 45),
+  ('Rede de Roubo de Identidades', 'identity_ring', 'Rouba e vende identidades. $3000/h base, +$1000/h por worker.', 800000, 3000, 12, 450, 50),
+  ('Rede de Cibercrime', 'cyber_network', 'Operações de hacking em massa. $3500/h base, +$1200/h por worker.', 1000000, 3500, 8, 500, 55),
+  ('Contrabando de Diamantes', 'diamond_smuggling', 'Contrabandeia diamantes. +1 diamante/2h, +0.5 por worker.', 1500000, 0, 10, 600, 60),
+  ('Banco Offshore', 'offshore_bank', 'Lava dinheiro internacional. 70% taxa base, +2% por worker.', 2000000, 0, 15, 700, 65),
+  ('Tráfico de Armas Pesadas', 'arms_dealing', 'Vende armas militares. $5000/h base, +$1500/h por worker.', 2500000, 5000, 12, 800, 70),
+  ('Cartel de Drogas', 'drug_cartel', 'Operação internacional de drogas. $6000/h base, +$2000/h por worker.', 3500000, 6000, 20, 1000, 75),
+  ('QG do Império', 'empire_hq', 'Controla todo o submundo. $10000/h base, +$3000/h por worker. Bónus global +10%.', 5000000, 10000, 25, 1500, 80)
 on conflict (type) do update set
   description = excluded.description,
   base_income_per_hour = excluded.base_income_per_hour,
-  employee_cost_per_hour = excluded.employee_cost_per_hour;
+  employee_cost_per_hour = excluded.employee_cost_per_hour,
+  purchase_price = excluded.purchase_price,
+  max_employees = excluded.max_employees,
+  required_level = excluded.required_level;
 
 -- Add drug items for businesses to produce
 insert into items (name, description, category, base_price) values
   ('Cannabis (1g)', 'Grama de cannabis de alta qualidade', 'material', 50),
   ('Pílulas Ilegais', 'Pílulas controladas', 'material', 100),
-  ('Notas Falsas ($1000)', 'Dinheiro contrafacto', 'material', 800)
+  ('Notas Falsas ($1000)', 'Dinheiro contrafacto', 'material', 800),
+  ('Arma Ilegal', 'Arma contrabandeada', 'weapon', 2000),
+  ('Peças de Carro Roubadas', 'Componentes de veículos desmanchados', 'material', 1500),
+  ('Diamante Contrabandeado', 'Diamante roubado de alto valor', 'material', 5000)
 on conflict (name) do nothing;
 
 insert into items (name, description, category, power_bonus, intelligence_bonus, charisma_bonus, base_price) values

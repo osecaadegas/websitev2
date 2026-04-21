@@ -303,15 +303,37 @@ async function handleCollect(player: any, businessId: string) {
     // Produces fake money
     const fakeMoney = Math.floor(hoursElapsed * (baseIncome + employees * 800));
     collectedItems.push({ name: "Notas Falsas ($1000)", quantity: Math.floor(fakeMoney / 1000) });
-  } else if (businessType === "chop_shop") {
+  } else if (businessType === "weapon_smuggling") {
+    // Produces weapons
+    const weaponsProduced = Math.floor(hoursElapsed * (2 + employees * 1));
+    collectedItems.push({ name: "Arma Ilegal", quantity: weaponsProduced });
+  } else if (businessType === "car_chop_shop") {
+    // Produces car parts + income
+    const partsProduced = Math.floor(hoursElapsed * (1 + employees * 0.5));
+    collectedItems.push({ name: "Peças de Carro Roubadas", quantity: partsProduced });
+    const incomePerHour = baseIncome + (employees * 800);
+    collectedMoney = Math.floor(hoursElapsed * incomePerHour);
+  } else if (businessType === "diamond_smuggling") {
+    // Produces diamonds (rare, slower production)
+    const diamondsProduced = Math.floor(hoursElapsed * (0.5 + employees * 0.5));
+    if (diamondsProduced > 0) {
+      collectedItems.push({ name: "Diamante Contrabandeado", quantity: diamondsProduced });
+    }
+  } else if (businessType === "chop_shop" || businessType === "offshore_bank") {
     // Money laundry - doesn't auto-collect, needs manual laundering
     return NextResponse.json(
       { error: "Use launder action for money laundry" },
       { status: 400 }
     );
   } else {
-    // Regular income businesses (crypto_mining, scam_office, nightclub, casino)
-    const incomePerHour = baseIncome + (employees * (baseIncome * 0.5));
+    // Regular income businesses (crypto_mining, scam_office, nightclub, casino, fight_club, etc.)
+    let incomePerHour = baseIncome + (employees * (baseIncome * 0.5));
+    
+    // Empire HQ bonus
+    if (businessType === "empire_hq") {
+      incomePerHour = baseIncome + (employees * 3000);
+    }
+    
     collectedMoney = Math.floor(hoursElapsed * incomePerHour);
   }
 
@@ -393,7 +415,9 @@ async function handleLaunder(player: any, businessId: string, amount: number) {
     );
   }
 
-  if (playerBusiness.business.type !== "chop_shop") {
+  const businessType = playerBusiness.business.type;
+  
+  if (businessType !== "chop_shop" && businessType !== "offshore_bank") {
     return NextResponse.json(
       { error: "This business can't launder money" },
       { status: 400 }
@@ -414,8 +438,16 @@ async function handleLaunder(player: any, businessId: string, amount: number) {
     );
   }
 
-  // Conversion rate: 60% base + 3% per worker (max 90%)
-  const conversionRate = Math.min(0.90, 0.60 + (playerBusiness.employees * 0.03));
+  // Conversion rate based on business type
+  let conversionRate;
+  if (businessType === "chop_shop") {
+    // Basic laundry: 60% base + 3% per worker (max 90%)
+    conversionRate = Math.min(0.90, 0.60 + (playerBusiness.employees * 0.03));
+  } else {
+    // Offshore bank: 70% base + 2% per worker (max 95%)
+    conversionRate = Math.min(0.95, 0.70 + (playerBusiness.employees * 0.02));
+  }
+  
   const cleanMoney = Math.floor(amount * conversionRate);
 
   await supabase
