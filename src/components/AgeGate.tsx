@@ -64,7 +64,7 @@ export function AgeGate() {
           {/* Logo */}
           <div className="flex justify-center mb-5">
             <Image
-              src="/images/logo.png"
+              src="/images/logo.svg"
               alt="Arena Gladiator"
               width={160}
               height={40}

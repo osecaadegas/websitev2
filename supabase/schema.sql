@@ -144,7 +144,6 @@ create index idx_users_twitch_id on users(twitch_id);
 -- Enable Realtime for bonus hunt tracking
 alter publication supabase_realtime add table bonus_hunt_slots;
 alter publication supabase_realtime add table slot_requests;
-alter publication supabase_realtime add table spin_history;
 
 -- Row Level Security (RLS)
 alter table bonus_hunt_sessions enable row level security;
@@ -162,11 +161,6 @@ create policy "Public read casinos" on casino_affiliates for select using (true)
 
 -- Insert policy for slot requests (anyone can request)
 create policy "Anyone can request slots" on slot_requests for insert with check (true);
-
--- Spin history: public read + insert
-alter table spin_history enable row level security;
-create policy "Public read spin history" on spin_history for select using (true);
-create policy "Anyone can insert spin history" on spin_history for insert with check (true);
 
 -- Casino offers: public read, authenticated full access
 alter table casino_offers enable row level security;
@@ -440,6 +434,14 @@ create table if not exists spin_history (
 );
 
 create index if not exists idx_spin_history_created on spin_history(created_at desc);
+
+-- RLS for spin history
+alter table spin_history enable row level security;
+create policy "Public read spin history" on spin_history for select using (true);
+create policy "Anyone can insert spin history" on spin_history for insert with check (true);
+
+-- Enable realtime for spin history
+alter publication supabase_realtime add table spin_history;
 
 -- ============================================================
 -- Wheel Segments — Admin-configurable wheel prizes

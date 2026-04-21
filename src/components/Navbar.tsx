@@ -159,7 +159,7 @@ export function Navbar({ onMenuToggle }: NavbarProps) {
 
             <Link href="/" className="flex items-center gap-2 group">
               <Image
-                src="/images/logo.png"
+                src="/images/logo.svg"
                 alt={SITE_NAME}
                 width={160}
                 height={40}

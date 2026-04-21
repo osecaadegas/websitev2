@@ -9,7 +9,7 @@ export function Footer() {
         {/* Top row: logo + nav links */}
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
           <Image
-            src="/images/logo.png"
+            src="/images/logo.svg"
             alt={SITE_NAME}
             width={140}
             height={35}

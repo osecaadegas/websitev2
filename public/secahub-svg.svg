@@ -1,0 +1,6 @@
+<svg width="250" height="80" viewBox="0 0 250 80" xmlns="http://www.w3.org/2000/svg">
+  <rect width="250" height="80" fill="black"/>
+  <text x="20" y="55" font-family="Arial, Helvetica, sans-serif" font-weight="bold" font-size="45" fill="white">Seca</text>
+  <rect x="135" y="15" width="100" height="50" rx="8" fill="#FF9900"/>
+  <text x="142" y="55" font-family="Arial, Helvetica, sans-serif" font-weight="bold" font-size="45" fill="black">Hub</text>
+</svg>
