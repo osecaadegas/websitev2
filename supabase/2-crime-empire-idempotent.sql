@@ -351,18 +351,27 @@ create table if not exists prestige_history (
 -- ═══════════════════════════════════════════════════════════
 
 do $$ begin
-  alter table crimes add constraint crimes_name_unique unique (name);
-exception when duplicate_object then null;
+  if not exists (
+    select 1 from pg_constraint where conname = 'crimes_name_unique'
+  ) then
+    alter table crimes add constraint crimes_name_unique unique (name);
+  end if;
 end $$;
 
 do $$ begin
-  alter table businesses add constraint businesses_type_unique unique (type);
-exception when duplicate_object then null;
+  if not exists (
+    select 1 from pg_constraint where conname = 'businesses_type_unique'
+  ) then
+    alter table businesses add constraint businesses_type_unique unique (type);
+  end if;
 end $$;
 
 do $$ begin
-  alter table items add constraint items_name_unique unique (name);
-exception when duplicate_object then null;
+  if not exists (
+    select 1 from pg_constraint where conname = 'items_name_unique'
+  ) then
+    alter table items add constraint items_name_unique unique (name);
+  end if;
 end $$;
 
 -- ═══════════════════════════════════════════════════════════
