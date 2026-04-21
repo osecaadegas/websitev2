@@ -25,7 +25,7 @@ export async function GET() {
   // Get player
   const { data: player } = await supabase
     .from("crime_players")
-    .select("id, level, dirty_cash, cash")
+    .select("id, level, dirty_cash, cash, class")
     .eq("user_id", user.id)
     .single();
 
@@ -60,6 +60,7 @@ export async function GET() {
       level: player.level,
       dirty_cash: player.dirty_cash,
       cash: player.cash,
+      class: player.class,
     },
   });
 }
@@ -443,13 +444,15 @@ async function handleLaunder(player: any, businessId: string, amount: number) {
   }
 
   // Conversion rate based on business type
+  // Scammer bonus: +10% base rate on all laundering
+  const scammerBonus = player.class === "scammer" ? 0.10 : 0;
   let conversionRate;
   if (businessType === "chop_shop") {
-    // Basic laundry: 60% base + 3% per worker (max 90%)
-    conversionRate = Math.min(0.90, 0.60 + (playerBusiness.employees * 0.03));
+    // Basic laundry: 60% base + 3% per worker (max 90%), scammer gets 70% base (max 95%)
+    conversionRate = Math.min(0.90 + scammerBonus, (0.60 + scammerBonus) + (playerBusiness.employees * 0.03));
   } else {
-    // Offshore bank: 70% base + 2% per worker (max 95%)
-    conversionRate = Math.min(0.95, 0.70 + (playerBusiness.employees * 0.02));
+    // Offshore bank: 70% base + 2% per worker (max 95%), scammer gets 80% base (max 99%)
+    conversionRate = Math.min(0.95 + scammerBonus, (0.70 + scammerBonus) + (playerBusiness.employees * 0.02));
   }
   
   const cleanMoney = Math.floor(amount * conversionRate);

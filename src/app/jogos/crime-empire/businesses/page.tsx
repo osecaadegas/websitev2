@@ -206,7 +206,7 @@ export default function BusinessesPage() {
                         disabled={processing || !launderAmount || parseInt(launderAmount) <= 0}
                         className="w-full px-4 py-3 rounded-lg bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 disabled:opacity-50 disabled:cursor-not-allowed font-bold transition-all"
                       >
-                        💧 Lavar Dinheiro ({ob.employees > 0 ? `${60 + ob.employees * 3}%` : "Precisa Workers"})
+                        💧 Lavar Dinheiro ({ob.employees > 0 ? `${(player?.class === "scammer" ? 70 : 60) + ob.employees * 3}%${player?.class === "scammer" ? " 🎭" : ""}` : "Precisa Workers"})
                       </button>
                     </div>
                   ) : (
