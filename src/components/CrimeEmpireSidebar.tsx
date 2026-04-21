@@ -27,6 +27,7 @@ const GAME_LINKS = [
   { href: "/jogos/crime-empire/crimes", label: "Crimes", icon: "💰" },
   { href: "/jogos/crime-empire/businesses", label: "Negócios", icon: "🏢" },
   { href: "/jogos/crime-empire/black-market", label: "Black Market", icon: "💎" },
+  { href: "/jogos/crime-empire/rua-das-luzes", label: "Rua das Luzes", icon: "💋" },
   { href: "/jogos/crime-empire/inventory", label: "Inventário", icon: "🎒" },
   { href: "/jogos/crime-empire/jail", label: "Prisão", icon: "🚔" },
   { href: "/jogos/crime-empire/hospital", label: "Hospital", icon: "🏥" },
