@@ -62,6 +62,8 @@ create table if not exists crime_players (
   level integer not null default 1,
   xp integer not null default 0,
   xp_to_next_level integer not null default 100,
+  prestige_level integer not null default 0,
+  total_levels_earned integer not null default 0,
   hp integer not null default 100,
   max_hp integer not null default 100,
   respect integer not null default 0,
@@ -275,6 +277,7 @@ create table if not exists player_stats (
   total_crimes_attempted integer not null default 0,
   total_crimes_succeeded integer not null default 0,
   times_jailed integer not null default 0,
+  times_prestiged integer not null default 0,
   pvp_wins integer not null default 0,
   pvp_losses integer not null default 0,
   contracts_completed integer not null default 0,
@@ -284,6 +287,17 @@ create table if not exists player_stats (
   businesses_owned integer not null default 0,
   total_business_income numeric not null default 0,
   updated_at timestamptz not null default now()
+);
+
+create table if not exists prestige_history (
+  id uuid primary key default gen_random_uuid(),
+  player_id uuid not null references crime_players(id) on delete cascade,
+  old_level integer not null,
+  prestige_level integer not null,
+  respect_at_prestige integer not null,
+  dirty_cash_at_prestige numeric not null,
+  cash_at_prestige numeric not null,
+  created_at timestamptz not null default now()
 );
 
 -- ═══════════════════════════════════════════════════════════
@@ -311,6 +325,7 @@ end $$;
 
 create index if not exists idx_crime_players_user_id on crime_players(user_id);
 create index if not exists idx_crime_players_level on crime_players(level desc);
+create index if not exists idx_crime_players_prestige on crime_players(prestige_level desc, level desc);
 create index if not exists idx_player_crime_exp on player_crime_experience(player_id);
 create index if not exists idx_crime_attempts_player on crime_attempts(player_id, created_at desc);
 create index if not exists idx_jail_records_player on jail_records(player_id);
@@ -320,6 +335,7 @@ create index if not exists idx_pvp_attacker on pvp_battles(attacker_id, created_
 create index if not exists idx_pvp_defender on pvp_battles(defender_id, created_at desc);
 create index if not exists idx_contract_attempts_player on contract_attempts(player_id);
 create index if not exists idx_brothel_workers_player on brothel_workers(player_id);
+create index if not exists idx_prestige_history_player on prestige_history(player_id, created_at desc);
 
 -- ═══════════════════════════════════════════════════════════
 -- SEED DATA - COMPREHENSIVE CRIME PROGRESSION (Level 1-100)
@@ -418,6 +434,7 @@ alter table contract_attempts enable row level security;
 alter table brothel_workers enable row level security;
 alter table black_market_transactions enable row level security;
 alter table player_stats enable row level security;
+alter table prestige_history enable row level security;
 alter table crimes enable row level security;
 alter table businesses enable row level security;
 alter table items enable row level security;
@@ -444,5 +461,7 @@ create policy "Players manage black market" on black_market_transactions for all
 create policy "Players read stats" on player_stats for select using (true);
 create policy "Players update stats" on player_stats for update using (true);
 create policy "Players insert stats" on player_stats for insert with check (true);
+create policy "Players read prestige history" on prestige_history for select using (true);
+create policy "Players insert prestige history" on prestige_history for insert with check (true);
 
 select 'Crime Empire schema created successfully!' as status;
