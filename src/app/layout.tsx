@@ -1,20 +1,13 @@
 ﻿import type { Metadata } from "next";
-import { Cinzel, Bebas_Neue } from "next/font/google";
+import { Inter } from "next/font/google";
 import "./globals.css";
 import { AppShell } from "@/components/AppShell";
 import { SITE_NAME, SITE_DESCRIPTION, SITE_URL } from "@/lib/constants";
 
-const cinzel = Cinzel({
-  variable: "--font-display",
+const inter = Inter({
+  variable: "--font-inter",
   subsets: ["latin"],
-  weight: ["400", "700", "900"],
-  display: "swap",
-});
-
-const bebasNeue = Bebas_Neue({
-  variable: "--font-ui",
-  subsets: ["latin"],
-  weight: "400",
+  weight: ["300", "400", "600", "700", "800", "900"],
   display: "swap",
 });
 
@@ -85,7 +78,7 @@ export default function RootLayout({
   return (
     <html
       lang="pt"
-      className={`${cinzel.variable} ${bebasNeue.variable} h-full antialiased`}
+      className={`${inter.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col bg-arena-black text-arena-white">
         <AppShell>{children}</AppShell>

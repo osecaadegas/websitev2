@@ -19,8 +19,8 @@
   --color-arena-ash: #666666;
   --color-arena-white: #ffffff;
 
-  --font-display: "Cinzel", serif;
-  --font-ui: "Bebas Neue", sans-serif;
+  --font-display: "Inter", sans-serif;
+  --font-ui: "Inter", sans-serif;
 
   --animate-marquee: marquee 28s linear infinite;
 
@@ -52,6 +52,8 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-ui);
+  font-weight: 300;
+  letter-spacing: -0.01em;
 }
 
 ::selection {
@@ -160,13 +162,13 @@ body {
 
 /* ── Gladiator Title System ─────────────────────────────────────────── */
 
-/* Cinematic headline — carved, neon orange, heavy */
+/* Modern clean headline — bold, tight spacing */
 .gladiator-title {
   font-family: var(--font-display);
   font-weight: 900;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
-  line-height: 0.95;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
   background: linear-gradient(
     160deg,
     #FF4400 0%,
@@ -212,23 +214,24 @@ body {
   opacity: 0.5;
 }
 
-/* Subtitle — elegant, spaced, refined */
+/* Subtitle — clean, tight, refined */
 .gladiator-subtitle {
   font-family: var(--font-display);
-  font-weight: 400;
+  font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.25em;
+  letter-spacing: 0.05em;
   opacity: 0.7;
   color: var(--color-arena-smoke);
   text-shadow:
     0 1px 2px rgba(0, 0, 0, 0.6);
 }
 
-/* UI label — Bebas Neue, clean, impactful */
+/* UI label — clean, modern, bold */
 .gladiator-label {
   font-family: var(--font-ui);
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.15em;
+  letter-spacing: 0.03em;
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
   transition: text-shadow 0.3s ease;
 }
@@ -455,10 +458,10 @@ body {
   width: 90px;
 }
 .slot-highlight-label {
-  font-family: var(--font-display), 'Cinzel', serif;
+  font-family: var(--font-display);
   font-size: 0.45rem;
   font-weight: 700;
-  letter-spacing: 0.18em;
+  letter-spacing: 0.02em;
   text-transform: uppercase;
   color: var(--arena-smoke, #e0ddd4);
   text-align: center;
@@ -484,7 +487,7 @@ body {
   transform: rotateY(180deg);
 }
 .slot-highlight-name {
-  font-family: var(--font-display), 'Cinzel', serif;
+  font-family: var(--font-display);
   font-size: 0.45rem;
   font-weight: 600;
   color: var(--arena-ash, #8a877e);
@@ -651,7 +654,7 @@ body {
   font-size: 0.7rem;
   font-weight: 900;
   text-transform: uppercase;
-  letter-spacing: 0.25em;
+  letter-spacing: 0.02em;
   background: linear-gradient(to bottom, #FF6600 0%, #FF5500 50%, #FF4400 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -696,7 +699,7 @@ body {
   font-family: var(--font-display);
   font-size: 0.44rem;
   text-transform: uppercase;
-  letter-spacing: 0.2em;
+  letter-spacing: 0.02em;
   color: rgba(255, 85, 0, 0.85);
   margin-top: 0.1rem;
   text-shadow: 0 1px 3px rgba(0,0,0,0.8);
@@ -871,7 +874,7 @@ body {
   font-family: var(--font-display);
   font-size: 0.75rem;
   font-weight: 700;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.01em;
   color: #d4af37;
   text-shadow: 0 0 8px rgba(212, 175, 55, 0.4), 0 1px 2px rgba(0, 0, 0, 0.6);
 }
@@ -943,7 +946,7 @@ body {
   font-family: var(--font-display);
   font-size: 0.55rem;
   font-weight: 600;
-  letter-spacing: 0.15em;
+  letter-spacing: 0.02em;
   text-transform: uppercase;
   color: var(--ink-light);
 }
@@ -982,7 +985,7 @@ body {
   font-family: var(--font-display);
   font-size: 0.5rem;
   font-weight: 700;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.01em;
   text-transform: uppercase;
   white-space: nowrap;
 }
@@ -1031,7 +1034,7 @@ body {
     text-align: right;
     align-self: end;
   }
-  .bh-col-bet::before { content: "Bet: "; font-family: var(--font-display); font-size: 0.5rem; color: var(--ink-light); letter-spacing: 0.1em; text-transform: uppercase; }
+  .bh-col-bet::before { content: "Bet: "; font-family: var(--font-display); font-size: 0.5rem; color: var(--ink-light); letter-spacing: 0.01em; text-transform: uppercase; }
   .bh-col-win {
     order: 3;
     grid-column: 2;
@@ -1039,7 +1042,7 @@ body {
     text-align: right;
     align-self: start;
   }
-  .bh-col-win::before { content: "Win: "; font-family: var(--font-display); font-size: 0.5rem; color: var(--ink-light); letter-spacing: 0.1em; text-transform: uppercase; }
+  .bh-col-win::before { content: "Win: "; font-family: var(--font-display); font-size: 0.5rem; color: var(--ink-light); letter-spacing: 0.01em; text-transform: uppercase; }
   .bh-col-special {
     order: 4;
     grid-column: 1 / -1;
@@ -1123,7 +1126,7 @@ body {
   text-align: center;
   margin-top: 10px;
   opacity: 0.7;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.01em;
   font-weight: 600;
   cursor: pointer;
   transition: opacity 0.3s, color 0.3s;
@@ -1176,7 +1179,7 @@ body {
   font-size: 1.25rem;
   font-weight: 700;
   color: var(--ink-dark);
-  letter-spacing: 0.15em;
+  letter-spacing: 0.02em;
   text-transform: uppercase;
   text-shadow: 0 1px 0 rgba(255, 240, 200, 0.6);
   margin: 0;
@@ -1188,7 +1191,7 @@ body {
   font-size: 0.75rem;
   font-weight: 400;
   color: var(--ink-light);
-  letter-spacing: 0.2em;
+  letter-spacing: 0.02em;
   text-transform: uppercase;
   margin-top: 4px;
   opacity: 0.8;
@@ -1268,7 +1271,7 @@ body {
   font-size: 1.15rem;
   font-weight: 700;
   color: var(--gold-light);
-  letter-spacing: 0.15em;
+  letter-spacing: 0.02em;
   text-transform: uppercase;
   text-shadow: 0 0 20px rgba(212, 160, 23, 0.3), 0 2px 4px rgba(0,0,0,0.5);
 }
@@ -1338,7 +1341,7 @@ body {
   font-size: 0.8rem;
   font-weight: 600;
   color: var(--ink-light);
-  letter-spacing: 0.1em;
+  letter-spacing: 0.01em;
   text-transform: uppercase;
 }
 .stat-value {
@@ -1416,7 +1419,7 @@ body {
   font-size: 0.65rem;
   font-weight: 600;
   color: var(--gold-dark);
-  letter-spacing: 0.2em;
+  letter-spacing: 0.02em;
   text-transform: uppercase;
   margin-bottom: 4px;
   position: relative;
@@ -1479,7 +1482,7 @@ body {
   font-size: 0.7rem;
   font-weight: 600;
   color: var(--ink-light);
-  letter-spacing: 0.1em;
+  letter-spacing: 0.01em;
   text-transform: uppercase;
 }
 .promo-code-value {
@@ -1511,7 +1514,7 @@ body {
   font-family: 'Cinzel', 'Georgia', serif;
   font-size: 0.85rem;
   font-weight: 700;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.01em;
   text-transform: uppercase;
   color: rgb(120, 50, 5);
   text-shadow: 0 2px 2px rgba(250, 227, 133, 1);
@@ -1732,7 +1735,7 @@ body {
 }
 .wax-seal-badge__sub {
   font-weight: 600;
-  letter-spacing: 0.15em;
+  letter-spacing: 0.02em;
   opacity: 0.6;
   margin-top: 1px;
 }
@@ -1827,7 +1830,7 @@ body {
   color: var(--gold-light);
   font-family: 'Cinzel', 'Georgia', serif;
   font-size: 0.75rem;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.01em;
   border-radius: 8px;
   opacity: 0;
   transition: all 0.4s cubic-bezier(0.22, 1, 0.36, 1);
@@ -1983,7 +1986,7 @@ body {
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
-  letter-spacing: 0.2em;
+  letter-spacing: 0.02em;
   text-align: center;
 }
 .liga-scroll-subtitle {
@@ -1994,7 +1997,7 @@ body {
   -webkit-text-fill-color: #1a1205;
   -webkit-text-stroke: 0.5px #FF6600;
   paint-order: stroke fill;
-  letter-spacing: 0.25em;
+  letter-spacing: 0.02em;
   text-align: center;
   text-transform: uppercase;
   margin-top: 0.5rem;
@@ -2072,7 +2075,7 @@ body {
   font-size: 0.7rem;
   font-weight: 600;
   color: var(--ink-dark);
-  letter-spacing: 0.15em;
+  letter-spacing: 0.02em;
   min-width: 100px;
   flex-shrink: 0;
 }
@@ -2207,7 +2210,7 @@ body {
   font-family: var(--font-display);
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.01em;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
   border: 1px solid rgba(212, 168, 67, 0.2);
   background: linear-gradient(135deg, rgba(30, 28, 24, 0.9), rgba(20, 18, 14, 0.95));
@@ -2286,7 +2289,7 @@ body {
   font-family: 'Cinzel', 'Georgia', serif;
   font-size: 0.65rem;
   color: var(--ink-light);
-  letter-spacing: 0.2em;
+  letter-spacing: 0.02em;
   text-transform: uppercase;
 }
 
@@ -2314,7 +2317,7 @@ body {
   }
   .liga-scroll-title {
     font-size: 1.3rem;
-    letter-spacing: 0.15em;
+    letter-spacing: 0.02em;
   }
   .liga-month {
     min-width: 70px;
@@ -2593,7 +2596,7 @@ body {
   font-family: var(--font-display);
   font-size: 0.66rem;
   font-weight: 600;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.01em;
   text-transform: uppercase;
   border-radius: 6px;
   border: 1px solid rgba(120,60,5,0.4);
@@ -3105,7 +3108,7 @@ body {
 .win-card__stat-label {
   font-size: 0.58rem;
   font-weight: 600;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.01em;
   text-transform: uppercase;
   color: rgba(160, 140, 100, 0.5);
 }
@@ -3270,7 +3273,7 @@ body {
 .add-win-form__title {
   font-family: var(--font-display);
   font-size: 1rem;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.01em;
   text-transform: uppercase;
   color: rgba(232, 210, 155, 0.9);
   margin: 0;
@@ -3753,7 +3756,7 @@ body {
   display: block;
   font-size: 0.7rem;
   font-weight: 600;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.01em;
   text-transform: uppercase;
   color: rgba(212, 168, 67, 0.6);
   margin-bottom: 4px;
@@ -3822,7 +3825,7 @@ body {
 .bdm-admin-form-wrap__heading {
   font-family: var(--font-display);
   font-size: 0.85rem;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.01em;
   text-transform: uppercase;
   color: rgba(212, 168, 67, 0.7);
   margin: 0 0 20px;
