@@ -23,6 +23,20 @@ do $$ begin
 exception when duplicate_object then null;
 end $$;
 
+-- Add 'pimp' class to existing enum if it doesn't exist
+do $$ 
+declare
+  enum_values text[];
+begin
+  select array_agg(enumlabel::text) into enum_values from pg_enum where enumtypid = 'player_class'::regtype;
+  
+  if not 'pimp' = any(enum_values) then
+    alter type player_class add value 'pimp';
+  end if;
+exception when others then
+  null; -- Type doesn't exist yet, will be created above
+end $$;
+
 do $$ begin
   create type crime_difficulty as enum ('petty','small','medium','big','legendary');
 exception when duplicate_object then null;
