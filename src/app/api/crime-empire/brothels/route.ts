@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
 
-const TWITCH_CLIENT_ID = process.env.NEXT_PUBLIC_TWITCH_CLIENT_ID!;
+const TWITCH_CLIENT_ID = process.env.TWITCH_CLIENT_ID!;
 
 export async function GET(req: NextRequest) {
   try {
