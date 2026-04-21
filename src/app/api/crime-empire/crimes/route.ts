@@ -221,16 +221,24 @@ export async function POST(request: Request) {
     });
   }
 
-  // Update stats
-  await supabase
+  // Update stats (fetch current, then increment)
+  const { data: currentStats } = await supabase
     .from("player_stats")
-    .update({
-      total_crimes_attempted: supabase.rpc('increment', { x: 1 }),
-      total_crimes_succeeded: success ? supabase.rpc('increment', { x: 1 }) : undefined,
-      times_jailed: wentToJail ? supabase.rpc('increment', { x: 1 }) : undefined,
-      total_dirty_cash_earned: player.dirty_cash + dirtyCashEarned,
-    })
-    .eq("player_id", player.id);
+    .select("*")
+    .eq("player_id", player.id)
+    .single();
+
+  if (currentStats) {
+    await supabase
+      .from("player_stats")
+      .update({
+        total_crimes_attempted: currentStats.total_crimes_attempted + 1,
+        total_crimes_succeeded: currentStats.total_crimes_succeeded + (success ? 1 : 0),
+        times_jailed: currentStats.times_jailed + (wentToJail ? 1 : 0),
+        total_dirty_cash_earned: currentStats.total_dirty_cash_earned + dirtyCashEarned,
+      })
+      .eq("player_id", player.id);
+  }
 
   // Record jail if happened
   if (wentToJail) {
