@@ -13,6 +13,8 @@ interface Props {
 interface Player {
   username: string;
   level: number;
+  hp: number;
+  max_hp: number;
   dirty_cash: number;
   cash: number;
   stamina: number;
@@ -25,6 +27,8 @@ const GAME_LINKS = [
   { href: "/jogos/crime-empire/crimes", label: "Crimes", icon: "💰" },
   { href: "/jogos/crime-empire/businesses", label: "Negócios", icon: "🏢" },
   { href: "/jogos/crime-empire/inventory", label: "Inventário", icon: "🎒" },
+  { href: "/jogos/crime-empire/jail", label: "Prisão", icon: "🚔" },
+  { href: "/jogos/crime-empire/hospital", label: "Hospital", icon: "🏥" },
   { href: "/jogos/crime-empire/pvp", label: "PvP", icon: "⚔️" },
   { href: "/jogos/crime-empire/stats", label: "Estatísticas", icon: "📊" },
 ];
@@ -93,6 +97,17 @@ export function CrimeEmpireSidebar({ open, onClose }: Props) {
                 <div className="flex justify-between">
                   <span className="text-[#888888]">Dinheiro Limpo:</span>
                   <span className="text-yellow-400">${player.cash.toLocaleString()}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-[#888888]">HP:</span>
+                  <span className={`${
+                    player.hp / player.max_hp > 0.75 ? 'text-green-400' :
+                    player.hp / player.max_hp > 0.5 ? 'text-yellow-400' :
+                    player.hp / player.max_hp > 0.25 ? 'text-orange-400' :
+                    'text-red-400'
+                  }`}>
+                    {player.hp}/{player.max_hp}
+                  </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-[#888888]">Stamina:</span>
