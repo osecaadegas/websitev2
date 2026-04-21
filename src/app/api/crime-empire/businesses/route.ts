@@ -33,21 +33,25 @@ export async function GET() {
     return NextResponse.json({ error: "Player not found" }, { status: 404 });
   }
 
-  // Get all businesses
+  const brothelTypes = ["brothel_basic", "brothel_upgraded", "brothel_luxury", "brothel_exclusive", "brothel_empire"];
+
+  // Get all businesses (excluding brothels — managed in Rua das Luzes)
   const { data: businesses } = await supabase
     .from("businesses")
     .select("*")
     .eq("enabled", true)
+    .not("type", "in", `(${brothelTypes.join(",")})`)
     .order("required_level", { ascending: true });
 
-  // Get player's businesses
+  // Get player's businesses (excluding brothels)
   const { data: ownedBusinesses } = await supabase
     .from("player_businesses")
     .select(`
       *,
       business:businesses(*)
     `)
-    .eq("player_id", player.id);
+    .eq("player_id", player.id)
+    .not("businesses.type", "in", `(${brothelTypes.join(",")})`);
 
   return NextResponse.json({
     businesses: businesses || [],
