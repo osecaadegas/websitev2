@@ -236,10 +236,10 @@ export function CrimeEmpireSidebar({ open, onClose }: Props) {
           {isAdmin && (
             <div className="pt-2">
               <Link
-                href="/admin/crime-empire"
+                href="/jogos/crime-empire/admin"
                 onClick={onClose}
                 className={`block px-3 py-2 rounded-lg text-sm font-bold transition-all border ${
-                  pathname.startsWith("/admin/crime-empire")
+                  pathname.startsWith("/jogos/crime-empire/admin")
                     ? "bg-red-600/20 border-red-500/50 text-red-400"
                     : "border-red-900/40 text-red-500/70 hover:bg-red-900/20 hover:text-red-400"
                 }`}
