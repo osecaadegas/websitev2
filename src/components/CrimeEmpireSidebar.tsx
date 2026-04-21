@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
+import { useAuth } from "@/lib/auth-context";
 
 interface Props {
   open: boolean;
@@ -65,6 +66,8 @@ const GAME_SECTIONS = [
 
 export function CrimeEmpireSidebar({ open, onClose }: Props) {
   const pathname = usePathname();
+  const { user } = useAuth();
+  const isAdmin = user?.role === "admin" || user?.role === "configurador";
   const [player, setPlayer] = useState<Player | null>(null);
   const isGamblingActive = pathname.startsWith("/jogos/crime-empire/gambling");
   const [gamblingOpen, setGamblingOpen] = useState(isGamblingActive);
@@ -228,6 +231,23 @@ export function CrimeEmpireSidebar({ open, onClose }: Props) {
               </React.Fragment>
             ))}
           </nav>
+
+          {/* Admin Link */}
+          {isAdmin && (
+            <div className="pt-2">
+              <Link
+                href="/admin/crime-empire"
+                onClick={onClose}
+                className={`block px-3 py-2 rounded-lg text-sm font-bold transition-all border ${
+                  pathname.startsWith("/admin/crime-empire")
+                    ? "bg-red-600/20 border-red-500/50 text-red-400"
+                    : "border-red-900/40 text-red-500/70 hover:bg-red-900/20 hover:text-red-400"
+                }`}
+              >
+                <span className="mr-2">🛡️</span>Admin Panel
+              </Link>
+            </div>
+          )}
 
           {/* Return to Website */}
           <div className="pt-4 border-t border-[#ff6a00]/30">
