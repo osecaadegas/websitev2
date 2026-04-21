@@ -117,8 +117,6 @@ export default function CrimeDashboard() {
   return (
     <div className="flex-1 text-white py-12 px-6">
       <div className="max-w-7xl mx-auto">
-        <CrimeEmpireNav />
-        
         {/* Header */}
         <div className="flex justify-between items-start">
           <div>
