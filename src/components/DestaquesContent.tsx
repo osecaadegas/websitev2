@@ -325,30 +325,28 @@ export function DestaquesContent() {
           </div>
         </div>
 
-        <div className="flex items-center gap-3 text-xs text-arena-ash">
-          <span>Atualiza em: {countdown}s</span>
-          <button
-            onClick={() => fetchContent(activeTab)}
-            className="text-arena-gold hover:text-arena-gold-light transition-colors underline underline-offset-2"
-          >
-            Atualizar
-          </button>
-        </div>
+        {lastUpdated && (
+          <div className="text-xs text-[#888888]">
+            Última atualização: {new Date(lastUpdated).toLocaleTimeString("pt-PT", { hour: "2-digit", minute: "2-digit" })}
+            <span className="mx-2">•</span>
+            Próxima: {Math.floor(countdown / 60)}:{(countdown % 60).toString().padStart(2, "0")}
+          </div>
+        )}
       </div>
 
       {/* Fallback notice */}
       {fallback && (
-        <div className="mb-8 p-4 rounded-lg border border-amber-500/30 bg-amber-500/5 text-sm text-arena-smoke">
-          <p className="font-semibold text-amber-400 mb-1">⚠️ Twitch API não configurada</p>
-          <p className="text-xs text-arena-ash">
-            Para ver os clips e VODs em tempo real, adiciona <code className="text-arena-gold">TWITCH_CLIENT_ID</code> e{" "}
-            <code className="text-arena-gold">TWITCH_CLIENT_SECRET</code> ao ficheiro <code className="text-arena-gold">.env.local</code>.
+        <div className="mb-8 p-4 rounded-2xl border border-[#ff6a00]/20 bg-[#ff6a00]/10">
+          <p className="font-semibold text-[#ff6a00] mb-1 text-sm">⚠️ Twitch API não configurada</p>
+          <p className="text-xs text-[#888888]">
+            Para ver os clips e VODs em tempo real, adiciona <code className="text-[#ff6a00] bg-[#ff6a00]/10 px-1.5 py-0.5 rounded">TWITCH_CLIENT_ID</code> e{" "}
+            <code className="text-[#ff6a00] bg-[#ff6a00]/10 px-1.5 py-0.5 rounded">TWITCH_CLIENT_SECRET</code> ao ficheiro <code className="text-[#ff6a00] bg-[#ff6a00]/10 px-1.5 py-0.5 rounded">.env.local</code>.
             Podes obtê-los em{" "}
             <a
               href="https://dev.twitch.tv/console"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-arena-gold underline underline-offset-2"
+              className="text-[#ff6a00] underline underline-offset-2 hover:text-[#ff8533]"
             >
               dev.twitch.tv/console
             </a>.
@@ -358,44 +356,47 @@ export function DestaquesContent() {
 
       {/* Loading skeleton */}
       {loading && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {Array.from({ length: 6 }).map((_, i) => (
             <div
               key={i}
-              className="rounded-xl border border-arena-steel/20 bg-arena-charcoal/50 overflow-hidden animate-pulse"
-            >
-              <div className="aspect-video bg-arena-steel/20" />
-              <div className="p-4">
-                <div className="h-4 w-3/4 bg-arena-steel/30 rounded mb-2" />
-                <div className="h-3 w-1/2 bg-arena-steel/30 rounded mb-3" />
-                <div className="h-3 w-1/3 bg-arena-steel/30 rounded" />
-              </div>
-            </div>
+              className="h-80 bg-gradient-to-br from-[#121212] to-[#161616] rounded-2xl animate-pulse"
+              style={{
+                boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.04), 0 10px 30px rgba(0,0,0,0.6)',
+              }}
+            />
           ))}
         </div>
       )}
 
       {/* Content grid */}
       {!loading && currentItems.length > 0 && (
-        <motion.div layout className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          <AnimatePresence mode="popLayout">
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={activeTab}
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+          >
             {activeTab === "clips"
               ? clips.map((clip) => <ClipCard key={clip.id} clip={clip} />)
               : videos.map((video) => <VideoCard key={video.id} video={video} />)}
-          </AnimatePresence>
-        </motion.div>
+          </motion.div>
+        </AnimatePresence>
       )}
 
       {/* Empty state */}
       {!loading && currentItems.length === 0 && !fallback && (
-        <div className="text-center py-16">
+        <div className="text-center py-20">
           <div className="text-5xl mb-4">🎬</div>
-          <p className="text-arena-ash text-lg">
+          <p className="text-[#888888] text-lg">
             {activeTab === "clips"
               ? "Nenhum clip encontrado para este canal."
               : "Nenhum VOD encontrado para este canal."}
           </p>
-          <p className="text-sm text-arena-ash/70 mt-2">
+          <p className="text-sm text-[#666666] mt-2">
             Os {activeTab === "clips" ? "clips" : "vídeos"} aparecerão aqui automaticamente quando disponíveis.
           </p>
         </div>
