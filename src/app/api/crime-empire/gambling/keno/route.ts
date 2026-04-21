@@ -40,7 +40,7 @@ export async function POST(req: NextRequest) {
   if (!player) return NextResponse.json({ error: "Player not found" }, { status: 404 });
 
   const { bet, picks } = await req.json();
-  if (!bet || bet <= 0) return NextResponse.json({ error: "Aposta inválida" }, { status: 400 });
+  if (!bet || bet < 100 || bet > 10000) return NextResponse.json({ error: "Aposta inválida (min $100, max $10,000)" }, { status: 400 });
   if (!picks || !Array.isArray(picks) || picks.length < 1 || picks.length > 10)
     return NextResponse.json({ error: "Escolhe 1 a 10 números" }, { status: 400 });
   if (picks.some((n: number) => n < 1 || n > 80))

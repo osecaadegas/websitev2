@@ -54,7 +54,7 @@ function PlinkoBoard({ flips, slot, playing }: { flips: boolean[]; slot: number;
 
 export default function PlinkoPage() {
   const [player, setPlayer] = useState<{ dirty_cash: number; crypto: number } | null>(null);
-  const [bet, setBet] = useState(1000);
+  const [bet, setBet] = useState(500);
   const [risk, setRisk] = useState<"low" | "medium" | "high">("medium");
   const [flips, setFlips] = useState<boolean[]>([]);
   const [slot, setSlot] = useState(-1);
@@ -119,8 +119,8 @@ export default function PlinkoPage() {
         <div className="grid grid-cols-2 gap-3 mb-4">
           <div>
             <label className="text-xs text-[#888]">Aposta</label>
-            <input type="number" value={bet} onChange={(e) => setBet(Math.max(100, parseInt(e.target.value) || 0))}
-              className="w-full px-4 py-2 rounded-lg bg-[#1a1a1a] border border-[#333] text-white mt-1" min={100} />
+            <input type="number" value={bet} onChange={(e) => setBet(Math.min(10000, Math.max(100, parseInt(e.target.value) || 100)))}
+              className="w-full px-4 py-2 rounded-lg bg-[#1a1a1a] border border-[#333] text-white mt-1" min={100} max={10000} step={100} />
           </div>
           <div>
             <label className="text-xs text-[#888]">Risco</label>

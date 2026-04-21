@@ -7,7 +7,7 @@ const MAX_PICKS = 10;
 
 export default function KenoPage() {
   const [player, setPlayer] = useState<{ dirty_cash: number; crypto: number } | null>(null);
-  const [bet, setBet] = useState(1000);
+  const [bet, setBet] = useState(500);
   const [picks, setPicks] = useState<number[]>([]);
   const [drawn, setDrawn] = useState<number[]>([]);
   const [hits, setHits] = useState(0);
@@ -129,8 +129,8 @@ export default function KenoPage() {
         <div className="flex gap-3">
           <div className="flex-1">
             <label className="text-xs text-[#888]">Aposta</label>
-            <input type="number" value={bet} onChange={(e) => setBet(Math.max(100, parseInt(e.target.value) || 0))}
-              className="w-full px-4 py-2 rounded-lg bg-[#1a1a1a] border border-[#333] text-white mt-1" min={100} />
+            <input type="number" value={bet} onChange={(e) => setBet(Math.min(10000, Math.max(100, parseInt(e.target.value) || 100)))}
+              className="w-full px-4 py-2 rounded-lg bg-[#1a1a1a] border border-[#333] text-white mt-1" min={100} max={10000} step={100} />
           </div>
           <div className="flex items-end">
             <button onClick={play} disabled={playing || picks.length === 0} onMouseEnter={loadPlayer}

@@ -102,7 +102,7 @@ export default function StocksPage() {
   const [positions, setPositions] = useState<Position[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedCoinId, setSelectedCoinId] = useState<string | null>(null);
-  const [buyAmount, setBuyAmount] = useState(1000);
+  const [buyAmount, setBuyAmount] = useState(500);
   const [acting, setActing] = useState(false);
   const [msg, setMsg] = useState<{ text: string; ok: boolean } | null>(null);
 
@@ -353,15 +353,15 @@ export default function StocksPage() {
           <div>
             <label className="text-xs text-[#555]">Investimento (Dinheiro Sujo)</label>
             <div className="flex gap-2 mt-1">
-              <input type="number" value={buyAmount} onChange={(e) => setBuyAmount(Math.max(1000, parseInt(e.target.value) || 0))}
-                className="flex-1 min-w-0 px-3 py-2 rounded-lg bg-[#1a1a1a] border border-[#333] text-white text-sm" min={1000} step={500} />
+              <input type="number" value={buyAmount} onChange={(e) => setBuyAmount(Math.min(10000, Math.max(100, parseInt(e.target.value) || 100)))}
+                className="flex-1 min-w-0 px-3 py-2 rounded-lg bg-[#1a1a1a] border border-[#333] text-white text-sm" min={100} max={10000} step={100} />
             </div>
             {/* Quick amounts */}
             <div className="flex gap-1.5 mt-2 flex-wrap">
-              {[1000, 5000, 10000, 50000].map((v) => (
+              {[100, 500, 1000, 5000, 10000].map((v) => (
                 <button key={v} onClick={() => setBuyAmount(v)}
                   className={`text-xs px-2 py-1 rounded border transition-colors ${buyAmount === v ? "bg-yellow-900/40 border-yellow-700/60 text-yellow-400" : "bg-[#1a1a1a] border-[#333] text-[#666] hover:text-white"}`}>
-                  ${(v / 1000).toFixed(0)}k
+                  ${v >= 1000 ? `${v / 1000}k` : v}
                 </button>
               ))}
             </div>
@@ -370,7 +370,7 @@ export default function StocksPage() {
           {/* Estimated receive */}
           <div className="rounded-lg bg-[#1a1a1a] border border-[#333] px-3 py-2.5 text-xs">
             <div className="text-[#555] mb-1">Recebes (crypto)</div>
-            {selectedCoin && buyAmount >= 1000 ? (
+            {selectedCoin && buyAmount >= 100 ? (
               <>
                 <div className="text-yellow-400 font-bold text-base">🪙 {Math.floor(buyAmount / 2).toLocaleString()}</div>
                 <div className="text-[#555] mt-0.5">≈ {(buyAmount / selectedCoin.price).toFixed(selectedCoin.price < 1 ? 2 : 6)} {selectedCoin.symbol}</div>
@@ -385,7 +385,7 @@ export default function StocksPage() {
             {acting ? "A processar..." : "💰 Comprar"}
           </button>
 
-          <p className="text-[10px] text-[#444] text-center">Mínimo $1,000. Investimento em dinheiro sujo, retorno em 🪙 crypto.</p>
+          <p className="text-[10px] text-[#444] text-center">Min $100 · Máx $10,000. Investimento em dinheiro sujo, retorno em 🪙 crypto.</p>
         </div>
 
       </div>

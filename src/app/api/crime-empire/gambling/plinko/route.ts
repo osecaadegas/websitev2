@@ -46,7 +46,7 @@ export async function POST(req: NextRequest) {
   if (!player) return NextResponse.json({ error: "Player not found" }, { status: 404 });
 
   const { bet, risk = "medium" } = await req.json();
-  if (!bet || bet <= 0) return NextResponse.json({ error: "Aposta inválida" }, { status: 400 });
+  if (!bet || bet < 100 || bet > 10000) return NextResponse.json({ error: "Aposta inválida (min $100, max $10,000)" }, { status: 400 });
   if (!["low", "medium", "high"].includes(risk)) return NextResponse.json({ error: "Risco inválido" }, { status: 400 });
 
   const fee = getCasinoFee(player.level);

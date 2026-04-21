@@ -14,7 +14,7 @@ export default function MinesPage() {
   const [revealedCount, setRevealedCount] = useState(0);
   const [currentMultiplier, setCurrentMultiplier] = useState(1);
   const [currentPayout, setCurrentPayout] = useState(0);
-  const [bet, setBet] = useState(1000);
+  const [bet, setBet] = useState(500);
   const [mineCount, setMineCount] = useState(3);
   const [status, setStatus] = useState<"idle" | "active" | "finished">("idle");
   const [gameResult, setGameResult] = useState<"cashout" | "mine" | null>(null);
@@ -172,8 +172,8 @@ export default function MinesPage() {
                 <div className="flex gap-3">
                   <div className="flex-1">
                     <label className="text-xs text-[#888]">Aposta</label>
-                    <input type="number" value={bet} onChange={(e) => setBet(Math.max(100, parseInt(e.target.value) || 0))}
-                      className="w-full px-4 py-2 rounded-lg bg-[#1a1a1a] border border-[#333] text-white mt-1" min={100} />
+                    <input type="number" value={bet} onChange={(e) => setBet(Math.min(10000, Math.max(100, parseInt(e.target.value) || 100)))}
+                      className="w-full px-4 py-2 rounded-lg bg-[#1a1a1a] border border-[#333] text-white mt-1" min={100} max={10000} step={100} />
                   </div>
                   <div>
                     <label className="text-xs text-[#888]">Minas</label>

@@ -40,7 +40,7 @@ export default function BlackjackPage() {
   const [status, setStatus] = useState<"idle" | "active" | "finished">("idle");
   const [result, setResult] = useState<string | null>(null);
   const [payout, setPayout] = useState(0);
-  const [bet, setBet] = useState(1000);
+  const [bet, setBet] = useState(500);
   const [canDouble, setCanDouble] = useState(false);
   const [loading, setLoading] = useState(true);
   const [acting, setActing] = useState(false);

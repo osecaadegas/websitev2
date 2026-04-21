@@ -126,7 +126,7 @@ export async function POST(req: NextRequest) {
     const { coinId, amount } = body;
     const coin = COIN_MAP[coinId];
     if (!coin) return NextResponse.json({ error: "Moeda inválida" }, { status: 400 });
-    if (!amount || amount < 1000) return NextResponse.json({ error: "Mínimo $1,000 para investir" }, { status: 400 });
+    if (!amount || amount < 100 || amount > 10000) return NextResponse.json({ error: "Aposta inválida (min $100, max $10,000)" }, { status: 400 });
     if (player.dirty_cash < amount) return NextResponse.json({ error: "Dinheiro sujo insuficiente" }, { status: 400 });
 
     const prices = await fetchMarketData();
