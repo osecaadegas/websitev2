@@ -75,18 +75,18 @@ export default function CrimeDashboard() {
   return (
     <div className="flex-1 text-white py-12 px-6">
       <div className="max-w-7xl mx-auto">
-
         {/* Header */}
-        <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }}>
+        <div>
           <h1 className="text-5xl md:text-6xl font-black mb-2 bg-gradient-to-r from-[#ff6a00] to-[#ff8533] bg-clip-text text-transparent">
             CRIME EMPIRE
           </h1>
-        <p className="text-lg text-[#888888] mb-1">
-          Bem-vindo, {player.display_name} - {player.class.toUpperCase()} Nível {player.level}
-        </p>
-        {player.boost_active && (
-          <p className="text-sm text-green-400">⚡ Bónus de Novo Jogador Ativo (+30% sucesso, +20% XP)</p>
-        )}
+          <p className="text-lg text-[#888888] mb-1">
+            Bem-vindo, {player.display_name} - {player.class.toUpperCase()} Nível {player.level}
+          </p>
+          {player.boost_active && (
+            <p className="text-sm text-green-400">⚡ Bónus de Novo Jogador Ativo (+30% sucesso, +20% XP)</p>
+          )}
+        </div>
 
         {/* Jail Status */}
         {player.in_jail && (
@@ -128,12 +128,7 @@ export default function CrimeDashboard() {
           </div>
         </div>
 
-        {/* Crimes Section */}
-        <h2 className="text-2xl font-bold mt-12 mb-6">💰 Crimes Disponíveis</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {availableCrimes.map((crime) => {
-            const canAfford = player.stamina >= crime.stamina_cost;
-            Quick Actions */}
+        {/* Quick Actions */}
         <h2 className="text-2xl font-bold mt-12 mb-6">Acções Rápidas</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           <Link
@@ -172,3 +167,7 @@ export default function CrimeDashboard() {
             </div>
           </Link>
         </div>
+      </div>
+    </div>
+  );
+}
