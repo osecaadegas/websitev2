@@ -43,8 +43,12 @@ export default function RuaDasLuzesPage() {
   const [workers, setWorkers] = useState<Worker[]>([]);
   const [playerClass, setPlayerClass] = useState("");
   const [playerLevel, setPlayerLevel] = useState(0);
+  const [playerCash, setPlayerCash] = useState(0);
+  const [playerCrypto, setPlayerCrypto] = useState(0);
   const [workerName, setWorkerName] = useState("");
   const [selectedBrothel, setSelectedBrothel] = useState<string | null>(null);
+
+  const CRYPTO_BROTHEL_TYPES = ["brothel_luxury", "brothel_exclusive", "brothel_empire"];
 
   useEffect(() => {
     if (!user) {
@@ -63,6 +67,8 @@ export default function RuaDasLuzesPage() {
       setWorkers(data.workers || []);
       setPlayerClass(data.playerClass || "");
       setPlayerLevel(data.playerLevel || 0);
+      setPlayerCash(data.playerCash || 0);
+      setPlayerCrypto(data.playerCrypto || 0);
     } catch (error) {
       console.error("Error fetching brothels:", error);
     } finally {
@@ -205,6 +211,10 @@ export default function RuaDasLuzesPage() {
               </span>
             )}
           </p>
+          <div className="flex gap-6 mt-3 text-sm">
+            <span className="text-[#888888]">Dinheiro Limpo: <span className="text-green-400 font-bold">${playerCash.toLocaleString()}</span></span>
+            <span className="text-[#888888]">Crypto: <span className="text-yellow-400 font-bold">🪙 {playerCrypto.toLocaleString()}</span></span>
+          </div>
         </div>
 
         {/* Income Summary */}
@@ -282,7 +292,9 @@ export default function RuaDasLuzesPage() {
                               onClick={() => handleHire(ob.id)}
                               className="flex-1 px-4 py-2 rounded-lg bg-pink-600 hover:bg-pink-500 font-bold"
                             >
-                              Contratar ($10,000)
+                              {CRYPTO_BROTHEL_TYPES.includes(ob.businesses?.type)
+                                ? "Contratar (🪙 10,000)"
+                                : "Contratar ($10,000)"}
                             </button>
                             <button
                               onClick={() => {
@@ -380,9 +392,15 @@ export default function RuaDasLuzesPage() {
                   <div className="space-y-2 mb-4 text-sm">
                     <div className="flex justify-between">
                       <span className="text-[#888888]">Preço:</span>
-                      <span className="text-yellow-400 font-bold">
-                        ${brothel.purchase_price.toLocaleString()}
-                      </span>
+                      {CRYPTO_BROTHEL_TYPES.includes(brothel.type) ? (
+                        <span className="text-yellow-400 font-bold">
+                          🪙 {brothel.purchase_price.toLocaleString()} crypto
+                        </span>
+                      ) : (
+                        <span className="text-yellow-400 font-bold">
+                          ${brothel.purchase_price.toLocaleString()}
+                        </span>
+                      )}
                     </div>
                     <div className="flex justify-between">
                       <span className="text-[#888888]">Rendimento Base:</span>
@@ -419,7 +437,7 @@ export default function RuaDasLuzesPage() {
                       onClick={() => handlePurchase(brothel.id)}
                       className="w-full px-4 py-3 rounded-lg bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 font-bold transition-all"
                     >
-                      💰 Comprar
+                      {CRYPTO_BROTHEL_TYPES.includes(brothel.type) ? "🪙 Comprar com Crypto" : "💰 Comprar"}
                     </button>
                   )}
                 </div>

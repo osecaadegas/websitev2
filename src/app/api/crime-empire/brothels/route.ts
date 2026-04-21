@@ -61,6 +61,8 @@ export async function GET() {
       workers: workers || [],
       playerClass: player.class,
       playerLevel: player.level,
+      playerCash: player.cash,
+      playerCrypto: player.crypto,
     });
   } catch (error) {
     console.error("Error in GET /api/crime-empire/brothels:", error);
@@ -119,20 +121,34 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: "Já tens este bordel!" }, { status: 400 });
       }
 
-      // Check cash
-      if (player.cash < brothel.purchase_price) {
-        return NextResponse.json({
-          error: `Precisas de $${brothel.purchase_price.toLocaleString()} limpos!`,
-        }, { status: 400 });
+      // Determine currency based on brothel type
+      const cryptoBrothels = ["brothel_luxury", "brothel_exclusive", "brothel_empire"];
+      const usesCrypto = cryptoBrothels.includes(brothel.type);
+
+      if (usesCrypto) {
+        if (player.crypto < brothel.purchase_price) {
+          return NextResponse.json({
+            error: `Precisas de 🪙${brothel.purchase_price.toLocaleString()} em crypto!`,
+          }, { status: 400 });
+        }
+      } else {
+        if (player.cash < brothel.purchase_price) {
+          return NextResponse.json({
+            error: `Precisas de $${brothel.purchase_price.toLocaleString()} limpos!`,
+          }, { status: 400 });
+        }
       }
 
       // Apply PIMP bonus: double worker capacity
       const maxWorkers = player.class === "pimp" ? brothel.max_employees * 2 : brothel.max_employees;
 
-      // Deduct cash and purchase
+      // Deduct currency and purchase
       await supabase
         .from("crime_players")
-        .update({ cash: player.cash - brothel.purchase_price })
+        .update(usesCrypto
+          ? { crypto: player.crypto - brothel.purchase_price }
+          : { cash: player.cash - brothel.purchase_price }
+        )
         .eq("id", player.id);
 
       await supabase
@@ -179,18 +195,32 @@ export async function POST(req: NextRequest) {
         }, { status: 400 });
       }
 
-      // Hiring cost: $10,000
+      // Hiring cost: 10,000 (crypto for luxury/exclusive/empire, cash for others)
       const hiringCost = 10000;
-      if (player.cash < hiringCost) {
-        return NextResponse.json({
-          error: `Precisas de $${hiringCost.toLocaleString()} para contratar!`,
-        }, { status: 400 });
+      const cryptoBrothelsHire = ["brothel_luxury", "brothel_exclusive", "brothel_empire"];
+      const hireUsesCrypto = cryptoBrothelsHire.includes(playerBusiness.businesses?.type);
+
+      if (hireUsesCrypto) {
+        if (player.crypto < hiringCost) {
+          return NextResponse.json({
+            error: `Precisas de 🪙${hiringCost.toLocaleString()} em crypto para contratar!`,
+          }, { status: 400 });
+        }
+      } else {
+        if (player.cash < hiringCost) {
+          return NextResponse.json({
+            error: `Precisas de $${hiringCost.toLocaleString()} para contratar!`,
+          }, { status: 400 });
+        }
       }
 
       // Deduct hiring cost
       await supabase
         .from("crime_players")
-        .update({ cash: player.cash - hiringCost })
+        .update(hireUsesCrypto
+          ? { crypto: player.crypto - hiringCost }
+          : { cash: player.cash - hiringCost }
+        )
         .eq("id", player.id);
 
       // Random stats for worker
