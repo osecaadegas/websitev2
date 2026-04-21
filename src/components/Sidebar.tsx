@@ -202,15 +202,15 @@ export function Sidebar({ open, onClose }: SidebarProps) {
           ${indent ? "px-2 py-2 ml-0 text-[12px]" : "px-3 py-2.5 text-[15px]"}
           ${
             isActive
-              ? "bg-arena-gold/10 text-arena-gold border border-arena-gold/20"
-              : "text-white hover:text-arena-gold hover:bg-white/[0.04] border border-transparent"
+              ? "bg-arena-neon/10 text-arena-neon border border-arena-neon/20"
+              : "text-white hover:text-arena-neon hover:bg-white/[0.04] border border-transparent"
           }
         `}
       >
         {!indent && (
           <span
             className={`shrink-0 transition-colors duration-200 ${
-              isActive ? "text-arena-gold" : "text-white/60 group-hover:text-arena-gold/70"
+              isActive ? "text-arena-neon" : "text-white/60 group-hover:text-arena-neon/70"
             }`}
           >
             {ICONS[link.href] || (
@@ -221,11 +221,11 @@ export function Sidebar({ open, onClose }: SidebarProps) {
           </span>
         )}
         {indent && (
-          <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${isActive ? "bg-arena-gold" : "bg-arena-steel"}`} />
+          <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${isActive ? "bg-arena-neon" : "bg-arena-steel"}`} />
         )}
         <span className="min-w-0 flex-1">{link.label}</span>
         {isActive && (
-          <span className="ml-auto w-1.5 h-1.5 rounded-full bg-arena-gold shadow-[0_0_6px_rgba(212,168,67,0.6)]" />
+          <span className="ml-auto w-1.5 h-1.5 rounded-full bg-arena-neon shadow-[0_0_6px_rgba(255,85,0,0.6)]" />
         )}
       </Link>
     );
@@ -253,14 +253,14 @@ export function Sidebar({ open, onClose }: SidebarProps) {
               font-[family-name:var(--font-display)] tracking-wide uppercase
               ${
                 groupActive
-                  ? "bg-arena-gold/10 text-arena-gold border border-arena-gold/20"
-                  : "text-white hover:text-arena-gold hover:bg-white/[0.04] border border-transparent"
+                  ? "bg-arena-neon/10 text-arena-neon border border-arena-neon/20"
+                  : "text-white hover:text-arena-neon hover:bg-white/[0.04] border border-transparent"
               }
             `}
           >
             <span
               className={`shrink-0 transition-colors duration-200 ${
-                groupActive ? "text-arena-gold" : "text-white/60 group-hover:text-arena-gold/70"
+                groupActive ? "text-arena-neon" : "text-white/60 group-hover:text-arena-neon/70"
               }`}
             >
               {ICONS[item.href] || (
@@ -333,11 +333,11 @@ export function Sidebar({ open, onClose }: SidebarProps) {
               group flex-1 flex items-center gap-2 px-2 py-2 rounded-lg text-[12px] transition-all duration-200
               font-[family-name:var(--font-display)] tracking-wide uppercase
               ${subActive
-                ? "text-arena-gold"
-                : "text-white hover:text-arena-gold hover:bg-white/[0.04]"}
+                ? "text-arena-neon"
+                : "text-white hover:text-arena-neon hover:bg-white/[0.04]"}
             `}
           >
-            <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${subActive ? "bg-arena-gold" : "bg-arena-steel"}`} />
+            <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${subActive ? "bg-arena-neon" : "bg-arena-steel"}`} />
             <span className="min-w-0 flex-1">{item.label}</span>
             <motion.svg
               animate={{ rotate: isSubOpen ? 180 : 0 }}
@@ -426,7 +426,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
   return (
     <>
       {/* ── Desktop sidebar (always visible, lg+) ─────────────────── */}
-      <aside className="hidden lg:flex flex-col fixed top-16 left-0 bottom-0 w-56 bg-arena-dark/95 backdrop-blur-sm border-r border-arena-gold/10 z-40">
+      <aside className="hidden lg:flex flex-col fixed top-16 left-0 bottom-0 w-56 bg-black/95 backdrop-blur-sm border-r border-arena-neon/10 z-40">
         {navContent}
       </aside>
 
@@ -450,7 +450,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
               animate={{ x: 0 }}
               exit={{ x: "-100%" }}
               transition={{ type: "spring", damping: 26, stiffness: 280 }}
-              className="fixed top-0 left-0 bottom-0 w-72 bg-arena-dark border-r border-arena-gold/10 z-50 flex flex-col lg:hidden"
+              className="fixed top-0 left-0 bottom-0 w-72 bg-black border-r border-arena-neon/10 z-50 flex flex-col lg:hidden"
             >
               {/* Close button */}
               <button

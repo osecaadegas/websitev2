@@ -4,7 +4,7 @@ import { NAV_LINKS, SITE_NAME } from "@/lib/constants";
 
 export function Footer() {
   return (
-    <footer className="bg-arena-dark border-t border-arena-gold/10">
+    <footer className="bg-black border-t border-arena-neon/10">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {/* Top row: logo + nav links */}
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
@@ -21,7 +21,7 @@ export function Footer() {
               <Link
                 key={link.href}
                 href={link.href}
-                className="text-xs text-arena-ash hover:text-arena-gold transition-colors duration-200 whitespace-nowrap"
+                className="text-xs text-arena-ash hover:text-arena-neon transition-colors duration-200 whitespace-nowrap"
               >
                 {link.label}
               </Link>
@@ -37,19 +37,19 @@ export function Footer() {
           <div className="flex gap-4">
             <Link
               href="/termos-e-condicoes"
-              className="text-[10px] text-arena-ash hover:text-arena-gold transition-colors duration-200"
+              className="text-[10px] text-arena-ash hover:text-arena-neon transition-colors duration-200"
             >
               Termos &amp; Condições
             </Link>
             <Link
               href="/politica-de-privacidade"
-              className="text-[10px] text-arena-ash hover:text-arena-gold transition-colors duration-200"
+              className="text-[10px] text-arena-ash hover:text-arena-neon transition-colors duration-200"
             >
               Política de Privacidade
             </Link>
             <Link
               href="/politica-de-cookies"
-              className="text-[10px] text-arena-ash hover:text-arena-gold transition-colors duration-200"
+              className="text-[10px] text-arena-ash hover:text-arena-neon transition-colors duration-200"
             >
               Política de Cookies
             </Link>
