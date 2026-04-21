@@ -38,12 +38,14 @@ export async function GET(req: NextRequest) {
     }
 
     // Get all brothels (filtered by type)
-    const { data: brothels } = await supabase
+    const { data: brothels, error: brothelsError } = await supabase
       .from("businesses")
       .select("*")
       .in("type", ["brothel_basic", "brothel_upgraded", "brothel_luxury", "brothel_exclusive", "brothel_empire"])
       .eq("enabled", true)
       .order("required_level", { ascending: true });
+
+    console.log("🔍 Brothels query result:", { brothels, brothelsError, count: brothels?.length });
 
     // Get player's owned brothels
     const { data: ownedBrothels } = await supabase
