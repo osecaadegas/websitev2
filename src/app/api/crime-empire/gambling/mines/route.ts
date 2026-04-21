@@ -64,7 +64,7 @@ export async function GET() {
         revealed: state.revealed,
         revealedCount: state.revealedCount,
         currentMultiplier: calcMultiplier(state.mineCount, state.revealedCount),
-        currentPayout: Math.floor(session.bet * calcMultiplier(state.mineCount, state.revealedCount)),
+        currentPayout: Math.floor(Math.floor(session.bet * calcMultiplier(state.mineCount, state.revealedCount)) / 2),
       },
       player: { dirty_cash: player.dirty_cash, crypto: player.crypto, level: player.level },
     });
@@ -107,7 +107,7 @@ export async function POST(req: NextRequest) {
       state: { grid, revealed, mineCount, revealedCount: 0, fee },
     }).select().single();
 
-    return NextResponse.json({ success: true, sessionId: session?.id, fee, revealed, currentMultiplier: 1, currentPayout: bet });
+    return NextResponse.json({ success: true, sessionId: session?.id, fee, revealed, currentMultiplier: 1, currentPayout: Math.floor(bet / 2) });
   }
 
   // Active session required for reveal/cashout
@@ -151,7 +151,7 @@ export async function POST(req: NextRequest) {
       revealed: newRevealed,
       revealedCount: newRevealedCount,
       currentMultiplier: mult,
-      currentPayout: Math.floor(session.bet * mult),
+      currentPayout: Math.floor(Math.floor(session.bet * mult) / 2),
       status: "active",
     });
   }
@@ -160,7 +160,7 @@ export async function POST(req: NextRequest) {
   if (action === "cashout") {
     if (state.revealedCount === 0) return NextResponse.json({ error: "Revela pelo menos um tile primeiro!" }, { status: 400 });
     const mult = calcMultiplier(state.mineCount, state.revealedCount);
-    const payout = Math.floor(session.bet * mult);
+    const payout = Math.floor(Math.floor(session.bet * mult) / 2);
     const { data: fp } = await supabase.from("crime_players").select("crypto").eq("id", player.id).single();
     await supabase.from("crime_players").update({ crypto: (fp?.crypto ?? 0) + payout }).eq("id", player.id);
     await supabase.from("casino_sessions").update({ status: "finished", state: { ...state, result: "cashout" } }).eq("id", sessionId);

@@ -138,8 +138,8 @@ export async function POST(req: NextRequest) {
     let payout = 0;
 
     if (playerBJ || dealerBJ) {
-      if (playerBJ && dealerBJ) { result = "push"; payout = bet; }
-      else if (playerBJ) { result = "blackjack"; payout = Math.floor(bet * 2.5); }
+      if (playerBJ && dealerBJ) { result = "push"; payout = Math.floor(bet / 2); }
+      else if (playerBJ) { result = "blackjack"; payout = Math.floor(bet * 1.25); }
       else { result = "dealer_blackjack"; payout = 0; }
       await supabase.from("crime_players").update({ crypto: player.crypto + payout }).eq("id", player.id);
       await supabase.from("gambling_history").insert({ player_id: player.id, game_type: "blackjack", bet_amount: bet, payout, profit: payout - bet });
@@ -227,8 +227,8 @@ export async function POST(req: NextRequest) {
   let result: string;
   let payout: number;
 
-  if (dv > 21 || pv > dv) { result = "win"; payout = bet * 2; }
-  else if (pv === dv) { result = "push"; payout = bet; }
+  if (dv > 21 || pv > dv) { result = "win"; payout = bet; }
+  else if (pv === dv) { result = "push"; payout = Math.floor(bet / 2); }
   else { result = "loss"; payout = 0; }
 
   const { data: fp } = await supabase.from("crime_players").select("crypto").eq("id", player.id).single();

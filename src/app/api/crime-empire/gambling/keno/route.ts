@@ -62,7 +62,7 @@ export async function POST(req: NextRequest) {
   const picksSet = new Set(picks);
   const hits = drawn.filter((n) => picksSet.has(n)).length;
   const multiplier = (PAYOUTS[picks.length] || {})[hits] || 0;
-  const payout = Math.floor(bet * multiplier);
+  const payout = Math.floor(Math.floor(bet * multiplier) / 2);
 
   const { data: fp } = await supabase.from("crime_players").select("dirty_cash, crypto").eq("id", player.id).single();
   await supabase.from("crime_players").update({

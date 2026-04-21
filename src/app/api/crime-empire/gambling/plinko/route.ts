@@ -57,7 +57,7 @@ export async function POST(req: NextRequest) {
   const { flips, slot } = simulatePlinko();
   const mults = MULTIPLIERS[risk];
   const multiplier = mults[slot];
-  const payout = Math.floor(bet * multiplier);
+  const payout = Math.floor(Math.floor(bet * multiplier) / 2);
 
   const { data: fp } = await supabase.from("crime_players").select("dirty_cash, crypto").eq("id", player.id).single();
   await supabase.from("crime_players").update({
