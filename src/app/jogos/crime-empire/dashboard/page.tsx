@@ -128,7 +128,7 @@ export default function CrimeDashboard() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
+      <div className="flex-1 flex items-center justify-center">
         <div className="text-white text-xl">A carregar...</div>
       </div>
     );
@@ -139,7 +139,7 @@ export default function CrimeDashboard() {
   const availableCrimes = crimes.filter(c => c.required_level <= player.level);
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] text-white py-12 px-6">
+    <div className="flex-1 text-white py-12 px-6">
       <div className="max-w-7xl mx-auto">
         <Link href="/jogos" className="inline-flex items-center gap-2 text-[#ff6a00] hover:text-[#ff8533] transition-colors text-sm mb-6">
           ← Voltar aos Jogos
