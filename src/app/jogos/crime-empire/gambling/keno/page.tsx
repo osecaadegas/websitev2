@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState } from "react";
 import Link from "next/link";
@@ -87,7 +87,7 @@ export default function KenoPage() {
         {player && (
           <div className="flex gap-4 mb-4 text-sm">
             <div className="px-4 py-2 rounded-lg bg-[#1a1a1a] border border-[#333]">💵 <span className="text-green-400 font-bold">${player.dirty_cash.toLocaleString()}</span></div>
-            <div className="px-4 py-2 rounded-lg bg-[#1a1a1a] border border-[#333]">⚡ <span className="text-yellow-400 font-bold">{player.crypto.toLocaleString()}</span></div>
+            <div className="px-4 py-2 rounded-lg bg-[#1a1a1a] border border-[#333]">🪙 <span className="text-yellow-400 font-bold">{player.crypto.toLocaleString()}</span></div>
           </div>
         )}
 
@@ -120,7 +120,7 @@ export default function KenoPage() {
           <div className={`text-center p-4 rounded-xl mb-4 border ${payout > 0 ? "bg-purple-900/20 border-purple-500" : "bg-[#1a1a1a] border-[#333]"}`}>
             <p className="text-lg font-bold">{hits} acerto{hits !== 1 ? "s" : ""} em {picks.length} número{picks.length !== 1 ? "s" : ""}</p>
             {payout > 0
-              ? <p className="text-2xl font-black text-green-400 mt-1">⚡ +{payout.toLocaleString()} ({multiplier}x)</p>
+              ? <p className="text-2xl font-black text-green-400 mt-1">🪙 +{payout.toLocaleString()} ({multiplier}x)</p>
               : <p className="text-lg text-red-400 mt-1">Sem prémio desta vez!</p>}
           </div>
         )}
@@ -143,3 +143,4 @@ export default function KenoPage() {
     </div>
   );
 }
+

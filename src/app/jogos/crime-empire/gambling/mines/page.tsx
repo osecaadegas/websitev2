@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
@@ -121,7 +121,7 @@ export default function MinesPage() {
         {player && (
           <div className="flex gap-4 mb-6 text-sm">
             <div className="px-4 py-2 rounded-lg bg-[#1a1a1a] border border-[#333]">💵 <span className="text-green-400 font-bold">${player.dirty_cash.toLocaleString()}</span></div>
-            <div className="px-4 py-2 rounded-lg bg-[#1a1a1a] border border-[#333]">⚡ <span className="text-yellow-400 font-bold">{player.crypto.toLocaleString()}</span></div>
+            <div className="px-4 py-2 rounded-lg bg-[#1a1a1a] border border-[#333]">🪙 <span className="text-yellow-400 font-bold">{player.crypto.toLocaleString()}</span></div>
           </div>
         )}
 
@@ -134,7 +134,7 @@ export default function MinesPage() {
             </div>
             <div className="text-right">
               <p className="text-xs text-[#888]">Cashout disponível</p>
-              <p className="text-2xl font-black text-green-400">⚡{currentPayout.toLocaleString()}</p>
+              <p className="text-2xl font-black text-green-400">🪙{currentPayout.toLocaleString()}</p>
             </div>
             <button onClick={cashout} disabled={acting || revealedCount === 0} className="px-5 py-3 rounded-lg bg-green-700 hover:bg-green-600 font-bold disabled:opacity-40">
               💰 Cashout
@@ -144,7 +144,7 @@ export default function MinesPage() {
 
         {/* Result */}
         {gameResult === "mine" && <div className="mb-4 text-center text-2xl font-black text-red-400">💥 BOOM! Perdeste tudo!</div>}
-        {gameResult === "cashout" && <div className="mb-4 text-center text-2xl font-black text-green-400">✅ Cashout! ⚡+{currentPayout.toLocaleString()} ({currentMultiplier}x)</div>}
+        {gameResult === "cashout" && <div className="mb-4 text-center text-2xl font-black text-green-400">✅ Cashout! 🪙+{currentPayout.toLocaleString()} ({currentMultiplier}x)</div>}
 
         {/* Grid */}
         <div className="grid grid-cols-5 gap-2 mb-6">
@@ -199,3 +199,4 @@ export default function MinesPage() {
     </div>
   );
 }
+

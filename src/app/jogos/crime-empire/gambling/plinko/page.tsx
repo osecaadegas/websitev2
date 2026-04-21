@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState } from "react";
 import Link from "next/link";
@@ -111,7 +111,7 @@ export default function PlinkoPage() {
         {player && (
           <div className="flex gap-4 mb-6 text-sm">
             <div className="px-4 py-2 rounded-lg bg-[#1a1a1a] border border-[#333]">💵 <span className="text-green-400 font-bold">${player.dirty_cash.toLocaleString()}</span></div>
-            <div className="px-4 py-2 rounded-lg bg-[#1a1a1a] border border-[#333]">⚡ <span className="text-yellow-400 font-bold">{player.crypto.toLocaleString()}</span></div>
+            <div className="px-4 py-2 rounded-lg bg-[#1a1a1a] border border-[#333]">🪙 <span className="text-yellow-400 font-bold">{player.crypto.toLocaleString()}</span></div>
           </div>
         )}
 
@@ -158,7 +158,7 @@ export default function PlinkoPage() {
 
         {hasResult && !playing && (
           <div className={`text-center text-2xl font-black ${multiplier >= 1 ? "text-green-400" : "text-red-400"}`}>
-            {multiplier}x → ⚡{payout.toLocaleString()}
+            {multiplier}x → 🪙{payout.toLocaleString()}
             {payout === 0 && <span className="block text-base text-[#888] mt-1">Slot vazio. Tenta de novo!</span>}
           </div>
         )}
@@ -166,3 +166,4 @@ export default function PlinkoPage() {
     </div>
   );
 }
+

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
@@ -77,7 +77,7 @@ export default function StocksPage() {
     });
     const data = await res.json();
     if (data.success) {
-      showMsg(`Vendido! ⚡ +${data.payout.toLocaleString()} crypto`, true);
+      showMsg(`Vendido! 🪙 +${data.payout.toLocaleString()} crypto`, true);
       await fetchData();
     } else {
       showMsg(data.error, false);
@@ -99,7 +99,7 @@ export default function StocksPage() {
         {player && (
           <div className="flex gap-4 mb-6 text-sm">
             <div className="px-4 py-2 rounded-lg bg-[#1a1a1a] border border-[#333]">💵 <span className="text-green-400 font-bold">${player.dirty_cash.toLocaleString()}</span></div>
-            <div className="px-4 py-2 rounded-lg bg-[#1a1a1a] border border-[#333]">⚡ <span className="text-yellow-400 font-bold">{player.crypto.toLocaleString()}</span></div>
+            <div className="px-4 py-2 rounded-lg bg-[#1a1a1a] border border-[#333]">🪙 <span className="text-yellow-400 font-bold">{player.crypto.toLocaleString()}</span></div>
           </div>
         )}
 
@@ -219,3 +219,4 @@ export default function StocksPage() {
     </div>
   );
 }
+

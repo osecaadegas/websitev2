@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
@@ -57,8 +57,8 @@ export default function GamblingPage() {
               <p className="text-xl font-bold text-green-400">${player.dirty_cash.toLocaleString()}</p>
             </div>
             <div className="p-4 rounded-xl bg-[#1a1a1a] border border-[#333]">
-              <p className="text-xs text-[#888]">Crypto ⚡</p>
-              <p className="text-xl font-bold text-yellow-400">⚡{player.crypto.toLocaleString()}</p>
+              <p className="text-xs text-[#888]">Crypto 🪙</p>
+              <p className="text-xl font-bold text-yellow-400">🪙{player.crypto.toLocaleString()}</p>
             </div>
             <div className="p-4 rounded-xl bg-[#1a1a1a] border border-yellow-600/40 col-span-2 md:col-span-1">
               <p className="text-xs text-[#888]">Taxa por Jogo</p>
@@ -98,9 +98,9 @@ export default function GamblingPage() {
                     <tr key={i} className="border-t border-[#1a1a1a] hover:bg-[#111]">
                       <td className="px-4 py-3">{GAME_LABELS[h.game_type] ?? h.game_type}</td>
                       <td className="px-4 py-3 text-right text-[#888]">${h.bet_amount.toLocaleString()}</td>
-                      <td className="px-4 py-3 text-right">⚡{h.payout.toLocaleString()}</td>
+                      <td className="px-4 py-3 text-right">🪙{h.payout.toLocaleString()}</td>
                       <td className={`px-4 py-3 text-right font-bold ${h.profit >= 0 ? "text-green-400" : "text-red-400"}`}>
-                        {h.profit >= 0 ? "+" : ""}⚡{h.profit.toLocaleString()}
+                        {h.profit >= 0 ? "+" : ""}🪙{h.profit.toLocaleString()}
                       </td>
                     </tr>
                   ))}
@@ -113,3 +113,4 @@ export default function GamblingPage() {
     </div>
   );
 }
+
