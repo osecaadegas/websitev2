@@ -499,9 +499,12 @@ insert into businesses (name, type, description, purchase_price, base_income_per
   ('Rede de Roubo de Identidades', 'identity_ring', 'Rouba e vende identidades. $3000/h base, +$1000/h por worker.', 800000, 3000, 12, 450, 50),
   ('Rede de Cibercrime', 'cyber_network', 'Operações de hacking em massa. $3500/h base, +$1200/h por worker.', 1000000, 3500, 8, 500, 55),
   ('Contrabando de Diamantes', 'diamond_smuggling', 'Contrabandeia diamantes. +1 diamante/2h, +0.5 por worker.', 1500000, 0, 10, 600, 60),
+  ('Pool de Mining', 'mining_pool', 'Farm de GPU dedicada. $1800/h base, +$600/h por worker.', 300000, 1800, 8, 250, 38),
   ('Banco Offshore', 'offshore_bank', 'Lava dinheiro internacional. 70% taxa base, +2% por worker.', 2000000, 0, 15, 700, 65),
+  ('Exchange Clandestina', 'crypto_exchange', 'Troca ilegal de criptomoedas. $4500/h base, +$1500/h por worker.', 2500000, 4500, 12, 800, 68),
   ('Tráfico de Armas Pesadas', 'arms_dealing', 'Vende armas militares. $5000/h base, +$1500/h por worker.', 2500000, 5000, 12, 800, 70),
   ('Cartel de Drogas', 'drug_cartel', 'Operação internacional de drogas. $6000/h base, +$2000/h por worker.', 3500000, 6000, 20, 1000, 75),
+  ('Corporação Fantasma', 'shell_company', 'Rede de empresas de fachada. 80% taxa base, +1.5% por worker (max 98%).', 4000000, 0, 20, 900, 78),
   ('QG do Império', 'empire_hq', 'Controla todo o submundo. $10000/h base, +$3000/h por worker. Bónus global +10%.', 5000000, 10000, 25, 1500, 80),
   -- BROTHELS - Rua das Luzes (PIMP gets double worker capacity + 20% income bonus)
   ('Bordel Básico', 'brothel_basic', 'Bordel de rua. 10 workers (20 para PIMP). $600/h base, +$200/h por worker.', 150000, 600, 10, 100, 15),

@@ -422,7 +422,7 @@ async function handleLaunder(player: any, businessId: string, amount: number) {
 
   const businessType = playerBusiness.business.type;
   
-  if (businessType !== "chop_shop" && businessType !== "offshore_bank") {
+  if (businessType !== "chop_shop" && businessType !== "offshore_bank" && businessType !== "shell_company") {
     return NextResponse.json(
       { error: "This business can't launder money" },
       { status: 400 }
@@ -450,9 +450,12 @@ async function handleLaunder(player: any, businessId: string, amount: number) {
   if (businessType === "chop_shop") {
     // Basic laundry: 60% base + 3% per worker (max 90%), scammer gets 70% base (max 95%)
     conversionRate = Math.min(0.90 + scammerBonus, (0.60 + scammerBonus) + (playerBusiness.employees * 0.03));
-  } else {
+  } else if (businessType === "offshore_bank") {
     // Offshore bank: 70% base + 2% per worker (max 95%), scammer gets 80% base (max 99%)
     conversionRate = Math.min(0.95 + scammerBonus, (0.70 + scammerBonus) + (playerBusiness.employees * 0.02));
+  } else {
+    // Shell company: 80% base + 1.5% per worker (max 98%), scammer gets 90% base (max 99%)
+    conversionRate = Math.min(Math.min(0.98 + scammerBonus, 0.99), (0.80 + scammerBonus) + (playerBusiness.employees * 0.015));
   }
   
   const cleanMoney = Math.floor(amount * conversionRate);

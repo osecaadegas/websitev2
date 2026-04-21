@@ -187,7 +187,7 @@ export default function BusinessesPage() {
                     </button>
                   </div>
 
-                  {ob.business.type === "chop_shop" ? (
+                  {ob.business.type === "chop_shop" || ob.business.type === "offshore_bank" || ob.business.type === "shell_company" ? (
                     <div>
                       <input
                         type="number"
@@ -206,7 +206,15 @@ export default function BusinessesPage() {
                         disabled={processing || !launderAmount || parseInt(launderAmount) <= 0}
                         className="w-full px-4 py-3 rounded-lg bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 disabled:opacity-50 disabled:cursor-not-allowed font-bold transition-all"
                       >
-                        💧 Lavar Dinheiro ({ob.employees > 0 ? `${(player?.class === "scammer" ? 70 : 60) + ob.employees * 3}%${player?.class === "scammer" ? " 🎭" : ""}` : "Precisa Workers"})
+                        {ob.business.type === "chop_shop" && (
+                          <>💧 Lavar Dinheiro ({ob.employees > 0 ? `${(player?.class === "scammer" ? 70 : 60) + ob.employees * 3}%${player?.class === "scammer" ? " 🎭" : ""}` : "Precisa Workers"})</>
+                        )}
+                        {ob.business.type === "offshore_bank" && (
+                          <>💧 Lavar Dinheiro ({ob.employees > 0 ? `${(player?.class === "scammer" ? 80 : 70) + ob.employees * 2}%${player?.class === "scammer" ? " 🎭" : ""}` : "Precisa Workers"})</>
+                        )}
+                        {ob.business.type === "shell_company" && (
+                          <>💧 Lavar Dinheiro ({ob.employees > 0 ? `${Math.min(player?.class === "scammer" ? 99 : 98, (player?.class === "scammer" ? 90 : 80) + Math.floor(ob.employees * 1.5))}%${player?.class === "scammer" ? " 🎭" : ""}` : "Precisa Workers"})</>
+                        )}
                       </button>
                     </div>
                   ) : (
