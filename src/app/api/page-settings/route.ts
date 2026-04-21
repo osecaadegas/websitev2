@@ -49,7 +49,10 @@ export async function GET() {
     .select("*")
     .order("page_name", { ascending: true });
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) {
+    console.error("Page settings error:", error);
+    return NextResponse.json({ error: error.message, details: error }, { status: 500 });
+  }
 
   const existing = data ?? [];
   const existingSlugs = new Set(existing.map((s) => s.page_slug));
