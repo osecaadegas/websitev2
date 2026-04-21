@@ -25,7 +25,7 @@ const CANONICAL_PAGES: { slug: string; name: string }[] = [
   { slug: "destaques", name: "Destaques" },
   { slug: "stream", name: "Stream" },
   { slug: "comunidade", name: "Comunidade" },
-  { slug: "liga-dos-brutus", name: "Liga dos Brutus" },
+  { slug: "liga-dos-secas", name: "Liga dos Secas" },
   { slug: "loja", name: "Loja" },
   { slug: "sobre", name: "Sobre" },
   { slug: "bonus-hunt", name: "Bonus Hunt" },

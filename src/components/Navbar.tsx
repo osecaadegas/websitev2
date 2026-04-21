@@ -36,7 +36,7 @@ export function Navbar({ onMenuToggle }: NavbarProps) {
     "/loja": "Armaria",
     "/roda-diaria": "Arrebanha Daily",
     "/bonus-hunt": "Bonus Hunt",
-    "/liga-dos-brutus": "Liga dos Brutus",
+    "/liga-dos-secas": "Liga dos Secas",
     "/live": "Em Direto",
     "/adivinha-o-resultado": "ADVINHA O RESULTADO",
     "/termos-e-condicoes": "Termos & Condições",

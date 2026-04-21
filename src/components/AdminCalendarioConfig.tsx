@@ -19,15 +19,15 @@ interface Stream {
   is_cancelled: boolean;
 }
 
-const CATEGORIES = ["Slots", "Bonus Hunt", "Torneio", "Slot Request", "Liga dos Brutus", "Torneio Liga dos Brutus", "Giveaway", "Outro"] as const;
+const CATEGORIES = ["Slots", "Bonus Hunt", "Torneio", "Slot Request", "Liga dos Secas", "Torneio Liga dos Secas", "Giveaway", "Outro"] as const;
 
 const CATEGORY_COLORS: Record<string, { bg: string; text: string; border: string }> = {
   "Slots":                  { bg: "bg-amber-500/10",   text: "text-amber-400",   border: "border-amber-500/30" },
   "Bonus Hunt":             { bg: "bg-purple-500/10",  text: "text-purple-400",  border: "border-purple-500/30" },
   "Torneio":                { bg: "bg-blue-500/10",    text: "text-blue-400",    border: "border-blue-500/30" },
   "Slot Request":           { bg: "bg-pink-500/10",    text: "text-pink-400",    border: "border-pink-500/30" },
-  "Liga dos Brutus":        { bg: "bg-arena-gold/10",  text: "text-arena-gold",  border: "border-arena-gold/30" },
-  "Torneio Liga dos Brutus":{ bg: "bg-cyan-500/10",    text: "text-cyan-400",    border: "border-cyan-500/30" },
+  "Liga dos Secas":        { bg: "bg-arena-gold/10",  text: "text-arena-gold",  border: "border-arena-gold/30" },
+  "Torneio Liga dos Secas":{ bg: "bg-cyan-500/10",    text: "text-cyan-400",    border: "border-cyan-500/30" },
   "Giveaway":               { bg: "bg-green-500/10",   text: "text-green-400",   border: "border-green-500/30" },
   "Outro":                  { bg: "bg-gray-500/10",    text: "text-gray-400",    border: "border-gray-500/30" },
 };
@@ -37,8 +37,8 @@ const CATEGORY_ICONS: Record<string, string> = {
   "Bonus Hunt":              "🎯",
   "Torneio":                 "⚔️",
   "Slot Request":            "📥",
-  "Liga dos Brutus":         "🛡️",
-  "Torneio Liga dos Brutus": "🏆",
+  "Liga dos Secas":         "🛡️",
+  "Torneio Liga dos Secas": "🏆",
   "Giveaway":                "🎁",
   "Outro":                   "📺",
 };
@@ -431,7 +431,7 @@ export default function AdminCalendarioConfig() {
                     value={draft.title}
                     onChange={(e) => setDraft((p) => ({ ...p, title: e.target.value }))}
                     className="mt-1 w-full bg-white/[0.04] border border-white/10 rounded-lg px-3 py-2 text-sm text-arena-white placeholder:text-arena-ash/50 focus:border-arena-gold/50 focus:ring-1 focus:ring-arena-gold/20 outline-none"
-                    placeholder="Ex: Slots com os Brutus"
+                    placeholder="Ex: Slots com os Secas"
                   />
                 </div>
 

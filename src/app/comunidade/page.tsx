@@ -23,8 +23,8 @@ const CATEGORIES = [
     hoverColor: "hover:border-green-500/50",
   },
   {
-    href: "/liga-dos-brutus",
-    title: "Liga dos Brutus",
+    href: "/liga-dos-secas",
+    title: "Liga dos Secas",
     description: "Compete no ranking e torna-te o melhor gladiador",
     icon: "🏆",
     color: "from-yellow-600/20 to-yellow-500/10",
@@ -121,7 +121,7 @@ export default function ComunidadePage() {
         <div className="mt-16 text-center">
           <div className="inline-block rounded-lg bg-arena-charcoal/60 border border-arena-steel/20 p-6 max-w-2xl">
             <p className="text-arena-smoke/70 text-sm leading-relaxed">
-              💡 <span className="text-arena-gold font-medium">Dica:</span> Participa em todas as atividades para ganhares mais pontos e subires no ranking da Liga dos Brutus!
+              💡 <span className="text-arena-gold font-medium">Dica:</span> Participa em todas as atividades para ganhares mais pontos e subires no ranking da Liga dos Secas!
             </p>
           </div>
         </div>

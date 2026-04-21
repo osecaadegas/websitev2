@@ -2,8 +2,8 @@
 import { PrivacyPolicy } from "@/components/PrivacyPolicy";
 
 export const metadata: Metadata = {
-  title: "Política de Privacidade | BRUTUSPOLUS",
-  description: "Política de privacidade do website BRUTUSPOLUS.",
+  title: "Política de Privacidade | SECAADEGAS",
+  description: "Política de privacidade do website SECAADEGAS.",
 };
 
 export default function PrivacyPage() {

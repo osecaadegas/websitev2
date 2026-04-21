@@ -520,7 +520,7 @@ create policy "Admin delete scheduled streams" on scheduled_streams for delete u
 alter publication supabase_realtime add table scheduled_streams;
 
 -- ============================================================
--- Liga dos Brutus — Yearly Leaderboard Hall of Fame
+-- Liga dos Secas — Yearly Leaderboard Hall of Fame
 -- ============================================================
 
 -- Leaderboard Years
@@ -594,7 +594,7 @@ insert into page_settings (page_slug, page_name) values
   ('casinos', 'Casinos'),
   ('destaques', 'Destaques'),
   ('stream', 'Stream'),
-  ('liga-dos-brutus', 'Liga dos Brutus'),
+  ('liga-dos-secas', 'Liga dos Secas'),
   ('torneio', 'Torneio'),
   ('loja', 'Loja'),
   ('contactos', 'Contactos'),

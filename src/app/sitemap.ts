@@ -9,7 +9,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     "/destaques",
     "/stream",
     "/comunidade",
-    "/liga-dos-brutus",
+    "/liga-dos-secas",
     "/loja",
   ];
 

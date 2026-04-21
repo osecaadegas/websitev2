@@ -373,7 +373,7 @@ function OfferForm({ initial, onSave, saving, nextOrder }: OfferFormProps) {
         </div>
         <div>
           <label className={labelCls}>Código</label>
-          <input className={inputCls} value={form.code} onChange={(e) => set("code", e.target.value)} placeholder="Brutus" />
+          <input className={inputCls} value={form.code} onChange={(e) => set("code", e.target.value)} placeholder="Seca" />
         </div>
       </div>
 

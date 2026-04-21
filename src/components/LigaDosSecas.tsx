@@ -56,7 +56,7 @@ function DustParticles() {
 }
 
 /* ── Main Component ────────────────────────────────────── */
-export default function LigaDosBrutusContent() {
+export default function LigaDosSecasContent() {
   const [years, setYears] = useState<LeaderboardYear[]>([]);
   const [selectedYear, setSelectedYear] = useState<LeaderboardYear | null>(null);
   const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
@@ -228,7 +228,7 @@ export default function LigaDosBrutusContent() {
                 {/* Footer */}
                 <div className="liga-scroll-footer">
                   <div className="liga-wax-seal" />
-                  <p className="liga-footer-text">Arena Gladiator · BRUTUSPOLUS</p>
+                  <p className="liga-footer-text">Arena Gladiator · SECAADEGAS</p>
                 </div>
               </div>
             </motion.div>

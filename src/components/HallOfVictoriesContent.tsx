@@ -235,7 +235,7 @@ export default function HallOfVictoriesContent() {
           Salão das Vitórias
         </h1>
         <p className="text-arena-smoke/60 max-w-2xl mx-auto leading-relaxed">
-          Celebre as conquistas mais épicas da comunidade Brutuspolus. Das vitórias oficiais do mês às glórias individuais dos guerreiros.
+          Celebre as conquistas mais épicas da comunidade SecaAdegas. Das vitórias oficiais do mês às glórias individuais dos guerreiros.
         </p>
       </motion.div>
 

@@ -2,8 +2,8 @@
 import { TermsAndConditions } from "@/components/TermsAndConditions";
 
 export const metadata: Metadata = {
-  title: "Termos & Condições | BRUTUSPOLUS",
-  description: "Termos e condições de utilização do website BRUTUSPOLUS.",
+  title: "Termos & Condições | SECAADEGAS",
+  description: "Termos e condições de utilização do website SECAADEGAS.",
 };
 
 export default function TermsPage() {

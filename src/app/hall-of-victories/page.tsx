@@ -2,11 +2,11 @@ import type { Metadata } from "next";
 import HallOfVictoriesContent from "@/components/HallOfVictoriesContent";
 
 export const metadata: Metadata = {
-  title: "Bruta do Mês | Brutuspolus",
-  description: "A melhor vitória do mês escolhida pela comunidade Brutuspolus. Partilha os teus melhores momentos e recebe honra dos guerreiros.",
+  title: "Bruta do Mês | SecaAdegas",
+  description: "A melhor vitória do mês escolhida pela comunidade SecaAdegas. Partilha os teus melhores momentos e recebe honra dos guerreiros.",
   openGraph: {
-    title: "Bruta do Mês | Brutuspolus",
-    description: "A melhor vitória do mês escolhida pela comunidade Brutuspolus.",
+    title: "Bruta do Mês | SecaAdegas",
+    description: "A melhor vitória do mês escolhida pela comunidade SecaAdegas.",
   },
 };
 

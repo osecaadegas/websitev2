@@ -2,8 +2,8 @@
 import { CookiePolicy } from "@/components/CookiePolicy";
 
 export const metadata: Metadata = {
-  title: "Política de Cookies | BRUTUSPOLUS",
-  description: "Política de cookies do website BRUTUSPOLUS.",
+  title: "Política de Cookies | SECAADEGAS",
+  description: "Política de cookies do website SECAADEGAS.",
 };
 
 export default function CookiePolicyPage() {

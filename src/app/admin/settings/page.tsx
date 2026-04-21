@@ -639,7 +639,7 @@ const PRESET_IMAGES = [
   { name: "Elmo Soldado", file: "/images/pages/imgi_1_soldier-helmet-still-life_23-2151648773.jpg" },
   { name: "Elmo Vintage", file: "/images/pages/vintage-style-soldier-helmet-still-life.jpg" },
   { name: "Stream", file: "/images/pages/Stream.jpg" },
-  { name: "Liga dos Brutus", file: "/images/pages/brutusleague.png" },
+  { name: "Liga dos Secas", file: "/images/pages/brutusleague.png" },
   { name: "Roda", file: "/images/pages/wheel-bg.jpg" },
   { name: "Sessão", file: "/images/pages/session.jpg" },
   { name: "Loja", file: "/images/pages/store.jpg" },

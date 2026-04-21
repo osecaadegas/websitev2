@@ -16,8 +16,8 @@ const CATEGORY_LUCIDE: Record<string, React.ComponentType<any>> = {
   "Bonus Hunt":              Target,
   "Torneio":                 Trophy,
   "Slot Request":            Inbox,
-  "Liga dos Brutus":         Shield,
-  "Torneio Liga dos Brutus": Award,
+  "Liga dos Secas":         Shield,
+  "Torneio Liga dos Secas": Award,
   "Giveaway":                Gift,
   "Outro":                   Tv,
 };
@@ -207,7 +207,7 @@ export function StreamCalendar() {
 
               <div className="schedule-modal-hero-content">
                 <span className="schedule-modal-badge">
-                  {selectedStream.is_special ? "⚡ Evento Especial" : "Calendário Brutus"}
+                  {selectedStream.is_special ? "⚡ Evento Especial" : "Calendário Seca"}
                 </span>
                 <div className="schedule-modal-title">{selectedStream.title}</div>
                 <div className="schedule-modal-meta">
@@ -266,7 +266,7 @@ export function StreamCalendar() {
               {/* Action buttons */}
               <div className="schedule-modal-actions">
                 <a
-                  href="https://www.twitch.tv/brutuspolus"
+                  href="https://www.twitch.tv/secaadegas"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="schedule-modal-btn-primary"
