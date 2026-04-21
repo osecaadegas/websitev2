@@ -73,6 +73,7 @@ create table if not exists crime_players (
   dirty_cash numeric not null default 1000,
   cash numeric not null default 500,
   vcash numeric not null default 0,
+  crypto numeric not null default 100,
   stamina integer not null default 100,
   max_stamina integer not null default 100,
   last_stamina_update timestamptz not null default now(),
@@ -282,6 +283,33 @@ create table if not exists black_market_transactions (
   created_at timestamptz not null default now()
 );
 
+create table if not exists black_market_listings (
+  id uuid primary key default gen_random_uuid(),
+  seller_id uuid not null references crime_players(id) on delete cascade,
+  item_id uuid not null references items(id) on delete cascade,
+  quantity integer not null check (quantity > 0),
+  crypto_price_per_unit numeric not null check (crypto_price_per_unit > 0),
+  total_crypto numeric not null,
+  active boolean not null default true,
+  expires_at timestamptz not null default (now() + interval '7 days'),
+  created_at timestamptz not null default now()
+);
+
+create table if not exists black_market_trades (
+  id uuid primary key default gen_random_uuid(),
+  listing_id uuid not null references black_market_listings(id) on delete cascade,
+  seller_id uuid not null references crime_players(id) on delete cascade,
+  buyer_id uuid not null references crime_players(id) on delete cascade,
+  item_id uuid not null references items(id) on delete cascade,
+  quantity integer not null,
+  crypto_price_per_unit numeric not null,
+  total_crypto numeric not null,
+  seller_caught boolean not null default false,
+  buyer_caught boolean not null default false,
+  jail_time_minutes integer,
+  created_at timestamptz not null default now()
+);
+
 create table if not exists player_stats (
   player_id uuid primary key references crime_players(id) on delete cascade,
   total_crimes_attempted integer not null default 0,
@@ -346,6 +374,10 @@ create index if not exists idx_pvp_defender on pvp_battles(defender_id, created_
 create index if not exists idx_contract_attempts_player on contract_attempts(player_id);
 create index if not exists idx_brothel_workers_player on brothel_workers(player_id);
 create index if not exists idx_prestige_history_player on prestige_history(player_id, created_at desc);
+create index if not exists idx_black_market_listings_seller on black_market_listings(seller_id, active);
+create index if not exists idx_black_market_listings_item on black_market_listings(item_id, active);
+create index if not exists idx_black_market_trades_seller on black_market_trades(seller_id, created_at desc);
+create index if not exists idx_black_market_trades_buyer on black_market_trades(buyer_id, created_at desc);
 
 -- ═══════════════════════════════════════════════════════════
 -- SEED DATA - COMPREHENSIVE CRIME PROGRESSION (Level 1-100)
@@ -510,6 +542,8 @@ alter table pvp_battles enable row level security;
 alter table contract_attempts enable row level security;
 alter table brothel_workers enable row level security;
 alter table black_market_transactions enable row level security;
+alter table black_market_listings enable row level security;
+alter table black_market_trades enable row level security;
 alter table player_stats enable row level security;
 alter table prestige_history enable row level security;
 alter table crimes enable row level security;
@@ -536,6 +570,12 @@ create policy "Players insert pvp" on pvp_battles for insert with check (true);
 create policy "Players manage contracts" on contract_attempts for all using (true);
 create policy "Players manage brothel" on brothel_workers for all using (true);
 create policy "Players manage black market" on black_market_transactions for all using (true);
+create policy "Players read black market listings" on black_market_listings for select using (true);
+create policy "Players create own listings" on black_market_listings for insert with check (true);
+create policy "Players update own listings" on black_market_listings for update using (true);
+create policy "Players delete own listings" on black_market_listings for delete using (true);
+create policy "Players read black market trades" on black_market_trades for select using (true);
+create policy "Players create trades" on black_market_trades for insert with check (true);
 create policy "Players read stats" on player_stats for select using (true);
 create policy "Players update stats" on player_stats for update using (true);
 create policy "Players insert stats" on player_stats for insert with check (true);
