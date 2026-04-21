@@ -11,7 +11,7 @@ async function getAuthUser() {
   if (!raw) return null;
   try {
     const session = JSON.parse(raw);
-    return { id: session.id, username: session.username, display_name: session.display_name, avatar: session.avatar };
+    return { id: session.id, username: session.login, display_name: session.display_name, avatar: session.profile_image_url };
   } catch {
     return null;
   }
