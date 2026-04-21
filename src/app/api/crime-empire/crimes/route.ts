@@ -109,6 +109,10 @@ export async function POST(request: Request) {
     baseSuccess += 0.30; // +30% for new players
   }
 
+  // Apply prestige bonus (+2% per prestige level, max 20%)
+  const prestigeBonus = Math.min(player.prestige_level * 0.02, 0.20);
+  baseSuccess += prestigeBonus;
+
   const finalSuccessRate = Math.min(0.95, baseSuccess + bonusSuccessRate);
 
   // Roll for success
