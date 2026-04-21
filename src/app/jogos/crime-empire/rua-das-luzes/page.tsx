@@ -42,6 +42,7 @@ export default function RuaDasLuzesPage() {
   const [ownedBrothels, setOwnedBrothels] = useState<OwnedBrothel[]>([]);
   const [workers, setWorkers] = useState<Worker[]>([]);
   const [playerClass, setPlayerClass] = useState("");
+  const [playerLevel, setPlayerLevel] = useState(0);
   const [workerName, setWorkerName] = useState("");
   const [selectedBrothel, setSelectedBrothel] = useState<string | null>(null);
 
@@ -61,6 +62,7 @@ export default function RuaDasLuzesPage() {
       setOwnedBrothels(data.ownedBrothels || []);
       setWorkers(data.workers || []);
       setPlayerClass(data.playerClass || "");
+      setPlayerLevel(data.playerLevel || 0);
     } catch (error) {
       console.error("Error fetching brothels:", error);
     } finally {
@@ -408,12 +410,18 @@ export default function RuaDasLuzesPage() {
                     </div>
                   </div>
 
-                  <button
-                    onClick={() => handlePurchase(brothel.id)}
-                    className="w-full px-4 py-3 rounded-lg bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 font-bold transition-all"
-                  >
-                    💰 Comprar Bordel
-                  </button>
+                  {playerLevel < brothel.required_level ? (
+                    <div className="w-full px-4 py-3 rounded-lg bg-[#111111] border border-[#333333] font-bold text-center text-[#555555] flex items-center justify-center gap-2 cursor-not-allowed">
+                      🔒 Nível {brothel.required_level} Necessário
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => handlePurchase(brothel.id)}
+                      className="w-full px-4 py-3 rounded-lg bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 font-bold transition-all"
+                    >
+                      💰 Comprar
+                    </button>
+                  )}
                 </div>
               ))}
             </div>

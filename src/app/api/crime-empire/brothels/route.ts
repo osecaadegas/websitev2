@@ -60,6 +60,7 @@ export async function GET() {
       ownedBrothels: ownedBrothels || [],
       workers: workers || [],
       playerClass: player.class,
+      playerLevel: player.level,
     });
   } catch (error) {
     console.error("Error in GET /api/crime-empire/brothels:", error);
