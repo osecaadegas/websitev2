@@ -236,7 +236,7 @@ export default function BlackMarket() {
           </div>
           <div className="text-right">
             <p className="text-sm text-[#888888]">O Teu Crypto</p>
-            <p className="text-3xl font-bold text-purple-400">₿ {playerCrypto.toLocaleString()}</p>
+            <p className="text-3xl font-bold text-purple-400">₿ {(playerCrypto || 0).toLocaleString()}</p>
           </div>
         </div>
 

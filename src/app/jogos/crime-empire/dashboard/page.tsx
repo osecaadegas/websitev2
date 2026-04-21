@@ -24,7 +24,7 @@ interface Player {
   dirty_cash: number;
   cash: number;
   vcash: number;
-  crypto: number;
+  crypto?: number;
   stamina: number;
   max_stamina: number;
   in_jail: boolean;
@@ -167,7 +167,7 @@ export default function CrimeDashboard() {
           {[
             { label: "Dinheiro Sujo", value: `$${player.dirty_cash.toLocaleString()}`, icon: "💵", color: "text-green-400" },
             { label: "Dinheiro Limpo", value: `$${player.cash.toLocaleString()}`, icon: "💰", color: "text-yellow-400" },
-            { label: "Crypto", value: `₿${player.crypto.toLocaleString()}`, icon: "💎", color: "text-purple-400" },
+            { label: "Crypto", value: `₿${(player.crypto || 0).toLocaleString()}`, icon: "💎", color: "text-purple-400" },
             { label: "Stamina", value: `${player.stamina}/${player.max_stamina}`, icon: "⚡", color: "text-blue-400" },
             { label: "Respeito", value: player.respect.toLocaleString(), icon: "👑", color: "text-purple-400" },
           ].map((stat, idx) => (

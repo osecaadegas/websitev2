@@ -52,6 +52,14 @@ end $$;
 -- TABLES
 -- ═══════════════════════════════════════════════════════════
 
+-- Add crypto column to existing crime_players table if it doesn't exist
+do $$ 
+begin
+  if not exists (select 1 from information_schema.columns where table_name = 'crime_players' and column_name = 'crypto') then
+    alter table crime_players add column crypto numeric not null default 100;
+  end if;
+end $$;
+
 create table if not exists crime_players (
   id uuid primary key default gen_random_uuid(),
   user_id text not null unique,

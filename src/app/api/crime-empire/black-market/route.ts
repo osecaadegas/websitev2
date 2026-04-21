@@ -73,7 +73,7 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({ 
       listings: listings || [],
-      playerCrypto: player.crypto 
+      playerCrypto: player.crypto || 0
     });
   } catch (error) {
     console.error("Error fetching black market:", error);
@@ -195,9 +195,10 @@ export async function POST(req: NextRequest) {
       }
 
       // Check if player has enough crypto
-      if (player.crypto < listing.total_crypto) {
+      const playerCrypto = player.crypto || 0;
+      if (playerCrypto < listing.total_crypto) {
         return NextResponse.json({ 
-          error: `Não tens crypto suficiente! Precisas de ${listing.total_crypto} crypto (tens ${player.crypto})` 
+          error: `Não tens crypto suficiente! Precisas de ${listing.total_crypto} crypto (tens ${playerCrypto})` 
         }, { status: 400 });
       }
 
@@ -215,7 +216,7 @@ export async function POST(req: NextRequest) {
       // Transfer crypto
       await supabase
         .from("crime_players")
-        .update({ crypto: player.crypto - listing.total_crypto })
+        .update({ crypto: playerCrypto - listing.total_crypto })
         .eq("id", player.id);
 
       // Get seller's current crypto
@@ -226,9 +227,10 @@ export async function POST(req: NextRequest) {
         .single();
 
       if (seller) {
+        const sellerCrypto = seller.crypto || 0;
         await supabase
           .from("crime_players")
-          .update({ crypto: seller.crypto + listing.total_crypto })
+          .update({ crypto: sellerCrypto + listing.total_crypto })
           .eq("id", listing.seller_id);
       }
 
