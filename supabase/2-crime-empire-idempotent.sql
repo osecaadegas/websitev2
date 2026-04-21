@@ -525,13 +525,7 @@ insert into businesses (name, type, description, purchase_price, base_income_per
   ('Banco Offshore', 'offshore_bank', 'Lava dinheiro internacional. 70% taxa base, +2% por worker.', 2000000, 0, 15, 700, 65),
   ('Tráfico de Armas Pesadas', 'arms_dealing', 'Vende armas militares. $5000/h base, +$1500/h por worker.', 2500000, 5000, 12, 800, 70),
   ('Cartel de Drogas', 'drug_cartel', 'Operação internacional de drogas. $6000/h base, +$2000/h por worker.', 3500000, 6000, 20, 1000, 75),
-  ('QG do Império', 'empire_hq', 'Controla todo o submundo. $10000/h base, +$3000/h por worker. Bónus global +10%.', 5000000, 10000, 25, 1500, 80),
-  -- BROTHELS - Rua das Luzes (PIMP gets double worker capacity + 20% income bonus)
-  ('Bordel Básico', 'brothel_basic', 'Bordel de rua. 10 workers (20 para PIMP). $600/h base, +$200/h por worker.', 150000, 600, 10, 100, 15),
-  ('Bordel Melhorado', 'brothel_upgraded', 'Bordel privado. 15 workers (30 para PIMP). $1200/h base, +$300/h por worker.', 750000, 1200, 15, 150, 35),
-  ('Bordel de Luxo', 'brothel_luxury', 'Club de luxo. 20 workers (40 para PIMP). $2000/h base, +$400/h por worker.', 2000000, 2000, 20, 200, 55),
-  ('Bordel Exclusivo', 'brothel_exclusive', 'Casa exclusiva VIP. 25 workers (50 para PIMP). $3500/h base, +$600/h por worker.', 5000000, 3500, 25, 300, 75),
-  ('Império das Luzes', 'brothel_empire', 'Império completo da Rua das Luzes. 30 workers (60 para PIMP). $6000/h base, +$1000/h por worker.', 12000000, 6000, 30, 500, 100)
+  ('QG do Império', 'empire_hq', 'Controla todo o submundo. $10000/h base, +$3000/h por worker. Bónus global +10%.', 5000000, 10000, 25, 1500, 80)
 on conflict (type) do update set
   description = excluded.description,
   base_income_per_hour = excluded.base_income_per_hour,
@@ -539,6 +533,30 @@ on conflict (type) do update set
   purchase_price = excluded.purchase_price,
   max_employees = excluded.max_employees,
   required_level = excluded.required_level;
+
+-- Insert brothel businesses only if enum values exist (they need to be committed first)
+do $$
+declare
+  enum_values text[];
+begin
+  select array_agg(enumlabel::text) into enum_values from pg_enum where enumtypid = 'business_type'::regtype;
+  
+  if 'brothel_basic' = any(enum_values) then
+    insert into businesses (name, type, description, purchase_price, base_income_per_hour, max_employees, employee_cost_per_hour, required_level) values
+      ('Bordel Básico', 'brothel_basic', 'Bordel de rua. 10 workers (20 para PIMP). $600/h base, +$200/h por worker.', 150000, 600, 10, 100, 15),
+      ('Bordel Melhorado', 'brothel_upgraded', 'Bordel privado. 15 workers (30 para PIMP). $1200/h base, +$300/h por worker.', 750000, 1200, 15, 150, 35),
+      ('Bordel de Luxo', 'brothel_luxury', 'Club de luxo. 20 workers (40 para PIMP). $2000/h base, +$400/h por worker.', 2000000, 2000, 20, 200, 55),
+      ('Bordel Exclusivo', 'brothel_exclusive', 'Casa exclusiva VIP. 25 workers (50 para PIMP). $3500/h base, +$600/h por worker.', 5000000, 3500, 25, 300, 75),
+      ('Império das Luzes', 'brothel_empire', 'Império completo da Rua das Luzes. 30 workers (60 para PIMP). $6000/h base, +$1000/h por worker.', 12000000, 6000, 30, 500, 100)
+    on conflict (type) do update set
+      description = excluded.description,
+      base_income_per_hour = excluded.base_income_per_hour,
+      employee_cost_per_hour = excluded.employee_cost_per_hour,
+      purchase_price = excluded.purchase_price,
+      max_employees = excluded.max_employees,
+      required_level = excluded.required_level;
+  end if;
+end $$;
 
 -- Add drug items for businesses to produce
 insert into items (name, description, category, base_price) values
