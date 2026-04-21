@@ -322,17 +322,70 @@ create index if not exists idx_contract_attempts_player on contract_attempts(pla
 create index if not exists idx_brothel_workers_player on brothel_workers(player_id);
 
 -- ═══════════════════════════════════════════════════════════
--- SEED DATA
+-- SEED DATA - COMPREHENSIVE CRIME PROGRESSION (Level 1-100)
 -- ═══════════════════════════════════════════════════════════
 
 insert into crimes (name, description, difficulty, required_level, base_success_rate, jail_risk, stamina_cost, min_dirty_cash, max_dirty_cash, xp_reward, respect_reward) values
+  -- PETTY CRIMES (Level 1-10) - Street Level
   ('Roubar Carteira', 'Rouba a carteira de um turista distraído', 'petty', 1, 0.85, 0.05, 5, 50, 150, 10, 1),
-  ('Assaltar Loja', 'Assalta uma loja de conveniência', 'small', 2, 0.70, 0.15, 10, 200, 500, 25, 3),
-  ('Roubar Carro', 'Rouba um carro estacionado', 'small', 3, 0.65, 0.20, 15, 500, 1200, 40, 5),
-  ('Assaltar Casa', 'Invade uma casa e rouba objetos de valor', 'medium', 5, 0.55, 0.25, 20, 1000, 2500, 75, 8),
-  ('Assaltar Banco', 'Rouba um banco com uma equipa', 'big', 10, 0.40, 0.40, 30, 5000, 15000, 200, 20),
-  ('Roubar Joalharia', 'Assalta uma joalharia de luxo', 'big', 15, 0.35, 0.45, 35, 10000, 25000, 350, 30),
-  ('Heist do Casino', 'O maior assalto - rouba um casino', 'legendary', 25, 0.25, 0.55, 50, 50000, 150000, 1000, 100)
+  ('Vandalizar Propriedade', 'Danifica propriedade privada', 'petty', 1, 0.90, 0.03, 3, 30, 100, 8, 1),
+  ('Roubar Bicicleta', 'Rouba uma bicicleta desbloqueada', 'petty', 2, 0.80, 0.08, 5, 80, 200, 15, 1),
+  ('Assaltar Loja', 'Assalta uma loja de conveniência', 'petty', 3, 0.70, 0.15, 10, 200, 500, 25, 3),
+  ('Roubar Telemóvel', 'Rouba um telemóvel de um desprevenido', 'petty', 4, 0.75, 0.12, 8, 150, 400, 20, 2),
+  ('Grafitti Ilegal', 'Faz grafitti em edifícios públicos', 'petty', 5, 0.85, 0.05, 5, 50, 150, 18, 2),
+  ('Roubar em Parquímetro', 'Arromba e rouba dinheiro de parquímetros', 'petty', 6, 0.70, 0.15, 10, 200, 600, 30, 3),
+  ('Burlar Transporte Público', 'Revende passes de transporte falsos', 'petty', 8, 0.80, 0.10, 8, 180, 450, 35, 3),
+  ('Roubar Caixa de Correio', 'Rouba encomendas de caixas de correio', 'petty', 10, 0.75, 0.12, 10, 250, 700, 45, 4),
+  
+  -- SMALL CRIMES (Level 12-25) - Organized Street Crime
+  ('Roubar Carro', 'Rouba um carro estacionado', 'small', 12, 0.65, 0.20, 15, 500, 1200, 60, 5),
+  ('Assaltar Farmácia', 'Rouba medicamentos controlados de uma farmácia', 'small', 14, 0.60, 0.25, 18, 800, 2000, 80, 6),
+  ('Fraude de Cartão', 'Clona e usa cartões de crédito', 'small', 16, 0.65, 0.22, 15, 1000, 2500, 100, 7),
+  ('Roubar Scooter', 'Rouba e vende scooters elétricas', 'small', 18, 0.70, 0.18, 12, 600, 1500, 90, 6),
+  ('Assalto ao Correio', 'Rouba encomendas valiosas de uma carrinha do correio', 'small', 20, 0.60, 0.28, 20, 1500, 3500, 120, 8),
+  ('Contrabando Menor', 'Transporta mercadoria ilegal pela fronteira', 'small', 22, 0.65, 0.24, 18, 1200, 3000, 110, 7),
+  ('Assaltar Posto Gasolina', 'Assalta um posto de gasolina à noite', 'small', 24, 0.58, 0.30, 22, 2000, 4500, 140, 9),
+  
+  -- MEDIUM CRIMES (Level 28-50) - Professional Criminal
+  ('Assaltar Casa de Luxo', 'Invade uma casa de luxo e rouba objetos de valor', 'medium', 28, 0.55, 0.32, 25, 3000, 7000, 180, 12),
+  ('Roubar Camião de Carga', 'Intercepta e rouba um camião com mercadoria', 'medium', 30, 0.50, 0.35, 28, 4000, 9000, 220, 15),
+  ('Fraude Empresarial', 'Executa esquema de fraude em empresas', 'medium', 32, 0.60, 0.28, 22, 3500, 8000, 200, 13),
+  ('Assaltar Joalharia', 'Assalta uma joalharia durante o dia', 'medium', 35, 0.48, 0.38, 30, 8000, 18000, 300, 20),
+  ('Roubo de Identidade', 'Rouba identidades e vende informações', 'medium', 38, 0.65, 0.25, 20, 3000, 7500, 240, 16),
+  ('Assaltar Armazém', 'Rouba mercadoria de um armazém comercial', 'medium', 40, 0.55, 0.32, 25, 5000, 12000, 280, 18),
+  ('Sequestro Relâmpago', 'Sequestro rápido para resgate baixo', 'medium', 42, 0.45, 0.42, 35, 10000, 22000, 350, 22),
+  ('Extorsão Empresarial', 'Extorque dinheiro de pequenos empresários', 'medium', 45, 0.60, 0.30, 25, 6000, 14000, 320, 20),
+  ('Assaltar Banco Pequeno', 'Rouba um banco de bairro', 'medium', 48, 0.42, 0.45, 40, 15000, 35000, 450, 28),
+  ('Contrabando de Armas', 'Transporta armas ilegais', 'medium', 50, 0.50, 0.38, 30, 8000, 20000, 400, 25),
+  
+  -- BIG CRIMES (Level 52-75) - Major Criminal Operations
+  ('Assaltar Banco Regional', 'Rouba um grande banco regional', 'big', 52, 0.40, 0.48, 45, 25000, 55000, 600, 35),
+  ('Roubar Carro Blindado', 'Intercepta e rouba carro de transporte de valores', 'big', 55, 0.38, 0.50, 50, 35000, 75000, 750, 42),
+  ('Tráfico Internacional', 'Organiza rede de tráfico internacional', 'big', 58, 0.45, 0.45, 40, 30000, 65000, 700, 40),
+  ('Assaltar Museu', 'Rouba obras de arte de um museu', 'big', 60, 0.35, 0.52, 55, 50000, 110000, 900, 50),
+  ('Hacking Corporativo', 'Invade sistemas de grande corporação', 'big', 62, 0.50, 0.40, 35, 40000, 85000, 800, 45),
+  ('Sequestro VIP', 'Sequestra pessoa de alto perfil', 'big', 65, 0.32, 0.55, 60, 80000, 180000, 1100, 60),
+  ('Assaltar Cofre do Banco', 'Invade e rouba o cofre principal de um banco', 'big', 68, 0.30, 0.58, 65, 100000, 220000, 1300, 70),
+  ('Fraude de Seguros', 'Executa grande esquema de fraude de seguros', 'big', 70, 0.48, 0.42, 40, 50000, 120000, 1000, 55),
+  ('Roubar Galeria de Arte', 'Rouba peças raras de galeria de arte', 'big', 72, 0.35, 0.52, 55, 90000, 200000, 1200, 65),
+  ('Assaltar Casa de Leilões', 'Rouba durante leilão de itens valiosos', 'big', 75, 0.33, 0.54, 58, 110000, 240000, 1400, 75),
+  
+  -- LEGENDARY CRIMES (Level 78-100+) - Elite Criminal Mastermind
+  ('Heist do Casino', 'Rouba o casino mais protegido da cidade', 'legendary', 78, 0.28, 0.60, 70, 150000, 350000, 1800, 90),
+  ('Assaltar Banco Central', 'O maior assalto a banco - Banco Central', 'legendary', 80, 0.25, 0.62, 75, 200000, 450000, 2200, 110),
+  ('Roubar Diamantes', 'Rouba coleção de diamantes raros', 'legendary', 82, 0.30, 0.58, 65, 180000, 400000, 2000, 100),
+  ('Cyber Attack Massivo', 'Ataque informático a instituições financeiras', 'legendary', 85, 0.35, 0.55, 60, 160000, 380000, 2100, 105),
+  ('Assaltar Depósito Federal', 'Rouba reservas de ouro do depósito federal', 'legendary', 88, 0.22, 0.65, 80, 300000, 650000, 2800, 140),
+  ('Roubar Aeroporto', 'Assalta carga de alto valor no aeroporto', 'legendary', 90, 0.28, 0.60, 70, 220000, 500000, 2400, 120),
+  ('Manipulação Bolsa', 'Manipula mercado de ações para lucro massivo', 'legendary', 92, 0.32, 0.56, 65, 200000, 480000, 2300, 115),
+  ('Assaltar Navio de Carga', 'Pirataria moderna - rouba navio com carga valiosa', 'legendary', 95, 0.25, 0.62, 75, 280000, 620000, 2700, 135),
+  ('Roubar Comboio Blindado', 'Assalta comboio de transporte de valores', 'legendary', 98, 0.23, 0.64, 78, 320000, 700000, 3000, 150),
+  ('Mega Heist Internacional', 'O crime definitivo - operação multinacional', 'legendary', 100, 0.20, 0.68, 85, 400000, 900000, 3500, 180),
+  
+  -- ULTRA LEGENDARY (Level 100+) - Endgame Content
+  ('Roubar Reserva Nacional', 'Infiltra e rouba da reserva nacional de ouro', 'legendary', 105, 0.18, 0.70, 90, 500000, 1100000, 4200, 220),
+  ('Operação Fantasma', 'Crime perfeito que nunca será descoberto', 'legendary', 110, 0.15, 0.72, 95, 600000, 1300000, 5000, 260),
+  ('Controlar a Cidade', 'Domina completamente o submundo da cidade', 'legendary', 120, 0.12, 0.75, 100, 800000, 1800000, 7000, 350)
 on conflict (name) do nothing;
 
 insert into businesses (name, type, description, purchase_price, base_income_per_hour, max_employees, employee_cost_per_hour, required_level) values
