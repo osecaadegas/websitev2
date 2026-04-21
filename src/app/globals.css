@@ -2803,19 +2803,23 @@ body {
 
 /* ── Win card ───────────────────────────────────────────────── */
 .win-card {
-  background: rgba(18, 14, 8, 0.95);
-  border: 1px solid rgba(255, 255, 255, 0.07);
-  border-radius: 12px;
+  background: linear-gradient(145deg, #121212 0%, #161616 100%);
+  border: none;
+  border-radius: 18px;
   overflow: hidden;
   position: relative;
-  transition: border-color 0.22s ease, box-shadow 0.22s ease, transform 0.18s ease;
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.5);
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+  box-shadow: 
+    inset 0 1px 0 rgba(255,255,255,0.04),
+    0 10px 30px rgba(0, 0, 0, 0.6);
 }
 
 .win-card:hover {
-  border-color: rgba(212, 168, 67, 0.28);
-  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(212, 168, 67, 0.1);
-  transform: translateY(-2px);
+  transform: translateY(-5px) scale(1.01);
+  box-shadow: 
+    inset 0 1px 0 rgba(255,255,255,0.06),
+    0 0 20px rgba(255,106,0,0.2),
+    0 15px 40px rgba(0, 0, 0, 0.7);
 }
 
 /* ── Media block ────────────────────────────────────────────── */
@@ -2827,19 +2831,18 @@ body {
 /* Provider badge overlaid on media */
 .win-card__provider-badge {
   position: absolute;
-  top: 10px;
-  right: 10px;
+  top: 12px;
+  right: 12px;
   z-index: 10;
-  font-size: 0.62rem;
+  font-size: 0.65rem;
   font-weight: 600;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.02em;
   text-transform: uppercase;
-  color: #FF6600;
-  background: rgba(10, 8, 3, 0.82);
-  border: 1px solid rgba(212, 168, 67, 0.3);
-  border-radius: 5px;
-  padding: 3px 9px;
-  backdrop-filter: blur(4px);
+  color: #ff6a00;
+  background: rgba(255, 106, 0, 0.1);
+  border-radius: 20px;
+  padding: 4px 12px;
+  backdrop-filter: blur(8px);
 }
 
 /* ── YouTube thumbnail facade ───────────────────────────────── */
@@ -2889,21 +2892,21 @@ body {
 }
 
 .win-embed__play-bg {
-  fill: rgba(212, 168, 67, 0.92);
+  fill: rgba(255, 106, 0, 0.95);
   transition: fill 0.2s ease;
 }
 
 .win-embed__play-arrow {
-  fill: #111;
+  fill: #0a0a0a;
 }
 
 .win-embed__thumb:hover .win-embed__play-btn {
-  transform: translate(-50%, -50%) scale(1.1);
-  filter: drop-shadow(0 6px 20px rgba(0, 0, 0, 0.8));
+  transform: translate(-50%, -50%) scale(1.12);
+  filter: drop-shadow(0 0 16px rgba(255, 106, 0, 0.4)) drop-shadow(0 6px 20px rgba(0, 0, 0, 0.8));
 }
 
 .win-embed__thumb:hover .win-embed__play-bg {
-  fill: #FF7700;
+  fill: #ff6a00;
 }
 
 /* ── iframe / video wrapper ─────────────────────────────────── */
@@ -2963,30 +2966,29 @@ body {
   gap: 6px;
   font-size: 0.75rem;
   font-weight: 600;
-  color: #FF6600;
-  background: rgba(212, 168, 67, 0.1);
-  border: 1px solid rgba(212, 168, 67, 0.3);
-  border-radius: 6px;
-  padding: 7px 16px;
+  color: #ff6a00;
+  background: rgba(255, 106, 0, 0.1);
+  border-radius: 20px;
+  padding: 8px 18px;
   text-decoration: none;
-  transition: all 0.18s ease;
+  transition: all 0.2s ease;
 }
 
 .win-embed__cta:hover {
-  background: rgba(212, 168, 67, 0.18);
-  border-color: rgba(212, 168, 67, 0.55);
-  color: #FF7700;
+  background: rgba(255, 106, 0, 0.15);
+  transform: translateY(-1px);
+  box-shadow: 0 0 16px rgba(255, 106, 0, 0.15);
 }
 
 .win-embed__cta svg { width: 12px; height: 12px; flex-shrink: 0; }
-.win-embed__ext-link { color: #FF6600; }
+.win-embed__ext-link { color: #ff6a00; }
 
 /* ── Body section ───────────────────────────────────────────── */
 .win-card__body {
-  padding: 14px 16px 16px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  padding: 20px 22px 22px;
+  gap: 14px;
 }
 
 /* ── User row ───────────────────────────────────────────────── */
@@ -2998,12 +3000,13 @@ body {
 
 .win-card__avatar {
   width: 28px;
-  height: 28px;
+  height:32px;
+  height: 32px;
   border-radius: 50%;
   overflow: hidden;
   flex-shrink: 0;
-  background: rgba(30, 20, 5, 0.8);
-  border: 1px solid rgba(212, 168, 67, 0.15);
+  background: #0a0a0a;
+  border: 2px solid rgba(255, 255, 255, 0.08);
 }
 
 .win-card__avatar-img { width: 100%; height: 100%; object-fit: cover; display: block; }
@@ -3011,42 +3014,41 @@ body {
 .win-card__avatar-placeholder {
   width: 100%;
   height: 100%;
-  background: rgba(212, 168, 67, 0.08);
+  background: rgba(255, 255, 255, 0.05);
 }
 
 .win-card__username {
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: rgba(212, 168, 67, 0.85);
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: #ffffff;
 }
 
 .win-card__dot {
-  color: rgba(255, 255, 255, 0.15);
+  color: rgba(255, 255, 255, 0.2);
   font-size: 0.9rem;
 }
 
 .win-card__date {
-  font-size: 0.72rem;
-  color: rgba(160, 145, 115, 0.5);
+  font-size: 0.75rem;
+  color: #888888;
 }
 
 /* ── Title ──────────────────────────────────────────────────── */
 .win-card__title {
   font-family: var(--font-display);
-  font-size: 0.95rem;
-  font-weight: 400;
-  letter-spacing: 0.04em;
-  color: rgba(232, 215, 175, 0.92);
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: #ffffff;
   margin: 0;
   line-height: 1.4;
 }
 
 /* ── Description ────────────────────────────────────────────── */
 .win-card__description {
-  font-size: 0.78rem;
-  color: rgba(180, 160, 120, 0.55);
-  line-height: 1.65;
-  margin: 0;
+  font-size: 0.875rem;
+  color: #888888;
+  line-height: 1.6
 }
 
 /* ── Footer / honor ─────────────────────────────────────────── */
@@ -3055,35 +3057,34 @@ body {
   align-items: center;
   justify-content: flex-end;
   padding-top: 6px;
-  border-top: 1px solid rgba(255, 255, 255, 0.05);
-  margin-top: 4px;
+  border-top: 112px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  margin-top: 6px;
 }
 
 .win-card__honor-btn {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  font-size: 0.78rem;
-  font-weight: 500;
-  color: rgba(160, 130, 80, 0.6);
+  gap: 7px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #888888;
   background: transparent;
-  border: 1px solid rgba(255, 255, 255, 0.07);
   border-radius: 20px;
-  padding: 5px 14px;
+  padding: 7px 16px;
   cursor: pointer;
-  transition: all 0.18s ease;
+  transition: all 0.2s ease;
 }
 
 .win-card__honor-btn:hover:not(:disabled) {
-  color: rgba(212, 168, 67, 0.9);
-  border-color: rgba(212, 168, 67, 0.3);
-  background: rgba(212, 168, 67, 0.06);
+  color: #ff6a00;
+  background: rgba(255, 106, 0, 0.1);
+  transform: translateY(-1px);
 }
 
 .win-card__honor-btn--active {
-  color: #e57676 !important;
-  border-color: rgba(229, 118, 118, 0.35) !important;
-  background: rgba(229, 118, 118, 0.07) !important;
+  color: #ff6a00 !important;
+  background: rgba(255, 106, 0, 0.12) !important;
 }
 
 .win-card__honor-btn:disabled { cursor: not-allowed; opacity: 0.35; }
@@ -3095,50 +3096,46 @@ body {
 .win-card__stats {
   display: flex;
   align-items: flex-end;
-  gap: 14px;
-  padding: 4px 0 2px;
+  gap: 18px;
+  padding: 6px 0;
 }
 
 .win-card__stat {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 4px;
 }
 
 .win-card__stat-label {
-  font-size: 0.58rem;
+  font-size: 0.6875rem;
   font-weight: 600;
-  letter-spacing: 0.01em;
+  letter-spacing: 0.02em;
   text-transform: uppercase;
-  color: rgba(160, 140, 100, 0.5);
+  color: #888888;
 }
 
 .win-card__stat-value {
   font-family: var(--font-display);
-  font-size: 1.2rem;
+  font-size: 1.5rem;
   line-height: 1;
+  font-weight: 900;
   font-variant-numeric: tabular-nums;
-  letter-spacing: 0.02em;
-  background: linear-gradient(135deg, #FF7700 0%, #FF6600 60%, #FF4400 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  letter-spacing: -0.02em;
+  color: #ff6a00;
+  text-shadow: 0 0 16px rgba(255, 106, 0, 0.3);
 }
 
 .win-card__stat-value--multiplier {
-  background: linear-gradient(135deg, #FF6600 0%, #FF4400 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  opacity: 0.75;
+  color: #ffffff;
+  text-shadow: none;
 }
 
 .win-card__stat-divider {
   width: 1px;
-  height: 30px;
-  background: linear-gradient(to bottom, transparent, rgba(212, 168, 67, 0.2), transparent);
+  height: 36px;
+  background: linear-gradient(to bottom, transparent, rgba(255, 255, 255, 0.1), transparent);
   flex-shrink: 0;
-  margin-bottom: 2px;
+  margin-bottom: 4px;
 }
 
 /* ── Empty state ────────────────────────────────────────────── */
