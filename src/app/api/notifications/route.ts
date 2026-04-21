@@ -23,7 +23,8 @@ export async function GET() {
     .limit(50);
 
   if (error) {
-    return NextResponse.json({ error: "Failed to fetch notifications" }, { status: 500 });
+    console.error("Notifications error:", error);
+    return NextResponse.json({ error: "Failed to fetch notifications", details: error }, { status: 500 });
   }
 
   return NextResponse.json({ notifications: data ?? [] });

@@ -18,41 +18,35 @@ function DynamicPageBackgroundInner() {
 
   const slug = pathname === "/" ? "home" : pathname.replace(/^\//, "").split("/")[0];
 
-  // Initial fetch + Supabase Realtime subscription
+  // Initial fetch (polling every 30s for admin changes)
   useEffect(() => {
     let cancelled = false;
 
-    // Initial fetch via API (seeds missing pages)
-    fetch("/api/page-settings")
-      .then((r) => r.json())
-      .then((data) => {
-        if (!cancelled) {
-          setAllSettings(data.settings ?? []);
-          setLoaded(true);
-        }
-      })
-      .catch(() => {});
+    const loadSettings = () => {
+      fetch("/api/page-settings")
+        .then((r) => r.json())
+        .then((data) => {
+          if (!cancelled) {
+            setAllSettings(data.settings ?? []);
+            setLoaded(true);
+          }
+        })
+        .catch(() => {
+          // Fail silently - keep existing settings
+          if (!cancelled && !loaded) {
+            setLoaded(true); // Mark as loaded even on error
+          }
+        });
+    };
 
-    // Realtime: listen for any UPDATE on page_settings
-    const channel = supabase
-      .channel("page-settings-live")
-      .on(
-        "postgres_changes",
-        { event: "UPDATE", schema: "public", table: "page_settings" },
-        (payload) => {
-          const updated = payload.new as PageSetting;
-          setAllSettings((prev) =>
-            prev.map((s) => (s.id === updated.id ? updated : s))
-          );
-        }
-      )
-      .subscribe();
+    loadSettings();
+    const interval = setInterval(loadSettings, 30_000); // Poll every 30s
 
     return () => {
       cancelled = true;
-      supabase.removeChannel(channel);
+      clearInterval(interval);
     };
-  }, []);
+  }, [loaded]);
 
   const settings = loaded ? (allSettings.find((s) => s.page_slug === slug) ?? null) : null;
 
