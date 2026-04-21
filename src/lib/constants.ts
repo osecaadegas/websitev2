@@ -1,8 +1,8 @@
 ﻿/* Site-wide constants */
 
-export const SITE_NAME = "SECAADEGAS";
+export const SITE_NAME = "Secahub";
 export const SITE_DESCRIPTION =
-  "O Seca de Adegas — casino streamer iGaming. Streams ao vivo, bonus hunts, batalhas de slots, e liga dos secas.";
+  "Slots Drinks and Wins";
 export const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://websitev2-zeta-nine.vercel.app";
 export const TWITCH_CHANNEL = process.env.NEXT_PUBLIC_TWITCH_CHANNEL || "secaadegas";
 

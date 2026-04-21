@@ -4,7 +4,7 @@ import type { Metadata } from "next";
 import { SITE_NAME, SITE_DESCRIPTION, SITE_URL } from "@/lib/constants";
 
 export const metadata: Metadata = {
-  title: `${SITE_NAME} — Enter the Arena`,
+  title: `${SITE_NAME} — Slots Drinks and Wins`,
   description: SITE_DESCRIPTION,
   alternates: {
     canonical: SITE_URL,

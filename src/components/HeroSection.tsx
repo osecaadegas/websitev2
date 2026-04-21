@@ -135,7 +135,7 @@ export function HeroSection() {
               animate={reduceMotion ? { opacity: 1 } : { opacity: 1, y: 0 }}
               transition={{ duration: 0.9, ease: "easeOut", delay: 0.25 }}
             >
-              ENTER THE ARENA
+              SLOTS DRINKS AND WINS
             </motion.h1>
 
             {/* Subline */}
@@ -145,8 +145,7 @@ export function HeroSection() {
               animate={reduceMotion ? { opacity: 1 } : { opacity: 1, y: 0 }}
               transition={{ duration: 0.9, ease: "easeOut", delay: 0.4 }}
             >
-              A brutal cinematic iGaming coliseum for live slot battles, bonus hunts,
-              ranked challengers, and high-conversion casino discovery.
+              The ultimate casino streaming hub for live slots, bonus hunts, giveaways, and big wins.
             </motion.p>
 
 
