@@ -342,7 +342,7 @@ function TabInventory({ logs }: { logs: Logs }) {
         const item = row.item || {};
         return (
           <div key={row.id} className="flex items-center gap-2 bg-[#141414] rounded-lg px-3 py-2">
-            {item.image_url && <img src={item.image_url} alt="" className="w-8 h-8 object-contain flex-shrink-0" />}
+            <div className="w-8 h-8 rounded bg-[#1a1a1a] flex items-center justify-center flex-shrink-0 text-xs">🎒</div>
             <div className="flex-1 min-w-0">
               <p className="text-white text-sm font-medium truncate">{item.name}</p>
               <p className={`text-xs ${RARITY_COLOR[item.rarity] || "text-[#888]"}`}>{item.category} · {item.rarity}</p>

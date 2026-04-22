@@ -5,6 +5,7 @@ import { getAdminUser } from "@/lib/ce-admin";
 export const dynamic = "force-dynamic";
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  try {
   const admin = await getAdminUser();
   if (!admin) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
@@ -59,10 +60,10 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
       .order("created_at", { ascending: false })
       .limit(30),
 
-    // Full inventory
+    // Full inventory — no image_url column on items table
     supabase
       .from("player_inventory")
-      .select("id, quantity, durability, equipped, acquired_at, item:items(id, name, category, rarity, image_url, base_price, power_bonus, intelligence_bonus, charisma_bonus)")
+      .select("id, quantity, durability, equipped, acquired_at, item:items(id, name, category, rarity, base_price, power_bonus, intelligence_bonus, charisma_bonus)")
       .eq("player_id", id)
       .order("acquired_at", { ascending: false }),
 
@@ -148,4 +149,8 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
       gambling: gamblingAgg,
     },
   });
+  } catch (err) {
+    console.error("[player logs]", err);
+    return NextResponse.json({ error: "Internal server error", detail: String(err) }, { status: 500 });
+  }
 }
