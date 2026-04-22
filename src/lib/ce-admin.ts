@@ -24,7 +24,7 @@ export async function getAdminUser(): Promise<AdminUser | null> {
 }
 
 /** Write an entry to ce_admin_logs. Fire-and-forget — does not throw. */
-export async function writeAuditLog(
+export function writeAuditLog(
   admin: AdminUser,
   action: string,
   entityType: string,
@@ -32,7 +32,7 @@ export async function writeAuditLog(
   entityName?: string | null,
   details?: Record<string, unknown> | null
 ) {
-  await supabase.from("ce_admin_logs").insert({
+  supabase.from("ce_admin_logs").insert({
     admin_id: admin.id,
     admin_username: admin.login || admin.display_name,
     action,
@@ -40,5 +40,6 @@ export async function writeAuditLog(
     entity_id: entityId ?? null,
     entity_name: entityName ?? null,
     details: details ?? null,
-  });
+  }).then(() => {}, () => {});
 }
+
