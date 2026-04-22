@@ -119,18 +119,6 @@ export default function CrimeDashboard() {
         {/* Header */}
         <div className="flex justify-between items-start">
           <div>
-            <h1 className="text-5xl md:text-6xl font-black mb-2 bg-gradient-to-r from-[#ff6a00] to-[#ff8533] bg-clip-text text-transparent">
-              CRIME EMPIRE
-            </h1>
-            <p className="text-lg text-[#888888] mb-1">
-              Bem-vindo, {player.display_name} - {player.class.toUpperCase()} Nível {player.level}
-              {player.prestige_level > 0 && (
-                <span className="ml-2 text-yellow-400">
-                  {"⭐".repeat(Math.min(player.prestige_level, 5))}
-                  {player.prestige_level > 5 && ` +${player.prestige_level - 5}`}
-                </span>
-              )}
-            </p>
             {player.prestige_level > 0 && (
               <p className="text-sm text-yellow-400">
                 🌟 Prestige {player.prestige_level} | Total de Níveis: {player.total_levels_earned}
