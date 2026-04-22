@@ -391,12 +391,11 @@ export function Sidebar({ open, onClose }: SidebarProps) {
           className="block w-full"
         >
           <Image
-            src="/images/crime_empire/crime_empire_logo.png"
+            src="/images/crime_empire/crime_empire_logo-removebg-preview.png"
             alt="Crime Empire"
             width={200}
             height={56}
             className="w-full h-auto object-contain hover:opacity-90 transition-opacity duration-200"
-            style={{ mixBlendMode: "screen" }}
           />
         </Link>
       </div>
