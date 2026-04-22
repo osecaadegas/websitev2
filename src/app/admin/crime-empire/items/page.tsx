@@ -1,12 +1,15 @@
-"use client";
+﻿"use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 
 type Item = {
   id: string; name: string; description: string; category: string; rarity: string;
   power_bonus: number; intelligence_bonus: number; charisma_bonus: number;
   hp_bonus: number; stamina_restore: number; base_price: number; tradeable: boolean;
+  image_url: string;
 };
+
+type ImageManifest = Record<string, string[]>;
 
 const CATEGORIES = ["weapon","armor","consumable","special","material"];
 const RARITIES   = ["common","rare","epic","legendary"];
@@ -18,7 +21,7 @@ const RARITY_COLOR: Record<string,string> = {
 const BLANK: Partial<Item> = {
   name:"", description:"", category:"weapon", rarity:"common",
   power_bonus:0, intelligence_bonus:0, charisma_bonus:0, hp_bonus:0,
-  stamina_restore:0, base_price:100, tradeable:true,
+  stamina_restore:0, base_price:100, tradeable:true, image_url:"",
 };
 
 export default function ItemsAdminPage() {
@@ -34,7 +37,29 @@ export default function ItemsAdminPage() {
   const [toast, setToast]       = useState<{msg:string;ok:boolean}|null>(null);
   const [confirmDelete, setConfirmDelete] = useState<Item|null>(null);
 
+  // Image picker state
+  const [manifest, setManifest]       = useState<ImageManifest | null>(null);
+  const [pickerOpen, setPickerOpen]   = useState(false);
+  const [pickerCat, setPickerCat]     = useState("");
+  const [pickerSearch, setPickerSearch] = useState("");
+
   const showToast = (msg:string, ok=true) => { setToast({msg,ok}); setTimeout(()=>setToast(null),3500); };
+
+  // Load image manifest once
+  useEffect(() => {
+    fetch("/images/crime_empire/items/manifest.json")
+      .then((r) => r.json())
+      .then((data: ImageManifest) => setManifest(data))
+      .catch(() => {/* non-critical */});
+  }, []);
+
+  const pickerImages = useMemo(() => {
+    if (!manifest || !pickerCat) return [];
+    const files = manifest[pickerCat] || [];
+    if (!pickerSearch.trim()) return files;
+    const lq = pickerSearch.toLowerCase();
+    return files.filter((f) => f.toLowerCase().includes(lq));
+  }, [manifest, pickerCat, pickerSearch]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -160,7 +185,17 @@ export default function ItemsAdminPage() {
               <tr><td colSpan={6} className="text-center py-8 text-[#444]">Nenhum item encontrado</td></tr>
             ) : items.map((item) => (
               <tr key={item.id} className="border-b border-[#151515] hover:bg-[#141414] transition-colors">
-                <td className="px-4 py-3 text-white font-medium">{item.name}</td>
+                <td className="px-4 py-3">
+                  <div className="flex items-center gap-2">
+                    {item.image_url ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={item.image_url} alt="" className="w-7 h-7 object-contain rounded bg-[#1a1a1a] flex-shrink-0" />
+                    ) : (
+                      <div className="w-7 h-7 rounded bg-[#1a1a1a] flex-shrink-0" />
+                    )}
+                    <span className="text-white font-medium">{item.name}</span>
+                  </div>
+                </td>
                 <td className="px-4 py-3 text-[#888]">{item.category}</td>
                 <td className={`px-4 py-3 font-bold ${RARITY_COLOR[item.rarity] || "text-[#888]"}`}>{item.rarity}</td>
                 <td className="px-4 py-3 text-right text-green-400 font-mono">💵 {item.base_price.toLocaleString()}</td>
@@ -218,6 +253,33 @@ export default function ItemsAdminPage() {
                   </div>
                 </label>
               </div>
+
+              {/* Image picker trigger */}
+              <div>
+                <span className="text-xs text-[#666] mb-2 block">Imagem</span>
+                <div className="flex items-center gap-2">
+                  {form.image_url ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={form.image_url} alt="" className="w-10 h-10 rounded-lg object-contain bg-[#1a1a1a] border border-[#333] flex-shrink-0" />
+                  ) : (
+                    <div className="w-10 h-10 rounded-lg bg-[#1a1a1a] border border-[#333] flex items-center justify-center text-[#444] text-lg flex-shrink-0">?</div>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => { setPickerOpen(true); if (!pickerCat && manifest) setPickerCat(Object.keys(manifest)[0] || ""); }}
+                    className="text-xs px-3 py-1.5 rounded-lg bg-[#1a1a1a] hover:bg-[#252525] text-white border border-[#333] transition-all"
+                  >
+                    🖼️ Escolher Imagem
+                  </button>
+                  {form.image_url && (
+                    <button type="button" onClick={() => setForm(f => ({...f, image_url: ""}))}
+                      className="text-xs px-2 py-1.5 rounded-lg bg-red-900/20 hover:bg-red-900/40 text-red-400 border border-red-900/30 transition-all">
+                      ✕ Limpar
+                    </button>
+                  )}
+                </div>
+              </div>
+
               <p className="text-xs text-[#444] uppercase tracking-widest pt-2">Bónus de Stats</p>
               <div className="grid grid-cols-3 gap-2">
                 {field("power_bonus","⚔️ Força","number")}
@@ -237,12 +299,80 @@ export default function ItemsAdminPage() {
         </div>
       )}
 
+      {/* Image Picker Overlay */}
+      {pickerOpen && (
+        <div className="fixed inset-0 z-50 bg-[#080808] flex flex-col">
+          <div className="flex items-center gap-3 px-5 py-4 border-b border-[#1e1e1e] flex-shrink-0">
+            <h3 className="text-white font-black flex-1">🖼️ Escolher Imagem</h3>
+            <input
+              value={pickerSearch}
+              onChange={(e) => setPickerSearch(e.target.value)}
+              placeholder="Pesquisar ficheiro…"
+              className="bg-[#0e0e0e] border border-[#333] rounded-lg px-3 py-1.5 text-sm text-white w-52"
+            />
+            <button onClick={() => setPickerOpen(false)} className="text-[#555] hover:text-white text-xl w-8 h-8 flex items-center justify-center rounded transition-colors">✕</button>
+          </div>
+
+          <div className="flex flex-1 overflow-hidden">
+            {/* Category sidebar */}
+            <div className="w-44 border-r border-[#1e1e1e] overflow-y-auto flex-shrink-0 p-2 space-y-0.5">
+              {manifest && Object.keys(manifest).sort().map((cat) => (
+                <button
+                  key={cat}
+                  onClick={() => { setPickerCat(cat); setPickerSearch(""); }}
+                  className={`w-full text-left px-3 py-1.5 rounded-lg text-xs transition-all capitalize ${
+                    pickerCat === cat
+                      ? "bg-[#ff6a00]/20 text-[#ff6a00] font-semibold"
+                      : "text-[#555] hover:text-white hover:bg-[#1a1a1a]"
+                  }`}
+                >
+                  {cat}
+                  <span className="text-[#333] ml-1 text-[10px]">({(manifest[cat] || []).length})</span>
+                </button>
+              ))}
+            </div>
+
+            {/* Images grid */}
+            <div className="flex-1 overflow-y-auto p-4">
+              {!pickerCat ? (
+                <p className="text-[#333] text-center py-20 text-sm">← Seleciona uma categoria</p>
+              ) : pickerImages.length === 0 ? (
+                <p className="text-[#333] text-center py-20 text-sm">Sem resultados para &quot;{pickerSearch}&quot;</p>
+              ) : (
+                <>
+                  <p className="text-[#444] text-xs mb-3">{pickerImages.length} imagens{pickerImages.length > 200 ? " (a mostrar 200)" : ""}</p>
+                  <div className="grid grid-cols-6 sm:grid-cols-8 md:grid-cols-10 lg:grid-cols-12 gap-2">
+                    {pickerImages.slice(0, 200).map((filename) => {
+                      const url = `/images/crime_empire/items/${encodeURIComponent(pickerCat)}/${encodeURIComponent(filename)}`;
+                      const isSelected = form.image_url === url;
+                      return (
+                        <button
+                          key={filename}
+                          title={filename.replace(/\.[^.]+$/, "")}
+                          onClick={() => { setForm((f) => ({...f, image_url: url})); setPickerOpen(false); }}
+                          className={`aspect-square rounded-lg overflow-hidden border-2 transition-all flex items-center justify-center p-1 bg-[#111] hover:border-[#ff6a00] ${
+                            isSelected ? "border-[#ff6a00] ring-2 ring-[#ff6a00]/30" : "border-[#222]"
+                          }`}
+                        >
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img src={url} alt={filename} className="w-full h-full object-contain" loading="lazy" />
+                        </button>
+                      );
+                    })}
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Confirm Delete */}
       {confirmDelete && (
         <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4">
           <div className="bg-[#0e0e0e] border border-red-900/50 rounded-2xl p-6 w-full max-w-sm text-center">
             <p className="text-4xl mb-3">🗑️</p>
-            <h3 className="text-white font-bold mb-1">Eliminar "{confirmDelete.name}"?</h3>
+            <h3 className="text-white font-bold mb-1">Eliminar &quot;{confirmDelete.name}&quot;?</h3>
             <p className="text-[#555] text-sm mb-5">Esta ação não pode ser revertida.</p>
             <div className="flex gap-3">
               <button onClick={()=>setConfirmDelete(null)} className="flex-1 py-2 rounded-lg bg-[#1a1a1a] text-white text-sm">Cancelar</button>
