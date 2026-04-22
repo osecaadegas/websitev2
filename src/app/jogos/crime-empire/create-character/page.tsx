@@ -3,13 +3,14 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
+import Image from "next/image";
 import Link from "next/link";
 
 const CLASSES = [
   {
     id: "thief",
     name: "Ladrão",
-    icon: "🦹",
+    image: "/images/crime_empire/characters/thief.png",
     description: "Especialista em roubos e furtos",
     bonuses: ["+15% sucesso em roubos", "+10% item drops"],
     color: "from-purple-600 to-purple-800",
@@ -17,7 +18,7 @@ const CLASSES = [
   {
     id: "hooligan",
     name: "Hooligan",
-    icon: "💪",
+    image: "/images/crime_empire/characters/hooligan.png",
     description: "Violento e respeitado nas ruas",
     bonuses: ["+20% ganho de Respeito", "Bónus em PvP"],
     color: "from-red-600 to-red-800",
@@ -25,7 +26,7 @@ const CLASSES = [
   {
     id: "businessman",
     name: "Empresário",
-    icon: "💼",
+    image: "/images/crime_empire/characters/businessman.png",
     description: "Mestre dos negócios ilegais",
     bonuses: ["+20% lucro de negócios", "-15% custo de empregados"],
     color: "from-blue-600 to-blue-800",
@@ -33,7 +34,7 @@ const CLASSES = [
   {
     id: "hitman",
     name: "Assassino",
-    icon: "🎯",
+    image: "/images/crime_empire/characters/hitman.png",
     description: "Profissional em contratos mortais",
     bonuses: ["+20% sucesso em contratos", "+Power scaling"],
     color: "from-gray-700 to-gray-900",
@@ -41,7 +42,7 @@ const CLASSES = [
   {
     id: "scammer",
     name: "Burlão",
-    icon: "🃏",
+    image: "/images/crime_empire/characters/scammer.png",
     description: "Especialista em fraudes e esquemas",
     bonuses: ["+15% sucesso em scams", "+20% ganho VCash"],
     color: "from-yellow-600 to-yellow-800",
@@ -49,7 +50,7 @@ const CLASSES = [
   {
     id: "brute",
     name: "Bruto",
-    icon: "👊",
+    image: "/images/crime_empire/characters/brute.png",
     description: "Dominância física total",
     bonuses: ["+25% dano em PvP", "+Power em combate"],
     color: "from-orange-600 to-orange-800",
@@ -57,7 +58,7 @@ const CLASSES = [
   {
     id: "dealer",
     name: "Traficante",
-    icon: "💊",
+    image: "/images/crime_empire/characters/dealer.png",
     description: "Rei do mercado negro",
     bonuses: ["+25% produção de drogas", "Bónus em drug farms"],
     color: "from-green-600 to-green-800",
@@ -65,7 +66,7 @@ const CLASSES = [
   {
     id: "pimp",
     name: "Chulo",
-    icon: "💎",
+    image: "/images/crime_empire/characters/pimp.png",
     description: "Controla o negócio do prazer",
     bonuses: ["+30% income de brothel", "-20% risco de workers"],
     color: "from-pink-600 to-pink-800",
@@ -150,7 +151,15 @@ export default function CreateCharacter() {
                     : "bg-[#121212] border-2 border-[#222222] hover:border-[#ff6a00]"
                 }`}
               >
-                <div className="text-6xl mb-4">{classData.icon}</div>
+                <div className="w-20 h-20 rounded-full overflow-hidden mb-4 flex items-center justify-center">
+                  <Image
+                    src={classData.image}
+                    alt={classData.name}
+                    width={80}
+                    height={80}
+                    className="w-full h-full object-contain"
+                  />
+                </div>
                 <h3 className="text-2xl font-black mb-2">{classData.name}</h3>
                 <p className="text-sm text-[#cccccc] mb-4">{classData.description}</p>
 
