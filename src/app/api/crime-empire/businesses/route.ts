@@ -146,10 +146,14 @@ async function handlePurchase(player: any, businessId: string) {
   }
 
   // Purchase business
+  const maxEmp = player.class === "businessman"
+    ? Math.floor(business.max_employees * 1.30)
+    : business.max_employees;
+
   await supabase.from("player_businesses").insert({
     player_id: player.id,
     business_id: businessId,
-    max_employees: business.max_employees,
+    max_employees: maxEmp,
   });
 
   // Deduct money
@@ -357,6 +361,8 @@ async function handleCollect(player: any, businessId: string) {
 
   // Update player money
   if (collectedMoney > 0) {
+    // Businessman gets +20% income on regular businesses
+    if (player.class === "businessman") collectedMoney = Math.floor(collectedMoney * 1.20);
     await supabase
       .from("crime_players")
       .update({ dirty_cash: player.dirty_cash + collectedMoney })

@@ -91,6 +91,19 @@ export async function POST(request: Request) {
 
   const bonusSuccessRate = experience?.bonus_success_rate || 0;
 
+  // Get equipped items success_rate bonus
+  const { data: equippedItems } = await supabase
+    .from("player_inventory")
+    .select("items(success_rate_bonus)")
+    .eq("player_id", player.id)
+    .eq("equipped", true);
+
+  const rawItemBonus = (equippedItems || []).reduce((sum: number, row: any) => {
+    return sum + (row.items?.success_rate_bonus || 0);
+  }, 0);
+  // Hooligan gets +15% on all equipped item bonuses
+  const itemSuccessBonus = player.class === 'hooligan' ? rawItemBonus * 1.15 : rawItemBonus;
+
   // Calculate success rate
   let baseSuccess = crime.base_success_rate;
 
@@ -113,7 +126,7 @@ export async function POST(request: Request) {
   const prestigeBonus = Math.min(player.prestige_level * 0.02, 0.20);
   baseSuccess += prestigeBonus;
 
-  const finalSuccessRate = Math.min(0.95, baseSuccess + bonusSuccessRate);
+  const finalSuccessRate = Math.min(0.95, baseSuccess + bonusSuccessRate + itemSuccessBonus);
 
   // Apply addiction debuff: each 1% addiction = -0.5% success rate (max -50% at 100 addiction)
   const addictionPenalty = ((player.addiction || 0) / 100) * 0.5;

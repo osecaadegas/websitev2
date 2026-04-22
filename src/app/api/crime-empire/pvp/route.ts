@@ -142,9 +142,25 @@ export async function POST(req: NextRequest) {
       .single();
     if (!defender) return NextResponse.json({ error: "Jogador não encontrado" }, { status: 404 });
 
+    // Fetch equipped items for stat bonuses
+    const [atkItemsRes, defItemsRes] = await Promise.all([
+      supabase.from("player_inventory").select("items(power_bonus,intelligence_bonus,charisma_bonus)").eq("player_id", attacker.id).eq("equipped", true),
+      supabase.from("player_inventory").select("items(power_bonus,intelligence_bonus,charisma_bonus)").eq("player_id", defender.id).eq("equipped", true),
+    ]);
+    function sumItemStats(rows: any[], playerClass: string) {
+      const mult = playerClass === "hooligan" ? 1.15 : 1.0;
+      return (rows || []).reduce((acc: any, r: any) => ({
+        power: acc.power + (r.items?.power_bonus || 0) * mult,
+        intelligence: acc.intelligence + (r.items?.intelligence_bonus || 0) * mult,
+        charisma: acc.charisma + (r.items?.charisma_bonus || 0) * mult,
+      }), { power: 0, intelligence: 0, charisma: 0 });
+    }
+    const atkItemBonus = sumItemStats(atkItemsRes.data || [], attacker.class);
+    const defItemBonus = sumItemStats(defItemsRes.data || [], defender.class);
+
     // Combat calculation
-    const atkScore = calcCombatScore(attacker);
-    const defScore = calcCombatScore(defender);
+    const atkScore = calcCombatScore({ ...attacker, power: attacker.power + atkItemBonus.power, intelligence: attacker.intelligence + atkItemBonus.intelligence, charisma: attacker.charisma + atkItemBonus.charisma });
+    const defScore = calcCombatScore({ ...defender, power: defender.power + defItemBonus.power, intelligence: defender.intelligence + defItemBonus.intelligence, charisma: defender.charisma + defItemBonus.charisma });
     const attackerWon = atkScore >= defScore;
     const winner = attackerWon ? attacker : defender;
     const loser = attackerWon ? defender : attacker;
