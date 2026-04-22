@@ -9,6 +9,7 @@ interface Player {
   id: string;
   username: string;
   display_name: string;
+  avatar_url?: string;
   class: string;
   level: number;
   xp: number;
@@ -167,6 +168,31 @@ export default function CrimeDashboard() {
         {/* Full Player Stats */}
         <h2 className="text-2xl font-bold mt-12 mb-6">Estatísticas</h2>
 
+        {/* Character Identity Card */}
+        <div className="flex items-center gap-5 p-5 rounded-xl bg-[#121212] border border-[#222222] mb-6">
+          {player.avatar_url && (
+            <img src={player.avatar_url} alt={player.display_name} className="w-16 h-16 rounded-full border-2 border-[#ff6a00]" />
+          )}
+          <div className="flex-1 min-w-0">
+            <p className="text-xl font-black text-white truncate">{player.display_name || player.username}</p>
+            <p className="text-sm text-[#888] truncate">@{player.username}</p>
+          </div>
+          <div className="flex flex-col items-end gap-1">
+            <span className="px-3 py-1 rounded-full bg-[#ff6a00]/20 border border-[#ff6a00]/40 text-[#ff6a00] text-xs font-bold uppercase tracking-wide">
+              {player.class}
+            </span>
+            {player.prestige_level > 0 ? (
+              <span className="px-3 py-1 rounded-full bg-yellow-500/20 border border-yellow-500/40 text-yellow-400 text-xs font-bold">
+                ⭐ Prestige {player.prestige_level} · {player.total_levels_earned} níveis
+              </span>
+            ) : (
+              <span className="px-3 py-1 rounded-full bg-[#1a1a1a] border border-[#2a2a2a] text-[#555] text-xs">
+                Prestige 0
+              </span>
+            )}
+          </div>
+        </div>
+
         {/* Combat attributes */}
         <div className="grid grid-cols-3 gap-4 mb-4">
           {[
@@ -206,15 +232,18 @@ export default function CrimeDashboard() {
           </div>
         </div>
 
-        {/* Money & currency */}
+        {/* Money, currency & progression */}
         <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
           {[
             { label: "Dinheiro Sujo", value: `$${player.dirty_cash.toLocaleString()}`, icon: "💵", color: "text-green-400", bg: "from-green-600/10 to-green-700/5", border: "border-green-600/30" },
             { label: "Dinheiro Limpo", value: `$${player.cash.toLocaleString()}`, icon: "💰", color: "text-emerald-400", bg: "from-emerald-600/10 to-emerald-700/5", border: "border-emerald-600/30" },
             { label: "Crypto", value: `₿${(player.crypto || 0).toLocaleString()}`, icon: "💎", color: "text-purple-400", bg: "from-purple-600/10 to-purple-700/5", border: "border-purple-600/30" },
+            { label: "VCash", value: `V${player.vcash.toLocaleString()}`, icon: "🪙", color: "text-pink-400", bg: "from-pink-600/10 to-pink-700/5", border: "border-pink-600/30" },
             { label: "Respeito", value: player.respect.toLocaleString(), icon: "👑", color: "text-orange-400", bg: "from-orange-600/10 to-orange-700/5", border: "border-orange-600/30" },
             { label: "Nível", value: `${player.level}`, icon: "📈", color: "text-cyan-400", bg: "from-cyan-600/10 to-cyan-700/5", border: "border-cyan-600/30" },
             { label: "XP", value: `${player.xp.toLocaleString()} / ${player.xp_to_next_level.toLocaleString()}`, icon: "⭐", color: "text-[#ff6a00]", bg: "from-[#ff6a00]/10 to-[#ff6a00]/5", border: "border-[#ff6a00]/30" },
+            { label: "Prestige", value: player.prestige_level > 0 ? `⭐ Nível ${player.prestige_level}` : "—", icon: "🌟", color: player.prestige_level > 0 ? "text-yellow-400" : "text-[#444]", bg: player.prestige_level > 0 ? "from-yellow-600/10 to-yellow-700/5" : "from-[#111] to-[#111]", border: player.prestige_level > 0 ? "border-yellow-600/30" : "border-[#1e1e1e]" },
+            { label: "Níveis Totais", value: player.total_levels_earned.toLocaleString(), icon: "🏆", color: "text-amber-400", bg: "from-amber-600/10 to-amber-700/5", border: "border-amber-600/30" },
           ].map((s) => (
             <div key={s.label} className={`p-4 rounded-xl bg-gradient-to-br ${s.bg} border ${s.border}`}>
               <div className="text-2xl mb-2">{s.icon}</div>
