@@ -28,6 +28,7 @@ interface Player {
   crypto?: number;
   stamina: number;
   max_stamina: number;
+  addiction?: number;
   in_jail: boolean;
   jail_release_at: string | null;
   boost_active: boolean;
@@ -208,7 +209,7 @@ export default function CrimeDashboard() {
           ))}
         </div>
 
-        {/* HP & Stamina bars */}
+        {/* HP, Stamina & Addiction bars */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
           <div className="p-4 rounded-xl bg-[#121212] border border-[#222222]">
             <div className="flex items-center justify-between mb-2">
@@ -230,6 +231,28 @@ export default function CrimeDashboard() {
                 style={{ width: `${Math.min((player.stamina / player.max_stamina) * 100, 100)}%` }} />
             </div>
           </div>
+          {(() => {
+            const addiction = player.addiction ?? 0;
+            const barColor = addiction === 0 ? "bg-green-600" : addiction < 40 ? "bg-yellow-500" : addiction < 70 ? "bg-orange-500" : "bg-red-600";
+            const textColor = addiction === 0 ? "text-green-400" : addiction < 40 ? "text-yellow-400" : addiction < 70 ? "text-orange-400" : "text-red-400";
+            const borderColor = addiction === 0 ? "border-[#222222]" : addiction < 40 ? "border-yellow-900/50" : addiction < 70 ? "border-orange-900/50" : "border-red-900/50";
+            const bgColor = addiction === 0 ? "bg-[#121212]" : addiction < 40 ? "bg-yellow-900/10" : addiction < 70 ? "bg-orange-900/10" : "bg-red-900/10";
+            return (
+              <div className={`p-4 rounded-xl ${bgColor} border ${borderColor} md:col-span-2`}>
+                <div className="flex items-center justify-between mb-2">
+                  <span className={`text-sm font-semibold ${textColor}`}>💉 Vício</span>
+                  <span className={`text-sm font-bold ${textColor}`}>{addiction}%</span>
+                </div>
+                <div className="w-full bg-[#1a1a1a] rounded-full h-3">
+                  <div className={`${barColor} h-3 rounded-full transition-all duration-500`}
+                    style={{ width: `${addiction}%` }} />
+                </div>
+                {addiction > 0 && (
+                  <p className="text-xs text-[#888] mt-2">Stats de combate reduzidos em <span className={`font-bold ${textColor}`}>{((addiction / 100) * 50).toFixed(0)}%</span> — vai ao Hospital para tratar.</p>
+                )}
+              </div>
+            );
+          })()}
         </div>
 
         {/* Money, currency & progression */}
