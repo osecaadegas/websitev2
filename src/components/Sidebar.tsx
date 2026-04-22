@@ -395,7 +395,8 @@ export function Sidebar({ open, onClose }: SidebarProps) {
             alt="Crime Empire"
             width={200}
             height={56}
-            className="w-full h-auto object-contain opacity-90 hover:opacity-100 transition-opacity duration-200"
+            className="w-full h-auto object-contain hover:opacity-100 transition-opacity duration-200"
+            style={{ mixBlendMode: "screen" }}
           />
         </Link>
       </div>
