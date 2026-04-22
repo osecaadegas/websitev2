@@ -13,11 +13,21 @@ async function getAuthUser() {
 
 // Server-side only — real coin IDs NEVER sent to client
 const COIN_MAP: Record<string, { realId: string; displayName: string; symbol: string; color: string }> = {
-  "nether-coin":   { realId: "bitcoin",      displayName: "NetherCoin",   symbol: "NTC", color: "#f7931a" },
-  "ghost-token":   { realId: "ethereum",     displayName: "GhostToken",   symbol: "GTK", color: "#627eea" },
-  "shadow-node":   { realId: "solana",       displayName: "ShadowNode",   symbol: "SNO", color: "#9945ff" },
-  "vault-coin":    { realId: "binancecoin",  displayName: "VaultCoin",    symbol: "VTC", color: "#f0b90b" },
-  "phantom-chain": { realId: "ripple",       displayName: "PhantomChain", symbol: "PHC", color: "#00aae4" },
+  "nether-coin":    { realId: "bitcoin",       displayName: "NetherCoin",    symbol: "NTC", color: "#f7931a" },
+  "ghost-token":    { realId: "ethereum",      displayName: "GhostToken",    symbol: "GTK", color: "#627eea" },
+  "shadow-node":    { realId: "solana",        displayName: "ShadowNode",    symbol: "SNO", color: "#9945ff" },
+  "vault-coin":     { realId: "binancecoin",   displayName: "VaultCoin",     symbol: "VTC", color: "#f0b90b" },
+  "phantom-chain":  { realId: "ripple",        displayName: "PhantomChain",  symbol: "PHC", color: "#00aae4" },
+  "iron-ledger":    { realId: "cardano",       displayName: "IronLedger",    symbol: "ILD", color: "#0033ad" },
+  "dusk-protocol":  { realId: "avalanche-2",   displayName: "DuskProtocol",  symbol: "DPR", color: "#e84142" },
+  "hex-pulse":      { realId: "dogecoin",      displayName: "HexPulse",      symbol: "HXP", color: "#c2a633" },
+  "rogue-net":      { realId: "polkadot",      displayName: "RogueNet",      symbol: "RGN", color: "#e6007a" },
+  "cipher-block":   { realId: "chainlink",     displayName: "CipherBlock",   symbol: "CBK", color: "#375bd2" },
+  "smog-chain":     { realId: "tron",          displayName: "SmogChain",     symbol: "SGC", color: "#ff0013" },
+  "wraith-index":   { realId: "near",          displayName: "WraithIndex",   symbol: "WRI", color: "#00c08b" },
+  "black-ledger":   { realId: "litecoin",      displayName: "BlackLedger",   symbol: "BLK", color: "#bfbbbb" },
+  "nova-shard":     { realId: "stellar",       displayName: "NovaShard",     symbol: "NVS", color: "#7d00ff" },
+  "dead-exchange":  { realId: "uniswap",       displayName: "DeadExchange",  symbol: "DEX", color: "#ff007a" },
 };
 
 type PriceData = { usd: number; change24h: number; change7d: number; sparkline: number[] };
@@ -43,11 +53,21 @@ async function fetchMarketData(): Promise<Record<string, PriceData>> {
     return result;
   } catch {
     return {
-      bitcoin:     { usd: 65000, change24h: 0.5,  change7d: 1.2,  sparkline: [] },
-      ethereum:    { usd: 3200,  change24h: -0.3, change7d: -1.5, sparkline: [] },
-      solana:      { usd: 150,   change24h: 1.2,  change7d: 3.1,  sparkline: [] },
-      binancecoin: { usd: 580,   change24h: 0.1,  change7d: 0.8,  sparkline: [] },
-      ripple:      { usd: 0.55,  change24h: -0.8, change7d: -2.3, sparkline: [] },
+      bitcoin:       { usd: 65000, change24h: 0.5,  change7d: 1.2,  sparkline: [] },
+      ethereum:      { usd: 3200,  change24h: -0.3, change7d: -1.5, sparkline: [] },
+      solana:        { usd: 150,   change24h: 1.2,  change7d: 3.1,  sparkline: [] },
+      binancecoin:   { usd: 580,   change24h: 0.1,  change7d: 0.8,  sparkline: [] },
+      ripple:        { usd: 0.55,  change24h: -0.8, change7d: -2.3, sparkline: [] },
+      cardano:       { usd: 0.45,  change24h: 0.4,  change7d: 1.1,  sparkline: [] },
+      "avalanche-2": { usd: 38,    change24h: -1.2, change7d: 2.4,  sparkline: [] },
+      dogecoin:      { usd: 0.16,  change24h: 2.1,  change7d: 5.3,  sparkline: [] },
+      polkadot:      { usd: 7.2,   change24h: -0.5, change7d: -1.8, sparkline: [] },
+      chainlink:     { usd: 14.8,  change24h: 0.9,  change7d: 2.6,  sparkline: [] },
+      tron:          { usd: 0.12,  change24h: 0.3,  change7d: 0.7,  sparkline: [] },
+      near:          { usd: 6.5,   change24h: 1.4,  change7d: 3.9,  sparkline: [] },
+      litecoin:      { usd: 88,    change24h: -0.6, change7d: -1.3, sparkline: [] },
+      stellar:       { usd: 0.11,  change24h: 0.7,  change7d: 1.9,  sparkline: [] },
+      uniswap:       { usd: 9.4,   change24h: -1.1, change7d: -2.7, sparkline: [] },
     };
   }
 }
