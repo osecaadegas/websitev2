@@ -62,6 +62,7 @@ export function Navbar({ onMenuToggle }: NavbarProps) {
   const pageTitle = PAGE_TITLES[pathname] ?? null;
   const isDailySession = pathname === "/daily-session";
   const isLive = pathname === "/live";
+  const isCrimeEmpire = pathname.startsWith("/jogos/crime-empire");
 
   /* ── Next stream (for /live marquee) ─────────── */
   const [nextStream, setNextStream] = useState<{ title: string; stream_date: string; start_time: string; categories: string[]; casino: string | null } | null>(null);
@@ -232,6 +233,16 @@ export function Navbar({ onMenuToggle }: NavbarProps) {
               <span className="text-arena-smoke/70 text-xs capitalize hidden md:inline">
                 {sessionInfo.date}
               </span>
+            </div>
+          ) : isCrimeEmpire ? (
+            <div className="hidden sm:flex items-center absolute left-1/2 lg:left-[calc(50%+7rem)] -translate-x-1/2 pointer-events-none">
+              <Image
+                src="/images/crime_empire/crime_empire_logo.png"
+                alt="Crime Empire"
+                width={160}
+                height={40}
+                className="h-9 w-auto object-contain pointer-events-auto"
+              />
             </div>
           ) : pageTitle ? (
             <div className="hidden sm:flex items-center absolute left-1/2 lg:left-[calc(50%+7rem)] -translate-x-1/2 pointer-events-none">
