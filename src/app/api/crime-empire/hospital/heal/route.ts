@@ -20,8 +20,46 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
     }
 
-    const { healAmount } = await req.json();
+    const { healAmount, action } = await req.json();
 
+    // ── CURE ADDICTION ────────────────────────────────────────────
+    if (action === "cure_addiction") {
+      const { data: player, error: playerError } = await supabase
+        .from("crime_players")
+        .select("id, cash, addiction")
+        .eq("user_id", user.id)
+        .single();
+
+      if (playerError || !player) {
+        return NextResponse.json({ error: "Jogador não encontrado" }, { status: 404 });
+      }
+
+      if (!player.addiction || player.addiction <= 0) {
+        return NextResponse.json({ error: "Não tens vício para curar" }, { status: 400 });
+      }
+
+      // Cost: $100 per addiction point, minimum $500
+      const cost = Math.max(500, player.addiction * 100);
+
+      if (player.cash < cost) {
+        return NextResponse.json({ error: "Dinheiro insuficiente para o tratamento de desintoxicação" }, { status: 400 });
+      }
+
+      await supabase
+        .from("crime_players")
+        .update({ addiction: 0, cash: player.cash - cost })
+        .eq("id", player.id);
+
+      return NextResponse.json({
+        success: true,
+        message: `Desintoxicação completa! Vício curado. Custou $${cost.toLocaleString()}.`,
+        cost,
+        newAddiction: 0,
+        remainingCash: player.cash - cost,
+      });
+    }
+
+    // ── HEAL HP ───────────────────────────────────────────────────
     if (!healAmount || healAmount <= 0) {
       return NextResponse.json({ error: "Quantidade de cura inválida" }, { status: 400 });
     }

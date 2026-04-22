@@ -22,7 +22,7 @@ export async function GET() {
 
   const { data: player } = await supabase
     .from("crime_players")
-    .select("id, hp, max_hp, stamina, max_stamina, cash, dirty_cash")
+    .select("id, hp, max_hp, stamina, max_stamina, cash, dirty_cash, addiction")
     .eq("user_id", user.id)
     .single();
 
@@ -56,6 +56,7 @@ export async function GET() {
       max_hp: player.max_hp,
       stamina: player.stamina,
       max_stamina: player.max_stamina,
+      addiction: player.addiction ?? 0,
     },
   });
 }
@@ -70,7 +71,7 @@ export async function POST(req: NextRequest) {
 
   const { data: player } = await supabase
     .from("crime_players")
-    .select("id, hp, max_hp, stamina, max_stamina")
+    .select("id, hp, max_hp, stamina, max_stamina, addiction")
     .eq("user_id", user.id)
     .single();
 
@@ -116,10 +117,14 @@ export async function POST(req: NextRequest) {
     const newHp = Math.min(player.max_hp, player.hp + hpGain);
     const newStamina = Math.min(player.max_stamina, player.stamina + staminaGain);
 
+    // Stamina consumables increase addiction by +5 (capped at 100)
+    const addictionGain = staminaGain > 0 ? 5 : 0;
+    const newAddiction = Math.min(100, (player.addiction ?? 0) + addictionGain);
+
     // Apply effects to player
     await supabase
       .from("crime_players")
-      .update({ hp: newHp, stamina: newStamina })
+      .update({ hp: newHp, stamina: newStamina, addiction: newAddiction })
       .eq("id", player.id);
 
     // Decrement or remove from inventory
@@ -135,12 +140,14 @@ export async function POST(req: NextRequest) {
     const effects: string[] = [];
     if (hpGain > 0) effects.push(`+${newHp - player.hp} HP`);
     if (staminaGain > 0) effects.push(`+${newStamina - player.stamina} Stamina`);
+    if (addictionGain > 0) effects.push(`+${addictionGain} Vício`);
 
     return NextResponse.json({
       success: true,
       message: `Usaste ${item.name}! ${effects.join(", ")}`,
       newHp,
       newStamina,
+      newAddiction,
     });
   }
 

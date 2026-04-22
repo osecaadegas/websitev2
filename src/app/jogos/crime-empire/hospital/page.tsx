@@ -13,6 +13,7 @@ interface Player {
   max_hp: number;
   cash: number;
   dirty_cash: number;
+  addiction: number;
 }
 
 export default function HospitalPage() {
@@ -23,6 +24,8 @@ export default function HospitalPage() {
   const [healAmount, setHealAmount] = useState(0);
   const [healCost, setHealCost] = useState(0);
   const [healing, setHealing] = useState(false);
+  const [curing, setCuring] = useState(false);
+  const [cureMsg, setCureMsg] = useState<string | null>(null);
 
   const HP_COST_PER_POINT = 10; // $10 per HP point
 
@@ -106,6 +109,30 @@ export default function HospitalPage() {
     }
   };
 
+  const cureAddiction = async () => {
+    if (!player || curing || player.addiction <= 0) return;
+    setCuring(true);
+    setCureMsg(null);
+    try {
+      const res = await fetch("/api/crime-empire/hospital/heal", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "cure_addiction" }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setCureMsg(`❌ ${data.error || "Erro ao desintoxicar"}`);
+      } else {
+        setCureMsg(data.message);
+        fetchPlayer();
+      }
+    } catch {
+      setCureMsg("❌ Erro ao processar tratamento");
+    } finally {
+      setCuring(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex-1 flex items-center justify-center">
@@ -119,6 +146,8 @@ export default function HospitalPage() {
   const hpPercentage = (player.hp / player.max_hp) * 100;
   const isFullHealth = player.hp >= player.max_hp;
   const maxHealPossible = player.max_hp - player.hp;
+  const addiction = player.addiction ?? 0;
+  const detoxCost = Math.max(500, addiction * 100);
 
   return (
     <div className="flex-1 text-white py-12 px-6">
@@ -299,6 +328,76 @@ export default function HospitalPage() {
             </div>
           </motion.div>
         </div>
+
+        {/* Addiction / Detox Section */}
+        <motion.div
+          initial={{ y: 20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ delay: 0.2 }}
+          className={`mt-6 p-6 rounded-2xl border-2 ${addiction > 0 ? "bg-[#1a0a2e] border-purple-800" : "bg-[#121212] border-[#222222]"}`}
+        >
+          <h2 className="text-2xl font-bold mb-4 flex items-center gap-2">
+            💊 Vício
+          </h2>
+
+          {/* Addiction bar */}
+          <div className="mb-4">
+            <div className="flex justify-between text-sm mb-2">
+              <span className="text-[#888888]">Nível de Vício</span>
+              <span className={`font-bold ${addiction === 0 ? "text-green-400" : addiction < 40 ? "text-yellow-400" : addiction < 70 ? "text-orange-400" : "text-red-400"}`}>
+                {addiction}%
+              </span>
+            </div>
+            <div className="w-full bg-[#1a1a1a] rounded-full h-5 overflow-hidden">
+              <div
+                className={`h-5 rounded-full transition-all duration-500 ${addiction === 0 ? "bg-green-600" : addiction < 40 ? "bg-yellow-500" : addiction < 70 ? "bg-orange-500" : "bg-red-600"}`}
+                style={{ width: `${addiction}%` }}
+              />
+            </div>
+          </div>
+
+          {addiction === 0 ? (
+            <div className="p-4 rounded-lg bg-green-900/20 border border-green-700 text-green-400 font-semibold text-sm">
+              ✅ Sem vício. Os teus stats estão no máximo!
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <div className="p-4 rounded-lg bg-purple-900/20 border border-purple-700 text-sm space-y-1">
+                <p className="text-purple-300 font-bold">⚠️ Efeitos do Vício</p>
+                <p className="text-[#aaa]">Os teus stats de combate estão reduzidos em <span className="text-red-400 font-bold">{((addiction / 100) * 50).toFixed(0)}%</span> devido ao vício.</p>
+                <p className="text-[#aaa]">A tua taxa de sucesso em crimes está penalizada.</p>
+              </div>
+
+              <div className="p-4 rounded-xl bg-gradient-to-br from-purple-900/30 to-purple-800/30 border-2 border-purple-600">
+                <div className="flex justify-between items-center mb-3">
+                  <span className="font-bold text-purple-300">Desintoxicação Completa</span>
+                  <span className="text-xs text-[#888]">Vício → 0%</span>
+                </div>
+                <div className="flex justify-between items-center mb-4">
+                  <span className="text-[#888]">Custo:</span>
+                  <span className="text-2xl font-black text-yellow-400">${detoxCost.toLocaleString()}</span>
+                </div>
+                <button
+                  onClick={cureAddiction}
+                  disabled={curing || player.cash < detoxCost}
+                  className={`w-full py-3 rounded-lg font-bold transition-all ${
+                    !curing && player.cash >= detoxCost
+                      ? "bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-500 hover:to-purple-600 text-white"
+                      : "bg-[#222] text-[#555] cursor-not-allowed"
+                  }`}
+                >
+                  {curing ? "A desintoxicar..." : player.cash >= detoxCost ? "💉 Desintoxicar" : "Dinheiro Insuficiente"}
+                </button>
+              </div>
+
+              {cureMsg && (
+                <div className={`p-3 rounded-lg text-sm font-semibold ${cureMsg.startsWith("❌") ? "bg-red-900/30 border border-red-700 text-red-400" : "bg-green-900/30 border border-green-700 text-green-400"}`}>
+                  {cureMsg}
+                </div>
+              )}
+            </div>
+          )}
+        </motion.div>
       </div>
     </div>
   );

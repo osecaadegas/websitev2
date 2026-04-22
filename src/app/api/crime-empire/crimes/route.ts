@@ -115,9 +115,13 @@ export async function POST(request: Request) {
 
   const finalSuccessRate = Math.min(0.95, baseSuccess + bonusSuccessRate);
 
+  // Apply addiction debuff: each 1% addiction = -0.5% success rate (max -50% at 100 addiction)
+  const addictionPenalty = ((player.addiction || 0) / 100) * 0.5;
+  const effectiveSuccessRate = Math.max(0.05, finalSuccessRate * (1 - addictionPenalty));
+
   // Roll for success
   const roll = Math.random();
-  const success = roll <= finalSuccessRate;
+  const success = roll <= effectiveSuccessRate;
 
   // Calculate rewards
   let dirtyCashEarned = 0;
@@ -126,7 +130,7 @@ export async function POST(request: Request) {
 
   if (success) {
     // Reward scaling based on success rate
-    const rewardMultiplier = 1 / finalSuccessRate;
+    const rewardMultiplier = 1 / effectiveSuccessRate;
     const baseReward = Math.floor(Math.random() * (crime.max_dirty_cash - crime.min_dirty_cash + 1)) + crime.min_dirty_cash;
     dirtyCashEarned = Math.floor(baseReward * rewardMultiplier);
     xpEarned = Math.floor(crime.xp_reward * (boostActive ? 1.2 : 1));
@@ -196,7 +200,7 @@ export async function POST(request: Request) {
     dirty_cash_earned: dirtyCashEarned,
     xp_earned: xpEarned,
     respect_earned: respectEarned,
-    success_rate_used: finalSuccessRate,
+    success_rate_used: effectiveSuccessRate,
   });
 
   // Update crime experience
@@ -305,7 +309,7 @@ export async function POST(request: Request) {
     leveled_up: leveledUp,
     new_level: newLevel,
     new_stamina: newStamina,
-    success_rate_used: finalSuccessRate,
+    success_rate_used: effectiveSuccessRate,
     dropped_items: droppedItems,
   });
 }
