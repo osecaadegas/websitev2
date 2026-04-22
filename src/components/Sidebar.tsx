@@ -392,13 +392,13 @@ export function Sidebar({ open, onClose }: SidebarProps) {
         <Link
           href="/jogos/crime-empire/dashboard"
           onClick={onClose}
-          className="block w-full py-1"
+          className="block w-full"
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src="/images/crime_empire/crime_empire_logo-removebg-preview.png"
             alt="Crime Empire"
-            className="w-1/2 h-auto object-contain mx-auto hover:opacity-90 transition-opacity duration-200"
+            className="w-1/2 h-auto object-contain hover:opacity-90 transition-opacity duration-200"
           />
         </Link>
 
