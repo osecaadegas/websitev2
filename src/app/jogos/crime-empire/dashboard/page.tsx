@@ -1,7 +1,6 @@
 ﻿"use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
 import { useRouter } from "next/navigation";
 import { CrimeEmpireNav } from "@/components/CrimeEmpireNav";
@@ -163,23 +162,6 @@ export default function CrimeDashboard() {
           </div>
         )}
 
-        {/* Player Stats */}
-        <div className="mt-8 grid grid-cols-2 md:grid-cols-4 gap-4">
-          {[
-            { label: "Dinheiro Sujo", value: `$${player.dirty_cash.toLocaleString()}`, icon: "💵", color: "text-green-400" },
-            { label: "Dinheiro Limpo", value: `$${player.cash.toLocaleString()}`, icon: "💰", color: "text-yellow-400" },
-            { label: "Crypto", value: `₿${(player.crypto || 0).toLocaleString()}`, icon: "💎", color: "text-purple-400" },
-            { label: "Stamina", value: `${player.stamina}/${player.max_stamina}`, icon: "⚡", color: "text-blue-400" },
-            { label: "Respeito", value: player.respect.toLocaleString(), icon: "👑", color: "text-purple-400" },
-          ].map((stat, idx) => (
-            <div key={idx} className="p-4 rounded-xl bg-[#121212] border border-[#222222]">
-              <div className="text-3xl mb-2">{stat.icon}</div>
-              <p className="text-xs text-[#888888] mb-1">{stat.label}</p>
-              <p className={`text-xl font-bold ${stat.color}`}>{stat.value}</p>
-            </div>
-          ))}
-        </div>
-
         {/* XP Progress */}
         <div className="mt-6 p-4 rounded-xl bg-[#121212] border border-[#222222]">
           <div className="flex justify-between text-sm mb-2">
@@ -194,56 +176,64 @@ export default function CrimeDashboard() {
           </div>
         </div>
 
-        {/* Quick Actions */}
-        <h2 className="text-2xl font-bold mt-12 mb-6">Acções Rápidas</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          <Link
-            href="/jogos/crime-empire/crimes"
-            className="p-6 rounded-xl bg-gradient-to-br from-[#ff6a00]/20 to-[#ff8533]/20 border-2 border-[#ff6a00] hover:scale-105 transition-all group"
-          >
-            <div className="text-4xl mb-3">💰</div>
-            <h3 className="text-xl font-bold mb-2">Cometer Crimes</h3>
-            <p className="text-sm text-[#888888]">Ganha dinheiro, XP e respeito</p>
-            <div className="mt-4 text-[#ff6a00] group-hover:text-[#ff8533] font-medium text-sm">
-              Ver Crimes →
-            </div>
-          </Link>
+        {/* Full Player Stats */}
+        <h2 className="text-2xl font-bold mt-12 mb-6">Estatísticas</h2>
 
-          <Link
-            href="/jogos/crime-empire/businesses"
-            className="p-6 rounded-xl bg-gradient-to-br from-blue-600/20 to-blue-700/20 border-2 border-blue-600 hover:scale-105 transition-all group"
-          >
-            <div className="text-4xl mb-3">🏢</div>
-            <h3 className="text-xl font-bold mb-2">Negócios</h3>
-            <p className="text-sm text-[#888888]">Gere os teus negócios ilegais</p>
-            <div className="mt-4 text-blue-600 group-hover:text-blue-500 font-medium text-sm">
-              Gerir Negócios →
+        {/* Combat attributes */}
+        <div className="grid grid-cols-3 gap-4 mb-4">
+          {[
+            { label: "Poder", value: player.power, icon: "⚔️", color: "text-red-400", bg: "from-red-600/10 to-red-700/5", border: "border-red-600/30" },
+            { label: "Inteligência", value: player.intelligence, icon: "🧠", color: "text-blue-400", bg: "from-blue-600/10 to-blue-700/5", border: "border-blue-600/30" },
+            { label: "Carisma", value: player.charisma, icon: "✨", color: "text-yellow-400", bg: "from-yellow-600/10 to-yellow-700/5", border: "border-yellow-600/30" },
+          ].map((s) => (
+            <div key={s.label} className={`p-4 rounded-xl bg-gradient-to-br ${s.bg} border ${s.border}`}>
+              <div className="text-2xl mb-2">{s.icon}</div>
+              <p className="text-xs text-[#666] mb-1">{s.label}</p>
+              <p className={`text-2xl font-black ${s.color}`}>{s.value.toLocaleString()}</p>
             </div>
-          </Link>
+          ))}
+        </div>
 
-          <Link
-            href="/jogos/crime-empire/black-market"
-            className="p-6 rounded-xl bg-gradient-to-br from-purple-600/20 to-purple-700/20 border-2 border-purple-600 hover:scale-105 transition-all group"
-          >
-            <div className="text-4xl mb-3">💎</div>
-            <h3 className="text-xl font-bold mb-2">Mercado Negro</h3>
-            <p className="text-sm text-[#888888]">Vende e compra itens com crypto</p>
-            <div className="mt-4 text-purple-600 group-hover:text-purple-500 font-medium text-sm">
-              Ver Mercado →
+        {/* HP & Stamina bars */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+          <div className="p-4 rounded-xl bg-[#121212] border border-[#222222]">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm font-semibold text-red-400">❤️ HP</span>
+              <span className="text-sm text-[#888]">{player.hp} / {player.max_hp}</span>
             </div>
-          </Link>
+            <div className="w-full bg-[#1a1a1a] rounded-full h-3">
+              <div className="bg-gradient-to-r from-red-600 to-red-500 h-3 rounded-full transition-all"
+                style={{ width: `${Math.min((player.hp / player.max_hp) * 100, 100)}%` }} />
+            </div>
+          </div>
+          <div className="p-4 rounded-xl bg-[#121212] border border-[#222222]">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm font-semibold text-yellow-400">⚡ Stamina</span>
+              <span className="text-sm text-[#888]">{player.stamina} / {player.max_stamina}</span>
+            </div>
+            <div className="w-full bg-[#1a1a1a] rounded-full h-3">
+              <div className="bg-gradient-to-r from-yellow-500 to-yellow-400 h-3 rounded-full transition-all"
+                style={{ width: `${Math.min((player.stamina / player.max_stamina) * 100, 100)}%` }} />
+            </div>
+          </div>
+        </div>
 
-          <Link
-            href="/jogos/crime-empire/pvp"
-            className="p-6 rounded-xl bg-gradient-to-br from-red-600/20 to-red-700/20 border-2 border-red-600 hover:scale-105 transition-all group opacity-50 cursor-not-allowed"
-          >
-            <div className="text-4xl mb-3">⚔️</div>
-            <h3 className="text-xl font-bold mb-2">PvP Arena</h3>
-            <p className="text-sm text-[#888888]">Desafia outros jogadores</p>
-            <div className="mt-4 text-red-600 group-hover:text-red-500 font-medium text-sm">
-              Em Breve
+        {/* Money & currency */}
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+          {[
+            { label: "Dinheiro Sujo", value: `$${player.dirty_cash.toLocaleString()}`, icon: "💵", color: "text-green-400", bg: "from-green-600/10 to-green-700/5", border: "border-green-600/30" },
+            { label: "Dinheiro Limpo", value: `$${player.cash.toLocaleString()}`, icon: "💰", color: "text-emerald-400", bg: "from-emerald-600/10 to-emerald-700/5", border: "border-emerald-600/30" },
+            { label: "Crypto", value: `₿${(player.crypto || 0).toLocaleString()}`, icon: "💎", color: "text-purple-400", bg: "from-purple-600/10 to-purple-700/5", border: "border-purple-600/30" },
+            { label: "Respeito", value: player.respect.toLocaleString(), icon: "👑", color: "text-orange-400", bg: "from-orange-600/10 to-orange-700/5", border: "border-orange-600/30" },
+            { label: "Nível", value: `${player.level}`, icon: "📈", color: "text-cyan-400", bg: "from-cyan-600/10 to-cyan-700/5", border: "border-cyan-600/30" },
+            { label: "XP", value: `${player.xp.toLocaleString()} / ${player.xp_to_next_level.toLocaleString()}`, icon: "⭐", color: "text-[#ff6a00]", bg: "from-[#ff6a00]/10 to-[#ff6a00]/5", border: "border-[#ff6a00]/30" },
+          ].map((s) => (
+            <div key={s.label} className={`p-4 rounded-xl bg-gradient-to-br ${s.bg} border ${s.border}`}>
+              <div className="text-2xl mb-2">{s.icon}</div>
+              <p className="text-xs text-[#666] mb-1">{s.label}</p>
+              <p className={`text-lg font-black ${s.color} truncate`}>{s.value}</p>
             </div>
-          </Link>
+          ))}
         </div>
 
         {/* Prestige Modal */}
