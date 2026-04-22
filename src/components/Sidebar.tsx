@@ -390,11 +390,10 @@ export function Sidebar({ open, onClose }: SidebarProps) {
           onClick={onClose}
           className="block w-full"
         >
-          <Image
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
             src="/images/crime_empire/crime_empire_logo-removebg-preview.png"
             alt="Crime Empire"
-            width={200}
-            height={56}
             className="w-full h-auto object-contain hover:opacity-90 transition-opacity duration-200"
           />
         </Link>
