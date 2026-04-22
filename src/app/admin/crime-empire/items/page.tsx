@@ -306,7 +306,7 @@ export default function ItemsAdminPage() {
 
       {/* Image Picker Overlay */}
       {pickerOpen && (
-        <div className="fixed inset-0 z-[200] bg-[#080808]" style={{display:"flex",flexDirection:"column"}}>
+        <div className="fixed top-16 left-56 right-0 bottom-0 z-[200] bg-[#080808]" style={{display:"flex",flexDirection:"column"}}>
 
           {/* Header */}
           <div className="flex-shrink-0 flex items-center gap-3 px-5 py-3 border-b border-[#1e1e1e]">
