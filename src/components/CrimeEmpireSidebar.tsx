@@ -32,12 +32,6 @@ const GAMBLING_LINKS = [
 
 const GAME_SECTIONS = [
   {
-    section: null,
-    links: [
-      { href: "/jogos/crime-empire/dashboard", label: "Dashboard", icon: "🏠" },
-    ],
-  },
-  {
     section: "Crime",
     links: [
       { href: "/jogos/crime-empire/crimes", label: "Crimes", icon: "💰" },
@@ -52,9 +46,7 @@ const GAME_SECTIONS = [
   {
     section: "Personagem",
     links: [
-      { href: "/jogos/crime-empire/inventory", label: "Inventário", icon: "🎒" },
       { href: "/jogos/crime-empire/pvp", label: "PvP", icon: "⚔️" },
-      { href: "/jogos/crime-empire/stats", label: "Estatísticas", icon: "📊" },
     ],
   },
   {

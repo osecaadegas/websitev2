@@ -11,6 +11,7 @@ import { CookieConsent } from "@/components/CookieConsent";
 import { AuthProvider } from "@/lib/auth-context";
 import PageViewTracker from "@/components/PageViewTracker";
 import { DynamicPageBackground } from "@/components/DynamicPageBackground";
+import { CEFloatingMenu } from "@/components/CEFloatingMenu";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -32,6 +33,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         ) : (
           <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
         )}
+
+        {/* Floating character menu — game only */}
+        {isInGame && <CEFloatingMenu />}
 
         {/* Push content below navbar + right of sidebar */}
         <main className="relative z-10 flex-1 pt-16 lg:pl-56 flex flex-col">{children}</main>
