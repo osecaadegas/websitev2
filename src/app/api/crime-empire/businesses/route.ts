@@ -101,6 +101,13 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Player not found" }, { status: 404 });
   }
 
+  if (player.in_jail && player.jail_release_at && new Date(player.jail_release_at) > new Date()) {
+    return NextResponse.json({ error: "Estás na prisão. Não podes gerir negócios agora." }, { status: 403 });
+  }
+  if (player.hp <= 0) {
+    return NextResponse.json({ error: "Estás no hospital. Vai ao Hospital para te curar." }, { status: 403 });
+  }
+
   switch (action) {
     case "purchase":
       return handlePurchase(player, businessId);

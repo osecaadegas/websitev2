@@ -90,6 +90,11 @@ export async function POST(req: NextRequest) {
     player.in_jail = false;
   }
 
+  // Check if in hospital
+  if (player.hp <= 0) {
+    return NextResponse.json({ error: "Estás no hospital. Vai ao Hospital para te curar." }, { status: 403 });
+  }
+
   // Cooldown check — 5 minutes between sales
   const COOLDOWN_MS = 5 * 60 * 1000;
   if (player.last_street_sale_at) {

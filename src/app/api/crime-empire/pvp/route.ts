@@ -120,6 +120,13 @@ export async function POST(req: NextRequest) {
     if (!targetId) return NextResponse.json({ error: "Alvo inválido" }, { status: 400 });
     if (targetId === attacker.id) return NextResponse.json({ error: "Não podes atacar-te a ti mesmo" }, { status: 400 });
 
+    if (attacker.in_jail && attacker.jail_release_at && new Date(attacker.jail_release_at) > new Date()) {
+      return NextResponse.json({ error: "Estás na prisão. Não podes atacar." }, { status: 403 });
+    }
+    if (attacker.hp <= 0) {
+      return NextResponse.json({ error: "Estás no hospital. Vai ao Hospital para te curar." }, { status: 403 });
+    }
+
     // Settings
     const { data: settings } = await supabase.from("pvp_settings").select("*").eq("id", 1).single();
     if (settings && !settings.pvp_enabled) return NextResponse.json({ error: "PvP está desativado de momento" }, { status: 403 });

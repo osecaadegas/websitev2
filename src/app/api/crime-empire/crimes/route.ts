@@ -61,6 +61,11 @@ export async function POST(request: Request) {
     }
   }
 
+  // Check if in hospital
+  if (player.hp <= 0) {
+    return NextResponse.json({ error: "Estás no hospital. Vai ao Hospital para te curar." }, { status: 403 });
+  }
+
   // Get crime details
   const { data: crime, error: crimeError } = await supabase
     .from("crimes")

@@ -127,6 +127,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Jogador não encontrado" }, { status: 404 });
     }
 
+    if (player.in_jail && player.jail_release_at && new Date(player.jail_release_at) > new Date()) {
+      return NextResponse.json({ error: "Estás na prisão. Não podes aceder ao mercado negro." }, { status: 403 });
+    }
+    if (player.hp <= 0) {
+      return NextResponse.json({ error: "Estás no hospital. Vai ao Hospital para te curar." }, { status: 403 });
+    }
+
     // Create new listing
     if (action === "create") {
       if (!itemId || !quantity || !cryptoPricePerUnit) {

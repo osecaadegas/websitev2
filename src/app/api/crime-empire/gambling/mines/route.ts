@@ -109,6 +109,13 @@ export async function POST(req: NextRequest) {
   const { data: player } = await supabase.from("crime_players").select("*").eq("user_id", user.id).single();
   if (!player) return NextResponse.json({ error: "Player not found" }, { status: 404 });
 
+  if (player.in_jail && player.jail_release_at && new Date(player.jail_release_at) > new Date()) {
+    return NextResponse.json({ error: "Estás na prisão. Não podes jogar no casino." }, { status: 403 });
+  }
+  if (player.hp <= 0) {
+    return NextResponse.json({ error: "Estás no hospital. Vai ao Hospital para te curar." }, { status: 403 });
+  }
+
   const body = await req.json();
   const { action } = body;
 

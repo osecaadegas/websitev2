@@ -91,6 +91,10 @@ export async function POST(req: NextRequest) {
     }
   }
 
+  if (player.hp <= 0) {
+    return NextResponse.json({ error: "Estás no hospital. Vai ao Hospital para te curar." }, { status: 403 });
+  }
+
   const { data: contract } = await supabase
     .from("contract_targets")
     .select("*")
