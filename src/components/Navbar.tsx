@@ -239,9 +239,10 @@ export function Navbar({ onMenuToggle }: NavbarProps) {
               <Image
                 src="/images/crime_empire/crime_empire_logo.png"
                 alt="Crime Empire"
-                width={160}
-                height={40}
-                className="h-9 w-auto object-contain pointer-events-auto"
+                width={220}
+                height={56}
+                className="h-14 w-auto object-contain pointer-events-auto"
+                style={{ mixBlendMode: "screen" }}
               />
             </div>
           ) : pageTitle ? (
