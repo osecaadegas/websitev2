@@ -110,13 +110,6 @@ export function CrimeEmpireSidebar({ open, onClose }: Props) {
         }`}
       >
         <div className="p-4 space-y-6">
-          {/* Game Title */}
-          <div className="pb-4 border-b border-[#ff6a00]/30">
-            <h2 className="text-xl font-black bg-gradient-to-r from-[#ff6a00] to-[#ff8533] bg-clip-text text-transparent">
-              CRIME EMPIRE
-            </h2>
-          </div>
-
           {/* Player Info */}
           {player && (
             <div className="p-3 rounded-lg bg-[#1a1a1a] border border-[#ff6a00]/30 space-y-2">

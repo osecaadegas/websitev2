@@ -48,7 +48,6 @@ const MAIN_LINKS: NavItem[] = [
       { href: "/adivinha-o-resultado", label: "Adivinha o Resultado" },
     ],
   },
-  { href: "/jogos/crime-empire/dashboard", label: "Crime Empire" },
   { href: "/loja", label: "Loja" },
   { href: "/sobre", label: "Sobre" },
 ];
@@ -383,6 +382,23 @@ export function Sidebar({ open, onClose }: SidebarProps) {
     <>
       {/* Spacer */}
       <div className="h-3" />
+
+      {/* Crime Empire logo button */}
+      <div className="px-3 pt-2">
+        <Link
+          href="/jogos/crime-empire/dashboard"
+          onClick={onClose}
+          className="block w-full"
+        >
+          <Image
+            src="/images/crime_empire/crime_empire_logo.png"
+            alt="Crime Empire"
+            width={200}
+            height={56}
+            className="w-full h-auto object-contain opacity-90 hover:opacity-100 transition-opacity duration-200"
+          />
+        </Link>
+      </div>
 
       {/* Navigation links */}
       <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-1">
