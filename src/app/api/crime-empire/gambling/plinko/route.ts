@@ -4,6 +4,9 @@ import { supabase } from "@/lib/supabase";
 
 export const dynamic = "force-dynamic";
 
+const GAMBLING_STAMINA_GAIN = 3;
+const GAMBLING_ADDICTION_GAIN = 2;
+
 async function getAuthUser() {
   const cookieStore = await cookies();
   const raw = cookieStore.get("twitch_session")?.value;
@@ -83,10 +86,14 @@ export async function POST(req: NextRequest) {
   const multiplier = mults[slot];
   const payout = Math.floor(Math.floor(bet * multiplier) / 2);
 
-  const { data: fp } = await supabase.from("crime_players").select("dirty_cash, crypto").eq("id", player.id).single();
+  const { data: fp } = await supabase.from("crime_players").select("dirty_cash, crypto, stamina, max_stamina, addiction").eq("id", player.id).single();
+  const newStamina = Math.min(fp?.max_stamina ?? player.max_stamina, (fp?.stamina ?? player.stamina) + GAMBLING_STAMINA_GAIN);
+  const newAddiction = Math.min(100, (fp?.addiction ?? player.addiction ?? 0) + GAMBLING_ADDICTION_GAIN);
   await supabase.from("crime_players").update({
     dirty_cash: (fp?.dirty_cash ?? player.dirty_cash) - totalCost,
     crypto: (fp?.crypto ?? player.crypto) + payout,
+    stamina: newStamina,
+    addiction: newAddiction,
   }).eq("id", player.id);
 
   await supabase.from("gambling_history").insert({
@@ -98,5 +105,5 @@ export async function POST(req: NextRequest) {
 
   const arrestResult = await rollGamblingArrest(player.id, player.class);
 
-  return NextResponse.json({ success: true, flips, slot, multiplier, payout, fee, multipliers: mults, xp_earned: xpEarned, arrested: arrestResult.arrested, jail_minutes: arrestResult.arrested ? (arrestResult as any).jailMinutes : 0 });
+  return NextResponse.json({ success: true, flips, slot, multiplier, payout, fee, multipliers: mults, xp_earned: xpEarned, arrested: arrestResult.arrested, jail_minutes: arrestResult.arrested ? (arrestResult as any).jailMinutes : 0, stamina_gained: GAMBLING_STAMINA_GAIN, new_stamina: newStamina, new_addiction: newAddiction });
 }

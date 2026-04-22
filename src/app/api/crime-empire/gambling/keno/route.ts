@@ -4,6 +4,9 @@ import { supabase } from "@/lib/supabase";
 
 export const dynamic = "force-dynamic";
 
+const GAMBLING_STAMINA_GAIN = 3;
+const GAMBLING_ADDICTION_GAIN = 2;
+
 async function getAuthUser() {
   const cookieStore = await cookies();
   const raw = cookieStore.get("twitch_session")?.value;
@@ -90,9 +93,13 @@ export async function POST(req: NextRequest) {
   const multiplier = (PAYOUTS[picks.length] || {})[hits] || 0;
   const payout = Math.floor(Math.floor(bet * multiplier) / 2);
 
+  const newStamina = Math.min(player.max_stamina, player.stamina + GAMBLING_STAMINA_GAIN);
+  const newAddiction = Math.min(100, (player.addiction ?? 0) + GAMBLING_ADDICTION_GAIN);
   await supabase.from("crime_players").update({
     dirty_cash: player.dirty_cash - totalCost,
     crypto: player.crypto + payout,
+    stamina: newStamina,
+    addiction: newAddiction,
   }).eq("id", player.id);
 
   await supabase.from("gambling_history").insert({
@@ -103,5 +110,5 @@ export async function POST(req: NextRequest) {
   // E8: XP for gambling
   await grantXP(player.id, 10);
 
-  return NextResponse.json({ success: true, drawn, hits, picks, multiplier, payout, fee, arrested: arrestInfo.arrested, jailMinutes: (arrestInfo as any).jailMinutes });
+  return NextResponse.json({ success: true, drawn, hits, picks, multiplier, payout, fee, arrested: arrestInfo.arrested, jailMinutes: (arrestInfo as any).jailMinutes, stamina_gained: GAMBLING_STAMINA_GAIN, new_stamina: newStamina, new_addiction: newAddiction });
 }
