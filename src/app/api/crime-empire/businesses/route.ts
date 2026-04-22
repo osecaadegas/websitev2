@@ -339,17 +339,20 @@ async function handleCollect(player: any, businessId: string) {
   }
 
   // ── Cash income for non-item businesses ──
+  // Sick workers reduce income by 15% each (max 80% total penalty)
+  const sickPenalty = 1.0 - Math.min(0.80, (playerBusiness.sick_workers || 0) * 0.15);
+
   // If no output items configured (or in addition to them), generate dirty cash
   if (outputItems === null || outputItems.length === 0) {
     let incomePerHour = baseIncome + (employees * (baseIncome * 0.5));
     if (businessType === "empire_hq") {
       incomePerHour = baseIncome + (employees * 3000);
     }
-    collectedMoney = Math.floor(hoursElapsed * incomePerHour);
+    collectedMoney = Math.floor(hoursElapsed * incomePerHour * sickPenalty);
   } else if (businessType === "car_chop_shop") {
     // Chop shop also earns some dirty cash alongside items
     const incomePerHour = baseIncome + (employees * 800);
-    collectedMoney = Math.floor(hoursElapsed * incomePerHour);
+    collectedMoney = Math.floor(hoursElapsed * incomePerHour * sickPenalty);
   }
 
   // Update player money
