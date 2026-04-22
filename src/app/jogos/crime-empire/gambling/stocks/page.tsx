@@ -403,12 +403,12 @@ export default function StocksPage() {
                 <span>${buyAmount.toLocaleString()}</span>
               </div>
               <div className="flex justify-between text-red-400">
-                <span>Taxa (3%)</span>
-                <span>-${Math.floor(buyAmount * 0.03).toLocaleString()}</span>
+                <span>Taxa (5%)</span>
+                <span>-${Math.floor(buyAmount * 0.05).toLocaleString()}</span>
               </div>
               <div className="flex justify-between font-bold border-t border-[#333] pt-1">
                 <span className="text-[#999]">Total debitado</span>
-                <span className="text-yellow-400">${(buyAmount + Math.floor(buyAmount * 0.03)).toLocaleString()}</span>
+                <span className="text-yellow-400">${(buyAmount + Math.floor(buyAmount * 0.05)).toLocaleString()}</span>
               </div>
             </div>
           )}

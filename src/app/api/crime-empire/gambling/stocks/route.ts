@@ -158,8 +158,8 @@ export async function GET() {
   });
 }
 
-const BUY_FEE_RATE  = 0.03; // 3% fee on every purchase
-const SELL_FEE_RATE = 0.03; // 3% fee on every sale payout
+const BUY_FEE_RATE  = 0.05; // 5% fee on every purchase
+const SELL_FEE_RATE = 0.05; // 5% fee on every sale payout
 const MIN_HOLD_MS   = 24 * 60 * 60 * 1000; // 24h minimum hold before selling
 
 export async function POST(req: NextRequest) {
