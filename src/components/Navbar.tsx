@@ -237,11 +237,12 @@ export function Navbar({ onMenuToggle }: NavbarProps) {
           ) : isCrimeEmpire ? (
             <div className="hidden sm:flex items-center absolute left-1/2 lg:left-[calc(50%+7rem)] -translate-x-1/2 pointer-events-none">
               <Image
-                src="/images/crime_empire/crime_empire_logo-removebg-preview.png"
+                src="/images/crime_empire/crime_empire_logo.png"
                 alt="Crime Empire"
                 width={220}
                 height={56}
                 className="h-14 w-auto object-contain pointer-events-auto"
+                style={{ mixBlendMode: "screen" }}
               />
             </div>
           ) : pageTitle ? (
