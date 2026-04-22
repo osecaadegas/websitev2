@@ -383,12 +383,16 @@ export function Sidebar({ open, onClose }: SidebarProps) {
       {/* Spacer */}
       <div className="h-3" />
 
-      {/* Crime Empire logo button */}
-      <div className="px-3 pt-2">
+      {/* Navigation links */}
+      <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-1">
+        {/* Main links — split to insert CE logo after Loja */}
+        {MAIN_LINKS.slice(0, MAIN_LINKS.findIndex(l => l.href === "/loja") + 1).map(renderNavItem)}
+
+        {/* Crime Empire logo button */}
         <Link
           href="/jogos/crime-empire/dashboard"
           onClick={onClose}
-          className="block w-full"
+          className="block w-full py-1"
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
@@ -397,12 +401,8 @@ export function Sidebar({ open, onClose }: SidebarProps) {
             className="w-1/2 h-auto object-contain mx-auto hover:opacity-90 transition-opacity duration-200"
           />
         </Link>
-      </div>
 
-      {/* Navigation links */}
-      <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-1">
-        {/* Main links */}
-        {MAIN_LINKS.map(renderNavItem)}
+        {MAIN_LINKS.slice(MAIN_LINKS.findIndex(l => l.href === "/loja") + 1).map(renderNavItem)}
 
         {/* Secondary links (role-gated) */}
         {visibleSecondary.length > 0 && (
