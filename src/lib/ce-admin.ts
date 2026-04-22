@@ -1,4 +1,4 @@
-import { supabase } from "./supabase";
+import { supabaseAdmin } from "./supabase-server";
 import { cookies } from "next/headers";
 
 export interface AdminUser {
@@ -32,7 +32,7 @@ export function writeAuditLog(
   entityName?: string | null,
   details?: Record<string, unknown> | null
 ) {
-  supabase.from("ce_admin_logs").insert({
+  supabaseAdmin.from("ce_admin_logs").insert({
     admin_id: admin.id,
     admin_username: admin.login || admin.display_name,
     action,
