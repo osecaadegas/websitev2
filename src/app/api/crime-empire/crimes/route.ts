@@ -254,6 +254,46 @@ export async function POST(request: Request) {
     });
   }
 
+  // Roll item drops on successful crime
+  const droppedItems: { name: string; quantity: number }[] = [];
+  if (success) {
+    const { data: drops } = await supabase
+      .from("crime_item_drops")
+      .select("item_id, drop_chance, min_quantity, max_quantity, item:items(name)")
+      .eq("crime_id", crimeId);
+
+    if (drops && drops.length > 0) {
+      for (const drop of drops) {
+        if (Math.random() <= drop.drop_chance) {
+          const qty = drop.min_quantity === drop.max_quantity
+            ? drop.min_quantity
+            : Math.floor(Math.random() * (drop.max_quantity - drop.min_quantity + 1)) + drop.min_quantity;
+
+          // Upsert into player inventory
+          const { data: existing } = await supabase
+            .from("player_inventory")
+            .select("id, quantity")
+            .eq("player_id", player.id)
+            .eq("item_id", drop.item_id)
+            .maybeSingle();
+
+          if (existing) {
+            await supabase
+              .from("player_inventory")
+              .update({ quantity: existing.quantity + qty })
+              .eq("id", existing.id);
+          } else {
+            await supabase
+              .from("player_inventory")
+              .insert({ player_id: player.id, item_id: drop.item_id, quantity: qty });
+          }
+
+          droppedItems.push({ name: (drop.item as any)?.name || "Item", quantity: qty });
+        }
+      }
+    }
+  }
+
   return NextResponse.json({
     success,
     went_to_jail: wentToJail,
@@ -266,5 +306,6 @@ export async function POST(request: Request) {
     new_level: newLevel,
     new_stamina: newStamina,
     success_rate_used: finalSuccessRate,
+    dropped_items: droppedItems,
   });
 }

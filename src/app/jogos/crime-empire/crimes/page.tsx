@@ -246,6 +246,14 @@ export default function CrimesPage() {
                   {crimeResult.leveled_up && (
                     <p className="text-yellow-400 font-bold">🎉 SUBISTE PARA NÍVEL {crimeResult.new_level}!</p>
                   )}
+                  {crimeResult.dropped_items && crimeResult.dropped_items.length > 0 && (
+                    <div className="mt-3 pt-3 border-t border-green-600/30">
+                      <p className="text-xs uppercase tracking-widest text-[#888] mb-2">Itens encontrados</p>
+                      {crimeResult.dropped_items.map((drop: { name: string; quantity: number }, i: number) => (
+                        <p key={i} className="text-yellow-400">🎒 {drop.name} x{drop.quantity}</p>
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
 
