@@ -39,7 +39,7 @@ export async function GET() {
         id, name, description, category,
         power_bonus, intelligence_bonus, charisma_bonus,
         hp_bonus, stamina_restore, success_rate_bonus,
-        has_durability, max_durability, base_price, tradeable
+        has_durability, max_durability, base_price, tradeable, image_url
       )
     `)
     .eq("player_id", player.id)
