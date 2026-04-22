@@ -10,35 +10,33 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
 
   const { id } = await params;
   const { data, error } = await supabase
-    .from("crime_item_drops")
-    .select("id, drop_chance, min_quantity, max_quantity, item_id, items(id, name, image_url, category)")
-    .eq("crime_id", id)
-    .order("drop_chance", { ascending: false });
+    .from("business_output_items")
+    .select("id, quantity_per_hour, drop_chance, item_id, items(id, name, image_url, category)")
+    .eq("business_id", id)
+    .order("created_at", { ascending: true });
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json({ drops: data || [] });
+  return NextResponse.json({ outputs: data || [] });
 }
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const admin = await getAdminUser();
   if (!admin) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { id: crime_id } = await params;
-  const { item_id, drop_chance, min_quantity = 1, max_quantity = 1 } = await req.json();
+  const { id: business_id } = await params;
+  const { item_id, quantity_per_hour = 1, drop_chance = 1.0 } = await req.json();
 
-  if (!item_id || drop_chance == null) {
-    return NextResponse.json({ error: "item_id e drop_chance são obrigatórios" }, { status: 400 });
-  }
+  if (!item_id) return NextResponse.json({ error: "item_id é obrigatório" }, { status: 400 });
   if (drop_chance <= 0 || drop_chance > 1) {
     return NextResponse.json({ error: "drop_chance deve estar entre 0.01 e 1" }, { status: 400 });
   }
 
   const { data, error } = await supabase
-    .from("crime_item_drops")
-    .upsert({ crime_id, item_id, drop_chance, min_quantity, max_quantity }, { onConflict: "crime_id,item_id" })
-    .select("id, drop_chance, min_quantity, max_quantity, item_id, items(id, name, image_url, category)")
+    .from("business_output_items")
+    .upsert({ business_id, item_id, quantity_per_hour, drop_chance }, { onConflict: "business_id,item_id" })
+    .select("id, quantity_per_hour, drop_chance, item_id, items(id, name, image_url, category)")
     .single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json({ drop: data }, { status: 201 });
+  return NextResponse.json({ output: data }, { status: 201 });
 }

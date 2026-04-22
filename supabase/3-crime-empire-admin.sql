@@ -81,10 +81,47 @@ create table if not exists crime_item_drops (
   item_id  uuid not null references items(id)  on delete cascade,
   drop_chance numeric not null default 0.1
     check (drop_chance > 0 and drop_chance <= 1),
+  min_quantity integer not null default 1 check (min_quantity >= 1),
+  max_quantity integer not null default 1 check (max_quantity >= 1),
   unique(crime_id, item_id)
 );
 
+-- Add quantity columns to existing crime_item_drops if they don't exist
+do $$ begin
+  if not exists (select 1 from information_schema.columns where table_name = 'crime_item_drops' and column_name = 'min_quantity') then
+    alter table crime_item_drops add column min_quantity integer not null default 1 check (min_quantity >= 1);
+  end if;
+end $$;
+do $$ begin
+  if not exists (select 1 from information_schema.columns where table_name = 'crime_item_drops' and column_name = 'max_quantity') then
+    alter table crime_item_drops add column max_quantity integer not null default 1 check (max_quantity >= 1);
+  end if;
+end $$;
+
 create index if not exists idx_crime_item_drops_crime on crime_item_drops(crime_id);
+
+-- ─── Business Input Items (what a business consumes to run) ──
+create table if not exists business_input_items (
+  id uuid primary key default gen_random_uuid(),
+  business_id uuid not null references businesses(id) on delete cascade,
+  item_id     uuid not null references items(id) on delete cascade,
+  quantity_per_hour numeric not null default 1 check (quantity_per_hour > 0),
+  unique(business_id, item_id)
+);
+create index if not exists idx_biz_input_items_biz on business_input_items(business_id);
+alter table business_input_items disable row level security;
+
+-- ─── Business Output Items (what a business can produce) ─────
+create table if not exists business_output_items (
+  id uuid primary key default gen_random_uuid(),
+  business_id  uuid not null references businesses(id) on delete cascade,
+  item_id      uuid not null references items(id) on delete cascade,
+  quantity_per_hour numeric not null default 1 check (quantity_per_hour > 0),
+  drop_chance  numeric not null default 1.0 check (drop_chance > 0 and drop_chance <= 1),
+  unique(business_id, item_id)
+);
+create index if not exists idx_biz_output_items_biz on business_output_items(business_id);
+alter table business_output_items disable row level security;
 
 -- ─── RLS: admin tables are server-side only (no client exposure) 
 alter table ce_admin_logs       disable row level security;

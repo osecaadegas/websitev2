@@ -13,7 +13,7 @@ export async function GET(req: NextRequest) {
   const category = searchParams.get("category") || "";
   const rarity   = searchParams.get("rarity") || "";
   const page     = Math.max(1, parseInt(searchParams.get("page") || "1"));
-  const limit    = 50;
+  const limit    = Math.min(500, Math.max(1, parseInt(searchParams.get("limit") || "50")));
   const offset   = (page - 1) * limit;
 
   let query = supabase

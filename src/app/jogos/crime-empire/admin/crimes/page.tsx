@@ -10,7 +10,7 @@ type Crime = {
 };
 
 type ItemOption = { id: string; name: string; category: string; image_url: string | null };
-type Drop = { id: string; drop_chance: number; item_id: string; items: ItemOption };
+type Drop = { id: string; drop_chance: number; min_quantity: number; max_quantity: number; item_id: string; items: ItemOption };
 
 const DIFFICULTIES = ["petty","small","medium","big","legendary"];
 const DIFF_COLOR: Record<string,string> = {
@@ -42,6 +42,8 @@ export default function CrimesAdminPage() {
   const [allItems, setAllItems]         = useState<ItemOption[]>([]);
   const [addItemId, setAddItemId]       = useState("");
   const [addChance, setAddChance]       = useState("10");
+  const [addMinQty, setAddMinQty]       = useState("1");
+  const [addMaxQty, setAddMaxQty]       = useState("1");
   const [itemSearch, setItemSearch]     = useState("");
   const [dropsLoading, setDropsLoading] = useState(false);
 
@@ -64,12 +66,14 @@ export default function CrimesAdminPage() {
   const addDrop = async () => {
     if (!addItemId || !form.id) return;
     const chance = Math.max(1, Math.min(100, parseInt(addChance) || 10)) / 100;
+    const minQ = Math.max(1, parseInt(addMinQty) || 1);
+    const maxQ = Math.max(minQ, parseInt(addMaxQty) || 1);
     const res = await fetch(`/api/admin/crime-empire/crimes/${form.id}/drops`, {
       method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ item_id: addItemId, drop_chance: chance }),
+      body: JSON.stringify({ item_id: addItemId, drop_chance: chance, min_quantity: minQ, max_quantity: maxQ }),
     });
     const data = await res.json();
-    if (data.drop) { setDrops(d => [...d.filter(x => x.item_id !== addItemId), data.drop]); setAddItemId(""); setAddChance("10"); setItemSearch(""); }
+    if (data.drop) { setDrops(d => [...d.filter(x => x.item_id !== addItemId), data.drop]); setAddItemId(""); setAddChance("10"); setAddMinQty("1"); setAddMaxQty("1"); setItemSearch(""); }
     else showToast(data.error || "Erro", false);
   };
 
@@ -270,6 +274,7 @@ export default function CrimesAdminPage() {
                           )}
                           <span className="text-white text-xs flex-1 truncate">{d.items?.name}</span>
                           <span className="text-[#555] text-xs">{d.items?.category}</span>
+                          <span className="text-[#888] text-xs">{d.min_quantity === d.max_quantity ? `x${d.min_quantity}` : `x${d.min_quantity}–${d.max_quantity}`}</span>
                           <span className="text-[#ff6a00] font-bold text-xs w-12 text-right">{Math.round(d.drop_chance * 100)}%</span>
                           <button onClick={() => removeDrop(d.id)} className="text-red-500 hover:text-red-400 text-xs ml-1 flex-shrink-0">✕</button>
                         </div>
@@ -303,10 +308,24 @@ export default function CrimesAdminPage() {
                         </div>
                       )}
                     </div>
-                    <div className="w-24">
+                    <div className="w-20">
                       <span className="text-xs text-[#666] mb-1 block">Chance (%)</span>
                       <input type="number" min="1" max="100" value={addChance}
                         onChange={e => setAddChance(e.target.value)}
+                        className="w-full bg-[#0a0a0a] border border-[#333] rounded-lg px-3 py-2 text-xs text-white"
+                      />
+                    </div>
+                    <div className="w-16">
+                      <span className="text-xs text-[#666] mb-1 block">Min.</span>
+                      <input type="number" min="1" value={addMinQty}
+                        onChange={e => setAddMinQty(e.target.value)}
+                        className="w-full bg-[#0a0a0a] border border-[#333] rounded-lg px-3 py-2 text-xs text-white"
+                      />
+                    </div>
+                    <div className="w-16">
+                      <span className="text-xs text-[#666] mb-1 block">Max.</span>
+                      <input type="number" min="1" value={addMaxQty}
+                        onChange={e => setAddMaxQty(e.target.value)}
                         className="w-full bg-[#0a0a0a] border border-[#333] rounded-lg px-3 py-2 text-xs text-white"
                       />
                     </div>
