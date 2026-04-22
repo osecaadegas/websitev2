@@ -292,105 +292,78 @@ async function handleCollect(player: any, businessId: string) {
   const employees = playerBusiness.employees;
   const baseIncome = playerBusiness.business.base_income_per_hour;
 
-  let collectedMoney = 0;
-  let collectedItems: any[] = [];
-
-  // Calculate based on business type
-  if (businessType === "weed_farm") {
-    // Produces cannabis items
-    const gramsProduced = Math.floor(hoursElapsed * (1 + employees * 0.5));
-    collectedItems.push({ name: "Cannabis (1g)", quantity: gramsProduced });
-  } else if (businessType === "pill_factory") {
-    // Produces pills
-    const pillsProduced = Math.floor(hoursElapsed * (2 + employees * 1));
-    collectedItems.push({ name: "Pílulas Ilegais", quantity: pillsProduced });
-  } else if (businessType === "counterfeit_lab") {
-    // Produces fake money
-    const fakeMoney = Math.floor(hoursElapsed * (baseIncome + employees * 800));
-    collectedItems.push({ name: "Notas Falsas ($1000)", quantity: Math.floor(fakeMoney / 1000) });
-  } else if (businessType === "weapon_smuggling") {
-    // Produces weapons
-    const weaponsProduced = Math.floor(hoursElapsed * (2 + employees * 1));
-    collectedItems.push({ name: "Arma Ilegal", quantity: weaponsProduced });
-  } else if (businessType === "car_chop_shop") {
-    // Produces car parts + income
-    const partsProduced = Math.floor(hoursElapsed * (1 + employees * 0.5));
-    collectedItems.push({ name: "Peças de Carro Roubadas", quantity: partsProduced });
-    const incomePerHour = baseIncome + (employees * 800);
-    collectedMoney = Math.floor(hoursElapsed * incomePerHour);
-  } else if (businessType === "diamond_smuggling") {
-    // Produces diamonds (rare, slower production)
-    const diamondsProduced = Math.floor(hoursElapsed * (0.5 + employees * 0.5));
-    if (diamondsProduced > 0) {
-      collectedItems.push({ name: "Diamante Contrabandeado", quantity: diamondsProduced });
-    }
-  } else if (businessType === "chop_shop" || businessType === "offshore_bank") {
-    // Money laundry - doesn't auto-collect, needs manual laundering
+  if (businessType === "chop_shop" || businessType === "offshore_bank") {
     return NextResponse.json(
       { error: "Use launder action for money laundry" },
       { status: 400 }
     );
-  } else {
-    // Regular income businesses (crypto_mining, scam_office, nightclub, casino, fight_club, etc.)
-    let incomePerHour = baseIncome + (employees * (baseIncome * 0.5));
-    
-    // Empire HQ bonus
-    if (businessType === "empire_hq") {
-      incomePerHour = baseIncome + (employees * 3000);
-    }
-    
-    collectedMoney = Math.floor(hoursElapsed * incomePerHour);
   }
 
-  // Add collected items to inventory
-  for (const item of collectedItems) {
-    const { data: itemData } = await supabase
-      .from("items")
-      .select("id")
-      .eq("name", item.name)
-      .single();
+  let collectedMoney = 0;
+  const collectedItems: { name: string; quantity: number }[] = [];
 
-    if (itemData) {
+  // ── Output items from admin-configured business_output_items ──
+  const { data: outputItems } = await supabase
+    .from("business_output_items")
+    .select("item_id, quantity_per_hour, drop_chance, item:items(name)")
+    .eq("business_id", businessId);
+
+  if (outputItems && outputItems.length > 0) {
+    for (const output of outputItems) {
+      // Check drop chance (roll once per collection)
+      if (Math.random() > output.drop_chance) continue;
+
+      const qty = Math.floor(hoursElapsed * output.quantity_per_hour * (1 + employees * 0.5));
+      if (qty <= 0) continue;
+
       const { data: existing } = await supabase
         .from("player_inventory")
-        .select("*")
+        .select("id, quantity")
         .eq("player_id", player.id)
-        .eq("item_id", itemData.id)
-        .single();
+        .eq("item_id", output.item_id)
+        .maybeSingle();
 
       if (existing) {
         await supabase
           .from("player_inventory")
-          .update({
-            quantity: existing.quantity + item.quantity,
-          })
+          .update({ quantity: existing.quantity + qty })
           .eq("id", existing.id);
       } else {
-        await supabase.from("player_inventory").insert({
-          player_id: player.id,
-          item_id: itemData.id,
-          quantity: item.quantity,
-        });
+        await supabase
+          .from("player_inventory")
+          .insert({ player_id: player.id, item_id: output.item_id, quantity: qty });
       }
+
+      collectedItems.push({ name: (output.item as any)?.name || "Item", quantity: qty });
     }
+  }
+
+  // ── Cash income for non-item businesses ──
+  // If no output items configured (or in addition to them), generate dirty cash
+  if (outputItems === null || outputItems.length === 0) {
+    let incomePerHour = baseIncome + (employees * (baseIncome * 0.5));
+    if (businessType === "empire_hq") {
+      incomePerHour = baseIncome + (employees * 3000);
+    }
+    collectedMoney = Math.floor(hoursElapsed * incomePerHour);
+  } else if (businessType === "car_chop_shop") {
+    // Chop shop also earns some dirty cash alongside items
+    const incomePerHour = baseIncome + (employees * 800);
+    collectedMoney = Math.floor(hoursElapsed * incomePerHour);
   }
 
   // Update player money
   if (collectedMoney > 0) {
     await supabase
       .from("crime_players")
-      .update({
-        dirty_cash: player.dirty_cash + collectedMoney,
-      })
+      .update({ dirty_cash: player.dirty_cash + collectedMoney })
       .eq("id", player.id);
   }
 
   // Update last collection time
   await supabase
     .from("player_businesses")
-    .update({
-      last_collection: now.toISOString(),
-    })
+    .update({ last_collection: now.toISOString() })
     .eq("id", playerBusiness.id);
 
   return NextResponse.json({
