@@ -142,10 +142,8 @@ export async function POST(request: Request) {
   let respectEarned = 0;
 
   if (success) {
-    // Reward scaling based on success rate
-    const rewardMultiplier = 1 / effectiveSuccessRate;
-    const baseReward = Math.floor(Math.random() * (crime.max_dirty_cash - crime.min_dirty_cash + 1)) + crime.min_dirty_cash;
-    dirtyCashEarned = Math.floor(baseReward * rewardMultiplier);
+    // Reward is exactly within the displayed min/max range
+    dirtyCashEarned = Math.floor(Math.random() * (crime.max_dirty_cash - crime.min_dirty_cash + 1)) + crime.min_dirty_cash;
     xpEarned = Math.floor(crime.xp_reward * (boostActive ? 1.2 : 1));
     respectEarned = crime.respect_reward;
 
