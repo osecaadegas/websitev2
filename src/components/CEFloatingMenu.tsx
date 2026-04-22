@@ -67,6 +67,19 @@ interface LeaderPlayer {
   avatar_url?: string;
 }
 
+interface Extended {
+  total_crimes_attempted: number;
+  total_crimes_succeeded: number;
+  pvp_wins: number;
+  pvp_losses: number;
+  contracts_completed: number;
+  times_jailed: number;
+  businesses_owned: number;
+  total_workers: number;
+  equipped_items: number;
+  shares: { display_symbol: string; display_name: string; quantity: number; bought_price: number; dirty_cash_invested: number }[];
+}
+
 type Panel = "stats" | "inventory" | "leaderboard" | null;
 
 /* ─────────────────── CLASS CONFIG ─────────────────── */
@@ -109,44 +122,32 @@ function MiniBar({ value, max, color }: { value: number; max: number; color: str
 function StatsPanel({ player }: { player: Player }) {
   const glow = CLASS_GLOW[player.class] ?? "#ff6a00";
   const addiction = player.addiction ?? 0;
+  const [ext, setExt] = useState<Extended | null>(null);
+  const [extLoading, setExtLoading] = useState(true);
+
+  useEffect(() => {
+    fetch("/api/crime-empire/player-full")
+      .then((r) => r.json())
+      .then((d) => { setExt(d.extended ?? null); setExtLoading(false); })
+      .catch(() => setExtLoading(false));
+  }, []);
 
   return (
     <div className="space-y-4 px-5 py-5">
       {/* Identity */}
-      <div
-        className="p-4 rounded-2xl border"
-        style={{ background: `${glow}12`, borderColor: `${glow}40` }}
-      >
+      <div className="p-4 rounded-2xl border" style={{ background: `${glow}12`, borderColor: `${glow}40` }}>
         <div className="flex items-center gap-3">
-          <div
-            className="w-14 h-14 rounded-full overflow-hidden border-2 flex-shrink-0"
-            style={{ borderColor: glow }}
-          >
-            <Image
-              src={`/images/crime_empire/characters/${player.class}.png`}
-              alt={player.class}
-              width={56}
-              height={56}
-              className="w-full h-full object-contain bg-[#0a0a0a]"
-            />
+          <div className="w-14 h-14 rounded-full overflow-hidden border-2 flex-shrink-0" style={{ borderColor: glow }}>
+            <Image src={`/images/crime_empire/characters/${player.class}.png`} alt={player.class} width={56} height={56} className="w-full h-full object-contain bg-[#0a0a0a]" />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="font-black text-white text-base truncate">
-              {player.display_name || player.username}
-            </p>
+            <p className="font-black text-white text-base truncate">{player.display_name || player.username}</p>
             <p className="text-xs text-[#666]">@{player.username}</p>
             <div className="flex items-center gap-2 mt-1">
-              <span
-                className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase"
-                style={{ background: `${glow}25`, color: glow }}
-              >
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase" style={{ background: `${glow}25`, color: glow }}>
                 {CLASS_NAMES[player.class] ?? player.class}
               </span>
-              {player.prestige_level > 0 && (
-                <span className="text-yellow-400 text-[10px] font-bold">
-                  ⭐ P{player.prestige_level}
-                </span>
-              )}
+              {player.prestige_level > 0 && <span className="text-yellow-400 text-[10px] font-bold">⭐ P{player.prestige_level}</span>}
             </div>
           </div>
           <div className="text-right flex-shrink-0">
@@ -154,27 +155,18 @@ function StatsPanel({ player }: { player: Player }) {
             <p className="text-[10px] text-[#555] uppercase tracking-widest">Nível</p>
           </div>
         </div>
-
-        {/* XP Bar */}
         <div className="mt-3">
           <div className="flex justify-between text-[10px] text-[#555] mb-1">
-            <span>XP</span>
-            <span>{player.xp.toLocaleString()} / {player.xp_to_next_level.toLocaleString()}</span>
+            <span>XP</span><span>{player.xp.toLocaleString()} / {player.xp_to_next_level.toLocaleString()}</span>
           </div>
           <MiniBar value={player.xp} max={player.xp_to_next_level} color={glow} />
         </div>
-
-        {/* Boosts */}
-        {player.in_jail && (
-          <p className="mt-2 text-[10px] text-red-400 font-semibold">🚔 Na prisão</p>
-        )}
-        {player.boost_active && (
-          <p className="mt-1 text-[10px] text-green-400 font-semibold">⚡ Bónus novo jogador ativo</p>
-        )}
+        {player.in_jail && <p className="mt-2 text-[10px] text-red-400 font-semibold">🚔 Na prisão</p>}
+        {player.boost_active && <p className="mt-1 text-[10px] text-green-400 font-semibold">⚡ Bónus novo jogador ativo</p>}
       </div>
 
-      {/* HP & Stamina */}
-      <div className="grid grid-cols-2 gap-3">
+      {/* HP, Stamina, Addiction */}
+      <div className="space-y-2">
         <div className="p-3 rounded-xl bg-[#111] border border-[#1e1e1e]">
           <div className="flex justify-between items-center mb-1.5">
             <span className="text-[10px] text-red-400 font-semibold">❤️ HP</span>
@@ -189,80 +181,133 @@ function StatsPanel({ player }: { player: Player }) {
           </div>
           <MiniBar value={player.stamina} max={player.max_stamina} color="#eab308" />
         </div>
-      </div>
-
-      {/* Addiction */}
-      {addiction > 0 && (
-        <div
-          className="p-3 rounded-xl border"
-          style={{
-            background: addiction < 40 ? "#78350f18" : addiction < 70 ? "#7c2d1218" : "#7f1d1d18",
-            borderColor: addiction < 40 ? "#92400e50" : addiction < 70 ? "#9a3412 50" : "#991b1b50",
-          }}
-        >
+        <div className="p-3 rounded-xl border" style={{
+          background: addiction === 0 ? "#0f0f0f" : addiction < 40 ? "#78350f18" : addiction < 70 ? "#7c2d1218" : "#7f1d1d18",
+          borderColor: addiction === 0 ? "#1e1e1e" : addiction < 40 ? "#92400e50" : addiction < 70 ? "#9a341250" : "#991b1b50",
+        }}>
           <div className="flex justify-between items-center mb-1.5">
-            <span className="text-[10px] text-orange-400 font-semibold">💉 Vício</span>
-            <span className="text-[10px] text-orange-400 font-bold">{addiction}%</span>
+            <span className="text-[10px] font-semibold" style={{ color: addiction === 0 ? "#555" : addiction < 40 ? "#fb923c" : "#ef4444" }}>💉 Vício</span>
+            <span className="text-[10px] font-bold" style={{ color: addiction === 0 ? "#444" : addiction < 40 ? "#fb923c" : "#ef4444" }}>{addiction}%</span>
           </div>
-          <MiniBar value={addiction} max={100} color={addiction < 40 ? "#f59e0b" : addiction < 70 ? "#f97316" : "#ef4444"} />
+          <MiniBar value={addiction} max={100} color={addiction === 0 ? "#2a2a2a" : addiction < 40 ? "#f59e0b" : addiction < 70 ? "#f97316" : "#ef4444"} />
         </div>
-      )}
+      </div>
 
       {/* Combat stats */}
       <div>
-        <p className="text-[9px] font-bold tracking-[0.25em] uppercase text-[#333] mb-2">
-          Atributos de Combate
-        </p>
+        <p className="text-[9px] font-bold tracking-[0.25em] uppercase text-[#333] mb-2">Atributos de Combate</p>
         <div className="grid grid-cols-3 gap-2">
           {[
-            { label: "Poder", value: player.power, icon: "⚔️", color: "#ef4444" },
-            { label: "Intel.", value: player.intelligence, icon: "🧠", color: "#3b82f6" },
-            { label: "Carisma", value: player.charisma, icon: "✨", color: "#eab308" },
+            { label: "Poder",    value: player.power,        icon: "⚔️", color: "#ef4444" },
+            { label: "Intel.",   value: player.intelligence, icon: "🧠", color: "#3b82f6" },
+            { label: "Carisma", value: player.charisma,     icon: "✨", color: "#eab308" },
           ].map((s) => (
-            <div
-              key={s.label}
-              className="p-3 rounded-xl bg-[#111] border border-[#1e1e1e] text-center"
-            >
+            <div key={s.label} className="p-3 rounded-xl bg-[#111] border border-[#1e1e1e] text-center">
               <div className="text-base mb-1">{s.icon}</div>
-              <p className="text-sm font-black" style={{ color: s.color }}>
-                {s.value.toLocaleString()}
-              </p>
+              <p className="text-sm font-black" style={{ color: s.color }}>{s.value.toLocaleString()}</p>
               <p className="text-[9px] text-[#444] mt-0.5">{s.label}</p>
             </div>
           ))}
         </div>
       </div>
 
-      {/* Money */}
+      {/* Resources */}
       <div>
-        <p className="text-[9px] font-bold tracking-[0.25em] uppercase text-[#333] mb-2">
-          Recursos
-        </p>
+        <p className="text-[9px] font-bold tracking-[0.25em] uppercase text-[#333] mb-2">Recursos</p>
         <div className="grid grid-cols-2 gap-2">
           {[
-            { label: "Dinheiro Sujo", value: `$${player.dirty_cash.toLocaleString()}`, icon: "💵", color: "#22c55e" },
-            { label: "Dinheiro Limpo", value: `$${player.cash.toLocaleString()}`, icon: "💰", color: "#10b981" },
-            { label: "VCash", value: `V${player.vcash.toLocaleString()}`, icon: "🪙", color: "#ec4899" },
-            { label: "Respeito", value: player.respect.toLocaleString(), icon: "👑", color: "#f97316" },
+            { label: "Dinheiro Sujo",  value: `$${player.dirty_cash.toLocaleString()}`, icon: "💵", color: "#22c55e" },
+            { label: "Dinheiro Limpo", value: `$${player.cash.toLocaleString()}`,        icon: "💰", color: "#10b981" },
+            { label: "Crypto",         value: `₿${(player.crypto ?? 0).toLocaleString()}`, icon: "💎", color: "#a855f7" },
+            { label: "VCash",          value: `V${player.vcash.toLocaleString()}`,       icon: "🪙", color: "#ec4899" },
+            { label: "Respeito",       value: player.respect.toLocaleString(),           icon: "👑", color: "#f97316" },
           ].map((s) => (
-            <div
-              key={s.label}
-              className="p-3 rounded-xl bg-[#111] border border-[#1e1e1e] flex items-center gap-2"
-            >
+            <div key={s.label} className="p-3 rounded-xl bg-[#111] border border-[#1e1e1e] flex items-center gap-2">
               <span className="text-base">{s.icon}</span>
               <div className="min-w-0">
-                <p className="text-xs font-bold truncate" style={{ color: s.color }}>
-                  {s.value}
-                </p>
+                <p className="text-xs font-bold truncate" style={{ color: s.color }}>{s.value}</p>
                 <p className="text-[9px] text-[#444]">{s.label}</p>
               </div>
             </div>
           ))}
         </div>
       </div>
+
+      {/* Activity stats */}
+      {extLoading ? (
+        <div className="flex justify-center py-4">
+          <div className="w-5 h-5 rounded-full border-2 border-t-transparent border-[#333] animate-spin" />
+        </div>
+      ) : ext && (
+        <>
+          <div>
+            <p className="text-[9px] font-bold tracking-[0.25em] uppercase text-[#333] mb-2">Actividade</p>
+            <div className="grid grid-cols-2 gap-2">
+              {[
+                { label: "Crimes Tentados",  value: ext.total_crimes_attempted,  icon: "🔫", color: "#ef4444" },
+                { label: "Crimes Sucedidos", value: ext.total_crimes_succeeded,  icon: "✅", color: "#22c55e" },
+                { label: "Espancamentos",    value: ext.pvp_wins,                icon: "👊", color: "#f97316" },
+                { label: "Derrotas PvP",     value: ext.pvp_losses,              icon: "💀", color: "#6b7280" },
+                { label: "Contratos",        value: ext.contracts_completed,     icon: "🎯", color: "#3b82f6" },
+                { label: "Vezes Preso",      value: ext.times_jailed,            icon: "🚔", color: "#9ca3af" },
+              ].map((s) => (
+                <div key={s.label} className="p-3 rounded-xl bg-[#111] border border-[#1e1e1e] flex items-center gap-2">
+                  <span className="text-base">{s.icon}</span>
+                  <div className="min-w-0">
+                    <p className="text-xs font-bold truncate" style={{ color: s.color }}>{s.value.toLocaleString()}</p>
+                    <p className="text-[9px] text-[#444]">{s.label}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <p className="text-[9px] font-bold tracking-[0.25em] uppercase text-[#333] mb-2">Império</p>
+            <div className="grid grid-cols-2 gap-2">
+              {[
+                { label: "Itens Equipados",  value: ext.equipped_items,   icon: "⚡", color: "#ff6a00" },
+                { label: "Negócios",         value: ext.businesses_owned, icon: "🏢", color: "#2563eb" },
+                { label: "Workers Totais",   value: ext.total_workers,    icon: "👷", color: "#d97706" },
+                { label: "Ações no Mercado", value: ext.shares.length,    icon: "📈", color: "#10b981" },
+              ].map((s) => (
+                <div key={s.label} className="p-3 rounded-xl bg-[#111] border border-[#1e1e1e] flex items-center gap-2">
+                  <span className="text-base">{s.icon}</span>
+                  <div className="min-w-0">
+                    <p className="text-xs font-bold truncate" style={{ color: s.color }}>{s.value.toLocaleString()}</p>
+                    <p className="text-[9px] text-[#444]">{s.label}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Shares breakdown */}
+          {ext.shares.length > 0 && (
+            <div>
+              <p className="text-[9px] font-bold tracking-[0.25em] uppercase text-[#333] mb-2">Carteira de Ações</p>
+              <div className="space-y-1.5">
+                {ext.shares.map((s, i) => (
+                  <div key={i} className="flex items-center justify-between p-2.5 rounded-lg bg-[#0f0f0f] border border-[#1a1a1a]">
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] font-black text-[#ff6a00] w-12 truncate">{s.display_symbol}</span>
+                      <span className="text-[10px] text-[#555] truncate max-w-[100px]">{s.display_name}</span>
+                    </div>
+                    <div className="text-right flex-shrink-0">
+                      <p className="text-[10px] font-bold text-white">{s.quantity.toLocaleString()} un.</p>
+                      <p className="text-[9px] text-[#444]">${s.dirty_cash_invested.toLocaleString()} inv.</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </>
+      )}
     </div>
   );
 }
+
 
 /* ─────────────────── INVENTORY PANEL ─────────────────── */
 function InventoryPanel() {
