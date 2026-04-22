@@ -21,8 +21,8 @@ export async function GET(req: NextRequest) {
     .order("required_level", { ascending: true })
     .range(offset, offset + limit - 1);
 
-  if (q)              query = query.ilike("name", `%${q}%`);
-  if (enabled !== "") query = query.eq("enabled", enabled === "true");
+  if (q)                       query = query.ilike("name", `%${q}%`);
+  if (enabled !== null && enabled !== "") query = query.eq("enabled", enabled === "true");
 
   const { data, count, error } = await query;
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
