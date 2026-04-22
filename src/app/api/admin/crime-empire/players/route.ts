@@ -19,7 +19,7 @@ export async function GET(req: NextRequest) {
   let query = supabase
     .from("crime_players")
     .select(
-      "id, user_id, username, display_name, avatar_url, class, level, xp, hp, max_hp, stamina, max_stamina, dirty_cash, cash, crypto, respect, power, intelligence, charisma, in_jail, jail_release_at, addiction, created_at",
+      "id, user_id, username, display_name, avatar_url, class, level, xp, hp, max_hp, stamina, max_stamina, dirty_cash, cash, crypto, vcash, respect, power, intelligence, charisma, in_jail, jail_release_at, addiction, created_at, last_login",
       { count: "exact" }
     )
     .order("level", { ascending: false })

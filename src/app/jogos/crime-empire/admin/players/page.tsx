@@ -48,7 +48,7 @@ const DIFF_COLOR: Record<string, string> = {
   big: "text-orange-400", legendary: "text-red-400",
 };
 
-function fmt(n: number) { return n.toLocaleString("pt-PT"); }
+function fmt(n: number | undefined | null) { return (n ?? 0).toLocaleString("pt-PT"); }
 function fmtDate(d: string) {
   return new Date(d).toLocaleDateString("pt-PT", { day: "2-digit", month: "2-digit", year: "2-digit", hour: "2-digit", minute: "2-digit" });
 }
@@ -372,6 +372,7 @@ function PlayerDetailPanel({ player, onClose, onRefresh }: { player: Player; onC
   const [activeTab, setTab] = useState("overview");
   const [logs, setLogs] = useState<Logs | null>(null);
   const [logsLoading, setLogsLoading] = useState(false);
+  const [logsError, setLogsError] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
   const [actionValue, setActionValue] = useState("");
   const [addictionVal, setAddictionVal] = useState(player.addiction || 0);
@@ -381,9 +382,19 @@ function PlayerDetailPanel({ player, onClose, onRefresh }: { player: Player; onC
 
   const loadLogs = useCallback(async () => {
     setLogsLoading(true);
-    const res = await fetch(`/api/admin/crime-empire/players/${player.id}/logs`);
-    const data = await res.json();
-    setLogs(data);
+    setLogsError(null);
+    try {
+      const res = await fetch(`/api/admin/crime-empire/players/${player.id}/logs`);
+      const data = await res.json();
+      if (!res.ok || data.error) {
+        setLogsError(data.error || `Erro ${res.status}`);
+        setLogs(null);
+      } else {
+        setLogs(data);
+      }
+    } catch {
+      setLogsError("Erro de rede ao carregar logs");
+    }
     setLogsLoading(false);
   }, [player.id]);
 
@@ -454,6 +465,11 @@ function PlayerDetailPanel({ player, onClose, onRefresh }: { player: Player; onC
           {logsLoading ? (
             <div className="flex items-center justify-center h-32">
               <div className="text-[#333] text-sm animate-pulse">A carregar logs...</div>
+            </div>
+          ) : logsError ? (
+            <div className="flex flex-col items-center justify-center h-32 gap-2">
+              <p className="text-red-400 text-sm">⚠️ {logsError}</p>
+              <button onClick={loadLogs} className="text-xs px-3 py-1.5 rounded bg-[#1a1a1a] text-white hover:bg-[#222]">Tentar novamente</button>
             </div>
           ) : logs ? (
             <>
