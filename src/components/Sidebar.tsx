@@ -394,7 +394,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
           <img
             src="/images/crime_empire/crime_empire_logo-removebg-preview.png"
             alt="Crime Empire"
-            className="w-full h-auto object-contain hover:opacity-90 transition-opacity duration-200"
+            className="w-1/2 h-auto object-contain mx-auto hover:opacity-90 transition-opacity duration-200"
           />
         </Link>
       </div>

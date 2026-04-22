@@ -240,7 +240,7 @@ export function Navbar({ onMenuToggle }: NavbarProps) {
               <img
                 src="/images/crime_empire/crime_empire_logo-removebg-preview.png"
                 alt="Crime Empire"
-                className="h-14 w-auto object-contain pointer-events-auto"
+                className="h-28 w-auto object-contain pointer-events-auto"
               />
             </div>
           ) : pageTitle ? (
