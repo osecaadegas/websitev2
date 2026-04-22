@@ -12,6 +12,7 @@ interface Stats {
   items: number;
   shop_listings: number;
   jailed: number;
+  contracts: number;
   police_intensity: number;
   maintenance: boolean;
 }
@@ -30,7 +31,8 @@ export default function CEAdminHub() {
       fetch("/api/admin/crime-empire/players?jailed=true&limit=1").then((r) => r.json()),
       fetch("/api/admin/crime-empire/system").then((r) => r.json()),
       fetch("/api/admin/crime-empire/logs?limit=8").then((r) => r.json()),
-    ]).then(([p, c, b, i, s, j, sys, l]) => {
+      fetch("/api/admin/crime-empire/contracts?limit=1").then((r) => r.json()),
+    ]).then(([p, c, b, i, s, j, sys, l, ct]) => {
       setStats({
         players: p.total ?? 0,
         crimes: c.total ?? 0,
@@ -38,6 +40,7 @@ export default function CEAdminHub() {
         items: i.total ?? 0,
         shop_listings: s.total ?? 0,
         jailed: j.total ?? 0,
+        contracts: ct.total ?? 0,
         police_intensity: Number(sys.settings?.police_intensity ?? 0),
         maintenance: sys.settings?.maintenance_mode === true || sys.settings?.maintenance_mode === "true",
       });
@@ -52,6 +55,7 @@ export default function CEAdminHub() {
     { label: "Items",           value: stats?.items,         icon: "⚔️", href: `${BASE}/items`,                color: "#a855f7" },
     { label: "Na Prisão",       value: stats?.jailed,        icon: "🚔", href: `${BASE}/players?jailed=true`,  color: "#ef4444" },
     { label: "Loja (listings)", value: stats?.shop_listings, icon: "🏪", href: `${BASE}/shop`,                 color: "#ff6a00" },
+    { label: "Contratos",        value: stats?.contracts,      icon: "🎯", href: `${BASE}/contracts`,            color: "#ef4444" },
   ];
 
   const actionColor = (action: string) => {
