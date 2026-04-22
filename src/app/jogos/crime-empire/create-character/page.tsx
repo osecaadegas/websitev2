@@ -12,7 +12,7 @@ const CLASSES = [
     name: "Ladrão",
     image: "/images/crime_empire/characters/thief.png",
     description: "Especialista em roubos e furtos",
-    bonuses: ["+15% sucesso em roubos", "+10% item drops"],
+    bonuses: ["+15% sucesso em crimes pequenos", "+10% ganho de dinheiro sujo"],
     color: "from-purple-600 to-purple-800",
   },
   {
@@ -20,7 +20,7 @@ const CLASSES = [
     name: "Hooligan",
     image: "/images/crime_empire/characters/hooligan.png",
     description: "Violento e respeitado nas ruas",
-    bonuses: ["+20% ganho de Respeito", "Bónus em PvP"],
+    bonuses: ["+20% ganho de Respeito", "+15% boost em todos os itens equipados"],
     color: "from-red-600 to-red-800",
   },
   {
@@ -28,7 +28,7 @@ const CLASSES = [
     name: "Empresário",
     image: "/images/crime_empire/characters/businessman.png",
     description: "Mestre dos negócios ilegais",
-    bonuses: ["+20% lucro de negócios", "-15% custo de empregados"],
+    bonuses: ["+20% lucro em negócios regulares", "+30% capacidade de empregados"],
     color: "from-blue-600 to-blue-800",
   },
   {
@@ -36,7 +36,7 @@ const CLASSES = [
     name: "Assassino",
     image: "/images/crime_empire/characters/hitman.png",
     description: "Profissional em contratos mortais",
-    bonuses: ["+20% sucesso em contratos", "+Power scaling"],
+    bonuses: ["+15% sucesso em contratos", "-50% risco de prisão em contratos"],
     color: "from-gray-700 to-gray-900",
   },
   {
@@ -44,7 +44,7 @@ const CLASSES = [
     name: "Burlão",
     image: "/images/crime_empire/characters/scammer.png",
     description: "Especialista em fraudes e esquemas",
-    bonuses: ["+15% sucesso em scams", "+20% ganho VCash"],
+    bonuses: ["+15% sucesso em scams", "+10% taxa de lavagem de dinheiro"],
     color: "from-yellow-600 to-yellow-800",
   },
   {
@@ -52,7 +52,7 @@ const CLASSES = [
     name: "Bruto",
     image: "/images/crime_empire/characters/brute.png",
     description: "Dominância física total",
-    bonuses: ["+25% dano em PvP", "+Power em combate"],
+    bonuses: ["+50% poder em PvP", "Esmaga qualquer oponente em combate"],
     color: "from-orange-600 to-orange-800",
   },
   {
@@ -60,7 +60,7 @@ const CLASSES = [
     name: "Traficante",
     image: "/images/crime_empire/characters/dealer.png",
     description: "Rei do mercado negro",
-    bonuses: ["+25% produção de drogas", "Bónus em drug farms"],
+    bonuses: ["Vende drogas nas ruas (em breve)", "Menor risco e maiores quantidades"],
     color: "from-green-600 to-green-800",
   },
   {
@@ -68,7 +68,7 @@ const CLASSES = [
     name: "Chulo",
     image: "/images/crime_empire/characters/pimp.png",
     description: "Controla o negócio do prazer",
-    bonuses: ["+30% income de brothel", "-20% risco de workers"],
+    bonuses: ["+20% income de brothel", "2x capacidade de workers"],
     color: "from-pink-600 to-pink-800",
   },
 ];
