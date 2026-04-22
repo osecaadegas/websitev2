@@ -73,7 +73,21 @@ begin
   end if;
 end $$;
 
+-- ─── Crime Item Drops ────────────────────────────────────────
+-- Which items can drop when a crime succeeds, and at what %
+create table if not exists crime_item_drops (
+  id uuid primary key default gen_random_uuid(),
+  crime_id uuid not null references crimes(id) on delete cascade,
+  item_id  uuid not null references items(id)  on delete cascade,
+  drop_chance numeric not null default 0.1
+    check (drop_chance > 0 and drop_chance <= 1),
+  unique(crime_id, item_id)
+);
+
+create index if not exists idx_crime_item_drops_crime on crime_item_drops(crime_id);
+
 -- ─── RLS: admin tables are server-side only (no client exposure) 
-alter table ce_admin_logs     disable row level security;
-alter table ce_system_settings disable row level security;
-alter table ce_shop_listings   disable row level security;
+alter table ce_admin_logs       disable row level security;
+alter table ce_system_settings  disable row level security;
+alter table ce_shop_listings    disable row level security;
+alter table crime_item_drops    disable row level security;

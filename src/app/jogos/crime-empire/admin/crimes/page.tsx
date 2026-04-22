@@ -9,6 +9,9 @@ type Crime = {
   xp_reward:number; respect_reward:number; cooldown_minutes:number; enabled:boolean;
 };
 
+type ItemOption = { id: string; name: string; category: string; image_url: string | null };
+type Drop = { id: string; drop_chance: number; item_id: string; items: ItemOption };
+
 const DIFFICULTIES = ["petty","small","medium","big","legendary"];
 const DIFF_COLOR: Record<string,string> = {
   petty:"text-[#888]", small:"text-blue-400", medium:"text-yellow-400",
@@ -34,7 +37,47 @@ export default function CrimesAdminPage() {
   const [toast, setToast]     = useState<{msg:string;ok:boolean}|null>(null);
   const [confirmDelete, setConfirmDelete] = useState<Crime|null>(null);
 
+  // Item drops state
+  const [drops, setDrops]               = useState<Drop[]>([]);
+  const [allItems, setAllItems]         = useState<ItemOption[]>([]);
+  const [addItemId, setAddItemId]       = useState("");
+  const [addChance, setAddChance]       = useState("10");
+  const [itemSearch, setItemSearch]     = useState("");
+  const [dropsLoading, setDropsLoading] = useState(false);
+
   const showToast = (msg:string, ok=true) => { setToast({msg,ok}); setTimeout(()=>setToast(null),3500); };
+
+  const loadDrops = useCallback(async (crimeId: string) => {
+    setDropsLoading(true);
+    const res = await fetch(`/api/admin/crime-empire/crimes/${crimeId}/drops`);
+    const data = await res.json();
+    setDrops(data.drops || []);
+    setDropsLoading(false);
+  }, []);
+
+  const loadAllItems = useCallback(async () => {
+    const res = await fetch(`/api/admin/crime-empire/items?page=1&limit=500`);
+    const data = await res.json();
+    setAllItems(data.items || []);
+  }, []);
+
+  const addDrop = async () => {
+    if (!addItemId || !form.id) return;
+    const chance = Math.max(1, Math.min(100, parseInt(addChance) || 10)) / 100;
+    const res = await fetch(`/api/admin/crime-empire/crimes/${form.id}/drops`, {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ item_id: addItemId, drop_chance: chance }),
+    });
+    const data = await res.json();
+    if (data.drop) { setDrops(d => [...d.filter(x => x.item_id !== addItemId), data.drop]); setAddItemId(""); setAddChance("10"); setItemSearch(""); }
+    else showToast(data.error || "Erro", false);
+  };
+
+  const removeDrop = async (dropId: string) => {
+    if (!form.id) return;
+    await fetch(`/api/admin/crime-empire/crimes/${form.id}/drops/${dropId}`, { method: "DELETE" });
+    setDrops(d => d.filter(x => x.id !== dropId));
+  };
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -46,9 +89,16 @@ export default function CrimesAdminPage() {
 
   useEffect(()=>{ load(); },[load]);
 
-  const openCreate = () => { setForm(BLANK); setModal("create"); };
-  const openEdit = (c:Crime) => { setForm({...c}); setModal("edit"); };
-  const closeModal = () => { setModal(null); setForm(BLANK); };
+  const openCreate = () => { setForm(BLANK); setDrops([]); setModal("create"); };
+  const openEdit = (c:Crime) => {
+    setForm({...c});
+    setDrops([]);
+    setAddItemId(""); setAddChance("10"); setItemSearch("");
+    setModal("edit");
+    loadDrops(c.id);
+    if (allItems.length === 0) loadAllItems();
+  };
+  const closeModal = () => { setModal(null); setForm(BLANK); setDrops([]); };
 
   const handleSave = async () => {
     setSaving(true);
@@ -199,6 +249,74 @@ export default function CrimesAdminPage() {
                 {numField("respect_reward","Respeito")}
                 {numField("cooldown_minutes","Cooldown (min)")}
               </div>
+
+              {/* Item Drops — only in edit mode */}
+              {modal === "edit" && (
+                <div className="mt-2">
+                  <p className="text-xs font-bold uppercase tracking-widest text-[#ff6a00] mb-3">🎁 Drops de Itens</p>
+
+                  {/* Existing drops */}
+                  {dropsLoading ? (
+                    <p className="text-[#444] text-xs py-2">A carregar drops…</p>
+                  ) : drops.length === 0 ? (
+                    <p className="text-[#444] text-xs py-2">Nenhum drop configurado</p>
+                  ) : (
+                    <div className="space-y-1.5 mb-3">
+                      {drops.map(d => (
+                        <div key={d.id} className="flex items-center gap-2 bg-[#0a0a0a] border border-[#1e1e1e] rounded-lg px-3 py-2">
+                          {d.items?.image_url && (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img src={d.items.image_url} alt="" className="w-7 h-7 object-contain rounded flex-shrink-0" />
+                          )}
+                          <span className="text-white text-xs flex-1 truncate">{d.items?.name}</span>
+                          <span className="text-[#555] text-xs">{d.items?.category}</span>
+                          <span className="text-[#ff6a00] font-bold text-xs w-12 text-right">{Math.round(d.drop_chance * 100)}%</span>
+                          <button onClick={() => removeDrop(d.id)} className="text-red-500 hover:text-red-400 text-xs ml-1 flex-shrink-0">✕</button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Add new drop */}
+                  <div className="flex gap-2 items-end flex-wrap">
+                    <div className="flex-1 min-w-[180px]">
+                      <span className="text-xs text-[#666] mb-1 block">Item</span>
+                      <input
+                        value={itemSearch}
+                        onChange={e => { setItemSearch(e.target.value); setAddItemId(""); }}
+                        placeholder="Pesquisar item…"
+                        className="w-full bg-[#0a0a0a] border border-[#333] rounded-lg px-3 py-2 text-xs text-white"
+                      />
+                      {itemSearch && !addItemId && (
+                        <div className="absolute z-10 mt-1 bg-[#111] border border-[#2a2a2a] rounded-lg max-h-48 overflow-y-auto w-64 shadow-xl">
+                          {allItems.filter(i => i.name.toLowerCase().includes(itemSearch.toLowerCase())).slice(0, 20).map(i => (
+                            <button key={i.id} onClick={() => { setAddItemId(i.id); setItemSearch(i.name); }}
+                              className="w-full text-left px-3 py-2 text-xs text-white hover:bg-[#1e1e1e] flex items-center gap-2">
+                              {i.image_url && <img src={i.image_url} alt="" className="w-5 h-5 object-contain flex-shrink-0" />}
+                              <span className="flex-1 truncate">{i.name}</span>
+                              <span className="text-[#555]">{i.category}</span>
+                            </button>
+                          ))}
+                          {allItems.filter(i => i.name.toLowerCase().includes(itemSearch.toLowerCase())).length === 0 && (
+                            <p className="text-[#444] text-xs px-3 py-2">Sem resultados</p>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                    <div className="w-24">
+                      <span className="text-xs text-[#666] mb-1 block">Chance (%)</span>
+                      <input type="number" min="1" max="100" value={addChance}
+                        onChange={e => setAddChance(e.target.value)}
+                        className="w-full bg-[#0a0a0a] border border-[#333] rounded-lg px-3 py-2 text-xs text-white"
+                      />
+                    </div>
+                    <button onClick={addDrop} disabled={!addItemId}
+                      className="px-3 py-2 rounded-lg bg-[#ff6a00] hover:bg-[#ff8533] text-white text-xs font-bold disabled:opacity-40 transition-all flex-shrink-0">
+                      + Adicionar
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
             <div className="flex gap-3 mt-6">
               <button onClick={closeModal} className="flex-1 py-2.5 rounded-lg bg-[#1a1a1a] text-[#888] text-sm font-semibold">Cancelar</button>
