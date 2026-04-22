@@ -63,11 +63,11 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   if (!admin) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { id } = await params;
-  const { action, amount, itemId } = await req.json();
+  const { action, amount, itemId, inventoryId, stats, value } = await req.json();
 
   const { data: player, error: fetchErr } = await supabase
     .from("crime_players")
-    .select("id, username, cash, dirty_cash, hp, max_hp, addiction")
+    .select("id, username, cash, dirty_cash, hp, max_hp, stamina, max_stamina, addiction, level, xp, power, intelligence, charisma, respect")
     .eq("id", id)
     .single();
 
@@ -134,6 +134,34 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       const { data: item } = await supabase.from("items").select("name").eq("id", itemId).single();
       await writeAuditLog(admin, "player_action", "player", id, player.username, { action, item: item?.name });
       return NextResponse.json({ success: true, message: `Item "${item?.name}" dado ao player` });
+    }
+    case "remove_item": {
+      if (!inventoryId) return NextResponse.json({ error: "inventoryId obrigatório" }, { status: 400 });
+      const { data: invEntry } = await supabase
+        .from("player_inventory")
+        .select("id, quantity, item_id")
+        .eq("id", inventoryId)
+        .eq("player_id", id)
+        .single();
+      if (!invEntry) return NextResponse.json({ error: "Item não encontrado no inventário" }, { status: 404 });
+      const { data: itemData } = await supabase.from("items").select("name").eq("id", invEntry.item_id).single();
+      await supabase.from("player_inventory").delete().eq("id", inventoryId);
+      await writeAuditLog(admin, "player_action", "player", id, player.username, { action, item: itemData?.name });
+      return NextResponse.json({ success: true, message: `Item "${itemData?.name}" removido do inventário` });
+    }
+    case "edit_stats": {
+      if (!stats || typeof stats !== "object") return NextResponse.json({ error: "stats obrigatório" }, { status: 400 });
+      const allowed = ["level", "xp", "power", "intelligence", "charisma", "hp", "max_hp", "stamina", "max_stamina", "respect"];
+      const update: Record<string, number> = {};
+      for (const [k, v] of Object.entries(stats as Record<string, unknown>)) {
+        if (allowed.includes(k) && typeof v === "number" && isFinite(v)) {
+          update[k] = Math.max(0, Math.floor(v));
+        }
+      }
+      if (Object.keys(update).length === 0) return NextResponse.json({ error: "Nenhum campo válido" }, { status: 400 });
+      await supabase.from("crime_players").update(update).eq("id", id);
+      await writeAuditLog(admin, "player_action", "player", id, player.username, { action, changes: update });
+      return NextResponse.json({ success: true, message: "Stats atualizadas com sucesso" });
     }
     default:
       return NextResponse.json({ error: "Acção desconhecida" }, { status: 400 });

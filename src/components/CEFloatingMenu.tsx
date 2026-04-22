@@ -313,16 +313,39 @@ function StatsPanel({ player }: { player: Player }) {
 function InventoryPanel() {
   const [inventory, setInventory] = useState<InventoryEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [feedback, setFeedback] = useState<{ msg: string; ok: boolean } | null>(null);
 
-  useEffect(() => {
+  const refresh = useCallback(() => {
     fetch("/api/crime-empire/inventory")
       .then((r) => r.json())
-      .then((d) => {
-        setInventory(d.inventory ?? []);
-        setLoading(false);
-      })
+      .then((d) => { setInventory(d.inventory ?? []); setLoading(false); })
       .catch(() => setLoading(false));
   }, []);
+
+  useEffect(() => { refresh(); }, [refresh]);
+
+  const doAction = async (entry: InventoryEntry, action: string) => {
+    setActionLoading(entry.id);
+    try {
+      const res = await fetch("/api/crime-empire/inventory", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action, inventoryId: entry.id }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setFeedback({ msg: data.message, ok: true });
+        refresh();
+      } else {
+        setFeedback({ msg: data.error || "Erro", ok: false });
+      }
+    } catch {
+      setFeedback({ msg: "Erro de rede", ok: false });
+    }
+    setActionLoading(null);
+    setTimeout(() => setFeedback(null), 3000);
+  };
 
   if (loading)
     return (
@@ -348,6 +371,9 @@ function InventoryPanel() {
     const bonuses = Object.entries(statLabel)
       .filter(([k]) => (item as unknown as Record<string, number>)[k] > 0)
       .map(([k, v]) => ({ ...v, value: (item as unknown as Record<string, number>)[k] }));
+    const busy = actionLoading === entry.id;
+    const isConsumable = item.category === "consumable";
+    const canEquip = item.category !== "consumable" && item.category !== "material";
 
     return (
       <div
@@ -389,6 +415,45 @@ function InventoryPanel() {
                 ))}
               </div>
             )}
+            {/* Action buttons */}
+            <div className="flex gap-1.5 mt-2 flex-wrap">
+              {isConsumable && (
+                <button
+                  disabled={busy}
+                  onClick={() => doAction(entry, "use")}
+                  className="text-[10px] px-2.5 py-1 rounded-lg bg-green-900/40 text-green-400 hover:bg-green-900/60 disabled:opacity-50 transition-colors font-bold"
+                >
+                  {busy ? "…" : "💊 Usar"}
+                </button>
+              )}
+              {canEquip && !isEquipped && (
+                <button
+                  disabled={busy}
+                  onClick={() => doAction(entry, "equip")}
+                  className="text-[10px] px-2.5 py-1 rounded-lg bg-[#ff6a00]/20 text-[#ff6a00] hover:bg-[#ff6a00]/30 disabled:opacity-50 transition-colors font-bold"
+                >
+                  {busy ? "…" : "⚡ Equipar"}
+                </button>
+              )}
+              {canEquip && isEquipped && (
+                <button
+                  disabled={busy}
+                  onClick={() => doAction(entry, "unequip")}
+                  className="text-[10px] px-2.5 py-1 rounded-lg bg-[#1a1a1a] text-[#888] hover:bg-[#222] disabled:opacity-50 transition-colors font-bold"
+                >
+                  {busy ? "…" : "Desequipar"}
+                </button>
+              )}
+              {!isEquipped && (
+                <button
+                  disabled={busy}
+                  onClick={() => doAction(entry, "drop")}
+                  className="text-[10px] px-2.5 py-1 rounded-lg bg-red-900/30 text-red-400 hover:bg-red-900/50 disabled:opacity-50 transition-colors font-bold"
+                >
+                  {busy ? "…" : "🗑 Descartar"}
+                </button>
+              )}
+            </div>
           </div>
           {isEquipped && (
             <span className="flex-shrink-0 text-[9px] px-2 py-0.5 rounded-full bg-[#ff6a00]/20 text-[#ff6a00] font-bold border border-[#ff6a00]/30">
@@ -402,6 +467,20 @@ function InventoryPanel() {
 
   return (
     <div className="px-5 py-5 space-y-5">
+      {/* Feedback toast */}
+      <AnimatePresence>
+        {feedback && (
+          <motion.div
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0 }}
+            className={`text-xs px-3 py-2 rounded-lg font-medium ${feedback.ok ? "bg-green-900/40 text-green-300 border border-green-800/40" : "bg-red-900/40 text-red-300 border border-red-800/40"}`}
+          >
+            {feedback.msg}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {equipped.length > 0 && (
         <div>
           <p className="text-[9px] font-bold tracking-[0.25em] uppercase text-[#ff6a00] mb-3">
@@ -674,33 +753,39 @@ export function CEFloatingMenu() {
         )}
       </AnimatePresence>
 
-      {/* Panel drawer */}
+      {/* Panel popout */}
       <AnimatePresence>
         {activePanel && (
           <>
-            {/* Panel backdrop */}
+            {/* Backdrop */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              transition={{ duration: 0.22 }}
-              className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm"
+              transition={{ duration: 0.18 }}
+              className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm"
               onClick={() => setActivePanel(null)}
             />
 
-            {/* Panel */}
+            {/* Popout card — expands from the bottom-right (floating button origin) */}
             <motion.div
-              initial={{ x: "100%" }}
-              animate={{ x: 0 }}
-              exit={{ x: "100%" }}
-              transition={{ type: "spring", stiffness: 320, damping: 34 }}
-              className="fixed right-0 top-0 h-full z-50 flex flex-col overflow-hidden"
+              initial={{ opacity: 0, scale: 0.75, y: 24 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.75, y: 24 }}
+              transition={{ type: "spring", stiffness: 400, damping: 32 }}
               style={{
-                width: "min(420px, 100vw)",
+                transformOrigin: "bottom right",
+                width: "min(420px, calc(100vw - 3rem))",
+                maxHeight: "min(640px, calc(100vh - 8rem))",
                 background: "linear-gradient(180deg, #0d0d0d 0%, #080808 100%)",
                 borderLeft: `1px solid ${glow}30`,
-                boxShadow: `-4px 0 40px rgba(0,0,0,0.7), -1px 0 0 ${glow}20`,
+                borderTop: `1px solid ${glow}30`,
+                borderRight: `1px solid ${glow}20`,
+                borderBottom: `1px solid ${glow}20`,
+                boxShadow: `-4px -4px 40px rgba(0,0,0,0.7), 0 0 0 1px #0a0a0a`,
               }}
+              className="fixed bottom-24 right-6 z-50 rounded-2xl flex flex-col overflow-hidden"
+              onClick={(e) => e.stopPropagation()}
             >
               {/* Panel header */}
               <div

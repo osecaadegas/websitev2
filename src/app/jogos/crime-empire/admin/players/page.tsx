@@ -35,7 +35,7 @@ type Logs = {
   };
 };
 
-type Action = "give_cash" | "take_cash" | "give_dirty_cash" | "take_dirty_cash" | "heal" | "free_jail" | "set_addiction";
+type Action = "give_cash" | "take_cash" | "give_dirty_cash" | "take_dirty_cash" | "heal" | "free_jail" | "set_addiction" | "give_item" | "remove_item" | "edit_stats";
 
 const CLASS_COLORS: Record<string, string> = {
   thief: "text-yellow-400", hooligan: "text-blue-400", businessman: "text-green-400",
@@ -331,38 +331,114 @@ function TabGambling({ logs }: { logs: Logs }) {
 }
 
 // ─── Tab: Inventory ───────────────────────────────────────────
-function TabInventory({ logs }: { logs: Logs }) {
+function TabInventory({ logs, playerId, onAction }: { logs: Logs; playerId: string; onAction: (action: Action, extra?: Record<string, unknown>) => Promise<void> }) {
   const items = logs.inventory;
-  if (items.length === 0) return <EmptyState text="Inventário vazio" />;
+  const [allItems, setAllItems] = useState<{ id: string; name: string; category: string; rarity: string }[]>([]);
+  const [itemSearch, setItemSearch] = useState("");
+  const [selectedItemId, setSelectedItemId] = useState("");
+  const [actionLoading, setActionLoading] = useState(false);
   const RARITY_COLOR: Record<string, string> = {
     common: "text-[#888]", rare: "text-blue-400", epic: "text-purple-400", legendary: "text-yellow-400",
   };
+
+  useEffect(() => {
+    fetch("/api/admin/crime-empire/items")
+      .then(r => r.json())
+      .then(d => setAllItems(d.items || []));
+  }, []);
+
+  const filteredItems = allItems.filter(i =>
+    !itemSearch || i.name.toLowerCase().includes(itemSearch.toLowerCase())
+  );
+
+  const handleGive = async () => {
+    if (!selectedItemId) return;
+    setActionLoading(true);
+    await onAction("give_item", { itemId: selectedItemId });
+    setActionLoading(false);
+    setSelectedItemId("");
+    setItemSearch("");
+  };
+
+  const handleRemove = async (inventoryId: string) => {
+    setActionLoading(true);
+    await onAction("remove_item", { inventoryId });
+    setActionLoading(false);
+  };
+
   return (
-    <div className="space-y-1.5">
-      {items.map((row: any) => {
-        const item = row.item || {};
-        return (
-          <div key={row.id} className="flex items-center gap-2 bg-[#141414] rounded-lg px-3 py-2">
-            <div className="w-8 h-8 rounded bg-[#1a1a1a] flex items-center justify-center flex-shrink-0 text-xs">🎒</div>
-            <div className="flex-1 min-w-0">
-              <p className="text-white text-sm font-medium truncate">{item.name}</p>
-              <p className={`text-xs ${RARITY_COLOR[item.rarity] || "text-[#888]"}`}>{item.category} · {item.rarity}</p>
-            </div>
-            <div className="text-right text-xs space-y-0.5">
-              {row.equipped && <span className="block text-[#ff6a00] font-bold">EQUIPADO</span>}
-              <span className="text-white font-bold">x{row.quantity}</span>
-              {item.base_price && <span className="block text-[#444]">💵{fmt(item.base_price * row.quantity)}</span>}
-            </div>
-            {(item.power_bonus > 0 || item.intelligence_bonus > 0 || item.charisma_bonus > 0) && (
-              <div className="text-xs text-[#555] space-y-0.5 text-right">
-                {item.power_bonus > 0 && <span className="block">⚔️+{item.power_bonus}</span>}
-                {item.intelligence_bonus > 0 && <span className="block">🧠+{item.intelligence_bonus}</span>}
-                {item.charisma_bonus > 0 && <span className="block">✨+{item.charisma_bonus}</span>}
+    <div className="space-y-4">
+      {/* Give item */}
+      <div>
+        <SectionHeader>➕ Dar Item</SectionHeader>
+        <div className="flex gap-2">
+          <div className="flex-1 relative">
+            <input
+              value={itemSearch}
+              onChange={e => { setItemSearch(e.target.value); setSelectedItemId(""); }}
+              placeholder="Pesquisar item..."
+              className="w-full bg-[#0a0a0a] border border-[#333] rounded-lg px-3 py-2 text-sm text-white"
+            />
+            {itemSearch && !selectedItemId && filteredItems.length > 0 && (
+              <div className="absolute top-full left-0 right-0 z-10 bg-[#111] border border-[#333] rounded-lg mt-1 max-h-40 overflow-y-auto shadow-xl">
+                {filteredItems.slice(0, 20).map(i => (
+                  <button key={i.id} onClick={() => { setSelectedItemId(i.id); setItemSearch(i.name); }}
+                    className="w-full text-left px-3 py-2 text-xs hover:bg-[#1a1a1a] text-white flex items-center gap-2">
+                    <span>{i.name}</span>
+                    <span className="text-[#555]">{i.category} · {i.rarity}</span>
+                  </button>
+                ))}
               </div>
             )}
           </div>
-        );
-      })}
+          <button onClick={handleGive} disabled={!selectedItemId || actionLoading}
+            className="text-xs px-4 py-2 rounded-lg bg-indigo-900/40 text-indigo-400 hover:bg-indigo-900/60 disabled:opacity-50 transition-colors font-bold">
+            {actionLoading ? "…" : "Dar"}
+          </button>
+        </div>
+      </div>
+
+      {/* Current inventory */}
+      <div>
+        <SectionHeader>🎒 Inventário Atual</SectionHeader>
+        {items.length === 0 ? (
+          <EmptyState text="Inventário vazio" />
+        ) : (
+          <div className="space-y-1.5">
+            {items.map((row: any) => {
+              const item = row.item || {};
+              return (
+                <div key={row.id} className="flex items-center gap-2 bg-[#141414] rounded-lg px-3 py-2">
+                  <div className="w-8 h-8 rounded bg-[#1a1a1a] flex items-center justify-center flex-shrink-0 text-xs">🎒</div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-white text-sm font-medium truncate">{item.name}</p>
+                    <p className={`text-xs ${RARITY_COLOR[item.rarity] || "text-[#888]"}`}>{item.category} · {item.rarity}</p>
+                  </div>
+                  <div className="text-right text-xs space-y-0.5">
+                    {row.equipped && <span className="block text-[#ff6a00] font-bold">EQUIPADO</span>}
+                    <span className="text-white font-bold">x{row.quantity}</span>
+                    {item.base_price && <span className="block text-[#444]">💵{fmt(item.base_price * row.quantity)}</span>}
+                  </div>
+                  {(item.power_bonus > 0 || item.intelligence_bonus > 0 || item.charisma_bonus > 0) && (
+                    <div className="text-xs text-[#555] space-y-0.5 text-right">
+                      {item.power_bonus > 0 && <span className="block">⚔️+{item.power_bonus}</span>}
+                      {item.intelligence_bonus > 0 && <span className="block">🧠+{item.intelligence_bonus}</span>}
+                      {item.charisma_bonus > 0 && <span className="block">✨+{item.charisma_bonus}</span>}
+                    </div>
+                  )}
+                  <button
+                    disabled={actionLoading}
+                    onClick={() => handleRemove(row.id)}
+                    className="text-xs px-2.5 py-1 rounded-lg bg-red-900/30 text-red-400 hover:bg-red-900/50 disabled:opacity-50 transition-colors font-bold flex-shrink-0"
+                  >
+                    🗑
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -377,6 +453,13 @@ function PlayerDetailPanel({ player, onClose, onRefresh }: { player: Player; onC
   const [actionValue, setActionValue] = useState("");
   const [addictionVal, setAddictionVal] = useState(player.addiction || 0);
   const [toast, setToast] = useState<{ msg: string; ok: boolean } | null>(null);
+  const [editStats, setEditStats] = useState({
+    level: player.level, xp: player.xp,
+    power: player.power, intelligence: player.intelligence, charisma: player.charisma,
+    hp: player.hp, max_hp: player.max_hp,
+    stamina: player.stamina, max_stamina: player.max_stamina,
+    respect: player.respect,
+  });
 
   const showToast = (msg: string, ok = true) => { setToast({ msg, ok }); setTimeout(() => setToast(null), 3500); };
 
@@ -400,11 +483,12 @@ function PlayerDetailPanel({ player, onClose, onRefresh }: { player: Player; onC
 
   useEffect(() => { loadLogs(); }, [loadLogs]);
 
-  const doAction = async (action: Action) => {
+  const doAction = async (action: Action, extra: Record<string, unknown> = {}) => {
     setActionLoading(true);
-    const body: Record<string, unknown> = { action };
+    const body: Record<string, unknown> = { action, ...extra };
     if (["give_cash", "take_cash", "give_dirty_cash", "take_dirty_cash"].includes(action)) body.amount = Number(actionValue);
     if (action === "set_addiction") body.value = addictionVal;
+    if (action === "edit_stats") body.stats = editStats;
     const res = await fetch(`/api/admin/crime-empire/players/${player.id}`, {
       method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body),
     });
@@ -412,6 +496,7 @@ function PlayerDetailPanel({ player, onClose, onRefresh }: { player: Player; onC
     setActionLoading(false);
     if (data.success) { showToast(data.message || "Acao executada!"); loadLogs(); onRefresh(); }
     else showToast(data.error || "Erro", false);
+    return data.success;
   };
 
   const TABS = [
@@ -479,7 +564,7 @@ function PlayerDetailPanel({ player, onClose, onRefresh }: { player: Player; onC
               {activeTab === "jail"       && <TabJail logs={logs} />}
               {activeTab === "pvp"        && <TabPvP logs={logs} playerId={player.id} />}
               {activeTab === "gambling"   && <TabGambling logs={logs} />}
-              {activeTab === "inventory"  && <TabInventory logs={logs} />}
+              {activeTab === "inventory"  && <TabInventory logs={logs} playerId={player.id} onAction={doAction} />}
             </>
           ) : null}
 
@@ -528,6 +613,39 @@ function PlayerDetailPanel({ player, onClose, onRefresh }: { player: Player; onC
                   <button onClick={() => doAction("set_addiction")} disabled={actionLoading}
                     className="text-xs px-3 py-2 rounded-lg bg-purple-900/30 hover:bg-purple-900/50 text-purple-400 disabled:opacity-50">Definir</button>
                 </div>
+              </div>
+
+              {/* Stat editing */}
+              <div>
+                <p className="text-xs text-[#555] mb-2">Editar Stats</p>
+                <div className="grid grid-cols-2 gap-2">
+                  {([
+                    { key: "level",        label: "Nível",       color: "text-yellow-400" },
+                    { key: "xp",           label: "XP",          color: "text-blue-400" },
+                    { key: "power",        label: "Poder ⚔️",     color: "text-red-400" },
+                    { key: "intelligence", label: "Intel. 🧠",    color: "text-blue-400" },
+                    { key: "charisma",     label: "Carisma ✨",   color: "text-yellow-400" },
+                    { key: "respect",      label: "Respeito 👑",  color: "text-orange-400" },
+                    { key: "hp",           label: "HP atual",    color: "text-red-400" },
+                    { key: "max_hp",       label: "HP máx.",     color: "text-red-300" },
+                    { key: "stamina",      label: "Stamina",     color: "text-yellow-400" },
+                    { key: "max_stamina",  label: "Stamina máx.", color: "text-yellow-300" },
+                  ] as { key: keyof typeof editStats; label: string; color: string }[]).map(f => (
+                    <div key={f.key}>
+                      <p className={`text-[10px] mb-1 ${f.color}`}>{f.label}</p>
+                      <input
+                        type="number"
+                        value={editStats[f.key]}
+                        onChange={e => setEditStats(s => ({ ...s, [f.key]: Number(e.target.value) }))}
+                        className="w-full bg-[#0a0a0a] border border-[#333] rounded-lg px-2 py-1.5 text-sm text-white"
+                      />
+                    </div>
+                  ))}
+                </div>
+                <button onClick={() => doAction("edit_stats")} disabled={actionLoading}
+                  className="mt-3 w-full text-xs py-2 rounded-lg bg-blue-900/30 hover:bg-blue-900/50 text-blue-400 disabled:opacity-50 font-bold">
+                  💾 Guardar Stats
+                </button>
               </div>
             </div>
           )}
