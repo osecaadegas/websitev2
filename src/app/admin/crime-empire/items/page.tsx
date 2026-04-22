@@ -301,7 +301,7 @@ export default function ItemsAdminPage() {
 
       {/* Image Picker Overlay */}
       {pickerOpen && (
-        <div className="fixed inset-0 z-50 bg-[#080808] flex flex-col">
+        <div className="fixed inset-0 z-[200] bg-[#080808] flex flex-col">
           <div className="flex items-center gap-3 px-5 py-4 border-b border-[#1e1e1e] flex-shrink-0">
             <h3 className="text-white font-black flex-1">🖼️ Escolher Imagem</h3>
             <input
@@ -341,7 +341,7 @@ export default function ItemsAdminPage() {
               ) : (
                 <>
                   <p className="text-[#444] text-xs mb-3">{pickerImages.length} imagens{pickerImages.length > 200 ? " (a mostrar 200)" : ""}</p>
-                  <div className="grid grid-cols-6 sm:grid-cols-8 md:grid-cols-10 lg:grid-cols-12 gap-2">
+                  <div className="grid grid-cols-8 sm:grid-cols-10 md:grid-cols-12 lg:grid-cols-16 gap-1.5">
                     {pickerImages.slice(0, 200).map((filename) => {
                       const url = `/images/crime_empire/items/${encodeURIComponent(pickerCat)}/${encodeURIComponent(filename)}`;
                       const isSelected = form.image_url === url;
@@ -350,8 +350,8 @@ export default function ItemsAdminPage() {
                           key={filename}
                           title={filename.replace(/\.[^.]+$/, "")}
                           onClick={() => { setForm((f) => ({...f, image_url: url})); setPickerOpen(false); }}
-                          className={`aspect-square rounded-lg overflow-hidden border-2 transition-all flex items-center justify-center p-1 bg-[#111] hover:border-[#ff6a00] ${
-                            isSelected ? "border-[#ff6a00] ring-2 ring-[#ff6a00]/30" : "border-[#222]"
+                          className={`w-12 h-12 rounded overflow-hidden border-2 transition-all flex items-center justify-center p-0.5 bg-[#111] hover:border-[#ff6a00] flex-shrink-0 ${
+                            isSelected ? "border-[#ff6a00] ring-2 ring-[#ff6a00]/30" : "border-[#1e1e1e]"
                           }`}
                         >
                           {/* eslint-disable-next-line @next/next/no-img-element */}
