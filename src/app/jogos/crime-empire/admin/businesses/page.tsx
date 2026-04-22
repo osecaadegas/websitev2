@@ -71,14 +71,15 @@ export default function BusinessesAdminPage() {
       body: JSON.stringify({ item_id: inItemId, quantity_per_hour: parseFloat(inQty) || 1 }),
     });
     const data = await res.json();
-    if (data.input) { setInputs(p => [...p.filter(x => x.item_id !== inItemId), data.input]); setInItemId(""); setInSearch(""); setInQty("1"); }
+    if (data.input) { setInputs(p => [...p.filter(x => x.item_id !== inItemId), data.input]); setInItemId(""); setInSearch(""); setInQty("1"); showToast("Item de entrada adicionado!"); }
     else showToast(data.error || "Erro", false);
   };
 
   const removeInput = async (id:string) => {
     if (!form.id) return;
-    await fetch(`/api/admin/crime-empire/businesses/${form.id}/inputs/${id}`, { method: "DELETE" });
-    setInputs(p => p.filter(x => x.id !== id));
+    const res = await fetch(`/api/admin/crime-empire/businesses/${form.id}/inputs/${id}`, { method: "DELETE" });
+    if (res.ok) { setInputs(p => p.filter(x => x.id !== id)); showToast("Input removido"); }
+    else showToast("Erro ao remover", false);
   };
 
   const addOutput = async () => {
@@ -89,14 +90,15 @@ export default function BusinessesAdminPage() {
       body: JSON.stringify({ item_id: outItemId, quantity_per_hour: parseFloat(outQty) || 1, drop_chance: chance }),
     });
     const data = await res.json();
-    if (data.output) { setOutputs(p => [...p.filter(x => x.item_id !== outItemId), data.output]); setOutItemId(""); setOutSearch(""); setOutQty("1"); setOutChance("100"); }
+    if (data.output) { setOutputs(p => [...p.filter(x => x.item_id !== outItemId), data.output]); setOutItemId(""); setOutSearch(""); setOutQty("1"); setOutChance("100"); showToast("Item de saída adicionado!"); }
     else showToast(data.error || "Erro", false);
   };
 
   const removeOutput = async (id:string) => {
     if (!form.id) return;
-    await fetch(`/api/admin/crime-empire/businesses/${form.id}/outputs/${id}`, { method: "DELETE" });
-    setOutputs(p => p.filter(x => x.id !== id));
+    const res = await fetch(`/api/admin/crime-empire/businesses/${form.id}/outputs/${id}`, { method: "DELETE" });
+    if (res.ok) { setOutputs(p => p.filter(x => x.id !== id)); showToast("Output removido"); }
+    else showToast("Erro ao remover", false);
   };
 
   const load = useCallback(async () => {

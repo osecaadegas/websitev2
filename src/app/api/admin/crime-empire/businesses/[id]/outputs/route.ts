@@ -13,7 +13,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     .from("business_output_items")
     .select("id, quantity_per_hour, drop_chance, item_id, items(id, name, image_url, category)")
     .eq("business_id", id)
-    .order("created_at", { ascending: true });
+    .order("id", { ascending: true });
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ outputs: data || [] });

@@ -74,14 +74,15 @@ export default function CrimesAdminPage() {
       body: JSON.stringify({ item_id: addItemId, drop_chance: chance, min_quantity: minQ, max_quantity: maxQ }),
     });
     const data = await res.json();
-    if (data.drop) { setDrops(d => [...d.filter(x => x.item_id !== addItemId), data.drop]); setAddItemId(""); setAddChance("10"); setAddMinQty("1"); setAddMaxQty("1"); setItemSearch(""); }
+    if (data.drop) { setDrops(d => [...d.filter(x => x.item_id !== addItemId), data.drop]); setAddItemId(""); setAddChance("10"); setAddMinQty("1"); setAddMaxQty("1"); setItemSearch(""); showToast("Drop adicionado!"); }
     else showToast(data.error || "Erro", false);
   };
 
   const removeDrop = async (dropId: string) => {
     if (!form.id) return;
-    await fetch(`/api/admin/crime-empire/crimes/${form.id}/drops/${dropId}`, { method: "DELETE" });
-    setDrops(d => d.filter(x => x.id !== dropId));
+    const res = await fetch(`/api/admin/crime-empire/crimes/${form.id}/drops/${dropId}`, { method: "DELETE" });
+    if (res.ok) { setDrops(d => d.filter(x => x.id !== dropId)); showToast("Drop removido"); }
+    else showToast("Erro ao remover drop", false);
   };
 
   const load = useCallback(async () => {
