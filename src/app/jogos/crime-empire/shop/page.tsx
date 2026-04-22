@@ -231,7 +231,7 @@ export default function ShopPage() {
                       <img
                         src={item.image_url}
                         alt={item.name}
-                        className="w-16 h-16 object-contain rounded-lg bg-[#1a1a1a] border border-[#2a2a2a] flex-shrink-0 p-1"
+                        className="w-20 h-20 object-contain flex-shrink-0 drop-shadow-lg"
                       />
                     )}
                   </div>
