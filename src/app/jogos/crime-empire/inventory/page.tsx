@@ -21,6 +21,7 @@ interface ItemData {
   base_price: number;
   tradeable: boolean;
   image_url?: string | null;
+  addiction_effect: number;
 }
 
 interface InventoryEntry {
@@ -294,6 +295,13 @@ export default function InventoryPage() {
                           {b.label}
                         </span>
                       ))}
+                    </div>
+                  )}
+
+                  {/* Addiction warning */}
+                  {item.addiction_effect > 0 && (
+                    <div className="mb-3 px-2 py-1 rounded bg-red-900/30 border border-red-700 text-xs text-red-400 font-semibold">
+                      ⚠️ +{item.addiction_effect} vício por utilização
                     </div>
                   )}
 

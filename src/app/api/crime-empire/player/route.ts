@@ -56,13 +56,10 @@ export async function GET() {
       player.in_jail = inJail;
     }
 
-    // Check if boost is still active
-    const boostActive = new Date(player.boost_expires_at) > now;
-
     return NextResponse.json({
       player: {
         ...player,
-        boost_active: boostActive,
+        boost_active: false,
       },
     });
   }

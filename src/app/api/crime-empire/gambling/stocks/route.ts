@@ -11,6 +11,32 @@ async function getAuthUser() {
   try { return JSON.parse(raw); } catch { return null; }
 }
 
+async function grantXP(playerId: string, xpEarned: number) {
+  if (xpEarned <= 0) return;
+  const { data: p } = await supabase.from("crime_players").select("xp, level, xp_to_next_level").eq("id", playerId).single();
+  if (!p) return;
+  let newXP = p.xp + xpEarned;
+  let newLevel = p.level;
+  while (newXP >= p.xp_to_next_level) { newXP -= p.xp_to_next_level; newLevel++; }
+  const newXPToNext = Math.floor(100 * Math.pow(1.25, newLevel - 1));
+  await supabase.from("crime_players").update({ xp: newXP, level: newLevel, xp_to_next_level: newXPToNext }).eq("id", playerId);
+}
+
+async function rollGamblingArrest(playerId: string, playerClass: string) {
+  const risk = playerClass === "scammer" ? 0.075 : 0.15;
+  if (Math.random() >= risk) return { arrested: false };
+  const jailMinutes = 20 + Math.floor(Math.random() * 21);
+  const jailReleaseAt = new Date(Date.now() + jailMinutes * 60_000).toISOString();
+  await supabase.from("crime_players").update({ in_jail: true, jail_release_at: jailReleaseAt }).eq("id", playerId);
+  await supabase.from("player_notifications").insert({
+    player_id: playerId,
+    type: "jail_released",
+    title: "🚔 Operação Policial!",
+    message: `A polícia investigou as tuas transações. Ficaste preso por ${jailMinutes} minutos.`,
+  });
+  return { arrested: true, jailMinutes };
+}
+
 // Server-side only — real coin IDs NEVER sent to client
 const COIN_MAP: Record<string, { realId: string; displayName: string; symbol: string; color: string }> = {
   "nether-coin":    { realId: "bitcoin",       displayName: "NetherCoin",    symbol: "NTC", color: "#f7931a" },
@@ -190,8 +216,11 @@ export async function POST(req: NextRequest) {
       player_id: player.id, game_type: "stocks",
       bet_amount: position.dirty_cash_invested, payout, profit,
     });
+    const arrestInfo = await rollGamblingArrest(player.id, player.class);
+    // E8: XP for selling stock
+    await grantXP(player.id, 10);
 
-    return NextResponse.json({ success: true, payout, profit });
+    return NextResponse.json({ success: true, payout, profit, arrested: arrestInfo.arrested, jailMinutes: (arrestInfo as any).jailMinutes });
   }
 
   return NextResponse.json({ error: "Ação inválida" }, { status: 400 });

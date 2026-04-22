@@ -41,6 +41,18 @@ export default function CrimeDashboard() {
   const [loading, setLoading] = useState(true);
   const [showPrestigeModal, setShowPrestigeModal] = useState(false);
   const [prestiging, setPrestiging] = useState(false);
+  const [prestigeNewClass, setPrestigeNewClass] = useState<string>("");
+
+  const VALID_CLASSES = [
+    { id: "thief",      label: "Ladrão",        icon: "🦹" },
+    { id: "scammer",    label: "Burlão",         icon: "🎭" },
+    { id: "hooligan",   label: "Hooligan",       icon: "👊" },
+    { id: "dealer",     label: "Dealer",         icon: "💊" },
+    { id: "hitman",     label: "Sicário",        icon: "🔫" },
+    { id: "businessman",label: "Empresário",     icon: "💼" },
+    { id: "hacker",     label: "Hacker",         icon: "💻" },
+    { id: "brute",      label: "Brutamontes",    icon: "🦍" },
+  ];
 
   useEffect(() => {
     if (!user) {
@@ -76,6 +88,8 @@ export default function CrimeDashboard() {
     try {
       const res = await fetch("/api/crime-empire/prestige", {
         method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ newClass: prestigeNewClass || undefined }),
       });
 
       const data = await res.json();
@@ -83,17 +97,16 @@ export default function CrimeDashboard() {
       if (data.success) {
         alert(
           `🌟 ${data.message}\n\n` +
+          `Nova Classe: ${data.newClass}\n\n` +
           `Bónus de Prestige ${player.prestige_level + 1}:\n` +
           `• Taxa de Sucesso: ${data.bonuses.successRateBonus}\n` +
           `• HP Máximo: ${data.bonuses.maxHp}\n` +
           `• Stamina Máxima: ${data.bonuses.maxStamina}\n\n` +
-          `Mantiveste:\n` +
-          `• Respeito: ${data.keptResources.respect.toLocaleString()}\n` +
-          `• Dinheiro Sujo: $${data.keptResources.dirtyCash.toLocaleString()}\n` +
-          `• Dinheiro Limpo: $${data.keptResources.cash.toLocaleString()}`
+          `Tudo foi reiniciado. Começa de novo com as tuas estrelas de prestige!`
         );
         setShowPrestigeModal(false);
-        fetchPlayer(); // Refresh player data
+        setPrestigeNewClass("");
+        fetchPlayer();
       } else {
         alert(data.error || "Erro ao fazer prestige");
       }
@@ -278,8 +291,8 @@ export default function CrimeDashboard() {
 
         {/* Prestige Modal */}
         {showPrestigeModal && (
-          <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
-            <div className="bg-[#1a1a1a] border-2 border-yellow-500 rounded-2xl p-8 max-w-lg w-full">
+          <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4 overflow-y-auto">
+            <div className="bg-[#1a1a1a] border-2 border-yellow-500 rounded-2xl p-8 max-w-lg w-full my-4">
               <div className="text-center mb-6">
                 <div className="text-6xl mb-4">⭐</div>
                 <h2 className="text-3xl font-bold text-yellow-400 mb-2">
@@ -289,13 +302,14 @@ export default function CrimeDashboard() {
               </div>
 
               <div className="space-y-4 mb-6">
-                <div className="p-4 rounded-xl bg-green-900/20 border border-green-600">
-                  <p className="font-bold text-green-400 mb-2">✅ Vais Manter:</p>
-                  <ul className="text-sm text-green-300 space-y-1">
-                    <li>• Todo o Respeito ({player.respect.toLocaleString()})</li>
-                    <li>• Todo o Dinheiro (${(player.dirty_cash + player.cash).toLocaleString()})</li>
-                    <li>• Todos os Itens e Negócios</li>
-                    <li>• Histórico de Estatísticas</li>
+                <div className="p-4 rounded-xl bg-red-900/20 border border-red-600">
+                  <p className="font-bold text-red-400 mb-2">⚠️ TUDO SERÁ APAGADO:</p>
+                  <ul className="text-sm text-red-300 space-y-1">
+                    <li>• Nível resetado para 1 e XP a 0</li>
+                    <li>• Todo o dinheiro (cash, sujo, crypto)</li>
+                    <li>• Todo o respeito e vício</li>
+                    <li>• Todo o inventário e negócios</li>
+                    <li>• Bónus de experiência em crimes</li>
                   </ul>
                 </div>
 
@@ -310,19 +324,38 @@ export default function CrimeDashboard() {
                   </ul>
                 </div>
 
-                <div className="p-4 rounded-xl bg-red-900/20 border border-red-600">
-                  <p className="font-bold text-red-400 mb-2">❌ Vais Perder:</p>
-                  <ul className="text-sm text-red-300 space-y-1">
-                    <li>• Nível resetado para 1</li>
-                    <li>• XP resetado para 0</li>
-                    <li>• Bónus de experiência em crimes</li>
-                  </ul>
+                {/* Class change */}
+                <div className="p-4 rounded-xl bg-[#121212] border border-[#333]">
+                  <p className="font-bold text-white mb-3">🔄 Escolhe a tua nova classe (opcional):</p>
+                  <div className="grid grid-cols-4 gap-2">
+                    {VALID_CLASSES.map((cls) => (
+                      <button
+                        key={cls.id}
+                        onClick={() => setPrestigeNewClass(prestigeNewClass === cls.id ? "" : cls.id)}
+                        className={`py-2 px-1 rounded-lg text-xs font-bold text-center transition-all flex flex-col items-center gap-1 ${
+                          prestigeNewClass === cls.id
+                            ? "bg-yellow-500 text-black"
+                            : cls.id === player.class
+                            ? "bg-[#2a2a2a] border border-[#ff6a00] text-[#ff6a00]"
+                            : "bg-[#1e1e1e] border border-[#333] text-[#888] hover:border-[#555] hover:text-white"
+                        }`}
+                      >
+                        <span className="text-lg">{cls.icon}</span>
+                        <span>{cls.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                  <p className="text-xs text-[#555] mt-2">
+                    {prestigeNewClass
+                      ? `→ Nova classe: ${VALID_CLASSES.find(c => c.id === prestigeNewClass)?.label}`
+                      : `→ Mantém a classe actual: ${player.class}`}
+                  </p>
                 </div>
               </div>
 
               <div className="flex gap-3">
                 <button
-                  onClick={() => setShowPrestigeModal(false)}
+                  onClick={() => { setShowPrestigeModal(false); setPrestigeNewClass(""); }}
                   disabled={prestiging}
                   className="flex-1 px-6 py-3 rounded-xl bg-[#222222] hover:bg-[#2a2a2a] border border-[#333333] font-bold transition-all"
                 >

@@ -18,6 +18,32 @@ function getCasinoFee(level: number): number {
   return 3000;
 }
 
+async function grantXP(playerId: string, xpEarned: number) {
+  if (xpEarned <= 0) return;
+  const { data: p } = await supabase.from("crime_players").select("xp, level, xp_to_next_level").eq("id", playerId).single();
+  if (!p) return;
+  let newXP = p.xp + xpEarned;
+  let newLevel = p.level;
+  while (newXP >= p.xp_to_next_level) { newXP -= p.xp_to_next_level; newLevel++; }
+  const newXPToNext = Math.floor(100 * Math.pow(1.25, newLevel - 1));
+  await supabase.from("crime_players").update({ xp: newXP, level: newLevel, xp_to_next_level: newXPToNext }).eq("id", playerId);
+}
+
+async function rollGamblingArrest(playerId: string, playerClass: string) {
+  const risk = playerClass === "scammer" ? 0.075 : 0.15;
+  if (Math.random() >= risk) return { arrested: false };
+  const jailMinutes = 20 + Math.floor(Math.random() * 21);
+  const jailReleaseAt = new Date(Date.now() + jailMinutes * 60_000).toISOString();
+  await supabase.from("crime_players").update({ in_jail: true, jail_release_at: jailReleaseAt }).eq("id", playerId);
+  await supabase.from("player_notifications").insert({
+    player_id: playerId,
+    type: "jail_released",
+    title: "🚔 Apanhado no Casino!",
+    message: `A polícia fez uma rusga. Ficaste preso por ${jailMinutes} minutos.`,
+  });
+  return { arrested: true, jailMinutes };
+}
+
 function calcMultiplier(mines: number, revealed: number): number {
   const TILES = 25;
   let mult = 1;
@@ -100,14 +126,23 @@ export async function POST(req: NextRequest) {
 
     const grid = generateGrid(mineCount);
     const revealed: (null | "safe" | "mine")[] = new Array(25).fill(null);
-    await supabase.from("crime_players").update({ dirty_cash: player.dirty_cash - totalCost }).eq("id", player.id);
 
-    const { data: session } = await supabase.from("casino_sessions").insert({
+    // Create session FIRST to prevent money deducted without session (atomicity fix)
+    const { data: session, error: sessionError } = await supabase.from("casino_sessions").insert({
       player_id: player.id, game_type: "mines", bet,
       state: { grid, revealed, mineCount, revealedCount: 0, fee },
     }).select().single();
 
-    return NextResponse.json({ success: true, sessionId: session?.id, fee, revealed, currentMultiplier: 1, currentPayout: Math.floor(bet / 2) });
+    if (sessionError || !session) {
+      return NextResponse.json({ error: "Erro ao criar sessão de jogo" }, { status: 500 });
+    }
+
+    // Deduct money only after session is confirmed created
+    await supabase.from("crime_players").update({ dirty_cash: player.dirty_cash - totalCost }).eq("id", player.id);
+    // E8: XP for starting a mines game
+    await grantXP(player.id, 10);
+
+    return NextResponse.json({ success: true, sessionId: session.id, fee, revealed, currentMultiplier: 1, currentPayout: Math.floor(bet / 2) });
   }
 
   // Active session required for reveal/cashout
@@ -137,7 +172,8 @@ export async function POST(req: NextRequest) {
       newRevealed[tileIndex] = "mine";
       await supabase.from("casino_sessions").update({ status: "finished", state: { ...state, revealed: newRevealed } }).eq("id", sessionId);
       await supabase.from("gambling_history").insert({ player_id: player.id, game_type: "mines", bet_amount: session.bet, payout: 0, profit: -session.bet });
-      return NextResponse.json({ success: true, hit: "mine", revealed: newRevealed, payout: 0, status: "finished" });
+      const arrestInfo = await rollGamblingArrest(player.id, player.class);
+      return NextResponse.json({ success: true, hit: "mine", revealed: newRevealed, payout: 0, status: "finished", arrested: arrestInfo.arrested, jailMinutes: (arrestInfo as any).jailMinutes });
     }
 
     newRevealed[tileIndex] = "safe";
@@ -165,7 +201,8 @@ export async function POST(req: NextRequest) {
     await supabase.from("crime_players").update({ crypto: (fp?.crypto ?? 0) + payout }).eq("id", player.id);
     await supabase.from("casino_sessions").update({ status: "finished", state: { ...state, result: "cashout" } }).eq("id", sessionId);
     await supabase.from("gambling_history").insert({ player_id: player.id, game_type: "mines", bet_amount: session.bet, payout, profit: payout - session.bet });
-    return NextResponse.json({ success: true, payout, multiplier: mult, status: "finished" });
+    const arrestInfo = await rollGamblingArrest(player.id, player.class);
+    return NextResponse.json({ success: true, payout, multiplier: mult, status: "finished", arrested: arrestInfo.arrested, jailMinutes: (arrestInfo as any).jailMinutes });
   }
 
   return NextResponse.json({ error: "Ação inválida" }, { status: 400 });

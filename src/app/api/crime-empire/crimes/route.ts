@@ -89,6 +89,17 @@ export async function POST(request: Request) {
     .eq("crime_id", crimeId)
     .single();
 
+  // D1: Enforce cooldown before stamina check
+  if (crime.cooldown_minutes > 0 && experience?.last_attempt) {
+    const now_check = new Date();
+    const msSinceLast = now_check.getTime() - new Date(experience.last_attempt).getTime();
+    const cooldownMs = crime.cooldown_minutes * 60_000;
+    if (msSinceLast < cooldownMs) {
+      const secsLeft = Math.ceil((cooldownMs - msSinceLast) / 1000);
+      return NextResponse.json({ error: `Cooldown: aguarda ${secsLeft}s` }, { status: 429 });
+    }
+  }
+
   const bonusSuccessRate = experience?.bonus_success_rate || 0;
 
   // Get equipped items success_rate bonus
@@ -108,19 +119,12 @@ export async function POST(request: Request) {
   let baseSuccess = crime.base_success_rate;
 
   // Apply class bonuses
-  if (player.class === 'thief' && crime.difficulty === 'petty') {
-    baseSuccess += 0.15; // +15% for thieves on petty crimes
+    if (player.class === 'thief') {
+    baseSuccess += 0.15; // +15% for thieves on all crimes
   }
-  if (player.class === 'scammer' && crime.name.includes('Scam')) {
-    baseSuccess += 0.15;
-  }
+  // Scammer bonuses are on laundering businesses and gambling, not crimes directly
 
-  // Apply new player boost
   const now = new Date();
-  const boostActive = new Date(player.boost_expires_at) > now;
-  if (boostActive) {
-    baseSuccess += 0.30; // +30% for new players
-  }
 
   // Apply prestige bonus (+2% per prestige level, max 20%)
   const prestigeBonus = Math.min(player.prestige_level * 0.02, 0.20);
@@ -144,7 +148,7 @@ export async function POST(request: Request) {
   if (success) {
     // Reward is exactly within the displayed min/max range
     dirtyCashEarned = Math.floor(Math.random() * (crime.max_dirty_cash - crime.min_dirty_cash + 1)) + crime.min_dirty_cash;
-    xpEarned = Math.floor(crime.xp_reward * (boostActive ? 1.2 : 1));
+    xpEarned = Math.floor(crime.xp_reward);
     respectEarned = crime.respect_reward;
 
     // Apply class bonuses
@@ -161,7 +165,7 @@ export async function POST(request: Request) {
   let jailTimeMinutes = 0;
   let jailReleaseAt = null;
 
-  if (!success && Math.random() <= crime.jail_risk * (boostActive ? 0.5 : 1)) {
+  if (!success && Math.random() <= crime.jail_risk) {
     wentToJail = true;
     jailTimeMinutes = 15 + Math.floor(Math.random() * 30); // 15-45 minutes
     const releaseDate = new Date(now.getTime() + jailTimeMinutes * 60000);
@@ -182,14 +186,17 @@ export async function POST(request: Request) {
     leveledUp = true;
   }
 
-  const newXPToNext = Math.floor(100 * Math.pow(1.5, newLevel - 1));
+  const newXPToNext = Math.floor(100 * Math.pow(1.25, newLevel - 1));
+
+  // Re-fetch fresh balance to prevent race conditions
+  const { data: freshPlayer } = await supabase.from("crime_players").select("dirty_cash, respect, stamina").eq("id", player.id).single();
 
   // Update player
   const updates: any = {
-    stamina: newStamina,
+    stamina: (freshPlayer?.stamina ?? player.stamina) - crime.stamina_cost,
     last_stamina_update: now.toISOString(),
-    dirty_cash: player.dirty_cash + dirtyCashEarned,
-    respect: player.respect + respectEarned,
+    dirty_cash: (freshPlayer?.dirty_cash ?? player.dirty_cash) + dirtyCashEarned,
+    respect: (freshPlayer?.respect ?? player.respect) + respectEarned,
     xp: newXP,
     level: newLevel,
     xp_to_next_level: newXPToNext,

@@ -27,7 +27,7 @@ const CLASSES: ClassDef[] = [
     flavor:
       "Nasceste para roubar. Cada fechadura é um convite, cada câmara um obstáculo. A cidade é o teu cofre — e tu tens a chave.",
     bonuses: [
-      { icon: "💰", text: "+15% sucesso em crimes pequenos" },
+      { icon: "💰", text: "+15% sucesso em todos os crimes" },
       { icon: "💵", text: "+10% ganho de dinheiro sujo" },
     ],
     stats: { money: 60, combat: 35, intelligence: 55, risk: 75 },
@@ -87,8 +87,8 @@ const CLASSES: ClassDef[] = [
     flavor:
       "Nunca levantas a voz. Apenas fazes os outros acreditarem no que queres. Um sorriso vale mais do que qualquer pistola.",
     bonuses: [
-      { icon: "🧠", text: "+15% sucesso em scams" },
       { icon: "🏦", text: "+10% taxa de lavagem de dinheiro" },
+      { icon: "🎲", text: "50% menos risco de prisão no casino" },
     ],
     stats: { money: 75, combat: 20, intelligence: 90, risk: 65 },
     glowColor: "#d97706",

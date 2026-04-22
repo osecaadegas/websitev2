@@ -7,8 +7,12 @@ async function getAuthUser(req: NextRequest) {
   const sessionCookie = req.cookies.get("twitch_session");
   if (!sessionCookie) return null;
 
-  const session = JSON.parse(sessionCookie.value);
-  return session?.login || null;
+  try {
+    const session = JSON.parse(sessionCookie.value);
+    return session?.id || null;
+  } catch {
+    return null;
+  }
 }
 
 export async function POST(req: NextRequest) {
@@ -16,6 +20,14 @@ export async function POST(req: NextRequest) {
     const userId = await getAuthUser(req);
     if (!userId) {
       return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
+    }
+
+    const body = await req.json().catch(() => ({}));
+    const { newClass } = body;
+
+    const VALID_CLASSES = ["thief", "scammer", "hooligan", "dealer", "hitman", "businessman", "hacker", "brute"];
+    if (newClass && !VALID_CLASSES.includes(newClass)) {
+      return NextResponse.json({ error: "Classe inválida" }, { status: 400 });
     }
 
     // Fetch player data
@@ -41,11 +53,7 @@ export async function POST(req: NextRequest) {
     const newPrestigeLevel = player.prestige_level + 1;
     const totalLevels = player.total_levels_earned + player.level;
 
-    // Prestige bonuses (per prestige level):
-    // +2% success rate (max +20% at prestige 10)
-    // +5 max HP
-    // +5 max stamina
-    const prestigeSuccessBonus = Math.min(newPrestigeLevel * 0.02, 0.20); // Max 20%
+    const prestigeSuccessBonus = Math.min(newPrestigeLevel * 0.02, 0.20);
     const newMaxHp = 100 + (newPrestigeLevel * 5);
     const newMaxStamina = 100 + (newPrestigeLevel * 5);
 
@@ -63,48 +71,50 @@ export async function POST(req: NextRequest) {
 
     if (historyError) {
       console.error("Error recording prestige history:", historyError);
-      return NextResponse.json(
-        { error: "Erro ao guardar histórico de prestige" },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: "Erro ao guardar histórico de prestige" }, { status: 500 });
     }
 
-    // Reset player to level 1 with prestige bonuses
+    // Full reset: level, XP, all money, respect, jail, class (optional)
+    const resetUpdate: Record<string, any> = {
+      level: 1,
+      xp: 0,
+      xp_to_next_level: 100,
+      prestige_level: newPrestigeLevel,
+      total_levels_earned: totalLevels,
+      max_hp: newMaxHp,
+      hp: newMaxHp,
+      max_stamina: newMaxStamina,
+      stamina: newMaxStamina,
+      in_jail: false,
+      jail_release_at: null,
+      // Full economy reset
+      cash: 0,
+      dirty_cash: 0,
+      crypto: 0,
+      respect: 0,
+      addiction: 0,
+    };
+
+    if (newClass) {
+      resetUpdate.class = newClass;
+    }
+
     const { error: updateError } = await supabase
       .from("crime_players")
-      .update({
-        level: 1,
-        xp: 0,
-        xp_to_next_level: 100,
-        prestige_level: newPrestigeLevel,
-        total_levels_earned: totalLevels,
-        max_hp: newMaxHp,
-        hp: newMaxHp, // Heal to full on prestige
-        max_stamina: newMaxStamina,
-        stamina: newMaxStamina, // Restore stamina on prestige
-        in_jail: false, // Release from jail
-        jail_release_at: null,
-      })
+      .update(resetUpdate)
       .eq("id", player.id);
 
     if (updateError) {
       console.error("Error updating player prestige:", updateError);
-      return NextResponse.json(
-        { error: "Erro ao fazer prestige" },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: "Erro ao fazer prestige" }, { status: 500 });
     }
 
-    // Reset crime experience bonuses (start fresh)
-    const { error: expResetError } = await supabase
-      .from("player_crime_experience")
-      .delete()
-      .eq("player_id", player.id);
+    // Delete inventory and businesses (full reset)
+    await supabase.from("player_inventory").delete().eq("player_id", player.id);
+    await supabase.from("player_businesses").delete().eq("player_id", player.id);
 
-    if (expResetError) {
-      console.error("Error resetting crime experience:", expResetError);
-      // Non-critical, continue
-    }
+    // Reset crime experience bonuses
+    await supabase.from("player_crime_experience").delete().eq("player_id", player.id);
 
     // Update player stats
     const { data: currentStats } = await supabase
@@ -114,40 +124,26 @@ export async function POST(req: NextRequest) {
       .single();
 
     if (currentStats) {
-      const { error: statsError } = await supabase
+      await supabase
         .from("player_stats")
-        .update({
-          times_prestiged: currentStats.times_prestiged + 1,
-          updated_at: new Date().toISOString(),
-        })
+        .update({ times_prestiged: currentStats.times_prestiged + 1, updated_at: new Date().toISOString() })
         .eq("player_id", player.id);
-
-      if (statsError) {
-        console.error("Error updating stats:", statsError);
-        // Non-critical, continue
-      }
     }
 
     return NextResponse.json({
       success: true,
       message: `Prestige ${newPrestigeLevel} alcançado!`,
       prestigeLevel: newPrestigeLevel,
+      newClass: newClass || player.class,
       bonuses: {
         successRateBonus: `+${(prestigeSuccessBonus * 100).toFixed(0)}%`,
         maxHp: newMaxHp,
         maxStamina: newMaxStamina,
       },
-      keptResources: {
-        respect: player.respect,
-        dirtyCash: player.dirty_cash,
-        cash: player.cash,
-      },
     });
   } catch (error) {
     console.error("Prestige error:", error);
-    return NextResponse.json(
-      { error: "Erro interno do servidor" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Erro interno do servidor" }, { status: 500 });
   }
 }
+

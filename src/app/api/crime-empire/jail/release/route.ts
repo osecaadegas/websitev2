@@ -62,18 +62,26 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Erro ao libertar da prisão" }, { status: 500 });
     }
 
-    // Update jail record to show early release
-    await supabase
+    // Update jail record to show early release — find the latest record first
+    const { data: latestRecord } = await supabase
       .from("jail_records")
-      .update({
-        released_early: true,
-        release_method: "paid_bail",
-        amount_paid: cost,
-      })
+      .select("id")
       .eq("player_id", player.id)
       .eq("released_early", false)
       .order("created_at", { ascending: false })
-      .limit(1);
+      .limit(1)
+      .maybeSingle();
+
+    if (latestRecord) {
+      await supabase
+        .from("jail_records")
+        .update({
+          released_early: true,
+          release_method: "paid_bail",
+          amount_paid: cost,
+        })
+        .eq("id", latestRecord.id);
+    }
 
     return NextResponse.json({
       success: true,

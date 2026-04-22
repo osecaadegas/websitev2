@@ -221,7 +221,27 @@ export async function POST(req: NextRequest) {
         loot_type: lootType,
         loot_amount: lootAmount,
       }),
+
+      // Notify the loser (D4)
+      supabase.from("player_notifications").insert({
+        player_id: loser.id,
+        type: "pvp_attacked",
+        title: "⚔️ Foste atacado!",
+        message: `${attacker.display_name || attacker.username} atacou-te e levou ${lootType === "cash" ? "$" : "₿"}${lootAmount.toLocaleString()} em ${lootType === "cash" ? "dinheiro limpo" : "crypto"}.`,
+        data: { attackerId: attacker.id, attackerName: attacker.display_name || attacker.username, lootType, lootAmount },
+      }),
     ]);
+
+    // E8: Grant XP to winner
+    const pvpXP = 50 + (loser.level ?? 1) * 2;
+    const { data: wp } = await supabase.from("crime_players").select("xp, level, xp_to_next_level").eq("id", winner.id).single();
+    if (wp) {
+      let newXP = wp.xp + pvpXP;
+      let newLevel = wp.level;
+      while (newXP >= wp.xp_to_next_level) { newXP -= wp.xp_to_next_level; newLevel++; }
+      const newXPToNext = Math.floor(100 * Math.pow(1.25, newLevel - 1));
+      await supabase.from("crime_players").update({ xp: newXP, level: newLevel, xp_to_next_level: newXPToNext }).eq("id", winner.id);
+    }
 
     return NextResponse.json({
       success: true,

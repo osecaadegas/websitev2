@@ -44,12 +44,13 @@ interface InventoryItem {
 export default function BlackMarket() {
   const { user } = useAuth();
   const router = useRouter();
-  const [tab, setTab] = useState<"browse" | "my-listings" | "sell">("browse");
+  const [tab, setTab] = useState<"browse" | "my-listings" | "sell" | "history">("browse");
   const [listings, setListings] = useState<Listing[]>([]);
   const [myListings, setMyListings] = useState<Listing[]>([]);
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [playerCrypto, setPlayerCrypto] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [tradeHistory, setTradeHistory] = useState<any[]>([]);
   
   // Sell form state
   const [selectedItemId, setSelectedItemId] = useState("");
@@ -91,6 +92,10 @@ export default function BlackMarket() {
           return item.quantity > 0;
         });
         setInventory(tradeableItems);
+      } else if (tab === "history") {
+        const res = await fetch("/api/crime-empire/black-market?action=history");
+        const data = await res.json();
+        setTradeHistory(data.trades || []);
       }
     } catch (error) {
       console.error("Error fetching black market data:", error);
@@ -271,6 +276,16 @@ export default function BlackMarket() {
             }`}
           >
             💰 Vender
+          </button>
+          <button
+            onClick={() => setTab("history")}
+            className={`px-6 py-3 font-bold transition-all ${
+              tab === "history"
+                ? "border-b-2 border-purple-500 text-purple-400"
+                : "text-[#888888] hover:text-white"
+            }`}
+          >
+            📜 Histórico
           </button>
         </div>
 
@@ -543,6 +558,49 @@ export default function BlackMarket() {
                     </form>
                   )}
                 </div>
+              </div>
+            )}
+
+            {/* History Tab */}
+            {tab === "history" && (
+              <div>
+                {tradeHistory.length === 0 ? (
+                  <div className="text-center py-12">
+                    <div className="text-6xl mb-4">📜</div>
+                    <p className="text-xl text-[#888888]">Sem transações registadas.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {tradeHistory.map((trade: any) => {
+                      const isBuyer = trade.role === "buyer";
+                      return (
+                        <div
+                          key={trade.id}
+                          className={`p-4 rounded-xl border ${isBuyer ? "bg-green-900/10 border-green-700/40" : "bg-blue-900/10 border-blue-700/40"}`}
+                        >
+                          <div className="flex justify-between items-start">
+                            <div>
+                              <span className={`text-xs font-bold px-2 py-0.5 rounded-full mr-2 ${isBuyer ? "bg-green-900/40 text-green-400" : "bg-blue-900/40 text-blue-400"}`}>
+                                {isBuyer ? "COMPREI" : "VENDI"}
+                              </span>
+                              <span className="font-bold">{trade.item_name || "Item"}</span>
+                              <span className="text-[#888] text-sm ml-2">×{trade.quantity}</span>
+                            </div>
+                            <div className="text-right">
+                              <p className={`font-bold ${isBuyer ? "text-red-400" : "text-green-400"}`}>
+                                {isBuyer ? "-" : "+"}₿{trade.total_crypto?.toLocaleString()}
+                              </p>
+                              <p className="text-xs text-[#888]">{new Date(trade.created_at).toLocaleDateString("pt-PT")}</p>
+                            </div>
+                          </div>
+                          {(trade.buyer_caught || trade.seller_caught) && (
+                            <p className="text-xs text-red-400 mt-1">⚠️ Apanhado — {trade.jail_time_minutes}min de prisão</p>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             )}
           </>

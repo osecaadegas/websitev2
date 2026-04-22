@@ -56,6 +56,30 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ listings: myListings || [] });
     }
 
+    // D3: Trade history for this player
+    if (action === "history") {
+      const { data: boughtTrades } = await supabase
+        .from("black_market_trades")
+        .select("id, item_id, quantity, crypto_price_per_unit, total_crypto, buyer_caught, seller_caught, jail_time_minutes, created_at, items(name)")
+        .eq("buyer_id", player.id)
+        .order("created_at", { ascending: false })
+        .limit(50);
+
+      const { data: soldTrades } = await supabase
+        .from("black_market_trades")
+        .select("id, item_id, quantity, crypto_price_per_unit, total_crypto, buyer_caught, seller_caught, jail_time_minutes, created_at, items(name)")
+        .eq("seller_id", player.id)
+        .order("created_at", { ascending: false })
+        .limit(50);
+
+      const trades = [
+        ...(boughtTrades || []).map((t: any) => ({ ...t, item_name: t.items?.name, role: "buyer" })),
+        ...(soldTrades || []).map((t: any) => ({ ...t, item_name: t.items?.name, role: "seller" })),
+      ].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()).slice(0, 50);
+
+      return NextResponse.json({ trades });
+    }
+
     // Get all active listings (exclude own listings)
     const { data: listings, error } = await supabase
       .from("black_market_listings")

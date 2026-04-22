@@ -67,6 +67,7 @@ export default function JailPage() {
 
     if (diff <= 0) {
       setTimeRemaining("A libertar...");
+      setEarlyReleaseCost(0);
       setTimeout(() => fetchPlayer(), 1000);
       return;
     }
@@ -74,6 +75,10 @@ export default function JailPage() {
     const minutes = Math.floor(diff / 60000);
     const seconds = Math.floor((diff % 60000) / 1000);
     setTimeRemaining(`${minutes}m ${seconds}s`);
+
+    // Update bail cost every second so it counts down in real-time
+    const minutesRemaining = Math.ceil(diff / 60000);
+    setEarlyReleaseCost(Math.max(0, minutesRemaining * 1000));
   };
 
   const calculateEarlyReleaseCost = (releaseAt: string) => {

@@ -15,6 +15,21 @@ async function getAuthUser() {
   }
 }
 
+/* ── E8: Shared XP helper ─────────────────────────────────── */
+async function grantXP(playerId: string, xpEarned: number) {
+  if (xpEarned <= 0) return;
+  const { data: p } = await supabase.from("crime_players").select("xp, level, xp_to_next_level").eq("id", playerId).single();
+  if (!p) return;
+  let newXP = p.xp + xpEarned;
+  let newLevel = p.level;
+  while (newXP >= p.xp_to_next_level) {
+    newXP -= p.xp_to_next_level;
+    newLevel++;
+  }
+  const newXPToNext = Math.floor(100 * Math.pow(1.25, newLevel - 1));
+  await supabase.from("crime_players").update({ xp: newXP, level: newLevel, xp_to_next_level: newXPToNext }).eq("id", playerId);
+}
+
 /* ── GET - Fetch all businesses and player's owned businesses ─── */
 export async function GET() {
   const user = await getAuthUser();
@@ -363,9 +378,10 @@ async function handleCollect(player: any, businessId: string) {
   if (collectedMoney > 0) {
     // Businessman gets +20% income on regular businesses
     if (player.class === "businessman") collectedMoney = Math.floor(collectedMoney * 1.20);
+    const { data: fpCollect } = await supabase.from("crime_players").select("dirty_cash").eq("id", player.id).single();
     await supabase
       .from("crime_players")
-      .update({ dirty_cash: player.dirty_cash + collectedMoney })
+      .update({ dirty_cash: (fpCollect?.dirty_cash ?? player.dirty_cash) + collectedMoney })
       .eq("id", player.id);
   }
 
@@ -374,6 +390,10 @@ async function handleCollect(player: any, businessId: string) {
     .from("player_businesses")
     .update({ last_collection: now.toISOString() })
     .eq("id", playerBusiness.id);
+
+  // E8: Grant XP for collecting income
+  const xpEarned = Math.floor((collectedMoney > 0 ? collectedMoney : 50) / 100);
+  await grantXP(player.id, Math.max(5, xpEarned));
 
   return NextResponse.json({
     success: true,
@@ -442,11 +462,12 @@ async function handleLaunder(player: any, businessId: string, amount: number) {
   
   const cleanMoney = Math.floor(amount * conversionRate);
 
+  const { data: fpLaunder } = await supabase.from("crime_players").select("dirty_cash, cash").eq("id", player.id).single();
   await supabase
     .from("crime_players")
     .update({
-      dirty_cash: player.dirty_cash - amount,
-      cash: player.cash + cleanMoney,
+      dirty_cash: (fpLaunder?.dirty_cash ?? player.dirty_cash) - amount,
+      cash: (fpLaunder?.cash ?? player.cash) + cleanMoney,
     })
     .eq("id", player.id);
 
@@ -457,6 +478,10 @@ async function handleLaunder(player: any, businessId: string, amount: number) {
       last_collection: new Date().toISOString(),
     })
     .eq("id", playerBusiness.id);
+
+  // E8: Grant XP for laundering
+  const launderXP = Math.max(5, Math.floor(cleanMoney / 200));
+  await grantXP(player.id, launderXP);
 
   return NextResponse.json({
     success: true,

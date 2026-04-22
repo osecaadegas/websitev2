@@ -11,6 +11,18 @@ async function getAuthUser() {
   try { return JSON.parse(raw); } catch { return null; }
 }
 
+/* ── E8: Grant XP helper ── */
+async function grantXP(playerId: string, xpEarned: number) {
+  if (xpEarned <= 0) return;
+  const { data: p } = await supabase.from("crime_players").select("xp, level, xp_to_next_level").eq("id", playerId).single();
+  if (!p) return;
+  let newXP = p.xp + xpEarned;
+  let newLevel = p.level;
+  while (newXP >= p.xp_to_next_level) { newXP -= p.xp_to_next_level; newLevel++; }
+  const newXPToNext = Math.floor(100 * Math.pow(1.25, newLevel - 1));
+  await supabase.from("crime_players").update({ xp: newXP, level: newLevel, xp_to_next_level: newXPToNext }).eq("id", playerId);
+}
+
 /* ── GET — Player's drug inventory + status ── */
 export async function GET() {
   const user = await getAuthUser();
@@ -172,6 +184,10 @@ export async function POST(req: NextRequest) {
     dirty_cash: player.dirty_cash + earned,
     last_street_sale_at: now.toISOString(),
   }).eq("id", player.id);
+
+  // E8: XP for drug sale
+  const streetXP = Math.max(5, Math.floor(earned / 50));
+  await grantXP(player.id, streetXP);
 
   return NextResponse.json({
     success: true,

@@ -18,6 +18,32 @@ function getCasinoFee(level: number): number {
   return 3000;
 }
 
+async function grantXP(playerId: string, xpEarned: number) {
+  if (xpEarned <= 0) return;
+  const { data: p } = await supabase.from("crime_players").select("xp, level, xp_to_next_level").eq("id", playerId).single();
+  if (!p) return;
+  let newXP = p.xp + xpEarned;
+  let newLevel = p.level;
+  while (newXP >= p.xp_to_next_level) { newXP -= p.xp_to_next_level; newLevel++; }
+  const newXPToNext = Math.floor(100 * Math.pow(1.25, newLevel - 1));
+  await supabase.from("crime_players").update({ xp: newXP, level: newLevel, xp_to_next_level: newXPToNext }).eq("id", playerId);
+}
+
+async function rollGamblingArrest(playerId: string, playerClass: string) {
+  const risk = playerClass === "scammer" ? 0.075 : 0.15;
+  if (Math.random() >= risk) return { arrested: false };
+  const jailMinutes = 20 + Math.floor(Math.random() * 21);
+  const jailReleaseAt = new Date(Date.now() + jailMinutes * 60_000).toISOString();
+  await supabase.from("crime_players").update({ in_jail: true, jail_release_at: jailReleaseAt }).eq("id", playerId);
+  await supabase.from("player_notifications").insert({
+    player_id: playerId,
+    type: "jail_released",
+    title: "🚔 Apanhado no Casino!",
+    message: `A polícia fez uma rusga. Ficaste preso por ${jailMinutes} minutos.`,
+  });
+  return { arrested: true, jailMinutes };
+}
+
 // Payout table: PAYOUTS[picks][hits] = multiplier
 const PAYOUTS: Record<number, Record<number, number>> = {
   1:  { 1: 3 },
@@ -64,15 +90,18 @@ export async function POST(req: NextRequest) {
   const multiplier = (PAYOUTS[picks.length] || {})[hits] || 0;
   const payout = Math.floor(Math.floor(bet * multiplier) / 2);
 
-  const { data: fp } = await supabase.from("crime_players").select("dirty_cash, crypto").eq("id", player.id).single();
   await supabase.from("crime_players").update({
-    dirty_cash: (fp?.dirty_cash ?? player.dirty_cash) - totalCost,
-    crypto: (fp?.crypto ?? player.crypto) + payout,
+    dirty_cash: player.dirty_cash - totalCost,
+    crypto: player.crypto + payout,
   }).eq("id", player.id);
 
   await supabase.from("gambling_history").insert({
     player_id: player.id, game_type: "keno", bet_amount: bet, payout, profit: payout - bet,
   });
 
-  return NextResponse.json({ success: true, drawn, hits, picks, multiplier, payout, fee });
+  const arrestInfo = await rollGamblingArrest(player.id, player.class);
+  // E8: XP for gambling
+  await grantXP(player.id, 10);
+
+  return NextResponse.json({ success: true, drawn, hits, picks, multiplier, payout, fee, arrested: arrestInfo.arrested, jailMinutes: (arrestInfo as any).jailMinutes });
 }

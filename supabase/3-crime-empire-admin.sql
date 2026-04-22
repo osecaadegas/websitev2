@@ -52,6 +52,36 @@ create table if not exists ce_shop_listings (
   unique(item_id)
 );
 
+-- ─── Extend item_category enum with drug ────────────────────
+-- Must run before any insert of drug items
+do $$ begin
+  alter type item_category add value if not exists 'drug';
+exception when others then null;
+end $$;
+
+-- ─── Add required_level to items (for shop level gating) ────
+do $$ begin
+  if not exists (select 1 from information_schema.columns
+                 where table_name = 'items' and column_name = 'required_level') then
+    alter table items add column required_level integer not null default 1
+      check (required_level >= 1);
+  end if;
+end $$;
+
+-- ─── Notification system ─────────────────────────────────────
+create table if not exists player_notifications (
+  id          uuid        primary key default gen_random_uuid(),
+  player_id   uuid        not null references crime_players(id) on delete cascade,
+  type        text        not null, -- 'pvp_attacked' | 'worker_event' | 'jail_released' | 'general'
+  title       text        not null,
+  message     text        not null,
+  read        boolean     not null default false,
+  data        jsonb,
+  created_at  timestamptz not null default now()
+);
+create index if not exists idx_player_notifications_player on player_notifications(player_id, read, created_at desc);
+alter table player_notifications disable row level security;
+
 -- ─── Add missing columns to existing tables ──────────────────
 -- Addiction (0-100) on crime_players
 do $$

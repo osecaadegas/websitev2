@@ -68,7 +68,7 @@ export async function POST(req: NextRequest) {
 
   const { data: player } = await supabase
     .from("crime_players")
-    .select("id, cash")
+    .select("id, cash, level")
     .eq("user_id", user.id)
     .single();
 
@@ -76,12 +76,17 @@ export async function POST(req: NextRequest) {
 
   const { data: item } = await supabase
     .from("items")
-    .select("id, name, base_price, category")
+    .select("id, name, base_price, category, required_level")
     .eq("id", itemId)
     .neq("category", "material")
     .single();
 
   if (!item) return NextResponse.json({ error: "Item não encontrado" }, { status: 404 });
+
+  // D10: Enforce level requirement
+  if ((item.required_level ?? 1) > (player.level ?? 1)) {
+    return NextResponse.json({ error: `Nível ${item.required_level} necessário para comprar este item` }, { status: 403 });
+  }
 
   const totalCost = item.base_price * quantity;
 

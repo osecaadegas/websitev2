@@ -17,6 +17,8 @@ interface ShopItem {
   stamina_restore: number;
   base_price: number;
   image_url: string | null;
+  addiction_effect: number;
+  required_level: number;
 }
 
 interface OwnedEntry {
@@ -240,6 +242,20 @@ export default function ShopPage() {
                           {b.label}
                         </span>
                       ))}
+                    </div>
+                  )}
+
+                  {/* Addiction warning */}
+                  {item.addiction_effect > 0 && (
+                    <div className="mb-3 px-2 py-1 rounded bg-red-900/30 border border-red-700 text-xs text-red-400 font-semibold">
+                      ⚠️ +{item.addiction_effect} vício por utilização
+                    </div>
+                  )}
+
+                  {/* Level requirement */}
+                  {item.required_level > 1 && player && player.level < item.required_level && (
+                    <div className="mb-3 px-2 py-1 rounded bg-yellow-900/30 border border-yellow-700 text-xs text-yellow-400 font-semibold">
+                      🔒 Nível {item.required_level} necessário
                     </div>
                   )}
 
