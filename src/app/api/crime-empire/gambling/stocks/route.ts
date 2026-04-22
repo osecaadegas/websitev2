@@ -158,6 +158,10 @@ export async function GET() {
   });
 }
 
+const BUY_FEE_RATE  = 0.03; // 3% fee on every purchase
+const SELL_FEE_RATE = 0.03; // 3% fee on every sale payout
+const MIN_HOLD_MS   = 24 * 60 * 60 * 1000; // 24h minimum hold before selling
+
 export async function POST(req: NextRequest) {
   const user = await getAuthUser();
   if (!user) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
@@ -173,15 +177,19 @@ export async function POST(req: NextRequest) {
     const coin = COIN_MAP[coinId];
     if (!coin) return NextResponse.json({ error: "Moeda inválida" }, { status: 400 });
     if (!amount || amount < 100 || amount > 10000) return NextResponse.json({ error: "Aposta inválida (min $100, max $10,000)" }, { status: 400 });
-    if (player.dirty_cash < amount) return NextResponse.json({ error: "Dinheiro sujo insuficiente" }, { status: 400 });
+
+    const buyFee   = Math.floor(amount * BUY_FEE_RATE);
+    const totalCost = amount + buyFee;
+    if (player.dirty_cash < totalCost) return NextResponse.json({ error: `Dinheiro sujo insuficiente. Precisas de $${totalCost} (investimento $${amount} + taxa $${buyFee})` }, { status: 400 });
 
     const prices = await fetchMarketData();
     const currentPrice = prices[coin.realId]?.usd;
     if (!currentPrice) return NextResponse.json({ error: "Erro ao obter preço" }, { status: 500 });
 
     const { data: fp } = await supabase.from("crime_players").select("dirty_cash").eq("id", player.id).single();
+    if ((fp?.dirty_cash ?? player.dirty_cash) < totalCost) return NextResponse.json({ error: "Dinheiro sujo insuficiente" }, { status: 400 });
     const quantity = amount / currentPrice;
-    await supabase.from("crime_players").update({ dirty_cash: (fp?.dirty_cash ?? player.dirty_cash) - amount }).eq("id", player.id);
+    await supabase.from("crime_players").update({ dirty_cash: (fp?.dirty_cash ?? player.dirty_cash) - totalCost }).eq("id", player.id);
     await supabase.from("stock_positions").insert({
       player_id: player.id,
       display_name: coin.displayName,
@@ -192,7 +200,7 @@ export async function POST(req: NextRequest) {
       dirty_cash_invested: amount,
     });
 
-    return NextResponse.json({ success: true, quantity, price: currentPrice, symbol: coin.symbol });
+    return NextResponse.json({ success: true, quantity, price: currentPrice, symbol: coin.symbol, fee: buyFee, totalCost });
   }
 
   if (action === "sell") {
@@ -203,11 +211,20 @@ export async function POST(req: NextRequest) {
       .select("*").eq("id", positionId).eq("player_id", player.id).maybeSingle();
     if (!position) return NextResponse.json({ error: "Posição não encontrada" }, { status: 404 });
 
+    // Enforce 24-hour minimum hold to prevent instant money-laundering
+    const holdMs = Date.now() - new Date(position.created_at).getTime();
+    if (holdMs < MIN_HOLD_MS) {
+      const hoursLeft = Math.ceil((MIN_HOLD_MS - holdMs) / 3600000);
+      return NextResponse.json({ error: `Tens de segurar este ativo por pelo menos 24h. Podes vender em ${hoursLeft}h.` }, { status: 400 });
+    }
+
     const prices = await fetchMarketData();
     const currentPrice = prices[position.real_coin_id]?.usd ?? position.bought_price;
     const pctChange = (currentPrice - position.bought_price) / position.bought_price;
-    const payout = Math.floor(position.dirty_cash_invested * (1 + pctChange));
-    const profit = payout - position.dirty_cash_invested;
+    const rawPayout = Math.floor(position.dirty_cash_invested * (1 + pctChange));
+    const sellFee   = Math.floor(rawPayout * SELL_FEE_RATE);
+    const payout    = rawPayout - sellFee;
+    const profit    = payout - position.dirty_cash_invested;
 
     const { data: fp } = await supabase.from("crime_players").select("crypto").eq("id", player.id).single();
     await supabase.from("crime_players").update({ crypto: (fp?.crypto ?? player.crypto) + payout }).eq("id", player.id);
@@ -217,10 +234,9 @@ export async function POST(req: NextRequest) {
       bet_amount: position.dirty_cash_invested, payout, profit,
     });
     const arrestInfo = await rollGamblingArrest(player.id, player.class);
-    // E8: XP for selling stock
     await grantXP(player.id, 10);
 
-    return NextResponse.json({ success: true, payout, profit, arrested: arrestInfo.arrested, jailMinutes: (arrestInfo as any).jailMinutes });
+    return NextResponse.json({ success: true, payout, profit, fee: sellFee, rawPayout, arrested: arrestInfo.arrested, jailMinutes: (arrestInfo as any).jailMinutes });
   }
 
   return NextResponse.json({ error: "Ação inválida" }, { status: 400 });

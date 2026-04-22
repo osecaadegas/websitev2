@@ -96,6 +96,20 @@ function holdDuration(boughtAt: string) {
   return `há ${Math.floor(hrs / 24)}d`;
 }
 
+const HOLD_MS = 24 * 60 * 60 * 1000;
+
+function canSellNow(boughtAt: string) {
+  return Date.now() - new Date(boughtAt).getTime() >= HOLD_MS;
+}
+
+function sellCountdown(boughtAt: string) {
+  const ms = HOLD_MS - (Date.now() - new Date(boughtAt).getTime());
+  if (ms <= 0) return null;
+  const h = Math.floor(ms / 3600000);
+  const m = Math.floor((ms % 3600000) / 60000);
+  return `${h}h ${m}m`;
+}
+
 export default function StocksPage() {
   const [player, setPlayer] = useState<{ dirty_cash: number; crypto: number } | null>(null);
   const [market, setMarket] = useState<Coin[]>([]);
@@ -134,7 +148,7 @@ export default function StocksPage() {
     });
     const data = await res.json();
     if (data.success) {
-      showMsg(`Comprado! ${data.quantity.toFixed(6)} ${data.symbol} @ $${data.price.toLocaleString()}`, true);
+      showMsg(`Comprado! ${data.quantity.toFixed(6)} ${data.symbol} @ $${data.price.toLocaleString()} · taxa $${data.fee.toLocaleString()}`, true);
       await fetchData();
     } else { showMsg(data.error, false); }
     setActing(false);
@@ -149,7 +163,7 @@ export default function StocksPage() {
     const data = await res.json();
     if (data.success) {
       const sign = data.profit >= 0 ? "+" : "";
-      showMsg(`Vendido! 🪙 ${data.payout.toLocaleString()} crypto (${sign}${data.profit.toLocaleString()})`, true);
+      showMsg(`Vendido! 🪙 ${data.payout.toLocaleString()} crypto (taxa $${data.fee.toLocaleString()} · ${sign}${data.profit.toLocaleString()})`, true);
       await fetchData();
     } else { showMsg(data.error, false); }
     setActing(false);
@@ -221,10 +235,24 @@ export default function StocksPage() {
                       <div><span className="text-[#555]">P&L </span><span className={`font-bold ${pos.pnl >= 0 ? "text-green-400" : "text-red-400"}`}>{pos.pnl >= 0 ? "+" : ""}${pos.pnl.toLocaleString()}</span></div>
                       <div><span className="text-[#555]">Hold </span><span className="font-bold text-yellow-500">{holdDuration(pos.boughtAt)}</span></div>
                     </div>
-                    <button onClick={() => sell(pos.id)} disabled={acting}
-                      className="w-full py-1.5 rounded-lg bg-red-900/40 border border-red-700/50 hover:bg-red-700/40 text-red-400 text-xs font-bold disabled:opacity-40 transition-colors">
-                      Vender 🪙
-                    </button>
+                    {(() => {
+                      const ok = canSellNow(pos.boughtAt);
+                      const countdown = sellCountdown(pos.boughtAt);
+                      return (
+                        <button
+                          onClick={() => sell(pos.id)}
+                          disabled={acting || !ok}
+                          title={ok ? undefined : `Podes vender em ${countdown}`}
+                          className={`w-full py-1.5 rounded-lg border text-xs font-bold transition-colors ${
+                            ok
+                              ? "bg-red-900/40 border-red-700/50 hover:bg-red-700/40 text-red-400 disabled:opacity-40"
+                              : "bg-[#1a1a1a] border-[#333] text-[#555] cursor-not-allowed"
+                          }`}
+                        >
+                          {ok ? "Vender 🪙" : `🔒 ${countdown}`}
+                        </button>
+                      );
+                    })()}
                   </div>
                 );
               })}
@@ -367,18 +395,23 @@ export default function StocksPage() {
             </div>
           </div>
 
-          {/* Estimated receive */}
-          <div className="rounded-lg bg-[#1a1a1a] border border-[#333] px-3 py-2.5 text-xs">
-            <div className="text-[#555] mb-1">Recebes (crypto)</div>
-            {selectedCoin && buyAmount >= 100 ? (
-              <>
-                <div className="text-yellow-400 font-bold text-base">🪙 {Math.floor(buyAmount / 2).toLocaleString()}</div>
-                <div className="text-[#555] mt-0.5">≈ {(buyAmount / selectedCoin.price).toFixed(selectedCoin.price < 1 ? 2 : 6)} {selectedCoin.symbol}</div>
-              </>
-            ) : (
-              <div className="text-[#444]">Seleciona ativo e valor</div>
-            )}
-          </div>
+          {/* Fee breakdown */}
+          {selectedCoin && buyAmount >= 100 && (
+            <div className="rounded-lg bg-[#1a1a1a] border border-[#2a2a2a] px-3 py-2.5 text-xs space-y-1">
+              <div className="flex justify-between text-[#666]">
+                <span>Investimento</span>
+                <span>${buyAmount.toLocaleString()}</span>
+              </div>
+              <div className="flex justify-between text-red-400">
+                <span>Taxa (3%)</span>
+                <span>-${Math.floor(buyAmount * 0.03).toLocaleString()}</span>
+              </div>
+              <div className="flex justify-between font-bold border-t border-[#333] pt-1">
+                <span className="text-[#999]">Total debitado</span>
+                <span className="text-yellow-400">${(buyAmount + Math.floor(buyAmount * 0.03)).toLocaleString()}</span>
+              </div>
+            </div>
+          )}
 
           <button onClick={buy} disabled={acting || !selectedCoinId}
             className="w-full py-3 rounded-lg bg-yellow-700 hover:bg-yellow-600 font-black text-sm disabled:opacity-40 transition-colors">
