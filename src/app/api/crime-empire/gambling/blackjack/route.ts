@@ -175,7 +175,8 @@ export async function POST(req: NextRequest) {
       if (playerBJ && dealerBJ) { result = "push"; payout = Math.floor(bet / 2); }
       else if (playerBJ) { result = "blackjack"; payout = Math.floor(bet * 1.25); }
       else { result = "dealer_blackjack"; payout = 0; }
-      await supabase.from("crime_players").update({ crypto: player.crypto + payout }).eq("id", player.id);
+      const { data: fpBJ } = await supabase.from("crime_players").select("crypto").eq("id", player.id).single();
+      await supabase.from("crime_players").update({ crypto: (fpBJ?.crypto ?? player.crypto) + payout }).eq("id", player.id);
       await supabase.from("gambling_history").insert({ player_id: player.id, game_type: "blackjack", bet_amount: bet, payout, profit: payout - bet });
       status = "finished";
       const arrestInfo = await rollGamblingArrest(player.id, player.class);

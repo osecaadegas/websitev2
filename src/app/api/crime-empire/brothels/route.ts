@@ -285,28 +285,53 @@ export async function POST(req: NextRequest) {
         totalIncome = Math.floor(totalIncome * 1.2);
       }
 
-      // Time-based collection (max 24 hours)
+      // Time-based collection (max 24 hours) — use dedicated brothel collection timestamp
       const now = new Date();
-      const lastCollection = new Date(player.last_login);
+      const lastCollectRaw = player.last_brothel_collect_at ?? player.created_at ?? now.toISOString();
+      const lastCollection = new Date(lastCollectRaw);
       const hoursPassed = Math.min(
         (now.getTime() - lastCollection.getTime()) / (1000 * 60 * 60),
         24
       );
 
+      // Minimum 1 minute between collections
+      if (hoursPassed < 1 / 60) {
+        return NextResponse.json({ error: "Aguarda um pouco antes de recolher novamente!" }, { status: 400 });
+      }
+
       const collected = Math.floor(totalIncome * hoursPassed);
+
+      // Re-fetch fresh balance to avoid race conditions
+      const { data: freshPlayer } = await supabase
+        .from("crime_players")
+        .select("dirty_cash")
+        .eq("id", player.id)
+        .single();
 
       await supabase
         .from("crime_players")
         .update({
-          cash: player.cash + collected,
-          last_login: now.toISOString(),
+          dirty_cash: (freshPlayer?.dirty_cash ?? player.dirty_cash) + collected,
+          last_brothel_collect_at: now.toISOString(),
         })
         .eq("id", player.id);
+
+      // Grant XP for collecting brothel income
+      const xpEarned = Math.max(5, Math.floor(collected / 1000));
+      const { data: xpPlayer } = await supabase.from("crime_players").select("xp, level, xp_to_next_level").eq("id", player.id).single();
+      if (xpPlayer) {
+        let newXP = xpPlayer.xp + xpEarned;
+        let newLevel = xpPlayer.level;
+        while (newXP >= xpPlayer.xp_to_next_level) { newXP -= xpPlayer.xp_to_next_level; newLevel++; }
+        const newXPToNext = Math.floor(100 * Math.pow(1.25, newLevel - 1));
+        await supabase.from("crime_players").update({ xp: newXP, level: newLevel, xp_to_next_level: newXPToNext }).eq("id", player.id);
+      }
 
       return NextResponse.json({
         success: true,
         collected,
-        message: `Coletaste $${collected.toLocaleString()}!`,
+        xp_earned: xpEarned,
+        message: `Coletaste $${collected.toLocaleString()} em dinheiro sujo!`,
       });
     }
 

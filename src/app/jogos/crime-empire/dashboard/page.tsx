@@ -52,6 +52,7 @@ export default function CrimeDashboard() {
     { id: "businessman",label: "Empresário",     icon: "💼" },
     { id: "hacker",     label: "Hacker",         icon: "💻" },
     { id: "brute",      label: "Brutamontes",    icon: "🦍" },
+    { id: "pimp",       label: "Chulo",          icon: "💋" },
   ];
 
   useEffect(() => {

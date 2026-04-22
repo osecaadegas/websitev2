@@ -168,6 +168,19 @@ export async function GET() {
       .in("id", ownedBusinesses.map((b) => b.id));
   }
 
+  // Push significant worker events to player_notifications
+  const criticalEvents = firedEvents.filter((e) => e.eventType === "left" || e.eventType === "died");
+  if (criticalEvents.length > 0) {
+    await supabase.from("player_notifications").insert(
+      criticalEvents.map((e) => ({
+        player_id: player.id,
+        type: "worker_event",
+        title: e.eventType === "died" ? "💀 Trabalhador Morreu!" : "🚪 Trabalhador Abandonou!",
+        message: e.message,
+      }))
+    );
+  }
+
   return NextResponse.json({
     businesses: ownedBusinesses || [],
     brothelWorkers: workers,

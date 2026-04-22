@@ -11,6 +11,17 @@ async function getAuthUser() {
   try { return JSON.parse(raw); } catch { return null; }
 }
 
+async function grantXP(playerId: string, xpEarned: number) {
+  if (xpEarned <= 0) return;
+  const { data: p } = await supabase.from("crime_players").select("xp, level, xp_to_next_level").eq("id", playerId).single();
+  if (!p) return;
+  let newXP = p.xp + xpEarned;
+  let newLevel = p.level;
+  while (newXP >= p.xp_to_next_level) { newXP -= p.xp_to_next_level; newLevel++; }
+  const newXPToNext = Math.floor(100 * Math.pow(1.25, newLevel - 1));
+  await supabase.from("crime_players").update({ xp: newXP, level: newLevel, xp_to_next_level: newXPToNext }).eq("id", playerId);
+}
+
 /* ── GET — roadmap + player progress ── */
 export async function GET() {
   const user = await getAuthUser();
@@ -170,11 +181,15 @@ export async function POST(req: NextRequest) {
       respect_reward: contract.respect_reward,
     });
 
+    const xpEarned = Math.max(10, Math.floor(cash / 500));
+    await grantXP(player.id, xpEarned);
+
     return NextResponse.json({
       success: true,
       message: `Contrato concluído! Alvo eliminado.`,
       cash_earned: cash,
       respect_earned: contract.respect_reward,
+      xp_earned: xpEarned,
       new_stamina: newStamina,
     });
   } else {
@@ -202,6 +217,15 @@ export async function POST(req: NextRequest) {
     }
 
     await supabase.from("crime_players").update(updates).eq("id", player.id);
+
+    if (arrested) {
+      await supabase.from("player_notifications").insert({
+        player_id: player.id,
+        type: "jail_released",
+        title: "🚔 Apanhado no Contrato!",
+        message: `O teu alvo escapou.${jailMsg}`,
+      });
+    }
 
     await supabase.from("player_contracts").insert({
       player_id: player.id,

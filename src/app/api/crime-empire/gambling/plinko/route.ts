@@ -38,6 +38,30 @@ function simulatePlinko(rows = 8): { flips: boolean[]; slot: number } {
   return { flips, slot: rights };
 }
 
+async function grantXP(playerId: string, xpEarned: number) {
+  if (xpEarned <= 0) return;
+  const { data: p } = await supabase.from("crime_players").select("xp, level, xp_to_next_level").eq("id", playerId).single();
+  if (!p) return;
+  let newXP = p.xp + xpEarned;
+  let newLevel = p.level;
+  while (newXP >= p.xp_to_next_level) { newXP -= p.xp_to_next_level; newLevel++; }
+  const newXPToNext = Math.floor(100 * Math.pow(1.25, newLevel - 1));
+  await supabase.from("crime_players").update({ xp: newXP, level: newLevel, xp_to_next_level: newXPToNext }).eq("id", playerId);
+}
+
+async function rollGamblingArrest(playerId: string, playerClass: string) {
+  const risk = playerClass === "scammer" ? 0.075 : 0.15;
+  if (Math.random() >= risk) return { arrested: false };
+  const jailMinutes = 20 + Math.floor(Math.random() * 21);
+  const jailReleaseAt = new Date(Date.now() + jailMinutes * 60_000).toISOString();
+  await supabase.from("crime_players").update({ in_jail: true, jail_release_at: jailReleaseAt }).eq("id", playerId);
+  await supabase.from("player_notifications").insert({
+    player_id: playerId, type: "jail_released", title: "🚔 Apanhado no Casino!",
+    message: `A polícia fez uma rusga ao casino. Ficaste preso por ${jailMinutes} minutos.`,
+  });
+  return { arrested: true, jailMinutes };
+}
+
 export async function POST(req: NextRequest) {
   const user = await getAuthUser();
   if (!user) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
@@ -69,5 +93,10 @@ export async function POST(req: NextRequest) {
     player_id: player.id, game_type: "plinko", bet_amount: bet, payout, profit: payout - bet,
   });
 
-  return NextResponse.json({ success: true, flips, slot, multiplier, payout, fee, multipliers: mults });
+  const xpEarned = Math.max(5, Math.floor(bet / 200));
+  await grantXP(player.id, xpEarned);
+
+  const arrestResult = await rollGamblingArrest(player.id, player.class);
+
+  return NextResponse.json({ success: true, flips, slot, multiplier, payout, fee, multipliers: mults, xp_earned: xpEarned, arrested: arrestResult.arrested, jail_minutes: arrestResult.arrested ? (arrestResult as any).jailMinutes : 0 });
 }

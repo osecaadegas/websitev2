@@ -25,7 +25,7 @@ export async function POST(req: NextRequest) {
     const body = await req.json().catch(() => ({}));
     const { newClass } = body;
 
-    const VALID_CLASSES = ["thief", "scammer", "hooligan", "dealer", "hitman", "businessman", "hacker", "brute"];
+    const VALID_CLASSES = ["thief", "scammer", "hooligan", "dealer", "hitman", "businessman", "hacker", "brute", "pimp"];
     if (newClass && !VALID_CLASSES.includes(newClass)) {
       return NextResponse.json({ error: "Classe inválida" }, { status: 400 });
     }

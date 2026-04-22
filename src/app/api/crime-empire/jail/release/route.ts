@@ -8,9 +8,10 @@ async function getAuthUser(req: NextRequest) {
   const cookieStore = await cookies();
   const sessionCookie = cookieStore.get("twitch_session");
   if (!sessionCookie) return null;
-
-  const session = JSON.parse(sessionCookie.value);
-  return { id: session.id, username: session.login, display_name: session.display_name, avatar: session.profile_image_url };
+  try {
+    const session = JSON.parse(sessionCookie.value);
+    return { id: session.id, username: session.login, display_name: session.display_name, avatar: session.profile_image_url };
+  } catch { return null; }
 }
 
 export async function POST(req: NextRequest) {

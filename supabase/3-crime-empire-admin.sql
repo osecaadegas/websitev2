@@ -158,3 +158,11 @@ alter table ce_admin_logs       disable row level security;
 alter table ce_system_settings  disable row level security;
 alter table ce_shop_listings    disable row level security;
 alter table crime_item_drops    disable row level security;
+
+-- ─── Brothel collection timestamp (separate from last_login) ─
+do $$ begin
+  if not exists (select 1 from information_schema.columns
+                 where table_name = 'crime_players' and column_name = 'last_brothel_collect_at') then
+    alter table crime_players add column last_brothel_collect_at timestamptz;
+  end if;
+end $$;

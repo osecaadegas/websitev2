@@ -179,9 +179,10 @@ export async function POST(req: NextRequest) {
     await supabase.from("player_inventory").update({ quantity: newQty }).eq("id", inventoryId);
   }
 
-  // Add dirty cash + update cooldown
+  // Add dirty cash + update cooldown (re-fetch to avoid race condition)
+  const { data: freshStreet } = await supabase.from("crime_players").select("dirty_cash").eq("id", player.id).single();
   await supabase.from("crime_players").update({
-    dirty_cash: player.dirty_cash + earned,
+    dirty_cash: (freshStreet?.dirty_cash ?? player.dirty_cash) + earned,
     last_street_sale_at: now.toISOString(),
   }).eq("id", player.id);
 

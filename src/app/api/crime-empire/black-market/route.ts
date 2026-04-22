@@ -321,6 +321,31 @@ export async function POST(req: NextRequest) {
         });
       }
 
+      // Jail the seller if caught
+      if (sellerCaught) {
+        const sellerReleaseAt = new Date(Date.now() + jailTime * 60 * 1000);
+        await supabase
+          .from("crime_players")
+          .update({
+            in_jail: true,
+            jail_release_at: sellerReleaseAt.toISOString(),
+          })
+          .eq("id", listing.seller_id);
+
+        await supabase.from("jail_records").insert({
+          player_id: listing.seller_id,
+          jail_time_minutes: jailTime,
+          release_at: sellerReleaseAt.toISOString(),
+        });
+
+        await supabase.from("player_notifications").insert({
+          player_id: listing.seller_id,
+          type: "jail_released",
+          title: "🚔 Apanhado no Mercado Negro!",
+          message: `Um dos teus itens foi rastreado pela polícia. Estás preso por ${jailTime} minutos.`,
+        });
+      }
+
       return NextResponse.json({
         success: true,
         message: buyerCaught 

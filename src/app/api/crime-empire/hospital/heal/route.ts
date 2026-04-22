@@ -8,9 +8,10 @@ async function getAuthUser(req: NextRequest) {
   const cookieStore = await cookies();
   const sessionCookie = cookieStore.get("twitch_session");
   if (!sessionCookie) return null;
-
-  const session = JSON.parse(sessionCookie.value);
-  return { id: session.id, username: session.login, display_name: session.display_name, avatar: session.profile_image_url };
+  try {
+    const session = JSON.parse(sessionCookie.value);
+    return { id: session.id, username: session.login, display_name: session.display_name, avatar: session.profile_image_url };
+  } catch { return null; }
 }
 
 export async function POST(req: NextRequest) {
@@ -45,9 +46,10 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: "Dinheiro insuficiente para o tratamento de desintoxicação" }, { status: 400 });
       }
 
+      const { data: freshAddiction } = await supabase.from("crime_players").select("cash").eq("id", player.id).single();
       await supabase
         .from("crime_players")
-        .update({ addiction: 0, cash: player.cash - cost })
+        .update({ addiction: 0, cash: (freshAddiction?.cash ?? player.cash) - cost })
         .eq("id", player.id);
 
       return NextResponse.json({
@@ -93,14 +95,15 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Dinheiro insuficiente" }, { status: 400 });
     }
 
-    // Heal and deduct cost
+    // Heal and deduct cost (re-fetch cash to prevent race condition)
     const newHp = Math.min(player.hp + actualHealAmount, player.max_hp);
+    const { data: freshHeal } = await supabase.from("crime_players").select("cash").eq("id", player.id).single();
 
     const { error: updateError } = await supabase
       .from("crime_players")
       .update({
         hp: newHp,
-        cash: player.cash - cost,
+        cash: (freshHeal?.cash ?? player.cash) - cost,
       })
       .eq("id", player.id);
 

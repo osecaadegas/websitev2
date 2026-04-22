@@ -311,7 +311,7 @@ async function handleCollect(player: any, businessId: string) {
   const employees = playerBusiness.employees;
   const baseIncome = playerBusiness.business.base_income_per_hour;
 
-  if (businessType === "chop_shop" || businessType === "offshore_bank") {
+  if (businessType === "chop_shop" || businessType === "offshore_bank" || businessType === "shell_company") {
     return NextResponse.json(
       { error: "Use launder action for money laundry" },
       { status: 400 }

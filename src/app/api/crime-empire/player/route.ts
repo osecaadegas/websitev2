@@ -76,7 +76,7 @@ export async function POST(request: Request) {
   const body = await request.json();
   const { class: playerClass } = body;
 
-  const validClasses = ['thief', 'hooligan', 'businessman', 'hitman', 'scammer', 'brute', 'dealer', 'pimp'];
+  const validClasses = ['thief', 'hooligan', 'businessman', 'hitman', 'scammer', 'brute', 'dealer', 'pimp', 'hacker'];
   if (!playerClass || !validClasses.includes(playerClass)) {
     return NextResponse.json({ error: "Invalid class" }, { status: 400 });
   }

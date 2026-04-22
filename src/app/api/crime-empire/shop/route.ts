@@ -94,10 +94,16 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Dinheiro limpo insuficiente" }, { status: 400 });
   }
 
-  // Deduct cash
+  // Deduct cash (re-fetch to prevent race condition)
+  const { data: freshShop } = await supabase.from("crime_players").select("cash").eq("id", player.id).single();
+  const freshCash = freshShop?.cash ?? player.cash;
+  if (freshCash < totalCost) {
+    return NextResponse.json({ error: "Dinheiro limpo insuficiente" }, { status: 400 });
+  }
+
   const { error: deductError } = await supabase
     .from("crime_players")
-    .update({ cash: player.cash - totalCost })
+    .update({ cash: freshCash - totalCost })
     .eq("id", player.id);
 
   if (deductError) return NextResponse.json({ error: "Erro ao processar pagamento" }, { status: 500 });
@@ -124,6 +130,6 @@ export async function POST(req: NextRequest) {
   return NextResponse.json({
     success: true,
     message: `Compraste ${quantity}x ${item.name} por 💵 ${totalCost.toLocaleString()}`,
-    newCash: player.cash - totalCost,
+    newCash: freshCash - totalCost,
   });
 }

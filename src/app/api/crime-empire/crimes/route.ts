@@ -326,7 +326,7 @@ export async function POST(request: Request) {
     respect_earned: respectEarned,
     leveled_up: leveledUp,
     new_level: newLevel,
-    new_stamina: newStamina,
+    new_stamina: updates.stamina,
     success_rate_used: effectiveSuccessRate,
     dropped_items: droppedItems,
   });
