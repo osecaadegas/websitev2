@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
@@ -9,18 +9,6 @@ import { useAuth } from "@/lib/auth-context";
 interface Props {
   open: boolean;
   onClose: () => void;
-}
-
-interface Player {
-  username: string;
-  level: number;
-  hp: number;
-  max_hp: number;
-  dirty_cash: number;
-  cash: number;
-  stamina: number;
-  max_stamina: number;
-  class: string;
 }
 
 const GAMBLING_LINKS = [
@@ -63,25 +51,8 @@ export function CrimeEmpireSidebar({ open, onClose }: Props) {
   const pathname = usePathname();
   const { user } = useAuth();
   const isAdmin = user?.role === "admin" || user?.role === "configurador";
-  const [player, setPlayer] = useState<Player | null>(null);
   const isGamblingActive = pathname.startsWith("/jogos/crime-empire/gambling");
   const [gamblingOpen, setGamblingOpen] = useState(isGamblingActive);
-
-  useEffect(() => {
-    fetchPlayer();
-  }, []);
-
-  const fetchPlayer = async () => {
-    try {
-      const res = await fetch("/api/crime-empire/player");
-      const data = await res.json();
-      if (data.player) {
-        setPlayer(data.player);
-      }
-    } catch (error) {
-      console.error("Error fetching player:", error);
-    }
-  };
 
   return (
     <>
@@ -105,41 +76,6 @@ export function CrimeEmpireSidebar({ open, onClose }: Props) {
         }`}
       >
         <div className="p-4 space-y-6">
-          {/* Player Info */}
-          {player && (
-            <div className="p-3 rounded-lg bg-[#1a1a1a] border border-[#ff6a00]/30 space-y-2">
-              <p className="text-sm font-bold text-white">{player.username}</p>
-              <p className="text-xs text-[#888888]">
-                {player.class.toUpperCase()} • Nível {player.level}
-              </p>
-              <div className="space-y-1 text-xs">
-                <div className="flex justify-between">
-                  <span className="text-[#888888]">Dinheiro Sujo:</span>
-                  <span className="text-green-400">${player.dirty_cash.toLocaleString()}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-[#888888]">Dinheiro Limpo:</span>
-                  <span className="text-yellow-400">${player.cash.toLocaleString()}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-[#888888]">HP:</span>
-                  <span className={`${
-                    player.hp / player.max_hp > 0.75 ? 'text-green-400' :
-                    player.hp / player.max_hp > 0.5 ? 'text-yellow-400' :
-                    player.hp / player.max_hp > 0.25 ? 'text-orange-400' :
-                    'text-red-400'
-                  }`}>
-                    {player.hp}/{player.max_hp}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-[#888888]">Stamina:</span>
-                  <span className="text-blue-400">{player.stamina}/{player.max_stamina}</span>
-                </div>
-              </div>
-            </div>
-          )}
-
           {/* Game Navigation */}
           <nav className="space-y-1">
             {GAME_SECTIONS.map((group, i) => (
