@@ -284,7 +284,7 @@ export default function CreateCharacter() {
       />
 
       {/* HEADER */}
-      <div className="relative z-10 pt-10 pb-2 text-center px-6">
+      <div className="relative z-10 pt-5 pb-1 text-center px-6">
         <motion.p
           initial={{ opacity: 0, y: -8 }}
           animate={{ opacity: 1, y: 0 }}
@@ -312,7 +312,7 @@ export default function CreateCharacter() {
       </div>
 
       {/* 3D CAROUSEL */}
-      <div className="relative z-10 flex-1 flex flex-col items-center justify-center py-4">
+      <div className="relative z-10 flex-1 flex flex-col items-center justify-center py-1">
         <div
           className="relative w-full flex items-center justify-center"
           style={{ perspective: "1200px", height: "400px" }}
@@ -361,11 +361,11 @@ export default function CreateCharacter() {
                     }}
                   />
 
-                  <div className="p-6">
-                    <div className="relative w-24 h-24 mx-auto mb-4">
+                  <div className="px-5 pt-4 pb-5">
+                    <div className="relative w-36 h-36 mx-auto mb-3">
                       {t.isActive && (
                         <motion.div
-                          className="absolute inset-[-8px] rounded-full"
+                          className="absolute inset-[-10px] rounded-full"
                           animate={{ scale: [1, 1.12, 1], opacity: [0.5, 0.8, 0.5] }}
                           transition={{
                             duration: 3.2,
@@ -384,8 +384,8 @@ export default function CreateCharacter() {
                         <Image
                           src={cls.image}
                           alt={cls.name}
-                          width={96}
-                          height={96}
+                          width={144}
+                          height={144}
                           className="w-full h-full object-contain bg-[#0a0a0a]"
                         />
                       </div>
