@@ -25,7 +25,16 @@ export async function GET(req: NextRequest) {
   const { data, count, error } = await query;
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-  return NextResponse.json({ listings: data || [], total: count || 0, page, limit });
+  // Flatten the nested item join into flat fields the UI expects
+  const listings = (data || []).map((row: any) => ({
+    ...row,
+    item_name:       row.item?.name       ?? "",
+    item_category:   row.item?.category   ?? "",
+    item_rarity:     row.item?.rarity     ?? "common",
+    item_base_price: row.item?.base_price ?? 0,
+  }));
+
+  return NextResponse.json({ listings, total: count || 0, page, limit });
 }
 
 export async function POST(req: NextRequest) {
