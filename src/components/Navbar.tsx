@@ -242,7 +242,6 @@ export function Navbar({ onMenuToggle }: NavbarProps) {
                 width={220}
                 height={56}
                 className="h-14 w-auto object-contain pointer-events-auto"
-                style={{ mixBlendMode: "screen" }}
               />
             </div>
           ) : pageTitle ? (
