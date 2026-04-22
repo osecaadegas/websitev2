@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useAuth } from "@/lib/auth-context";
+import { CEToast } from "@/components/CEToast";
 import { useRouter } from "next/navigation";
 
 /* ── Types ── */
@@ -142,15 +143,7 @@ export default function ContractsPage() {
 
   return (
     <div className="flex-1 text-white py-10 px-4 md:px-8">
-      {/* Toast */}
-      {toast && (
-        <div className={`fixed top-6 right-6 z-50 max-w-sm px-5 py-3 rounded-xl text-sm font-semibold shadow-xl transition-all ${
-          toast.ok ? "bg-green-700" : "bg-red-700"
-        } text-white`}>
-          <p>{toast.msg}</p>
-          {toast.details && <p className="mt-1 text-xs opacity-90">{toast.details}</p>}
-        </div>
-      )}
+      {toast && <CEToast msg={toast.msg} ok={toast.ok} details={toast.details} />}
 
       <div className="max-w-4xl mx-auto">
         {/* Header */}

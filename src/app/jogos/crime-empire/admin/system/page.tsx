@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { CEToast } from "@/components/CEToast";
 
 type Settings = { [key:string]: string };
 
@@ -66,11 +67,7 @@ export default function SystemPage() {
 
   return (
     <div>
-      {toast && (
-        <div className={`fixed top-6 right-6 z-50 px-5 py-3 rounded-xl text-sm font-semibold shadow-xl ${toast.ok?"bg-green-600":"bg-red-600"} text-white`}>
-          {toast.msg}
-        </div>
-      )}
+      {toast && <CEToast msg={toast.msg} ok={toast.ok} />}
       <h1 className="text-2xl font-black text-white mb-2">⚙️ Controlo do Sistema</h1>
       <p className="text-[#555] text-sm mb-8">Ajustes globais que afetam todos os jogadores em tempo real.</p>
 

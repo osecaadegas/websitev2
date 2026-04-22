@@ -1,6 +1,7 @@
 ﻿"use client";
 
 import { useEffect, useState, useCallback } from "react";
+import { CEToast } from "@/components/CEToast";
 
 // ─── Types ────────────────────────────────────────────────────
 type Player = {
@@ -415,11 +416,7 @@ function PlayerDetailPanel({ player, onClose, onRefresh }: { player: Player; onC
 
   return (
     <div className="fixed inset-0 z-50 bg-black/80 flex items-stretch justify-end" onClick={onClose}>
-      {toast && (
-        <div className={`fixed top-6 left-1/2 -translate-x-1/2 z-[60] px-5 py-3 rounded-xl text-sm font-semibold shadow-xl ${toast.ok ? "bg-green-600" : "bg-red-600"} text-white`}>
-          {toast.msg}
-        </div>
-      )}
+      {toast && <CEToast msg={toast.msg} ok={toast.ok} center />}
 
       <div className="bg-[#0a0a0a] border-l border-[#1e1e1e] w-full max-w-2xl flex flex-col h-full overflow-hidden"
         onClick={e => e.stopPropagation()}>

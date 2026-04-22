@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useAuth } from "@/lib/auth-context";
+import { CEToast } from "@/components/CEToast";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 
@@ -141,12 +142,7 @@ export default function InventoryPage() {
 
   return (
     <div className="flex-1 text-white py-10 px-4 md:px-8">
-      {/* Toast */}
-      {toast && (
-        <div className={`fixed top-6 right-6 z-50 px-5 py-3 rounded-xl text-sm font-semibold shadow-xl transition-all ${toast.ok ? "bg-green-600" : "bg-red-600"} text-white`}>
-          {toast.msg}
-        </div>
-      )}
+      {toast && <CEToast msg={toast.msg} ok={toast.ok} />}
 
       <div className="max-w-7xl mx-auto">
         {/* Header */}

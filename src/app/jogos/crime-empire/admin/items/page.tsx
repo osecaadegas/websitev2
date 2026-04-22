@@ -1,6 +1,7 @@
 ﻿"use client";
 
 import { useEffect, useState, useCallback, useMemo } from "react";
+import { CEToast } from "@/components/CEToast";
 
 type Item = {
   id: string; name: string; description: string; category: string; rarity: string;
@@ -134,11 +135,7 @@ export default function ItemsAdminPage() {
 
   return (
     <div>
-      {toast && (
-        <div className={`fixed top-6 right-6 z-50 px-5 py-3 rounded-xl text-sm font-semibold shadow-xl ${toast.ok?"bg-green-600":"bg-red-600"} text-white`}>
-          {toast.msg}
-        </div>
-      )}
+      {toast && <CEToast msg={toast.msg} ok={toast.ok} />}
 
       {/* Header */}
       <div className="flex items-center justify-between mb-6">

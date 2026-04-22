@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import { CEToast } from "@/components/CEToast";
 
 type Crime = {
   id:string; name:string; description:string; difficulty:string; required_level:number;
@@ -145,11 +146,7 @@ export default function CrimesAdminPage() {
 
   return (
     <div>
-      {toast && (
-        <div className={`fixed top-6 right-6 z-50 px-5 py-3 rounded-xl text-sm font-semibold shadow-xl ${toast.ok?"bg-green-600":"bg-red-600"} text-white`}>
-          {toast.msg}
-        </div>
-      )}
+      {toast && <CEToast msg={toast.msg} ok={toast.ok} />}
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-black text-white">💰 Crimes</h1>
