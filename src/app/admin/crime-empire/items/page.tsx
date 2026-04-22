@@ -269,8 +269,9 @@ export default function ItemsAdminPage() {
                     type="button"
                     onClick={() => {
                       setPickerSelected(form.image_url || "");
+                      setPickerSearch("");
+                      if (manifest) setPickerCat(Object.keys(manifest).sort()[0] || "");
                       setPickerOpen(true);
-                      if (!pickerCat && manifest) setPickerCat(Object.keys(manifest)[0] || "");
                     }}
                     className="text-xs px-3 py-1.5 rounded-lg bg-[#1a1a1a] hover:bg-[#252525] text-white border border-[#333] transition-all"
                   >
@@ -324,27 +325,32 @@ export default function ItemsAdminPage() {
           <div className="flex min-h-0" style={{flex:1}}>
 
             {/* Category sidebar */}
-            <div className="flex-shrink-0 w-44 border-r border-[#1e1e1e] overflow-y-auto p-2 space-y-0.5">
+            <div className="flex-shrink-0 w-52 border-r border-[#2a2a2a] overflow-y-auto bg-[#0a0a0a]">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-[#ff6a00] px-4 pt-3 pb-2 border-b border-[#1e1e1e]">Categorias</p>
+              <div className="p-2 space-y-0.5">
               {manifest && Object.keys(manifest).sort().map((cat) => (
                 <button
                   key={cat}
                   onClick={() => { setPickerCat(cat); setPickerSearch(""); }}
-                  className={`w-full text-left px-3 py-1.5 rounded-lg text-xs transition-all capitalize ${
+                  className={`w-full text-left px-3 py-2 rounded-lg text-xs transition-all capitalize flex items-center justify-between ${
                     pickerCat === cat
-                      ? "bg-[#ff6a00]/20 text-[#ff6a00] font-semibold"
-                      : "text-[#555] hover:text-white hover:bg-[#1a1a1a]"
+                      ? "bg-[#ff6a00] text-white font-bold"
+                      : "text-[#aaa] hover:text-white hover:bg-[#1e1e1e]"
                   }`}
                 >
-                  {cat}
-                  <span className="text-[#444] ml-1 text-[10px]">({(manifest[cat] || []).length})</span>
+                  <span>{cat}</span>
+                  <span className={`text-[10px] ml-2 flex-shrink-0 ${pickerCat === cat ? "text-white/70" : "text-[#555]"}`}>
+                    {(manifest[cat] || []).length}
+                  </span>
                 </button>
               ))}
+              </div>
             </div>
 
             {/* Images grid */}
             <div className="flex-1 overflow-y-auto p-4 min-w-0">
               {!pickerCat ? (
-                <p className="text-[#333] text-center py-20 text-sm">← Seleciona uma categoria</p>
+                <p className="text-[#444] text-center py-20 text-sm">← Seleciona uma categoria à esquerda</p>
               ) : pickerImages.length === 0 ? (
                 <p className="text-[#333] text-center py-20 text-sm">Sem resultados para &quot;{pickerSearch}&quot;</p>
               ) : (
