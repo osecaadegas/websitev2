@@ -307,7 +307,7 @@ export default function ContractsPage() {
                             )}
 
                             {/* Action button */}
-                            {!isCompleted && !isFailed && (
+                            {!isCompleted && (
                               <button
                                 disabled={!canAttempt || isBusy}
                                 onClick={() => attemptContract(contract.id)}
