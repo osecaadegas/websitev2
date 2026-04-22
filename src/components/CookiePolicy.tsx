@@ -84,7 +84,7 @@ export function CookiePolicy({ hideTitle = false }: { hideTitle?: boolean } = {}
 
         <ScrollReveal>
           <div className="mt-12 text-center text-arena-ash text-xs">
-            <p>�ltima atualiza��o: 03 de julho de 2024</p>
+
             <p className="mt-1">
               Para quest�es contacte{" "}
               <a

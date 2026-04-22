@@ -66,9 +66,6 @@ export default function ComunidadePage() {
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="text-center mb-12">
-          <h1 className="font-[family-name:var(--font-display)] text-4xl md:text-5xl text-arena-gold tracking-wide mb-4">
-            Comunidade
-          </h1>
           <p className="text-arena-smoke/70 text-lg max-w-2xl mx-auto">
             Participa nas atividades da comunidade e ganha prémios exclusivos
           </p>
@@ -126,14 +123,7 @@ export default function ComunidadePage() {
           ))}
         </div>
 
-        {/* Bottom CTA */}
-        <div className="mt-16 text-center">
-          <div className="inline-block rounded-lg bg-arena-charcoal/60 border border-arena-steel/20 p-6 max-w-2xl">
-            <p className="text-arena-smoke/70 text-sm leading-relaxed">
-              💡 <span className="text-arena-gold font-medium">Dica:</span> Participa em todas as atividades para ganhares mais pontos e subires no ranking da Liga dos Secas!
-            </p>
-          </div>
-        </div>
+
       </div>
     </div>
   );
