@@ -523,9 +523,9 @@ export function CEFloatingMenu() {
   const glow = CLASS_GLOW[player.class] ?? "#ff6a00";
 
   const dialOptions = [
-    { id: "inventory" as Panel, icon: "🎒", label: "Inventário", dx: -72, dy: -148 },
-    { id: "stats" as Panel,     icon: "📊", label: "Stats",      dx: -14, dy: -210 },
-    { id: "leaderboard" as Panel, icon: "🏆", label: "Rankings", dx:  50, dy: -150 },
+    { id: "inventory"   as Panel, icon: "🎒", label: "Inventário", dx: -88, dy: -14 },
+    { id: "stats"       as Panel, icon: "📊", label: "Stats",      dx: -70, dy: -74 },
+    { id: "leaderboard" as Panel, icon: "🏆", label: "Rankings",   dx: -14, dy: -90 },
   ];
 
   const panelTitle: Record<NonNullable<Panel>, string> = {
