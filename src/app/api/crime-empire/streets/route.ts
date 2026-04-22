@@ -30,7 +30,7 @@ export async function GET() {
 
   const { data: player } = await supabase
     .from("crime_players")
-    .select("id, class, dirty_cash, in_jail, jail_release_at, last_street_sale_at")
+    .select("id, class, dirty_cash, in_jail, jail_release_at, last_street_sale_at, hp")
     .eq("user_id", user.id)
     .single();
 
@@ -73,7 +73,7 @@ export async function POST(req: NextRequest) {
 
   const { data: player } = await supabase
     .from("crime_players")
-    .select("id, class, dirty_cash, in_jail, jail_release_at, last_street_sale_at")
+    .select("id, class, dirty_cash, in_jail, jail_release_at, last_street_sale_at, hp")
     .eq("user_id", user.id)
     .single();
 
