@@ -15,6 +15,7 @@ interface ShopItem {
   hp_bonus: number;
   stamina_restore: number;
   base_price: number;
+  image_url: string | null;
 }
 
 interface OwnedEntry {
@@ -219,9 +220,21 @@ export default function ShopPage() {
                     )}
                   </div>
 
-                  {/* Name + description */}
-                  <h3 className="font-black text-base mb-1">{item.name}</h3>
-                  <p className="text-[#666] text-xs mb-3 flex-1">{item.description}</p>
+                  {/* Name + description + image */}
+                  <div className="flex items-start gap-3 mb-3">
+                    <div className="flex-1">
+                      <h3 className="font-black text-base mb-1">{item.name}</h3>
+                      <p className="text-[#666] text-xs flex-1">{item.description}</p>
+                    </div>
+                    {item.image_url && (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={item.image_url}
+                        alt={item.name}
+                        className="w-16 h-16 object-contain rounded-lg bg-[#1a1a1a] border border-[#2a2a2a] flex-shrink-0 p-1"
+                      />
+                    )}
+                  </div>
 
                   {/* Stat badges */}
                   {badges.length > 0 && (
