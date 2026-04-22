@@ -38,10 +38,11 @@ export default function ItemsAdminPage() {
   const [confirmDelete, setConfirmDelete] = useState<Item|null>(null);
 
   // Image picker state
-  const [manifest, setManifest]       = useState<ImageManifest | null>(null);
-  const [pickerOpen, setPickerOpen]   = useState(false);
-  const [pickerCat, setPickerCat]     = useState("");
+  const [manifest, setManifest]         = useState<ImageManifest | null>(null);
+  const [pickerOpen, setPickerOpen]     = useState(false);
+  const [pickerCat, setPickerCat]       = useState("");
   const [pickerSearch, setPickerSearch] = useState("");
+  const [pickerSelected, setPickerSelected] = useState("");
 
   const showToast = (msg:string, ok=true) => { setToast({msg,ok}); setTimeout(()=>setToast(null),3500); };
 
@@ -266,7 +267,11 @@ export default function ItemsAdminPage() {
                   )}
                   <button
                     type="button"
-                    onClick={() => { setPickerOpen(true); if (!pickerCat && manifest) setPickerCat(Object.keys(manifest)[0] || ""); }}
+                    onClick={() => {
+                      setPickerSelected(form.image_url || "");
+                      setPickerOpen(true);
+                      if (!pickerCat && manifest) setPickerCat(Object.keys(manifest)[0] || "");
+                    }}
                     className="text-xs px-3 py-1.5 rounded-lg bg-[#1a1a1a] hover:bg-[#252525] text-white border border-[#333] transition-all"
                   >
                     🖼️ Escolher Imagem
@@ -301,9 +306,11 @@ export default function ItemsAdminPage() {
 
       {/* Image Picker Overlay */}
       {pickerOpen && (
-        <div className="fixed inset-0 z-[200] bg-[#080808] flex flex-col">
-          <div className="flex items-center gap-3 px-5 py-4 border-b border-[#1e1e1e] flex-shrink-0">
-            <h3 className="text-white font-black flex-1">🖼️ Escolher Imagem</h3>
+        <div className="fixed inset-0 z-[200] bg-[#080808]" style={{display:"flex",flexDirection:"column"}}>
+
+          {/* Header */}
+          <div className="flex-shrink-0 flex items-center gap-3 px-5 py-3 border-b border-[#1e1e1e]">
+            <h3 className="text-white font-black text-sm flex-1">🖼️ Escolher Imagem</h3>
             <input
               value={pickerSearch}
               onChange={(e) => setPickerSearch(e.target.value)}
@@ -313,9 +320,11 @@ export default function ItemsAdminPage() {
             <button onClick={() => setPickerOpen(false)} className="text-[#555] hover:text-white text-xl w-8 h-8 flex items-center justify-center rounded transition-colors">✕</button>
           </div>
 
-          <div className="flex flex-1 overflow-hidden">
+          {/* Body — min-h-0 is required so flex children can scroll */}
+          <div className="flex min-h-0" style={{flex:1}}>
+
             {/* Category sidebar */}
-            <div className="w-44 border-r border-[#1e1e1e] overflow-y-auto flex-shrink-0 p-2 space-y-0.5">
+            <div className="flex-shrink-0 w-44 border-r border-[#1e1e1e] overflow-y-auto p-2 space-y-0.5">
               {manifest && Object.keys(manifest).sort().map((cat) => (
                 <button
                   key={cat}
@@ -327,31 +336,31 @@ export default function ItemsAdminPage() {
                   }`}
                 >
                   {cat}
-                  <span className="text-[#333] ml-1 text-[10px]">({(manifest[cat] || []).length})</span>
+                  <span className="text-[#444] ml-1 text-[10px]">({(manifest[cat] || []).length})</span>
                 </button>
               ))}
             </div>
 
             {/* Images grid */}
-            <div className="flex-1 overflow-y-auto p-4">
+            <div className="flex-1 overflow-y-auto p-4 min-w-0">
               {!pickerCat ? (
                 <p className="text-[#333] text-center py-20 text-sm">← Seleciona uma categoria</p>
               ) : pickerImages.length === 0 ? (
                 <p className="text-[#333] text-center py-20 text-sm">Sem resultados para &quot;{pickerSearch}&quot;</p>
               ) : (
                 <>
-                  <p className="text-[#444] text-xs mb-3">{pickerImages.length} imagens{pickerImages.length > 200 ? " (a mostrar 200)" : ""}</p>
-                  <div className="grid grid-cols-8 sm:grid-cols-10 md:grid-cols-12 lg:grid-cols-16 gap-1.5">
-                    {pickerImages.slice(0, 200).map((filename) => {
+                  <p className="text-[#555] text-xs mb-3">{pickerImages.length} imagens{pickerImages.length > 300 ? " (a mostrar 300)" : ""}</p>
+                  <div className="grid gap-2" style={{gridTemplateColumns:"repeat(auto-fill,minmax(64px,1fr))"}}>
+                    {pickerImages.slice(0, 300).map((filename) => {
                       const url = `/images/crime_empire/items/${encodeURIComponent(pickerCat)}/${encodeURIComponent(filename)}`;
-                      const isSelected = form.image_url === url;
+                      const isCurrent = pickerSelected === url;
                       return (
                         <button
                           key={filename}
                           title={filename.replace(/\.[^.]+$/, "")}
-                          onClick={() => { setForm((f) => ({...f, image_url: url})); setPickerOpen(false); }}
-                          className={`w-12 h-12 rounded overflow-hidden border-2 transition-all flex items-center justify-center p-0.5 bg-[#111] hover:border-[#ff6a00] flex-shrink-0 ${
-                            isSelected ? "border-[#ff6a00] ring-2 ring-[#ff6a00]/30" : "border-[#1e1e1e]"
+                          onClick={() => setPickerSelected(url)}
+                          className={`w-16 h-16 rounded-lg overflow-hidden border-2 transition-all flex items-center justify-center p-1 bg-[#111] hover:border-[#ff6a00] ${
+                            isCurrent ? "border-[#ff6a00] ring-2 ring-[#ff6a00]/40" : "border-[#1e1e1e]"
                           }`}
                         >
                           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -363,6 +372,32 @@ export default function ItemsAdminPage() {
                 </>
               )}
             </div>
+          </div>
+
+          {/* Footer — confirm bar */}
+          <div className="flex-shrink-0 border-t border-[#1e1e1e] px-5 py-3 flex items-center gap-4 bg-[#0a0a0a]">
+            {pickerSelected ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={pickerSelected} alt="" className="w-12 h-12 object-contain rounded-lg bg-[#1a1a1a] border border-[#333] flex-shrink-0" />
+            ) : (
+              <div className="w-12 h-12 rounded-lg bg-[#1a1a1a] border border-[#333] flex-shrink-0" />
+            )}
+            <span className="text-sm text-[#555] flex-1 truncate">
+              {pickerSelected ? pickerSelected.split("/").pop()?.replace(/\.[^.]+$/, "") : "Nenhuma imagem selecionada"}
+            </span>
+            <button
+              onClick={() => setPickerOpen(false)}
+              className="px-4 py-2 rounded-lg bg-[#1a1a1a] text-[#888] text-sm hover:bg-[#222] transition-all"
+            >
+              Cancelar
+            </button>
+            <button
+              onClick={() => { setForm(f => ({...f, image_url: pickerSelected})); setPickerOpen(false); }}
+              disabled={!pickerSelected}
+              className="px-5 py-2 rounded-lg bg-[#ff6a00] hover:bg-[#ff8533] text-white text-sm font-bold disabled:opacity-40 transition-all"
+            >
+              ✓ Usar esta imagem
+            </button>
           </div>
         </div>
       )}
