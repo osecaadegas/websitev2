@@ -1,4 +1,5 @@
-"use client";
+import { redirect } from "next/navigation";
+export default function Page() { redirect("/jogos/crime-empire/admin/logs"); };
 
 import { useEffect, useState, useCallback } from "react";
 

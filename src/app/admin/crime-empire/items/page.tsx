@@ -1,4 +1,5 @@
-﻿"use client";
+﻿import { redirect } from "next/navigation";
+export default function Page() { redirect("/jogos/crime-empire/admin/items"); };
 
 import { useEffect, useState, useCallback, useMemo } from "react";
 import { CEToast } from "@/components/CEToast";

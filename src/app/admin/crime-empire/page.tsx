@@ -1,4 +1,5 @@
-"use client";
+import { redirect } from "next/navigation";
+export default function Page() { redirect("/jogos/crime-empire/admin"); };
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
