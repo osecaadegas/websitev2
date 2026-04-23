@@ -648,7 +648,7 @@ function ThreeCardFan({
 
   return (
     <div
-      className="flex items-start justify-end pr-4 md:pr-10"
+      className="flex items-start justify-end pr-6 md:pr-20"
       style={{ perspective: "1100px", perspectiveOrigin: "50% 20%" }}
     >
       {sorted.map((contract) => {
@@ -983,7 +983,7 @@ export default function ContractsPage() {
             </div>
 
             {/* ── RIGHT: 3-Card Fan ── */}
-            <div className="flex-1 flex items-start justify-center pt-2 min-w-0 overflow-x-auto">
+            <div className="flex-1 flex items-start justify-end pt-2 min-w-0 overflow-x-auto">
               {selectedContract ? (
                 <div key={selectedLevel ?? "none"} className="ce-fade-slide w-full">
                   <ThreeCardFan
