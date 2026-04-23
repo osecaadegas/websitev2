@@ -39,6 +39,7 @@ export async function POST(req: NextRequest) {
     name, type, description, purchase_price, base_income_per_hour,
     max_employees = 5, employee_cost_per_hour = 0, required_level = 1,
     required_items = [], raid_risk = 0.05,
+    risk_level = "medium", heat_per_hour = 5, tagline = "",
   } = body;
 
   if (!name || !type || purchase_price == null || base_income_per_hour == null) {
@@ -47,7 +48,7 @@ export async function POST(req: NextRequest) {
 
   const { data, error } = await supabase
     .from("businesses")
-    .insert({ name, type, description, purchase_price, base_income_per_hour, max_employees, employee_cost_per_hour, required_level, required_items, raid_risk, enabled: true })
+    .insert({ name, type, description, purchase_price, base_income_per_hour, max_employees, employee_cost_per_hour, required_level, required_items, raid_risk, enabled: true, risk_level, heat_per_hour, tagline })
     .select()
     .single();
 
