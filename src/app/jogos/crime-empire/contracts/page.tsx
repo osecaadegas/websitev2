@@ -1,11 +1,11 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState, useCallback } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { CEToast } from "@/components/CEToast";
 import { useRouter } from "next/navigation";
 
-/* ── Types ── */
+/* ────────────────────────────── TYPES ─────────────────────────────── */
 interface Contract {
   id: string;
   name: string;
@@ -46,287 +46,391 @@ interface Player {
   in_jail: boolean;
 }
 
-/* ── Difficulty Config ── */
-const DIFF_CONFIG: Record<string, { label: string; color: string; bg: string }> = {
-  easy:   { label: "FACIL",   color: "#22c55e", bg: "#22c55e14" },
-  medium: { label: "MEDIO",   color: "#f59e0b", bg: "#f59e0b14" },
-  hard:   { label: "DIFICIL", color: "#ef4444", bg: "#ef444414" },
+/* ────────────────────────────── CONFIG ─────────────────────────────── */
+const DIFF: Record<string, { label: string; color: string; bg: string; riskMod: number }> = {
+  easy:   { label: "FACIL",   color: "#22c55e", bg: "#22c55e18", riskMod: 0.7  },
+  medium: { label: "MEDIO",   color: "#f59e0b", bg: "#f59e0b18", riskMod: 1.0  },
+  hard:   { label: "DIFICIL", color: "#ef4444", bg: "#ef444418", riskMod: 1.35 },
 };
 
-/* ── PlayerHUD ── */
+/* ────────────────────────────── STAT BAR ────────────────────────────── */
+function StatBar({ pct, color }: { pct: number; color: string }) {
+  const blocks = 10;
+  const filled = Math.round((pct / 100) * blocks);
+  return (
+    <div className="flex items-center gap-0.5">
+      {Array.from({ length: blocks }).map((_, i) => (
+        <div
+          key={i}
+          className="h-2 w-4 rounded-sm flex-shrink-0 transition-all duration-500"
+          style={{ background: i < filled ? color : "#1e1e1e" }}
+        />
+      ))}
+    </div>
+  );
+}
+
+/* ────────────────────────────── PLAYER HUD ─────────────────────────── */
 function PlayerHUD({ player, isHitman }: { player: Player; isHitman: boolean }) {
-  const staminaPct = Math.max(0, Math.min(100, (player.stamina / player.max_stamina) * 100));
+  const stPct = Math.max(0, Math.min(100, (player.stamina / player.max_stamina) * 100));
   const hpPct = Math.max(0, Math.min(100, (player.hp / player.max_hp) * 100));
   return (
-    <div className="flex items-center gap-4 flex-wrap bg-[#0d0d0d] border border-[#1e1e1e] rounded-2xl px-5 py-3 shadow-xl">
+    <div className="flex items-center gap-5 flex-wrap border-b border-[#161616] pb-4 mb-5">
       <div className="flex items-center gap-2">
-        <span className="text-[9px] uppercase tracking-[0.2em] text-[#444]">NIV</span>
-        <span className="text-sm font-black text-white bg-[#1a1a1a] border border-[#2a2a2a] rounded-md px-2.5 py-1 min-w-[2rem] text-center tabular-nums">
+        <span className="text-[8px] uppercase tracking-[0.3em] text-[#3a3a3a]">NIV</span>
+        <span className="text-sm font-black text-white bg-[#181818] border border-[#222] rounded px-3 py-1 tabular-nums">
           {player.level}
         </span>
       </div>
-      <div className="w-px h-8 bg-[#1e1e1e] hidden sm:block" />
-      <div className="flex flex-col gap-1">
-        <div className="flex items-center justify-between gap-3">
-          <span className="text-[9px] uppercase tracking-[0.2em] text-[#444]">STAMINA</span>
-          <span className="text-[9px] font-bold tabular-nums" style={{ color: staminaPct > 40 ? "#f59e0b" : "#ef4444" }}>
+      <div className="flex flex-col gap-0.5">
+        <div className="flex items-center justify-between gap-6">
+          <span className="text-[8px] uppercase tracking-[0.3em] text-[#3a3a3a]">STAMINA</span>
+          <span className="text-[9px] font-bold tabular-nums" style={{ color: stPct > 40 ? "#f59e0b" : "#ef4444" }}>
             {player.stamina}/{player.max_stamina}
           </span>
         </div>
-        <div className="h-1.5 rounded-full bg-[#1a1a1a] overflow-hidden w-[110px]">
-          <div
-            className="h-full rounded-full transition-all duration-700"
-            style={{
-              width: `${staminaPct}%`,
-              background: staminaPct > 50 ? "#f59e0b" : staminaPct > 20 ? "#f97316" : "#ef4444",
-            }}
-          />
+        <div className="h-1 rounded-full bg-[#181818] overflow-hidden w-28">
+          <div className="h-full rounded-full transition-all duration-700"
+            style={{ width: `${stPct}%`, background: stPct > 50 ? "#f59e0b" : stPct > 20 ? "#f97316" : "#ef4444" }} />
         </div>
       </div>
-      <div className="flex flex-col gap-1">
-        <div className="flex items-center justify-between gap-3">
-          <span className="text-[9px] uppercase tracking-[0.2em] text-[#444]">HP</span>
+      <div className="flex flex-col gap-0.5">
+        <div className="flex items-center justify-between gap-6">
+          <span className="text-[8px] uppercase tracking-[0.3em] text-[#3a3a3a]">HP</span>
           <span className="text-[9px] font-bold tabular-nums" style={{ color: hpPct > 40 ? "#22c55e" : "#ef4444" }}>
             {player.hp}/{player.max_hp}
           </span>
         </div>
-        <div className="h-1.5 rounded-full bg-[#1a1a1a] overflow-hidden w-[90px]">
-          <div
-            className="h-full rounded-full transition-all duration-700"
-            style={{
-              width: `${hpPct}%`,
-              background: hpPct > 50 ? "#22c55e" : hpPct > 20 ? "#f97316" : "#ef4444",
-            }}
-          />
+        <div className="h-1 rounded-full bg-[#181818] overflow-hidden w-24">
+          <div className="h-full rounded-full transition-all duration-700"
+            style={{ width: `${hpPct}%`, background: hpPct > 50 ? "#22c55e" : hpPct > 20 ? "#f97316" : "#ef4444" }} />
         </div>
       </div>
       {isHitman && (
-        <>
-          <div className="w-px h-8 bg-[#1e1e1e] hidden sm:block" />
-          <span className="text-[9px] font-black tracking-[0.2em] text-red-400 bg-red-900/20 border border-red-800/50 rounded-md px-3 py-1.5 uppercase">
-            🔪 HITMAN
-          </span>
-        </>
+        <span className="text-[8px] font-black tracking-[0.2em] text-red-400 bg-red-900/20 border border-red-800/40 rounded px-2.5 py-1 uppercase">
+          HITMAN +
+        </span>
       )}
     </div>
   );
 }
 
-/* ── ContractCard ── */
-interface ContractCardProps {
+/* ────────────────────────────── CONTRACT LIST ITEM ─────────────────── */
+interface ListItemProps {
   contract: Contract;
   status: "completed" | "failed" | "pending" | null;
-  canAttempt: boolean;
-  isBusy: boolean;
+  selected: boolean;
+  levelUnlocked: boolean;
   isHitman: boolean;
-  player: Player | null;
-  levelDone: boolean;
-  unlocked: boolean;
-  flash: "success" | "failure" | null;
-  onAttempt: (id: string) => void;
+  onClick: () => void;
 }
 
-function ContractCard({
-  contract, status, canAttempt, isBusy, isHitman,
-  player, levelDone, unlocked, flash, onAttempt,
-}: ContractCardProps) {
-  const diff = DIFF_CONFIG[contract.difficulty] ?? DIFF_CONFIG.medium;
+function ContractListItem({ contract, status, selected, levelUnlocked, isHitman, onClick }: ListItemProps) {
+  const diff = DIFF[contract.difficulty] ?? DIFF.medium;
   const isCompleted = status === "completed";
-  const isFailed = status === "failed";
-  const meetsLevel = (player?.level ?? 0) >= contract.required_level;
-  const hasStamina = (player?.stamina ?? 0) >= contract.stamina_cost;
-  const isDimmed = (!unlocked || (levelDone && !isCompleted)) && !isCompleted;
+  const isFailed    = status === "failed";
+  const locked      = !levelUnlocked;
+  const displayRate = isHitman
+    ? Math.min(95, Math.round((contract.base_success_rate + contract.hitman_bonus) * 100))
+    : Math.round(contract.base_success_rate * 100);
+
+  return (
+    <button
+      onClick={onClick}
+      disabled={locked}
+      className={[
+        "w-full text-left px-3 py-2.5 rounded-lg border flex items-center gap-3 transition-all duration-150",
+        selected
+          ? "bg-[#1a1200] border-orange-700/60 shadow-md shadow-orange-950/40"
+          : isCompleted
+          ? "bg-[#060f06] border-green-900/30 opacity-70 hover:opacity-90"
+          : isFailed
+          ? "bg-[#0f0505] border-red-900/20 opacity-60 hover:opacity-80"
+          : locked
+          ? "bg-[#0c0c0c] border-[#141414] opacity-25 cursor-not-allowed"
+          : "bg-[#0e0e0e] border-[#1a1a1a] hover:border-[#252525] hover:bg-[#111]",
+      ].join(" ")}
+    >
+      {/* Status dot */}
+      <div className="w-1.5 h-1.5 rounded-full flex-shrink-0"
+        style={{ background: isCompleted ? "#22c55e" : isFailed ? "#ef4444" : selected ? "#f97316" : "#2a2a2a" }} />
+
+      {/* Name */}
+      <span className={`text-[11px] font-bold flex-1 truncate ${
+        isCompleted ? "text-green-500/70" : isFailed ? "text-red-500/60" : locked ? "text-[#2a2a2a]" : "text-[#ccc]"
+      }`}>
+        {locked ? "🔒 " : ""}{contract.name}
+      </span>
+
+      {/* Difficulty tag */}
+      <span
+        className="text-[7px] font-black tracking-[0.2em] px-1.5 py-0.5 rounded flex-shrink-0"
+        style={{ background: locked ? "#111" : diff.bg, color: locked ? "#333" : diff.color }}
+      >
+        {diff.label}
+      </span>
+
+      {/* Success % */}
+      {!locked && (
+        <span
+          className="text-[9px] font-black tabular-nums flex-shrink-0 w-8 text-right"
+          style={{ color: displayRate >= 60 ? "#22c55e" : displayRate >= 40 ? "#f59e0b" : "#ef4444" }}
+        >
+          {displayRate}%
+        </span>
+      )}
+    </button>
+  );
+}
+
+/* ────────────────────────────── CONTRACT BRIEFING ──────────────────── */
+interface BriefingProps {
+  contract: Contract;
+  status: "completed" | "failed" | "pending" | null;
+  player: Player | null;
+  levelDone: boolean;
+  levelUnlocked: boolean;
+  isHitman: boolean;
+  processing: boolean;
+  onExecute: () => void;
+}
+
+function ContractBriefing({
+  contract, status, player, levelDone, levelUnlocked, isHitman, processing, onExecute,
+}: BriefingProps) {
+  const diff = DIFF[contract.difficulty] ?? DIFF.medium;
+  const isCompleted = status === "completed";
+  const isFailed    = status === "failed";
+  const locked      = !levelUnlocked;
 
   const displayRate = isHitman
     ? Math.min(95, Math.round((contract.base_success_rate + contract.hitman_bonus) * 100))
     : Math.round(contract.base_success_rate * 100);
 
-  let cardClass = "rounded-xl flex flex-col overflow-hidden border relative ce-card ";
-  if (flash === "success") cardClass += "ce-flash-success ";
-  else if (flash === "failure") cardClass += "ce-flash-failure ce-shake ";
+  const baseArrest = contract.arrest_chance ?? 0.3;
+  const arrestDisplay = isHitman
+    ? Math.round(baseArrest * (1 - (contract.hitman_arrest_reduction ?? 0.5)) * 100)
+    : Math.round(baseArrest * 100);
 
-  if (isCompleted) cardClass += "bg-[#0a150a] border-green-800/50 opacity-80";
-  else if (isFailed) cardClass += "bg-[#130606] border-red-900/50 opacity-70";
-  else if (isDimmed) cardClass += "bg-[#0b0b0b] border-[#161616] opacity-30 pointer-events-none";
-  else cardClass += "bg-[#111] border-[#1e1e1e] hover:border-[#2e2e2e] hover:shadow-2xl hover:shadow-black/70";
+  const riskDisplay = Math.min(99, Math.round((1 - contract.base_success_rate) * (DIFF[contract.difficulty]?.riskMod ?? 1) * 100));
 
-  let btnLabel = "INDISPONIVEL";
-  let btnClass = "w-full py-2.5 rounded-lg text-[10px] font-black tracking-[0.2em] uppercase transition-all duration-150 ";
-  if (isBusy) {
-    btnLabel = "EXECUTANDO";
-    btnClass += "bg-[#1e1e1e] text-[#555] cursor-wait";
-  } else if (canAttempt) {
-    btnLabel = "EXECUTAR CONTRATO";
-    btnClass += "bg-gradient-to-r from-red-900 to-red-700 hover:from-red-800 hover:to-red-600 text-white shadow-lg shadow-red-950/60 active:scale-95";
-  } else if (levelDone && !isCompleted) {
-    btnLabel = "NIVEL CONCLUIDO";
-    btnClass += "bg-[#0f0f0f] text-[#2a2a2a] cursor-not-allowed border border-[#1a1a1a]";
-  } else if (!unlocked) {
-    btnLabel = "BLOQUEADO";
-    btnClass += "bg-[#0f0f0f] text-[#2a2a2a] cursor-not-allowed border border-[#1a1a1a]";
-  } else if (!hasStamina) {
-    btnLabel = "SEM STAMINA";
-    btnClass += "bg-[#0f0f0f] text-[#444] cursor-not-allowed";
-  } else if (!meetsLevel) {
-    btnLabel = `NIV ${contract.required_level} NECESSARIO`;
-    btnClass += "bg-[#0f0f0f] text-[#444] cursor-not-allowed";
-  } else {
-    btnClass += "bg-[#0f0f0f] text-[#333] cursor-not-allowed";
-  }
+  const meetsLevel  = (player?.level  ?? 0) >= contract.required_level;
+  const hasStamina  = (player?.stamina ?? 0) >= contract.stamina_cost;
+  const inJail      = player?.in_jail ?? false;
+
+  let disabledReason = "";
+  if (locked)          disabledReason = "BLOQUEADO";
+  else if (inJail)     disabledReason = "DETIDO";
+  else if (isCompleted) disabledReason = "JA CONCLUIDO";
+  else if (levelDone)  disabledReason = "NIVEL JA CONCLUIDO";
+  else if (!meetsLevel) disabledReason = `NIVEL ${contract.required_level} NECESSARIO`;
+  else if (!hasStamina) disabledReason = "STAMINA INSUFICIENTE";
+
+  const canExecute = !disabledReason && !isCompleted && !isFailed;
 
   return (
-    <div className={cardClass}>
-      {/* Difficulty bar */}
-      <div className="h-[2px] w-full flex-shrink-0" style={{ background: diff.color, opacity: isDimmed ? 0.15 : 0.65 }} />
+    <div className="h-full flex flex-col">
+      {/* ── TOP: classification bar ── */}
+      <div className="flex items-center justify-between mb-5">
+        <div className="flex items-center gap-2">
+          <div className="h-px w-6 bg-[#2a2a2a]" />
+          <span className="text-[7px] uppercase tracking-[0.4em] text-[#2e2e2e]">DOSSIE CONFIDENCIAL</span>
+          <div className="h-px w-6 bg-[#2a2a2a]" />
+        </div>
+        <span
+          className="text-[8px] font-black tracking-[0.25em] px-2.5 py-1 rounded"
+          style={{ background: diff.bg, color: diff.color, border: `1px solid ${diff.color}30` }}
+        >
+          {diff.label}
+        </span>
+      </div>
 
-      <div className="p-4 flex flex-col flex-1 gap-3">
-        {/* Header: difficulty + status tag */}
-        <div className="flex items-center justify-between gap-2">
-          <span
-            className="text-[8px] font-black tracking-[0.25em] uppercase px-2 py-0.5 rounded border"
-            style={{ background: diff.bg, color: diff.color, borderColor: `${diff.color}30` }}
-          >
-            {diff.label}
+      {/* ── TARGET HEADER ── */}
+      <div className="mb-5">
+        <p className="text-[8px] uppercase tracking-[0.35em] text-[#2e2e2e] mb-1">ALVO DESIGNADO</p>
+        <h2 className="text-3xl md:text-4xl font-black text-white leading-none tracking-tight mb-2">
+          {contract.name}
+        </h2>
+        {(isCompleted || isFailed) && (
+          <span className={`inline-block text-[8px] font-black tracking-[0.3em] px-3 py-1 rounded-full uppercase ${
+            isCompleted ? "bg-green-900/30 text-green-400 border border-green-800/40" : "bg-red-900/30 text-red-400 border border-red-800/40"
+          }`}>
+            {isCompleted ? "MISSAO CUMPRIDA" : "MISSAO FALHADA"}
           </span>
-          {isCompleted && (
-            <span className="text-[8px] font-black tracking-[0.2em] text-green-400 bg-green-900/25 border border-green-800/30 px-2 py-0.5 rounded uppercase">
-              CONCLUIDO
-            </span>
-          )}
-          {isFailed && (
-            <span className="text-[8px] font-black tracking-[0.2em] text-red-400 bg-red-900/25 border border-red-800/30 px-2 py-0.5 rounded uppercase">
-              FALHOU
-            </span>
-          )}
-          {!isCompleted && !isFailed && canAttempt && (
-            <span className="text-[8px] font-black tracking-[0.2em] text-orange-400 bg-orange-900/20 border border-orange-800/25 px-2 py-0.5 rounded uppercase">
-              ATIVO
-            </span>
-          )}
-        </div>
+        )}
+      </div>
 
-        {/* Target dossier */}
-        <div>
-          <p className="text-[8px] uppercase tracking-[0.25em] text-[#3a3a3a] mb-0.5">ALVO</p>
-          <h3 className="font-black text-[14px] leading-tight text-white">{contract.name}</h3>
-        </div>
-
-        {/* Intel description */}
-        <p className="text-[11px] text-[#4a4a4a] italic leading-relaxed flex-1 border-l border-[#1e1e1e] pl-3">
+      {/* ── INTEL ── */}
+      <div className="mb-5 border-l-2 border-[#1e1e1e] pl-4">
+        <p className="text-[8px] uppercase tracking-[0.3em] text-[#333] mb-2">INTEL</p>
+        <p className="text-[12px] text-[#555] leading-relaxed italic">
           {contract.description}
         </p>
+      </div>
 
-        {/* Divider */}
-        <div className="border-t border-[#181818]" />
+      <div className="border-t border-[#141414] mb-5" />
 
-        {/* Stats grid */}
-        <div className="grid grid-cols-2 gap-x-3 gap-y-2">
-          <div>
-            <p className="text-[8px] uppercase tracking-[0.2em] text-[#3a3a3a] mb-0.5">RECOMPENSA</p>
-            <p className="text-[11px] font-black text-green-400 tabular-nums">
-              ${contract.min_cash.toLocaleString("pt-PT")}–${contract.max_cash.toLocaleString("pt-PT")}
-            </p>
-          </div>
-          <div>
-            <p className="text-[8px] uppercase tracking-[0.2em] text-[#3a3a3a] mb-0.5">RESPEITO</p>
-            <p className="text-[11px] font-black text-yellow-400">+{contract.respect_reward} ⭐</p>
-          </div>
-          <div>
-            <p className="text-[8px] uppercase tracking-[0.2em] text-[#3a3a3a] mb-0.5">SUCESSO</p>
-            <p
-              className="text-[11px] font-black tabular-nums"
-              style={{ color: displayRate >= 60 ? "#22c55e" : displayRate >= 40 ? "#f59e0b" : "#ef4444" }}
-            >
+      {/* ── VISUAL STATS ── */}
+      <div className="mb-5 space-y-3">
+        <div className="flex items-center gap-4">
+          <div className="w-[80px] flex-shrink-0">
+            <p className="text-[7px] uppercase tracking-[0.3em] text-[#2e2e2e] mb-1">SUCESSO</p>
+            <p className="text-sm font-black tabular-nums" style={{ color: displayRate >= 60 ? "#22c55e" : displayRate >= 40 ? "#f59e0b" : "#ef4444" }}>
               {displayRate}%{isHitman ? " ✦" : ""}
             </p>
           </div>
-          <div>
-            <p className="text-[8px] uppercase tracking-[0.2em] text-[#3a3a3a] mb-0.5">STAMINA</p>
-            <p className="text-[11px] font-black text-[#888]">-{contract.stamina_cost}</p>
+          <div className="flex-1">
+            <StatBar pct={displayRate} color={displayRate >= 60 ? "#22c55e" : displayRate >= 40 ? "#f59e0b" : "#ef4444"} />
           </div>
         </div>
+        <div className="flex items-center gap-4">
+          <div className="w-[80px] flex-shrink-0">
+            <p className="text-[7px] uppercase tracking-[0.3em] text-[#2e2e2e] mb-1">RISCO</p>
+            <p className="text-sm font-black tabular-nums text-red-500">{riskDisplay}%</p>
+          </div>
+          <div className="flex-1">
+            <StatBar pct={riskDisplay} color="#ef4444" />
+          </div>
+        </div>
+        <div className="flex items-center gap-4">
+          <div className="w-[80px] flex-shrink-0">
+            <p className="text-[7px] uppercase tracking-[0.3em] text-[#2e2e2e] mb-1">STAMINA</p>
+            <p className="text-sm font-black tabular-nums text-[#888]">-{contract.stamina_cost}</p>
+          </div>
+          <div className="text-[10px] text-[#333]">
+            {hasStamina ? (
+              <span className="text-[#2e2e2e]">Disponivel</span>
+            ) : (
+              <span className="text-red-700">Stamina insuficiente</span>
+            )}
+          </div>
+        </div>
+      </div>
 
-        {/* Level requirement */}
-        {!meetsLevel && !isDimmed && (
-          <p className="text-[10px] text-red-400/80 bg-red-900/10 border border-red-900/20 rounded px-2 py-1">
-            Nivel {contract.required_level} necessario
-          </p>
-        )}
+      <div className="border-t border-[#141414] mb-5" />
 
-        {/* Action button */}
-        {!isCompleted && (
-          <button disabled={!canAttempt || isBusy} onClick={() => onAttempt(contract.id)} className={btnClass}>
-            {isBusy ? (
+      {/* ── REWARDS ── */}
+      <div className="mb-5">
+        <p className="text-[8px] uppercase tracking-[0.3em] text-[#2e2e2e] mb-3">RECOMPENSA ESTIMADA</p>
+        <div className="flex items-end gap-6">
+          <div>
+            <p className="text-[8px] uppercase tracking-[0.2em] text-[#2a2a2a] mb-0.5">CASH</p>
+            <p className="text-2xl font-black text-green-400 tabular-nums leading-none">
+              ${contract.min_cash.toLocaleString("pt-PT")}
+              <span className="text-sm text-[#333] font-normal"> - </span>
+              ${contract.max_cash.toLocaleString("pt-PT")}
+            </p>
+          </div>
+          <div className="pb-0.5">
+            <p className="text-[8px] uppercase tracking-[0.2em] text-[#2a2a2a] mb-0.5">RESPEITO</p>
+            <p className="text-xl font-black text-yellow-500 leading-none">+{contract.respect_reward}</p>
+          </div>
+        </div>
+      </div>
+
+      <div className="border-t border-[#141414] mb-5" />
+
+      {/* ── CONSEQUENCES ── */}
+      <div className="mb-6">
+        <p className="text-[8px] uppercase tracking-[0.3em] text-[#2e2e2e] mb-3">POSSIVEIS CONSEQUENCIAS</p>
+        <div className="space-y-2">
+          <div className="flex items-start gap-3">
+            <div className="w-1 h-1 rounded-full bg-red-700 mt-1.5 flex-shrink-0" />
+            <p className="text-[11px] text-[#444]">
+              Em caso de falha, HP cai para 0 — serás enviado ao hospital.
+            </p>
+          </div>
+          <div className="flex items-start gap-3">
+            <div className="w-1 h-1 rounded-full bg-red-700 mt-1.5 flex-shrink-0" />
+            <p className="text-[11px] text-[#444]">
+              <span className="text-red-700 font-bold">{arrestDisplay}% de chance</span> de ser preso (30–90 min).
+            </p>
+          </div>
+          {!meetsLevel && (
+            <div className="flex items-start gap-3">
+              <div className="w-1 h-1 rounded-full bg-red-700 mt-1.5 flex-shrink-0" />
+              <p className="text-[11px] text-red-800">
+                Requer nivel {contract.required_level} — o teu atual e insuficiente.
+              </p>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* ── EXECUTE BUTTON ── */}
+      <div className="mt-auto">
+        {disabledReason ? (
+          <div className="w-full py-3 rounded-xl text-center text-[9px] font-black tracking-[0.3em] uppercase text-[#2a2a2a] bg-[#0d0d0d] border border-[#161616]">
+            {disabledReason}
+          </div>
+        ) : (
+          <button
+            onClick={onExecute}
+            disabled={processing}
+            className={[
+              "w-full py-3.5 rounded-xl text-[10px] font-black tracking-[0.35em] uppercase transition-all duration-200",
+              processing
+                ? "bg-[#1a1a1a] text-[#444] cursor-wait"
+                : "bg-gradient-to-r from-red-950 to-red-800 hover:from-red-900 hover:to-red-700 text-white active:scale-95 shadow-xl shadow-red-950/50",
+            ].join(" ")}
+          >
+            {processing ? (
               <span className="inline-flex items-center justify-center gap-2">
-                <span className="inline-block w-2.5 h-2.5 border border-[#555] border-t-transparent rounded-full animate-spin" />
+                <span className="w-3 h-3 border border-[#555] border-t-transparent rounded-full animate-spin" />
                 EXECUTANDO
               </span>
-            ) : btnLabel}
+            ) : (
+              "EXECUTAR CONTRATO"
+            )}
           </button>
         )}
-        {isCompleted && (
-          <div className="w-full py-2.5 rounded-lg text-[10px] font-black tracking-[0.2em] text-center text-green-500 bg-green-900/10 border border-green-800/25 uppercase">
-            ✓ MISSAO CUMPRIDA
-          </div>
+        {!disabledReason && (
+          <p className="text-center text-[8px] text-[#252525] mt-2 uppercase tracking-wider">
+            Esta acao nao pode ser revertida
+          </p>
         )}
       </div>
     </div>
   );
 }
 
-/* ── LevelNode ── */
-function LevelNode({
-  level, completed, unlocked,
-}: {
-  level: number; completed: boolean; unlocked: boolean;
+/* ────────────────────────────── ROADMAP NODE ────────────────────────── */
+function RoadmapNode({ level, completed, unlocked, active }: {
+  level: number; completed: boolean; unlocked: boolean; active: boolean;
 }) {
   return (
-    <div className="flex items-center gap-4">
-      <div
-        className={`w-11 h-11 rounded-full flex-shrink-0 flex items-center justify-center text-sm font-black border-2 z-10 relative transition-all duration-300 ${
-          completed
-            ? "bg-green-950 border-green-600 text-green-400 ce-pulse-green"
-            : unlocked
-            ? "bg-[#1a0d00] border-orange-600 text-orange-400 ce-pulse-orange"
-            : "bg-[#0c0c0c] border-[#1e1e1e] text-[#2e2e2e]"
-        }`}
-      >
-        {completed ? "✓" : unlocked ? level : "🔒"}
+    <div className="flex items-center gap-2">
+      <div className={[
+        "w-7 h-7 rounded-full flex items-center justify-center text-[9px] font-black border flex-shrink-0 transition-all duration-300",
+        completed ? "bg-green-950 border-green-700 text-green-400" :
+        active    ? "bg-[#1a0d00] border-orange-700 text-orange-400 ce-pulse-orange" :
+        unlocked  ? "bg-[#111] border-[#222] text-[#444]" :
+                    "bg-[#0c0c0c] border-[#161616] text-[#252525]",
+      ].join(" ")}>
+        {completed ? "✓" : unlocked || active ? level : "—"}
       </div>
-      <div>
-        <p className={`font-black text-[10px] uppercase tracking-[0.25em] ${
-          completed ? "text-green-400" : unlocked ? "text-white" : "text-[#2e2e2e]"
-        }`}>
-          {completed
-            ? `CAPITULO ${level} — ELIMINADO`
-            : unlocked
-            ? `CAPITULO ${level} — ESCOLHE 1 ALVO`
-            : `CAPITULO ${level} — BLOQUEADO`}
-        </p>
-        <p className="text-[9px] text-[#333] mt-0.5 uppercase tracking-wider">
-          {completed
-            ? "Contrato executado com sucesso."
-            : unlocked
-            ? "Seleciona um alvo. Apenas 1 por capitulo."
-            : "Completa o capitulo anterior para desbloquear."}
-        </p>
-      </div>
+      <span className={`text-[8px] uppercase tracking-[0.2em] font-bold ${
+        completed ? "text-green-600" : active ? "text-orange-600" : "text-[#222]"
+      }`}>
+        CAP {level}
+      </span>
     </div>
   );
 }
 
-/* ── Main Page ── */
+/* ─────────────────────────── MAIN PAGE ───────────────────────────── */
 export default function ContractsPage() {
   const { user } = useAuth();
-  const router = useRouter();
+  const router   = useRouter();
 
-  const [loading, setLoading] = useState(true);
-  const [contracts, setContracts] = useState<Contract[]>([]);
+  const [loading, setLoading]               = useState(true);
+  const [contracts, setContracts]           = useState<Contract[]>([]);
   const [playerContracts, setPlayerContracts] = useState<PlayerContract[]>([]);
-  const [player, setPlayer] = useState<Player | null>(null);
-  const [processing, setProcessing] = useState<string | null>(null);
-  const [toast, setToast] = useState<{ msg: string; ok: boolean; details?: string } | null>(null);
-  const [flashMap, setFlashMap] = useState<Record<string, "success" | "failure">>({});
+  const [player, setPlayer]                 = useState<Player | null>(null);
+  const [processing, setProcessing]         = useState<string | null>(null);
+  const [toast, setToast]                   = useState<{ msg: string; ok: boolean; details?: string } | null>(null);
+  const [selected, setSelected]             = useState<string | null>(null);
+  const [briefingKey, setBriefingKey]       = useState(0);
 
   const showToast = (msg: string, ok: boolean, details?: string) => {
     setToast({ msg, ok, details });
@@ -334,7 +438,7 @@ export default function ContractsPage() {
   };
 
   const fetchData = useCallback(async () => {
-    const res = await fetch("/api/crime-empire/contracts");
+    const res  = await fetch("/api/crime-empire/contracts");
     const data = await res.json();
     setContracts(data.contracts || []);
     setPlayerContracts(data.playerContracts || []);
@@ -347,31 +451,35 @@ export default function ContractsPage() {
     fetchData();
   }, [user, fetchData, router]);
 
+  /* Auto-select first available contract */
+  useEffect(() => {
+    if (contracts.length && !selected) {
+      const first = contracts.find((c) => {
+        const st = playerContracts.find((pc) => pc.contract_id === c.id)?.status ?? null;
+        return st !== "completed";
+      });
+      if (first) setSelected(first.id);
+    }
+  }, [contracts, playerContracts, selected]);
+
   const attemptContract = async (contractId: string) => {
     if (!player) return;
     setProcessing(contractId);
     try {
-      const res = await fetch("/api/crime-empire/contracts", {
-        method: "POST",
+      const res  = await fetch("/api/crime-empire/contracts", {
+        method:  "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ contractId }),
+        body:    JSON.stringify({ contractId }),
       });
       const data = await res.json();
       if (!res.ok) {
         showToast(data.error || "Erro", false);
-        setFlashMap((prev) => ({ ...prev, [contractId]: "failure" }));
-        setTimeout(() => setFlashMap((prev) => { const n = { ...prev }; delete n[contractId]; return n; }), 1300);
       } else {
-        const ok = data.success;
-        let details = "";
-        if (ok) {
-          details = `+💵 $${data.cash_earned?.toLocaleString()} | +⭐ ${data.respect_earned} Respeito`;
-        } else {
-          details = data.arrested ? "🚔 Preso!" : "";
-        }
+        const ok      = data.success;
+        const details = ok
+          ? `+💵 $${data.cash_earned?.toLocaleString()} | +⭐ ${data.respect_earned} Respeito`
+          : data.arrested ? "🚔 Preso!" : "";
         showToast(data.message, ok, details);
-        setFlashMap((prev) => ({ ...prev, [contractId]: ok ? "success" : "failure" }));
-        setTimeout(() => setFlashMap((prev) => { const n = { ...prev }; delete n[contractId]; return n; }), 1300);
         await fetchData();
       }
     } finally {
@@ -379,43 +487,48 @@ export default function ContractsPage() {
     }
   };
 
-  /* ── Group contracts by roadmap level ── */
+  /* ── Derived helpers ── */
   const levels = Array.from(new Set(contracts.map((c) => c.roadmap_level))).sort((a, b) => a - b);
 
   const getStatus = (contractId: string) =>
     playerContracts.find((pc) => pc.contract_id === contractId)?.status ?? null;
 
   const levelCompleted = (level: number) =>
-    contracts
-      .filter((c) => c.roadmap_level === level)
-      .some((c) => getStatus(c.id) === "completed");
+    contracts.filter((c) => c.roadmap_level === level).some((c) => getStatus(c.id) === "completed");
 
   const levelUnlocked = (level: number) => {
     if (level === levels[0]) return true;
-    const prevLevel = levels[levels.indexOf(level) - 1];
-    return levelCompleted(prevLevel);
+    const prev = levels[levels.indexOf(level) - 1];
+    return levelCompleted(prev);
   };
 
   const isHitman = player?.class === "hitman";
 
+  const selectedContract = contracts.find((c) => c.id === selected) ?? null;
+  const selectedLevel    = selectedContract?.roadmap_level ?? null;
+  const selectedStatus   = selected ? getStatus(selected) : null;
+  const selLevelDone     = selectedLevel !== null ? levelCompleted(selectedLevel) : false;
+  const selLevelUnlocked = selectedLevel !== null ? levelUnlocked(selectedLevel) : false;
+
+  /* ─ Loading ─ */
   if (loading) {
     return (
       <div className="flex-1 flex items-center justify-center min-h-[60vh]" style={{ background: "#0B0B0B" }}>
         <div className="text-center">
-          <div className="relative w-16 h-16 mx-auto mb-5">
+          <div className="relative w-14 h-14 mx-auto mb-4">
             <div className="absolute inset-0 rounded-full border border-red-900/20 animate-ping" />
-            <div className="absolute inset-2 rounded-full border border-red-800/40 animate-pulse" />
-            <div className="absolute inset-0 flex items-center justify-center text-2xl select-none">🎯</div>
+            <div className="absolute inset-2 rounded-full border border-red-800/30 animate-pulse" />
+            <div className="absolute inset-0 flex items-center justify-center text-xl">🎯</div>
           </div>
-          <p className="text-[10px] uppercase tracking-[0.35em] text-[#444]">A CARREGAR BRIEFING</p>
+          <p className="text-[8px] uppercase tracking-[0.4em] text-[#333]">A CARREGAR BRIEFING</p>
         </div>
       </div>
     );
   }
 
+  /* ─ Main render ─ */
   return (
-    <div className="flex-1 text-white min-h-screen relative" style={{ background: "#0B0B0B" }}>
-      {/* Keyframe animations */}
+    <div className="flex-1 text-white min-h-screen" style={{ background: "#0B0B0B" }}>
       <style>{`
         @keyframes ceShake {
           0%,100% { transform:translateX(0); }
@@ -425,149 +538,133 @@ export default function ContractsPage() {
           80% { transform:translateX(3px); }
         }
         @keyframes cePulseOrange {
-          0%,100% { box-shadow: 0 0 0 0 rgba(234,88,12,0.55); }
-          50% { box-shadow: 0 0 0 8px rgba(234,88,12,0); }
+          0%,100% { box-shadow:0 0 0 0 rgba(234,88,12,0.55); }
+          50%      { box-shadow:0 0 0 7px rgba(234,88,12,0); }
         }
-        @keyframes cePulseGreen {
-          0%,100% { box-shadow: 0 0 0 0 rgba(34,197,94,0.45); }
-          50% { box-shadow: 0 0 0 8px rgba(34,197,94,0); }
+        @keyframes ceFadeSlide {
+          from { opacity:0; transform:translateX(10px); }
+          to   { opacity:1; transform:translateX(0); }
         }
-        @keyframes ceFlashSuccess {
-          0% { box-shadow: 0 0 0 0 rgba(34,197,94,0.7); }
-          40% { box-shadow: 0 0 28px 6px rgba(34,197,94,0.4); }
-          100% { box-shadow: 0 0 0 0 rgba(34,197,94,0); }
-        }
-        @keyframes ceFlashFailure {
-          0% { box-shadow: 0 0 0 0 rgba(239,68,68,0.7); }
-          40% { box-shadow: 0 0 28px 6px rgba(239,68,68,0.4); }
-          100% { box-shadow: 0 0 0 0 rgba(239,68,68,0); }
-        }
-        .ce-shake { animation: ceShake 0.45s ease-in-out; }
         .ce-pulse-orange { animation: cePulseOrange 2.2s ease-in-out infinite; }
-        .ce-pulse-green { animation: cePulseGreen 2.2s ease-in-out infinite; }
-        .ce-flash-success { animation: ceFlashSuccess 1.1s ease-out; }
-        .ce-flash-failure { animation: ceFlashFailure 1.1s ease-out; }
-        .ce-card { transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease; }
-        .ce-card:not(.pointer-events-none):hover { transform: translateY(-2px) scale(1.015); }
+        .ce-fade-slide   { animation: ceFadeSlide 200ms ease-out forwards; }
       `}</style>
 
-      {/* Radial vignette */}
-      <div
-        className="pointer-events-none fixed inset-0 z-0"
-        style={{ background: "radial-gradient(ellipse at center, transparent 45%, rgba(0,0,0,0.7) 100%)" }}
-      />
+      {/* Vignette */}
+      <div className="pointer-events-none fixed inset-0 z-0"
+        style={{ background: "radial-gradient(ellipse at center, transparent 50%, rgba(0,0,0,0.65) 100%)" }} />
 
       {toast && <CEToast msg={toast.msg} ok={toast.ok} details={toast.details} />}
 
-      <div className="relative z-10 max-w-4xl mx-auto py-10 px-4 md:px-8">
+      <div className="relative z-10 max-w-6xl mx-auto py-8 px-4 md:px-8 flex flex-col gap-6">
 
-        {/* ── Header ── */}
-        <div className="mb-8 flex flex-col md:flex-row md:items-start md:justify-between gap-5">
+        {/* ── Page title + HUD ── */}
+        <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
           <div>
-            <p className="text-[9px] uppercase tracking-[0.4em] text-[#3a3a3a] mb-2">CRIME EMPIRE / CONTRATOS</p>
-            <h1 className="text-5xl md:text-6xl font-black tracking-tighter leading-none text-white">
-              CONTRATOS
-            </h1>
-            <p className="text-[11px] text-[#3e3e3e] mt-2 max-w-xs uppercase tracking-wider">
-              Elimina alvos. Ganha respeito. Falhar tem consequencias.
-            </p>
+            <p className="text-[7px] uppercase tracking-[0.5em] text-[#292929] mb-1">CRIME EMPIRE / CONTRATOS</p>
+            <h1 className="text-4xl md:text-5xl font-black tracking-tighter text-white leading-none">CONTRATOS</h1>
           </div>
           {player && <PlayerHUD player={player} isHitman={isHitman} />}
         </div>
 
-        {/* ── Status banners ── */}
+        {/* ── Banners ── */}
         {isHitman && (
-          <div className="mb-5 flex items-center gap-3 px-4 py-3 rounded-xl bg-[#0f0505] border border-red-900/40">
-            <span className="text-base flex-shrink-0">🔪</span>
-            <div>
-              <p className="text-[9px] font-black uppercase tracking-[0.25em] text-red-400 mb-0.5">BONUS HITMAN ATIVO</p>
-              <p className="text-[10px] text-red-800">
-                +15% taxa de sucesso em todos os contratos · -50% chance de ser preso
-              </p>
-            </div>
+          <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-[#0e0404] border border-red-900/30 text-[10px] text-red-800">
+            <span className="flex-shrink-0">🔪</span>
+            <span><strong className="text-red-600">BONUS HITMAN:</strong> +15% taxa de sucesso · -50% chance de ser preso</span>
           </div>
         )}
-
         {player?.in_jail && (
-          <div className="mb-5 flex items-center gap-3 px-4 py-3 rounded-xl bg-[#0d0b00] border border-yellow-900/50">
-            <span className="text-base flex-shrink-0">🚔</span>
-            <div>
-              <p className="text-[9px] font-black uppercase tracking-[0.25em] text-yellow-500 mb-0.5">DETIDO</p>
-              <p className="text-[10px] text-yellow-900">
-                Estas na prisao. Aguarda a libertacao para aceitar contratos.
-              </p>
-            </div>
+          <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-[#0d0b00] border border-yellow-900/30 text-[10px] text-yellow-900">
+            <span className="flex-shrink-0">🚔</span>
+            <span><strong className="text-yellow-700">DETIDO:</strong> Nao podes aceitar contratos enquanto estiveres preso.</span>
           </div>
         )}
 
-        {/* ── Roadmap ── */}
-        {levels.length === 0 ? (
+        {/* ── MAIN SPLIT LAYOUT ── */}
+        {contracts.length === 0 ? (
           <div className="text-center py-24">
-            <p className="text-3xl mb-4 opacity-20 select-none">🎯</p>
-            <p className="text-[10px] uppercase tracking-[0.35em] text-[#333]">Nenhum contrato disponivel</p>
+            <p className="text-2xl opacity-10 mb-3">🎯</p>
+            <p className="text-[9px] uppercase tracking-[0.4em] text-[#2e2e2e]">Sem contratos disponiveis</p>
           </div>
         ) : (
-          <div className="relative">
-            {/* Vertical spine */}
-            <div className="absolute left-[21px] top-8 bottom-8 w-px pointer-events-none"
-              style={{ background: "linear-gradient(to bottom, #1e1e1e, #141414 80%, transparent)" }} />
+          <div className="flex flex-col lg:flex-row gap-4 items-start">
 
-            <div className="space-y-10">
+            {/* ── LEFT: Roadmap + List ── */}
+            <div className="w-full lg:w-[260px] flex-shrink-0 space-y-6">
               {levels.map((lvl) => {
                 const lvlContracts = contracts.filter((c) => c.roadmap_level === lvl);
-                const unlocked = levelUnlocked(lvl);
-                const completed = levelCompleted(lvl);
+                const unlocked     = levelUnlocked(lvl);
+                const completed    = levelCompleted(lvl);
+                const isActive     = lvlContracts.some((c) => c.id === selected);
 
                 return (
-                  <div key={lvl}>
-                    <LevelNode level={lvl} completed={completed} unlocked={unlocked} />
+                  <div key={lvl} className="relative">
+                    {/* Spine line */}
+                    <div className="absolute left-3 top-7 bottom-0 w-px bg-[#141414] -z-10" />
 
-                    <div className="mt-5 ml-14">
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                        {lvlContracts.map((contract) => {
-                          const status = getStatus(contract.id);
-                          const isContractCompleted = status === "completed";
-                          const isBusy = processing === contract.id;
-                          const meetsLevel = (player?.level ?? 0) >= contract.required_level;
-                          const hasStamina = (player?.stamina ?? 0) >= contract.stamina_cost;
-                          const canAttempt =
-                            unlocked && !completed && !isContractCompleted && !player?.in_jail && meetsLevel && hasStamina;
+                    <RoadmapNode
+                      level={lvl}
+                      completed={completed}
+                      unlocked={unlocked}
+                      active={isActive}
+                    />
 
-                          return (
-                            <ContractCard
-                              key={contract.id}
-                              contract={contract}
-                              status={status}
-                              canAttempt={canAttempt}
-                              isBusy={isBusy}
-                              isHitman={isHitman}
-                              player={player}
-                              levelDone={completed}
-                              unlocked={unlocked}
-                              flash={flashMap[contract.id] ?? null}
-                              onAttempt={attemptContract}
-                            />
-                          );
-                        })}
-                      </div>
+                    <div className="mt-2 ml-4 space-y-1">
+                      {lvlContracts.map((c) => (
+                        <ContractListItem
+                          key={c.id}
+                          contract={c}
+                          status={getStatus(c.id)}
+                          selected={selected === c.id}
+                          levelUnlocked={unlocked}
+                          isHitman={isHitman}
+                          onClick={() => {
+                            if (selected !== c.id) {
+                              setSelected(c.id);
+                              setBriefingKey((k) => k + 1);
+                            }
+                          }}
+                        />
+                      ))}
                     </div>
                   </div>
                 );
               })}
+
+              {/* Footer note */}
+              <div className="px-2 pt-2 border-t border-[#121212]">
+                <p className="text-[7px] uppercase tracking-[0.25em] text-[#1e1e1e] leading-relaxed">
+                  Falhar envia-te ao hospital com 0 HP. Possivel prisao de 30-90 min.
+                </p>
+              </div>
             </div>
+
+            {/* ── RIGHT: Briefing Panel ── */}
+            <div className="flex-1 min-h-[560px] bg-[#0f0f0f] border border-[#181818] rounded-2xl p-6 shadow-2xl">
+              {selectedContract ? (
+                <div key={briefingKey} className="ce-fade-slide h-full">
+                  <ContractBriefing
+                    contract={selectedContract}
+                    status={selectedStatus}
+                    player={player}
+                    levelDone={selLevelDone}
+                    levelUnlocked={selLevelUnlocked}
+                    isHitman={isHitman}
+                    processing={processing === selected}
+                    onExecute={() => selected && attemptContract(selected)}
+                  />
+                </div>
+              ) : (
+                <div className="h-full flex items-center justify-center">
+                  <p className="text-[8px] uppercase tracking-[0.4em] text-[#1e1e1e]">
+                    Seleciona um contrato
+                  </p>
+                </div>
+              )}
+            </div>
+
           </div>
         )}
-
-        {/* ── Footer ── */}
-        <div className="mt-12 flex items-start gap-3 px-4 py-3 rounded-xl border border-[#181818] bg-[#0d0d0d]">
-          <span className="text-red-900 text-sm flex-shrink-0 mt-0.5">⚠</span>
-          <p className="text-[10px] text-[#3a3a3a] uppercase tracking-wider leading-relaxed">
-            <span className="text-red-900 font-black">ATENCAO:</span>{" "}
-            Falhar um contrato envia-te para o Hospital com 0 HP. Podes ser preso por 30 a 90 minutos.
-            Escolhe o teu alvo com cuidado.
-          </p>
-        </div>
-
       </div>
     </div>
   );
