@@ -880,7 +880,7 @@ export default function ContractsPage() {
 
       {toast && <CEToast msg={toast.msg} ok={toast.ok} details={toast.details} />}
 
-      <div className="relative z-10 max-w-6xl mx-auto py-8 pl-2 pr-4 md:pl-3 md:pr-8 flex flex-col gap-6">
+      <div className="relative z-10 max-w-6xl py-8 pl-2 pr-4 md:pl-3 md:pr-8 flex flex-col gap-6">
 
         {/* ── Page header ── */}
         <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
