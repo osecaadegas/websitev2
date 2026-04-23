@@ -685,7 +685,7 @@ export default function ContractsPage() {
   /* ─ Loading ─ */
   if (loading) {
     return (
-      <div className="flex-1 flex items-center justify-center min-h-[60vh]" style={{ background: "#150f05" }}>
+      <div className="flex-1 flex items-center justify-center min-h-[60vh]" style={{ background: "#0B0B0B" }}>
         <div className="text-center">
           <div className="relative w-14 h-14 mx-auto mb-4">
             <div className="absolute inset-0 rounded-full border border-amber-900/20 animate-ping" />
@@ -700,7 +700,7 @@ export default function ContractsPage() {
 
   /* ─ Main render ─ */
   return (
-    <div className="flex-1 text-white min-h-screen" style={{ background: "#150f05" }}>
+    <div className="flex-1 text-white min-h-screen" style={{ background: "#0B0B0B" }}>
       <style>{`
         @keyframes ceShake {
           0%,100% { transform:translateX(0); }
@@ -796,7 +796,7 @@ export default function ContractsPage() {
             {/* ── LEFT: Roadmap + List ── */}
             <div
               className="w-full lg:w-[260px] flex-shrink-0 rounded-xl p-4 space-y-6"
-              style={{ background: "rgba(22,15,6,0.88)", border: "1px solid rgba(100,55,12,0.24)" }}
+              style={{ background: "rgba(14,10,4,0.95)", border: "1px solid rgba(90,50,10,0.30)" }}
             >
               {levels.map((lvl) => {
                 const lvlContracts = contracts.filter((c) => c.roadmap_level === lvl);
