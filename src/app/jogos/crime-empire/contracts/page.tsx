@@ -667,25 +667,25 @@ function ThreeCardFan({
         switch (role) {
           case "center":
             transform = isHov ? "rotateY(0deg) translateZ(28px) scale(1.018)" : "rotateY(0deg) translateZ(0px) scale(1)";
-            zIndex = isHov ? 15 : 10; opacity = 1; width = "330px"; cursor = "default";
+            zIndex = isHov ? 15 : 10; opacity = 1; width = "400px"; cursor = "default";
             break;
           case "left":
             transform = isHov ? "rotateY(6deg) translateZ(15px) scale(0.90)" : "rotateY(14deg) translateZ(-85px) scale(0.80)";
             zIndex = isHov ? 9 : 2; opacity = isHov ? 0.88 : 0.50;
-            marginR = isHov ? "-28px" : "-62px"; width = "270px"; cursor = "pointer";
+            marginR = isHov ? "-32px" : "-72px"; width = "320px"; cursor = "pointer";
             break;
           case "right":
             transform = isHov ? "rotateY(-6deg) translateZ(15px) scale(0.90)" : "rotateY(-14deg) translateZ(-85px) scale(0.80)";
             zIndex = isHov ? 9 : 2; opacity = isHov ? 0.88 : 0.50;
-            marginL = isHov ? "-28px" : "-62px"; width = "270px"; cursor = "pointer";
+            marginL = isHov ? "-32px" : "-72px"; width = "320px"; cursor = "pointer";
             break;
           case "far-left":
             transform = "rotateY(22deg) translateZ(-160px) scale(0.62)";
-            zIndex = 1; opacity = 0.22; marginR = "-90px"; width = "220px"; cursor = "pointer";
+            zIndex = 1; opacity = 0.22; marginR = "-100px"; width = "260px"; cursor = "pointer";
             break;
           default: // far-right
             transform = "rotateY(-22deg) translateZ(-160px) scale(0.62)";
-            zIndex = 1; opacity = 0.22; marginL = "-90px"; width = "220px"; cursor = "pointer";
+            zIndex = 1; opacity = 0.22; marginL = "-100px"; width = "260px"; cursor = "pointer";
             break;
         }
 
@@ -931,7 +931,7 @@ export default function ContractsPage() {
             <p className="text-[9px] uppercase tracking-[0.4em]" style={{ color: "rgba(180,110,40,0.40)" }}>Sem contratos disponiveis</p>
           </div>
         ) : (
-          <div className="flex flex-col lg:flex-row gap-3 items-start">
+          <div className="flex flex-col lg:flex-row gap-8 items-start">
 
             {/* ── LEFT: Roadmap + List ── */}
             <div
