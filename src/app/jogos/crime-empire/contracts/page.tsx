@@ -219,176 +219,263 @@ function ContractBriefing({
   const inJail      = player?.in_jail ?? false;
 
   let disabledReason = "";
-  if (locked)          disabledReason = "BLOQUEADO";
-  else if (inJail)     disabledReason = "DETIDO";
+  if (locked)           disabledReason = "BLOQUEADO";
+  else if (inJail)      disabledReason = "DETIDO";
   else if (isCompleted) disabledReason = "JA CONCLUIDO";
-  else if (levelDone)  disabledReason = "NIVEL JA CONCLUIDO";
+  else if (levelDone)   disabledReason = "NIVEL JA CONCLUIDO";
   else if (!meetsLevel) disabledReason = `NIVEL ${contract.required_level} NECESSARIO`;
   else if (!hasStamina) disabledReason = "STAMINA INSUFICIENTE";
 
-  const canExecute = !disabledReason && !isCompleted && !isFailed;
+  const serif = { fontFamily: "Georgia, 'Times New Roman', serif" } as const;
+
+  const noiseSvg = "data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='1'/%3E%3C/svg%3E";
+
+  const diffSepia: Record<string, { text: string; border: string; bg: string }> = {
+    easy:   { text: "#166534", border: "#166534", bg: "rgba(22,101,52,0.12)"  },
+    medium: { text: "#92400e", border: "#92400e", bg: "rgba(146,64,14,0.12)" },
+    hard:   { text: "#7f1d1d", border: "#7f1d1d", bg: "rgba(127,29,29,0.12)" },
+  };
+  const ds = diffSepia[contract.difficulty] ?? diffSepia.medium;
+
+  const successColor = displayRate >= 60 ? "#166534" : displayRate >= 40 ? "#92400e" : "#7f1d1d";
 
   return (
-    <div className="h-full flex flex-col">
-      {/* ── TOP: classification bar ── */}
-      <div className="flex items-center justify-between mb-5">
-        <div className="flex items-center gap-2">
-          <div className="h-px w-6 bg-[#333]" />
-          <span className="text-[7px] uppercase tracking-[0.4em] text-[#555]">DOSSIE CONFIDENCIAL</span>
-          <div className="h-px w-6 bg-[#333]" />
-        </div>
-        <span
-          className="text-[8px] font-black tracking-[0.25em] px-2.5 py-1 rounded"
-          style={{ background: diff.bg, color: diff.color, border: `1px solid ${diff.color}30` }}
-        >
-          {diff.label}
-        </span>
+    <div className="relative" style={{ minHeight: "560px" }}>
+
+      {/* ── PAPER BASE ── */}
+      <div className="absolute inset-0 rounded-xl" style={{ background: "linear-gradient(155deg,#f7ebd0 0%,#ede0b6 45%,#e6d8aa 100%)" }} />
+
+      {/* ── GRAIN NOISE ── */}
+      <div
+        className="absolute inset-0 rounded-xl pointer-events-none mix-blend-multiply poster-grain"
+        style={{ backgroundImage: `url("${noiseSvg}")`, backgroundSize: "200px 200px", opacity: 0.07 }}
+      />
+
+      {/* ── BURNED EDGES ── */}
+      <div
+        className="absolute inset-0 rounded-xl pointer-events-none"
+        style={{ background: "radial-gradient(ellipse at center,transparent 50%,rgba(60,30,10,0.10) 66%,rgba(40,15,5,0.32) 80%,rgba(20,5,0,0.58) 100%)" }}
+      />
+
+      {/* ── CORNER EMBERS ── */}
+      <div className="absolute inset-0 rounded-xl overflow-hidden pointer-events-none">
+        <div className="absolute top-0 left-0 w-24 h-24 bg-gradient-to-br from-amber-950/40 via-amber-900/15 to-transparent poster-ember" />
+        <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-amber-950/40 via-amber-900/15 to-transparent poster-ember" style={{ animationDelay: "0.8s" }} />
+        <div className="absolute bottom-0 left-0 w-24 h-24 bg-gradient-to-tr from-amber-950/40 via-amber-900/15 to-transparent poster-ember" style={{ animationDelay: "1.6s" }} />
+        <div className="absolute bottom-0 right-0 w-24 h-24 bg-gradient-to-tl from-amber-950/40 via-amber-900/15 to-transparent poster-ember" style={{ animationDelay: "2.4s" }} />
       </div>
 
-      {/* ── TARGET HEADER ── */}
-      <div className="mb-5">
-        <p className="text-[8px] uppercase tracking-[0.35em] text-[#666] mb-1">ALVO DESIGNADO</p>
-        <h2 className="text-3xl md:text-4xl font-black text-white leading-none tracking-tight mb-2">
+      {/* ── STAIN MARKS ── */}
+      <div className="absolute inset-0 rounded-xl overflow-hidden pointer-events-none">
+        <div className="absolute top-[10%] right-[9%] w-16 h-12 rounded-full blur-md" style={{ background: "rgba(139,90,43,0.09)" }} />
+        <div className="absolute bottom-[28%] left-[7%] w-12 h-8 rounded-full blur-md"  style={{ background: "rgba(100,60,20,0.08)" }} />
+        <div className="absolute top-[50%] left-[78%] w-8 h-10 rounded-full blur-sm"   style={{ background: "rgba(120,70,30,0.07)" }} />
+      </div>
+
+      {/* ── CONTENT ── */}
+      <div className="relative z-10 flex flex-col px-7 py-6">
+
+        {/* HEADER */}
+        <div className="text-center mb-3">
+          <h1
+            className="text-4xl font-black tracking-[0.4em] leading-none poster-ink"
+            style={{ ...serif, color: "rgba(69,32,5,0.88)", textShadow: "1px 1px 0px rgba(0,0,0,0.18),2px 2px 4px rgba(0,0,0,0.08)" }}
+          >
+            CONTRATO
+          </h1>
+          <div className="flex items-center justify-center gap-3 mt-1.5">
+            <div className="h-px flex-1 max-w-16 bg-amber-900/25" />
+            <span className="text-[8px] font-bold tracking-[0.5em] uppercase" style={{ ...serif, color: "rgba(120,53,15,0.55)" }}>
+              DOSSIE CONFIDENCIAL
+            </span>
+            <div className="h-px flex-1 max-w-16 bg-amber-900/25" />
+          </div>
+        </div>
+
+        {/* DIFFICULTY BADGE */}
+        <div className="flex items-center gap-2 mb-3">
+          <div className="h-px flex-1 bg-amber-900/18" />
+          <span
+            className="text-[8px] font-black tracking-[0.3em] uppercase px-3 py-0.5 rounded-sm border"
+            style={{ ...serif, color: ds.text, borderColor: `${ds.border}45`, background: ds.bg }}
+          >
+            {diff.label}
+          </span>
+          <div className="h-px flex-1 bg-amber-900/18" />
+        </div>
+
+        {/* TARGET NAME */}
+        <h2
+          className="text-2xl font-black tracking-[0.18em] text-center leading-tight mb-2"
+          style={{ ...serif, color: "rgba(55,26,3,0.90)", textShadow: "0.5px 0.5px 0px rgba(0,0,0,0.12)" }}
+        >
           {contract.name}
         </h2>
-        {(isCompleted || isFailed) && (
-          <span className={`inline-block text-[8px] font-black tracking-[0.3em] px-3 py-1 rounded-full uppercase ${
-            isCompleted ? "bg-green-900/30 text-green-400 border border-green-800/40" : "bg-red-900/30 text-red-400 border border-red-800/40"
-          }`}>
-            {isCompleted ? "MISSAO CUMPRIDA" : "MISSAO FALHADA"}
-          </span>
-        )}
-      </div>
 
-      {/* ── INTEL ── */}
-      <div className="mb-5 border-l-2 border-[#2a2a2a] pl-4">
-        <p className="text-[8px] uppercase tracking-[0.3em] text-[#666] mb-2">INTEL</p>
-        <p className="text-[12px] text-[#888] leading-relaxed italic">
+        {/* MISSION STATUS */}
+        {(isCompleted || isFailed) && (
+          <div className="flex justify-center mb-3">
+            <span
+              className={`text-[8px] font-black tracking-[0.25em] px-4 py-1 rounded-sm uppercase border ${
+                isCompleted
+                  ? "text-green-900 border-green-900/30 bg-green-100/50"
+                  : "text-red-900 border-red-900/30 bg-red-50/50"
+              }`}
+              style={serif}
+            >
+              {isCompleted ? "✓ MISSAO CUMPRIDA" : "✗ MISSAO FALHADA"}
+            </span>
+          </div>
+        )}
+
+        {/* INTEL DIVIDER + DESCRIPTION */}
+        <div className="flex items-center gap-2 mb-2 mt-1">
+          <div className="h-px flex-1 bg-amber-900/18" />
+          <span className="text-[8px] font-bold tracking-[0.4em] uppercase" style={{ ...serif, color: "rgba(120,53,15,0.40)" }}>Intel</span>
+          <div className="h-px flex-1 bg-amber-900/18" />
+        </div>
+        <p
+          className="text-[12px] text-center leading-relaxed mb-4 italic px-2"
+          style={{ ...serif, color: "rgba(101,63,15,0.68)", textShadow: "0.5px 0.5px 0px rgba(255,255,255,0.18)" }}
+        >
           {contract.description}
         </p>
-      </div>
 
-      <div className="border-t border-[#222] mb-5" />
-
-      {/* ── VISUAL STATS ── */}
-      <div className="mb-5 space-y-3">
-        <div className="flex items-center gap-4">
-          <div className="w-[80px] flex-shrink-0">
-            <p className="text-[7px] uppercase tracking-[0.3em] text-[#666] mb-1">SUCESSO</p>
-            <p className="text-sm font-black tabular-nums" style={{ color: displayRate >= 60 ? "#22c55e" : displayRate >= 40 ? "#f59e0b" : "#ef4444" }}>
+        {/* STATS — 3 columns */}
+        <div className="w-full grid grid-cols-3 gap-2 mb-4">
+          <div className="flex flex-col items-center gap-1 rounded-sm py-2.5 px-1 border border-amber-900/15" style={{ background: "rgba(139,90,43,0.10)" }}>
+            <span className="text-[7px] font-bold tracking-[0.2em] uppercase" style={{ ...serif, color: "rgba(120,53,15,0.50)" }}>Sucesso</span>
+            <span className="text-sm font-black tabular-nums" style={{ ...serif, color: successColor }}>
               {displayRate}%{isHitman ? " ✦" : ""}
-            </p>
+            </span>
           </div>
-          <div className="flex-1">
-            <StatBar pct={displayRate} color={displayRate >= 60 ? "#22c55e" : displayRate >= 40 ? "#f59e0b" : "#ef4444"} />
+          <div className="flex flex-col items-center gap-1 rounded-sm py-2.5 px-1 border border-amber-900/15" style={{ background: "rgba(139,90,43,0.10)" }}>
+            <span className="text-[7px] font-bold tracking-[0.2em] uppercase" style={{ ...serif, color: "rgba(120,53,15,0.50)" }}>Risco</span>
+            <span className="text-sm font-black tabular-nums" style={{ ...serif, color: "#7f1d1d" }}>{riskDisplay}%</span>
           </div>
-        </div>
-        <div className="flex items-center gap-4">
-          <div className="w-[80px] flex-shrink-0">
-            <p className="text-[7px] uppercase tracking-[0.3em] text-[#666] mb-1">RISCO</p>
-            <p className="text-sm font-black tabular-nums text-red-500">{riskDisplay}%</p>
-          </div>
-          <div className="flex-1">
-            <StatBar pct={riskDisplay} color="#ef4444" />
+          <div className="flex flex-col items-center gap-1 rounded-sm py-2.5 px-1 border border-amber-900/15" style={{ background: "rgba(139,90,43,0.10)" }}>
+            <span className="text-[7px] font-bold tracking-[0.2em] uppercase" style={{ ...serif, color: "rgba(120,53,15,0.50)" }}>Stamina</span>
+            <span className="text-sm font-black tabular-nums" style={{ ...serif, color: hasStamina ? "#78350f" : "#7f1d1d" }}>
+              -{contract.stamina_cost}
+            </span>
           </div>
         </div>
-        <div className="flex items-center gap-4">
-          <div className="w-[80px] flex-shrink-0">
-            <p className="text-[7px] uppercase tracking-[0.3em] text-[#666] mb-1">STAMINA</p>
-            <p className="text-sm font-black tabular-nums text-[#aaa]">-{contract.stamina_cost}</p>
-          </div>
-          <div className="text-[10px] text-[#555]">
-            {hasStamina ? (
-              <span className="text-[#666]">Disponivel</span>
-            ) : (
-              <span className="text-red-700">Stamina insuficiente</span>
-            )}
+
+        {/* REWARD BOX */}
+        <div className="relative mb-4 w-full">
+          <div className="absolute inset-0 rounded-sm blur-sm" style={{ background: "rgba(245,210,140,0.25)" }} />
+          <div className="relative px-5 py-3 text-center rounded-sm" style={{ border: "2px double rgba(120,53,15,0.28)", background: "rgba(253,246,227,0.30)" }}>
+            <div
+              className="absolute -top-3 -right-2 rotate-12 text-[7px] font-black tracking-[0.15em] uppercase px-2 py-0.5 rounded-sm border"
+              style={{ ...serif, color: "rgba(153,27,27,0.45)", borderColor: "rgba(153,27,27,0.18)", background: "rgba(254,242,242,0.45)" }}
+            >
+              ALVO
+            </div>
+            <span className="text-[8px] font-bold tracking-[0.4em] uppercase block mb-0.5" style={{ ...serif, color: "rgba(120,53,15,0.50)" }}>
+              Recompensa Estimada
+            </span>
+            <span
+              className="text-xl font-black block"
+              style={{ ...serif, color: "rgba(55,26,3,0.88)", textShadow: "0.5px 0.5px 0px rgba(0,0,0,0.10)", letterSpacing: "0.06em" }}
+            >
+              ${contract.min_cash.toLocaleString("pt-PT")} — ${contract.max_cash.toLocaleString("pt-PT")}
+            </span>
+            <span className="text-[10px] font-bold block mt-0.5" style={{ ...serif, color: "rgba(101,63,15,0.60)" }}>
+              +{contract.respect_reward} Respeito
+            </span>
           </div>
         </div>
-      </div>
 
-      <div className="border-t border-[#222] mb-5" />
-
-      {/* ── REWARDS ── */}
-      <div className="mb-5">
-        <p className="text-[8px] uppercase tracking-[0.3em] text-[#666] mb-3">RECOMPENSA ESTIMADA</p>
-        <div className="flex items-end gap-6">
-          <div>
-            <p className="text-[8px] uppercase tracking-[0.2em] text-[#555] mb-0.5">CASH</p>
-            <p className="text-2xl font-black text-green-400 tabular-nums leading-none">
-              ${contract.min_cash.toLocaleString("pt-PT")}
-              <span className="text-sm text-[#555] font-normal"> — </span>
-              ${contract.max_cash.toLocaleString("pt-PT")}
-            </p>
+        {/* CONSEQUENCES */}
+        <div className="mb-4">
+          <div className="flex items-center gap-2 mb-2">
+            <div className="h-px flex-1 bg-amber-900/18" />
+            <span className="text-[8px] font-bold tracking-[0.35em] uppercase" style={{ ...serif, color: "rgba(120,53,15,0.40)" }}>Consequencias</span>
+            <div className="h-px flex-1 bg-amber-900/18" />
           </div>
-          <div className="pb-0.5">
-            <p className="text-[8px] uppercase tracking-[0.2em] text-[#555] mb-0.5">RESPEITO</p>
-            <p className="text-xl font-black text-yellow-500 leading-none">+{contract.respect_reward}</p>
-          </div>
-        </div>
-      </div>
-
-      <div className="border-t border-[#222] mb-5" />
-
-      {/* ── CONSEQUENCES ── */}
-      <div className="mb-6">
-        <p className="text-[8px] uppercase tracking-[0.3em] text-[#666] mb-3">POSSIVEIS CONSEQUENCIAS</p>
-        <div className="space-y-2">
-          <div className="flex items-start gap-3">
-            <div className="w-1 h-1 rounded-full bg-red-500 mt-1.5 flex-shrink-0" />
-            <p className="text-[11px] text-[#999]">
-              Em caso de falha, HP cai para 0 — serás enviado ao hospital.
-            </p>
-          </div>
-          <div className="flex items-start gap-3">
-            <div className="w-1 h-1 rounded-full bg-red-500 mt-1.5 flex-shrink-0" />
-            <p className="text-[11px] text-[#999]">
-              <span className="text-red-400 font-bold">{arrestDisplay}% de chance</span> de ser preso (30–90 min).
-            </p>
-          </div>
-          {!meetsLevel && (
-            <div className="flex items-start gap-3">
-              <div className="w-1 h-1 rounded-full bg-red-700 mt-1.5 flex-shrink-0" />
-              <p className="text-[11px] text-red-400">
-                Requer nivel {contract.required_level} — o teu atual e insuficiente.
+          <div className="space-y-1.5">
+            <div className="flex items-start gap-2.5">
+              <div className="w-1 h-1 rounded-full mt-1.5 flex-shrink-0" style={{ background: "rgba(153,27,27,0.50)" }} />
+              <p className="text-[11px]" style={{ ...serif, color: "rgba(101,63,15,0.65)" }}>
+                Em caso de falha, HP cai para 0 — serás enviado ao hospital.
               </p>
             </div>
+            <div className="flex items-start gap-2.5">
+              <div className="w-1 h-1 rounded-full mt-1.5 flex-shrink-0" style={{ background: "rgba(153,27,27,0.50)" }} />
+              <p className="text-[11px]" style={{ ...serif, color: "rgba(101,63,15,0.65)" }}>
+                <span className="font-bold" style={{ color: "rgba(153,27,27,0.72)" }}>{arrestDisplay}% de chance</span> de ser preso (30–90 min).
+              </p>
+            </div>
+            {!meetsLevel && (
+              <div className="flex items-start gap-2.5">
+                <div className="w-1 h-1 rounded-full mt-1.5 flex-shrink-0" style={{ background: "rgba(153,27,27,0.65)" }} />
+                <p className="text-[11px] font-bold" style={{ ...serif, color: "rgba(127,29,29,0.75)" }}>
+                  Requer nivel {contract.required_level} — o teu atual é insuficiente.
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* CONFIDENCIAL STAMP */}
+        <div className="flex justify-center my-3">
+          <div className="transform -rotate-6">
+            <span
+              className="text-[11px] font-black tracking-[0.35em] uppercase border-2 rounded-full px-5 py-1.5"
+              style={{ ...serif, color: "rgba(153,27,27,0.28)", borderColor: "rgba(153,27,27,0.18)" }}
+            >
+              CONFIDENCIAL
+            </span>
+          </div>
+        </div>
+
+        {/* ── EXECUTE BUTTON ── */}
+        <div className="mt-2">
+          {disabledReason ? (
+            <div
+              className="w-full py-3 rounded-sm text-center text-[8px] font-black tracking-[0.35em] uppercase border"
+              style={{ ...serif, color: "rgba(120,53,15,0.48)", background: "rgba(245,230,200,0.35)", borderColor: "rgba(120,53,15,0.18)" }}
+            >
+              {disabledReason}
+            </div>
+          ) : (
+            <button
+              onClick={onExecute}
+              disabled={processing}
+              className={[
+                "relative w-full py-3.5 px-6 rounded-sm font-black text-sm tracking-[0.25em] uppercase transition-all duration-200 ease-out",
+                processing
+                  ? "opacity-60 cursor-wait"
+                  : "hover:brightness-110 active:scale-[0.98] active:translate-y-px",
+              ].join(" ")}
+              style={{
+                ...serif,
+                background: "linear-gradient(to bottom,#b45309,#92400e,#7c2d12)",
+                color: "#fef3c7",
+                border: "1px solid rgba(180,83,9,0.40)",
+                boxShadow: "0 4px 14px rgba(0,0,0,0.30),0 1px 3px rgba(0,0,0,0.20),inset 0 1px 0 rgba(255,255,255,0.10)",
+              }}
+            >
+              <div className="absolute inset-0 rounded-sm pointer-events-none opacity-20 bg-gradient-to-b from-white/20 to-transparent" />
+              <span className="relative z-10 flex items-center justify-center gap-2">
+                {processing ? (
+                  <>
+                    <span className="w-3 h-3 border border-amber-200/50 border-t-transparent rounded-full animate-spin" />
+                    EXECUTANDO
+                  </>
+                ) : (
+                  <>⚔ EXECUTAR CONTRATO</>
+                )}
+              </span>
+            </button>
+          )}
+          {!disabledReason && (
+            <p className="text-center text-[8px] mt-2 uppercase tracking-wider" style={{ ...serif, color: "rgba(120,53,15,0.42)" }}>
+              Esta acao nao pode ser revertida
+            </p>
           )}
         </div>
-      </div>
 
-      {/* ── EXECUTE BUTTON ── */}
-      <div className="mt-auto">
-        {disabledReason ? (
-          <div className="w-full py-3 rounded-xl text-center text-[9px] font-black tracking-[0.3em] uppercase text-[#666] bg-[#0d0d0d] border border-[#222]">
-            {disabledReason}
-          </div>
-        ) : (
-          <button
-            onClick={onExecute}
-            disabled={processing}
-            className={[
-              "w-full py-3.5 rounded-xl text-[10px] font-black tracking-[0.35em] uppercase transition-all duration-200",
-              processing
-                ? "bg-[#1a1a1a] text-[#444] cursor-wait"
-                : "bg-gradient-to-r from-red-950 to-red-800 hover:from-red-900 hover:to-red-700 text-white active:scale-95 shadow-xl shadow-red-950/50",
-            ].join(" ")}
-          >
-            {processing ? (
-              <span className="inline-flex items-center justify-center gap-2">
-                <span className="w-3 h-3 border border-[#555] border-t-transparent rounded-full animate-spin" />
-                EXECUTANDO
-              </span>
-            ) : (
-              "EXECUTAR CONTRATO"
-            )}
-          </button>
-        )}
-        {!disabledReason && (
-          <p className="text-center text-[8px] text-[#555] mt-2 uppercase tracking-wider">
-            Esta acao nao pode ser revertida
-          </p>
-        )}
       </div>
     </div>
   );
@@ -545,8 +632,26 @@ export default function ContractsPage() {
           from { opacity:0; transform:translateX(10px); }
           to   { opacity:1; transform:translateX(0); }
         }
+        @keyframes paperFlicker {
+          0%,100% { opacity:0.06; }
+          50% { opacity:0.09; }
+          52% { opacity:0.04; }
+          54% { opacity:0.08; }
+        }
+        @keyframes inkBleed {
+          0%,100% { text-shadow:0.5px 0.5px 0px rgba(0,0,0,0.18); }
+          50% { text-shadow:0.5px 0.9px 2px rgba(0,0,0,0.28); }
+        }
+        @keyframes emberGlow {
+          0%,100% { opacity:0.5; }
+          50% { opacity:0.7; }
+          70% { opacity:0.42; }
+        }
         .ce-pulse-orange { animation: cePulseOrange 2.2s ease-in-out infinite; }
         .ce-fade-slide   { animation: ceFadeSlide 200ms ease-out forwards; }
+        .poster-grain    { animation: paperFlicker 8s ease-in-out infinite; }
+        .poster-ink      { animation: inkBleed 6s ease-in-out infinite; }
+        .poster-ember    { animation: emberGlow 4s ease-in-out infinite; }
       `}</style>
 
       {/* Vignette */}
@@ -640,9 +745,12 @@ export default function ContractsPage() {
             </div>
 
             {/* ── RIGHT: Briefing Panel ── */}
-            <div className="flex-1 min-h-[560px] bg-[#0f0f0f] border border-[#181818] rounded-2xl p-6 shadow-2xl">
+            <div
+              className="flex-1 rounded-xl overflow-hidden shadow-2xl shadow-black/60"
+              style={{ border: "1px solid rgba(139,90,43,0.28)" }}
+            >
               {selectedContract ? (
-                <div key={briefingKey} className="ce-fade-slide h-full">
+                <div key={briefingKey} className="ce-fade-slide" style={{ minHeight: "560px" }}>
                   <ContractBriefing
                     contract={selectedContract}
                     status={selectedStatus}
@@ -655,8 +763,14 @@ export default function ContractsPage() {
                   />
                 </div>
               ) : (
-                <div className="h-full flex items-center justify-center">
-                  <p className="text-[8px] uppercase tracking-[0.4em] text-[#555]">
+                <div
+                  className="flex items-center justify-center"
+                  style={{ minHeight: "560px", background: "linear-gradient(155deg,#f7ebd0 0%,#ede0b6 45%,#e6d8aa 100%)" }}
+                >
+                  <p
+                    className="text-[8px] uppercase tracking-[0.4em]"
+                    style={{ color: "rgba(120,53,15,0.40)", fontFamily: "Georgia,'Times New Roman',serif" }}
+                  >
                     Seleciona um contrato
                   </p>
                 </div>
