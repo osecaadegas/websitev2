@@ -248,7 +248,7 @@ function ContractBriefing({
 
   return (
     <div
-      className="relative mx-auto w-full max-w-[420px] select-none py-4"
+      className="relative mx-auto w-full max-w-[420px] select-none py-1"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => { setIsHovered(false); setIsPressed(false); }}
       onMouseDown={() => setIsPressed(true)}
@@ -311,10 +311,10 @@ function ContractBriefing({
         </div>
 
         {/* ── CONTENT ── */}
-        <div className="relative z-10 flex flex-col items-center px-8 py-7">
+        <div className="relative z-10 flex flex-col items-center px-8 py-4">
 
           {/* HEADER */}
-          <div className="text-center mb-4">
+          <div className="text-center mb-2">
             <h1
               className="text-5xl font-black tracking-[0.35em] leading-none poster-ink"
               style={{ ...serif, color: "rgba(69,32,5,0.90)", textShadow: "1px 1px 0px rgba(0,0,0,0.30),2px 2px 4px rgba(0,0,0,0.10)" }}
@@ -331,7 +331,7 @@ function ContractBriefing({
           </div>
 
           {/* PORTRAIT — always rendered, silhouette fallback */}
-          <div className="relative mb-5">
+          <div className="relative mb-3">
             <div
               className="relative w-32 h-32 rounded-sm overflow-hidden border-2 border-amber-900/30"
               style={{ boxShadow: "inset 0 0 20px rgba(0,0,0,0.30),0 2px 8px rgba(0,0,0,0.20)" }}
@@ -385,7 +385,7 @@ function ContractBriefing({
 
           {/* TARGET NAME */}
           <h2
-            className="text-2xl font-black tracking-[0.25em] text-center leading-tight mb-2"
+            className="text-2xl font-black tracking-[0.25em] text-center leading-tight mb-1"
             style={{ ...serif, color: "rgba(55,26,3,0.90)", textShadow: "0.5px 0.5px 0px rgba(0,0,0,0.20)" }}
           >
             {contract.name}
@@ -406,7 +406,7 @@ function ContractBriefing({
           )}
 
           {/* INTEL DIVIDER */}
-          <div className="w-full flex items-center gap-2 mb-3">
+          <div className="w-full flex items-center gap-2 mb-2">
             <div className="h-px flex-1 bg-amber-900/20" />
             <span className="text-[10px] tracking-[0.3em] uppercase font-bold" style={{ ...serif, color: "rgba(120,53,15,0.42)" }}>
               Intel
@@ -416,14 +416,14 @@ function ContractBriefing({
 
           {/* DESCRIPTION */}
           <p
-            className="text-sm text-center leading-relaxed mb-5 italic px-2"
+            className="text-sm text-center leading-relaxed mb-3 italic px-2"
             style={{ ...serif, color: "rgba(101,63,15,0.70)", textShadow: "0.5px 0.5px 0px rgba(255,255,255,0.15)" }}
           >
             {contract.description}
           </p>
 
           {/* REWARD BOX */}
-          <div className="relative mb-5 w-full">
+          <div className="relative mb-3 w-full">
             <div className="absolute inset-0 bg-amber-200/20 rounded-sm blur-sm" />
             <div
               className="relative px-6 py-3 text-center rounded-sm"
@@ -451,7 +451,7 @@ function ContractBriefing({
           </div>
 
           {/* STATS — 3 cols */}
-          <div className="w-full grid grid-cols-3 gap-2 mb-5">
+          <div className="w-full grid grid-cols-3 gap-2 mb-3">
             <div className="flex flex-col items-center gap-1 rounded-sm py-2 px-1 border border-amber-900/10" style={{ background: "rgba(139,90,43,0.10)" }}>
               <span className="text-base">🎯</span>
               <span className="text-[9px] font-bold tracking-[0.15em] uppercase" style={{ ...serif, color: "rgba(120,53,15,0.50)" }}>Sucesso</span>
@@ -474,7 +474,7 @@ function ContractBriefing({
           </div>
 
           {/* CONSEQUENCES */}
-          <div className="w-full mb-4 px-1 space-y-1.5">
+          <div className="w-full mb-3 px-1 space-y-1">
             <div className="flex items-start gap-2">
               <div className="w-1 h-1 rounded-full mt-1.5 flex-shrink-0" style={{ background: "rgba(153,27,27,0.50)" }} />
               <p className="text-[10px]" style={{ ...serif, color: "rgba(101,63,15,0.65)" }}>
@@ -499,14 +499,14 @@ function ContractBriefing({
 
           {/* WARNING */}
           <p
-            className="text-[11px] font-bold tracking-[0.2em] uppercase text-center mb-4"
+            className="text-[11px] font-bold tracking-[0.2em] uppercase text-center mb-3"
             style={{ ...serif, color: "rgba(153,27,27,0.55)", textShadow: "0.5px 0.5px 0px rgba(255,255,255,0.10)" }}
           >
             ⚠ Aborda com cautela. Falha tem consequencias.
           </p>
 
           {/* CONFIDENTIAL STAMP */}
-          <div className="mb-5 transform -rotate-6">
+          <div className="mb-3 transform -rotate-6">
             <span
               className="text-[13px] font-black tracking-[0.3em] uppercase border-2 rounded-full px-5 py-1.5"
               style={{ ...serif, color: "rgba(153,27,27,0.52)", borderColor: "rgba(153,27,27,0.42)" }}
