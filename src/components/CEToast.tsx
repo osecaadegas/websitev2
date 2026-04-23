@@ -7,8 +7,8 @@ interface CEToastProps {
 
 export function CEToast({ msg, ok, details, center }: CEToastProps) {
   const position = center
-    ? "fixed top-6 left-1/2 -translate-x-1/2 z-[60]"
-    : "fixed top-6 right-6 z-50";
+    ? "fixed top-20 left-1/2 -translate-x-1/2 z-[60]"
+    : "fixed top-20 right-6 z-50";
 
   if (ok) {
     return (
