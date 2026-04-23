@@ -13,6 +13,9 @@ type Business = {
   launder_cap_per_hour: number | null;
   drug_output_item_id: string | null;
   drug_output_per_hour: number;
+  // joined
+  drug_item?: { name: string } | null;
+  output_items?: { id: string; items: { name: string } }[];
 };
 
 type OutputItem = {
@@ -189,7 +192,7 @@ export default function BusinessesAdminPage() {
             <tr className="border-b border-[#1e1e1e] text-[#444] text-xs uppercase">
               <th className="text-left px-4 py-3">Nome / Tipo</th>
               <th className="text-right px-4 py-3">Preço</th>
-              <th className="text-right px-4 py-3">Income/h</th>
+              <th className="text-left px-4 py-3">Produção / Income</th>
               <th className="text-right px-4 py-3">Workers</th>
               <th className="text-right px-4 py-3">Heat/h</th>
               <th className="text-center px-4 py-3">Risco</th>
@@ -208,7 +211,34 @@ export default function BusinessesAdminPage() {
                   {b.tagline && <p className="text-[#555] text-xs italic mt-0.5">{b.tagline}</p>}
                 </td>
                 <td className="px-4 py-3 text-right text-green-400">💵 {b.purchase_price.toLocaleString()}</td>
-                <td className="px-4 py-3 text-right text-yellow-400">{b.base_income_per_hour.toLocaleString()}/h</td>
+                <td className="px-4 py-3">
+                  {b.drug_output_item_id ? (
+                    /* Drug business */
+                    <div>
+                      <span className="text-purple-400 text-xs font-bold">🌿 {b.drug_item?.name ?? "Droga"}</span>
+                      <span className="text-[#555] text-xs"> · {b.drug_output_per_hour}/hr</span>
+                    </div>
+                  ) : b.launder_cap_per_hour ? (
+                    /* Launder business */
+                    <div>
+                      <span className="text-blue-400 text-xs font-bold">💧 Lavagem</span>
+                      <span className="text-[#555] text-xs"> · cap ${b.launder_cap_per_hour.toLocaleString()}/hr</span>
+                    </div>
+                  ) : (
+                    /* Dirty cash business */
+                    <span className="text-yellow-400 text-xs">${b.base_income_per_hour.toLocaleString()}/hr</span>
+                  )}
+                  {/* Item drops badge */}
+                  {(b.output_items?.length ?? 0) > 0 && (
+                    <div className="mt-0.5">
+                      {b.output_items!.map(o => (
+                        <span key={o.id} className="inline-block text-[10px] px-1.5 py-0.5 rounded bg-[#1a1a1a] text-[#888] mr-1">
+                          📦 {o.items?.name}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </td>
                 <td className="px-4 py-3 text-right text-[#888]">{b.max_employees}</td>
                 <td className="px-4 py-3 text-right text-orange-400">{b.heat_per_hour ?? "—"}/h</td>
                 <td className="px-4 py-3 text-center">

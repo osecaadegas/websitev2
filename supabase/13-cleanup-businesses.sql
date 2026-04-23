@@ -31,7 +31,7 @@ delete from businesses
 where id not in (
   select distinct on (type) id
   from businesses
-  order by type, updated_at desc nulls last, created_at desc nulls last, id desc
+  order by type, created_at desc nulls last, id desc
 );
 
 -- ─── 4. Set correct required_level for all 12 businesses ─────────────────────

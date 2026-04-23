@@ -17,7 +17,10 @@ export async function GET(req: NextRequest) {
 
   let query = supabase
     .from("businesses")
-    .select("*", { count: "exact" })
+    .select(
+      "*, drug_item:items!drug_output_item_id(name), output_items:business_output_items(id, items(name))",
+      { count: "exact" }
+    )
     .order("required_level", { ascending: true })
     .range(offset, offset + limit - 1);
 
