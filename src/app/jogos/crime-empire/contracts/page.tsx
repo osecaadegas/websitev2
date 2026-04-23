@@ -619,7 +619,6 @@ function ThreeCardFan({
   onExecute: (id: string) => void;
 }) {
   const [centerDiff, setCenterDiff] = useState<DiffKey>("medium");
-  const [hovered, setHovered]       = useState<DiffKey | null>(null);
 
   // Sync centerDiff when selected changes from outside (e.g. sidebar click)
   useEffect(() => {
@@ -638,12 +637,12 @@ function ThreeCardFan({
 
   const centerIdx = DIFF_ORDER.indexOf(centerDiff);
 
-  const getRole = (diff: DiffKey): "center" | "left" | "right" | "far-left" | "far-right" => {
-    const rel = DIFF_ORDER.indexOf(diff) - centerIdx;
-    if (rel ===  0) return "center";
-    if (rel === -1) return "left";
-    if (rel ===  1) return "right";
-    return rel < 0 ? "far-left" : "far-right";
+  // Circular wrapping — always exactly left / center / right regardless of which is selected
+  const getRole = (diff: DiffKey): "center" | "left" | "right" => {
+    const rel = (DIFF_ORDER.indexOf(diff) - centerIdx + 3) % 3;
+    if (rel === 0) return "center";
+    if (rel === 1) return "right";
+    return "left"; // rel === 2
   };
 
   return (
@@ -654,38 +653,27 @@ function ThreeCardFan({
       {sorted.map((contract) => {
         const diff = contract.difficulty as DiffKey;
         const role = getRole(diff);
-        const isHov = hovered === diff;
 
         let transform: string;
         let zIndex: number;
         let opacity: number;
         let marginR = "0px";
         let marginL = "0px";
-        let width: string;
+        const width = "360px";
         let cursor: string;
 
         switch (role) {
           case "center":
-            transform = isHov ? "rotateY(0deg) translateZ(28px) scale(1.018)" : "rotateY(0deg) translateZ(0px) scale(1)";
-            zIndex = isHov ? 15 : 10; opacity = 1; width = "400px"; cursor = "default";
+            transform = "rotateY(0deg) translateZ(0px)";
+            zIndex = 10; opacity = 1; cursor = "default";
             break;
           case "left":
-            transform = isHov ? "rotateY(6deg) translateZ(15px) scale(0.90)" : "rotateY(14deg) translateZ(-85px) scale(0.80)";
-            zIndex = isHov ? 9 : 2; opacity = isHov ? 0.88 : 0.50;
-            marginR = isHov ? "-32px" : "-72px"; width = "320px"; cursor = "pointer";
+            transform = "rotateY(16deg) translateZ(-90px)";
+            zIndex = 2; opacity = 0.52; marginR = "-70px"; cursor = "pointer";
             break;
-          case "right":
-            transform = isHov ? "rotateY(-6deg) translateZ(15px) scale(0.90)" : "rotateY(-14deg) translateZ(-85px) scale(0.80)";
-            zIndex = isHov ? 9 : 2; opacity = isHov ? 0.88 : 0.50;
-            marginL = isHov ? "-32px" : "-72px"; width = "320px"; cursor = "pointer";
-            break;
-          case "far-left":
-            transform = "rotateY(22deg) translateZ(-160px) scale(0.62)";
-            zIndex = 1; opacity = 0.22; marginR = "-100px"; width = "260px"; cursor = "pointer";
-            break;
-          default: // far-right
-            transform = "rotateY(-22deg) translateZ(-160px) scale(0.62)";
-            zIndex = 1; opacity = 0.22; marginL = "-100px"; width = "260px"; cursor = "pointer";
+          default: // right
+            transform = "rotateY(-16deg) translateZ(-90px)";
+            zIndex = 2; opacity = 0.52; marginL = "-70px"; cursor = "pointer";
             break;
         }
 
@@ -695,11 +683,9 @@ function ThreeCardFan({
             style={{
               width, flexShrink: 0, position: "relative", zIndex, transform,
               transformStyle: "preserve-3d",
-              transition: "transform 0.58s cubic-bezier(0.25,0.46,0.45,0.94), opacity 0.42s ease, margin 0.46s ease, width 0.38s ease",
+              transition: "transform 0.58s cubic-bezier(0.25,0.46,0.45,0.94), opacity 0.42s ease, margin 0.46s ease",
               opacity, marginRight: marginR, marginLeft: marginL, cursor,
             }}
-            onMouseEnter={() => { if (role !== "center") setHovered(diff); }}
-            onMouseLeave={() => setHovered(null)}
             onClick={() => {
               if (role !== "center") {
                 setCenterDiff(diff);
