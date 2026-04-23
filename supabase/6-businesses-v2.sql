@@ -88,6 +88,11 @@ alter table player_business_workers  enable row level security;
 alter table player_business_events   enable row level security;
 alter table player_business_upgrades enable row level security;
 
-create policy if not exists "Players manage own biz workers"  on player_business_workers  for all using (true);
-create policy if not exists "Players manage own biz events"   on player_business_events   for all using (true);
-create policy if not exists "Players manage own biz upgrades" on player_business_upgrades for all using (true);
+do $$ begin
+  if not exists (select 1 from pg_policies where tablename = 'player_business_workers'  and policyname = 'Players manage own biz workers')  then
+    create policy "Players manage own biz workers"  on player_business_workers  for all using (true); end if;
+  if not exists (select 1 from pg_policies where tablename = 'player_business_events'   and policyname = 'Players manage own biz events')    then
+    create policy "Players manage own biz events"   on player_business_events   for all using (true); end if;
+  if not exists (select 1 from pg_policies where tablename = 'player_business_upgrades' and policyname = 'Players manage own biz upgrades')  then
+    create policy "Players manage own biz upgrades" on player_business_upgrades for all using (true); end if;
+end $$;
