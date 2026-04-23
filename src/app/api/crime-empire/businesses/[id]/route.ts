@@ -281,7 +281,10 @@ async function handleCollect(pb: any, player: any, pbId: string) {
 
   const lastCollect = new Date(pb.last_collection);
   const hoursElapsed = (now.getTime() - lastCollect.getTime()) / 3_600_000;
-  if (hoursElapsed < 0.1) return NextResponse.json({ error: "Espera pelo menos 6 minutos entre coletas" }, { status: 403 });
+  if (hoursElapsed < 1) {
+    const minsLeft = Math.ceil((3_600_000 - (now.getTime() - lastCollect.getTime())) / 60_000);
+    return NextResponse.json({ error: `Podes coletar novamente em ${minsLeft} min.` }, { status: 429 });
+  }
   if (pb.status === "raided") return NextResponse.json({ error: "O negócio está invadido! Resolve o evento primeiro." }, { status: 403 });
 
   // Get workers + upgrades

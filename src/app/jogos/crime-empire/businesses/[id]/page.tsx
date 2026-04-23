@@ -242,8 +242,10 @@ export default function BusinessManagementPage({ params }: { params: Promise<{ i
   const [pendingIncome, setPendingIncome] = useState(0);
   const [currentHeat, setCurrentHeat] = useState(0);
   const [launderAmount, setLaunderAmount] = useState("");
+  const [collectCooldownSecs, setCollectCooldownSecs] = useState(0);
   const incomeIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const heatIntervalRef   = useRef<ReturnType<typeof setInterval> | null>(null);
+  const collectTimerRef   = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const showToast = useCallback((msg: string, type: "success" | "error" | "info" = "success") => {
     setToast({ msg, type });
@@ -289,6 +291,25 @@ export default function BusinessManagementPage({ params }: { params: Promise<{ i
     }, 1000);
     return () => { if (heatIntervalRef.current) clearInterval(heatIntervalRef.current); };
   }, [data?.player_business.heat_rate_per_hour, data?.player_business.heat]);
+
+  // Collect cooldown countdown
+  useEffect(() => {
+    if (!data) return;
+    const lastCollect = new Date(data.player_business.last_collection).getTime();
+    const cooldownMs = 3_600_000; // 1 hour
+    const remaining = Math.max(0, Math.ceil((lastCollect + cooldownMs - Date.now()) / 1000));
+    setCollectCooldownSecs(remaining);
+    if (collectTimerRef.current) clearInterval(collectTimerRef.current);
+    if (remaining > 0) {
+      collectTimerRef.current = setInterval(() => {
+        setCollectCooldownSecs((prev) => {
+          if (prev <= 1) { clearInterval(collectTimerRef.current!); return 0; }
+          return prev - 1;
+        });
+      }, 1000);
+    }
+    return () => { if (collectTimerRef.current) clearInterval(collectTimerRef.current); };
+  }, [data?.player_business.last_collection]);
 
   const doAction = useCallback(async (body: object, refreshAfter = true) => {
     setProcessing(true);
@@ -496,13 +517,20 @@ export default function BusinessManagementPage({ params }: { params: Promise<{ i
               </div>
             </div>
           ) : (
-            <button
-              onClick={handleCollect}
-              disabled={processing || status === "raided"}
-              className="px-6 py-3 rounded-xl font-black text-base bg-gradient-to-r from-[#ff6a00] to-[#ff8533] hover:from-[#ff8533] hover:to-[#ff6a00] disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-lg shadow-orange-900/20"
-            >
-              💰 Coletar{pendingIncome > 0 ? ` $${pendingIncome.toLocaleString()}` : ""}
-            </button>
+            <div className="flex flex-col items-start gap-1">
+              <button
+                onClick={handleCollect}
+                disabled={processing || status === "raided" || collectCooldownSecs > 0}
+                className="px-6 py-3 rounded-xl font-black text-base bg-gradient-to-r from-[#ff6a00] to-[#ff8533] hover:from-[#ff8533] hover:to-[#ff6a00] disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-lg shadow-orange-900/20"
+              >
+                💰 Coletar{pendingIncome > 0 ? ` $${pendingIncome.toLocaleString()}` : ""}
+              </button>
+              {collectCooldownSecs > 0 && (
+                <p className="text-xs text-gray-500 pl-1">
+                  ⏳ Disponível em {Math.floor(collectCooldownSecs / 60)}m {collectCooldownSecs % 60}s
+                </p>
+              )}
+            </div>
           )}
 
           {/* Production control */}

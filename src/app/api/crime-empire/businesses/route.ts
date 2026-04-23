@@ -314,10 +314,11 @@ async function handleCollect(player: any, businessId: string) {
   const lastCollection = new Date(playerBusiness.last_collection);
   const hoursElapsed = (now.getTime() - lastCollection.getTime()) / (1000 * 60 * 60);
 
-  if (hoursElapsed < 0.1) {
+  if (hoursElapsed < 1) {
+    const minsLeft = Math.ceil((3_600_000 - (now.getTime() - lastCollection.getTime())) / 60_000);
     return NextResponse.json(
-      { error: "Wait at least 6 minutes between collections" },
-      { status: 403 }
+      { error: `Podes coletar novamente em ${minsLeft} min.` },
+      { status: 429 }
     );
   }
 
