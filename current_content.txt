@@ -1,0 +1,50 @@
+﻿"use client";
+
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { motion, AnimatePresence } from "framer-motion";
+import { useAuth } from "@/lib/auth-context";
+
+interface Player {
+  id: string;
+  level: number;
+  stamina: number;
+  max_stamina: number;
+  in_jail: boolean;
+}
+
+interface Crime {
+  id: string;
+  name: string;
+  description: string;
+  difficulty: string;
+  base_success_rate: number;
+  jail_risk: number;
+  stamina_cost: number;
+  min_dirty_cash: number;
+  max_dirty_cash: number;
+  xp_reward: number;
+  required_level: number;
+}
+
+/* â”€â”€ Helpers â”€â”€ */
+const DIFFICULTY_ICONS: Record<string, string> = {
+  fÃ¡cil: "ðŸ”«", easy: "ðŸ”«",
+  mÃ©dio: "ðŸ’Š", medium: "ðŸ’Š",
+  difÃ­cil: "ðŸ”ª", hard: "ðŸ”ª",
+  expert: "ðŸ’£", elite: "ðŸ’£",
+};
+function diffIcon(d: string) { return DIFFICULTY_ICONS[d?.toLowerCase()] ?? "ðŸŽ­"; }
+function fmt(n: number) { return n.toLocaleString("pt-PT"); }
+
+/* â”€â”€ Player Info Strip â”€â”€ */
+function PlayerBar({ player }: { player: Player }) {
+  const pct = player.max_stamina > 0 ? (player.stamina / player.max_stamina) * 100 : 0;
+  const barColor = pct > 60 ? "#3b82f6" : pct > 30 ? "#f59e0b" : "#ef4444";
+  return (
+    <div className="mb-6 flex items-center gap-4 px-4 py-3 rounded-2xl bg-[#111] border border-[#1e1e1e]">
+      {/* Level badge */}
+      <div className="flex items-center gap-2.5 flex-shrink-0">
+        <div className="w-10 h-10 rounded-xl bg-orange-500/10 border border-orange-500/25 flex flex-col items-center justify-center flex-shrink-0">
+          <span className="text-orange-400 font-black text-[9px] leading-none uppercase tracking-wider">LVL</span>
+          <span className="text-orange-300 font-black text-sm leading-tight">{player.level}</span>
