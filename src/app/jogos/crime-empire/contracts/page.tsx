@@ -665,7 +665,7 @@ function ThreeCardFan({
 
   return (
     <div
-      className="relative w-full overflow-hidden"
+      className="relative w-full"
       style={{ perspective: "1100px", perspectiveOrigin: "50% 20%", minHeight: "740px" }}
     >
       {sorted.map((contract) => {
