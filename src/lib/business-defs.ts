@@ -584,16 +584,218 @@ const NIGHTCLUB: BusinessTypeDef = {
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
+// PHANTOM CORP — Corporação Fantasma (tier-2 launder, 20 000/hr base)
+// ─────────────────────────────────────────────────────────────────────────────
+const PHANTOM_CORP: BusinessTypeDef = {
+  type: "phantom_corp",
+  label: "Corporação Fantasma",
+  icon: "👻",
+  tagline: "Empresas-fantasma para esconder fortunas",
+  description_short: "Uma rede de empresas fictícias em paraísos fiscais. Transforma grandes volumes de dinheiro sujo em rendimentos empresariais \"legítimos\".",
+  risk_level: "medium",
+  heat_per_hour: 8,
+  income_type: "launder",
+  unique_mechanic: "Lavagem empresarial — cada advogado ou contabilista aumenta o cap de lavagem horário em $2.000",
+  launder_cap_per_worker: 2000,
+  production_multipliers: { low: 0.35, normal: 1.0, overdrive: 1.75 },
+  heat_multipliers:       { low: 0.30, normal: 1.0, overdrive: 2.50 },
+  worker_pool: [
+    { id: "pc_mendes",     name: "Dr. Mendes",   skill: "stealth",    trait: "dedicated", salary: 200, production_bonus: 0.18, efficiency_bonus: 0.10, stealth_bonus: 0.20, description: "Advogado fiscalista. Especializado em estruturas societárias invisíveis." },
+    { id: "pc_fatima",     name: "Fátima",        skill: "efficiency", trait: "efficient", salary: 180, production_bonus: 0.10, efficiency_bonus: 0.28, stealth_bonus: 0.08, description: "Contabilista criativa. Faz os números sempre fazerem sentido." },
+    { id: "pc_carlos",     name: "Carlos",        skill: "production", trait: "loyal",     salary: 160, production_bonus: 0.22, efficiency_bonus: 0.05, stealth_bonus: 0.08, description: "Director fictício de 47 empresas diferentes. Fiável e discreto." },
+    { id: "pc_helio",      name: "Hélio",         skill: "stealth",    trait: "paranoid",  salary: 195, production_bonus: -0.05, efficiency_bonus: 0,   stealth_bonus: 0.30, description: "Notário corrupto. Certifica tudo sem fazer perguntas." },
+    { id: "pc_vera",       name: "Vera",          skill: "production", trait: "risky",     salary: 175, production_bonus: 0.32, efficiency_bonus: 0,   stealth_bonus: -0.12, description: "Analista financeira brilhante. Maximiza o volume mas é imprudente." },
+    { id: "pc_nuno",       name: "Nuno",          skill: "efficiency", trait: "greedy",    salary: 155, production_bonus: 0.12, efficiency_bonus: 0.20, stealth_bonus: 0.05, description: "Intermediário que conhece toda a gente. Quer comissão em tudo." },
+  ],
+  upgrades: [
+    { id: "pc_holding",    name: "Estrutura Holding",     description: "Rede de holdings multinacionais: +30% volume de lavagem",   cost: 25000, icon: "🏛️", income_bonus: 0.30, heat_reduction: 0,    capacity_bonus: 0 },
+    { id: "pc_offshore",   name: "Contas Offshore",        description: "Contas em paraísos fiscais: -35% exposição a investigações", cost: 18000, icon: "🌴", income_bonus: 0,    heat_reduction: 0.35, capacity_bonus: 0 },
+    { id: "pc_lawyers",    name: "Equipa Jurídica",        description: "Escritório de advogados a full-time: +25% eficiência, +2 vagas", cost: 30000, icon: "⚖️", income_bonus: 0.25, heat_reduction: 0, capacity_bonus: 2 },
+    { id: "pc_crypto",     name: "Ponte Cripto",           description: "Lavagem via criptomoedas mistas: +40% output anónimo",      cost: 22000, icon: "🔗", income_bonus: 0.40, heat_reduction: 0,    capacity_bonus: 0 },
+  ],
+  events: [
+    {
+      id: "pc_audit", title: "Auditoria Fiscal", icon: "📊", severity: "warning", min_heat: 40, base_chance: 0.14, expires_hours: 24,
+      description: "A Autoridade Tributária abriu um processo de auditoria às tuas empresas.",
+      choices: [
+        { id: "fix_books",  label: "Arranjar documentação ($6.000)",  cash_cost: 6000, heat_change: -25, outcome: "Contabilidade 'corrigida'. A auditoria não encontrou nada." },
+        { id: "comply",     label: "Cooperar com a auditoria",                          heat_change: -10, outcome: "Cooperaste. Multa menor mas a empresa ficou exposta.", success_chance: 0.70, fail_outcome: "A auditoria encontrou irregularidades graves!", fail_heat_change: 35 },
+      ],
+    },
+    {
+      id: "pc_whistleblower", title: "Informador Interno", icon: "🐀", severity: "danger", min_heat: 50, base_chance: 0.16, expires_hours: 8,
+      description: "Um dos teus funcionários está a considerar falar com as autoridades.",
+      choices: [
+        { id: "bribe",      label: "Comprar silêncio ($10.000)", cash_cost: 10000, heat_change: -30, outcome: "O informador foi convencido a ficar calado.", success_chance: 0.75, fail_outcome: "O informador fugiu antes de poderes agir!", fail_heat_change: 50 },
+        { id: "fire",       label: "Despedir imediatamente",                        heat_change: -10, outcome: "Despediste o funcionário. Pode ainda falar, mas levará tempo." },
+      ],
+    },
+    {
+      id: "pc_big_client", title: "Cliente de Alto Valor", icon: "💼", severity: "info", min_heat: 0, base_chance: 0.10, expires_hours: 12,
+      description: "Um intermediário quer encaminhar um volume enorme de fundos pelas tuas empresas.",
+      choices: [
+        { id: "accept",     label: "Aceitar contrato ($2.000 upfront)", cash_cost: 2000, heat_change: 10, dirty_gain: 30000, outcome: "Contrato fechado! Enorme influxo de fundos.", success_chance: 0.80, fail_outcome: "Era armadilha da PJ. Fundos congelados!", fail_heat_change: 45 },
+        { id: "decline",    label: "Recusar",                                           heat_change: 0,                     outcome: "Recusaste. Segurança em primeiro lugar." },
+      ],
+    },
+    {
+      id: "pc_registry_leak", title: "Fuga no Registo", icon: "📰", severity: "warning", min_heat: 30, base_chance: 0.12, expires_hours: 16,
+      description: "Os registos das tuas empresas vazaram para um jornalista de investigação.",
+      choices: [
+        { id: "suppress",   label: "Suprimir publicação ($8.000)", cash_cost: 8000, heat_change: -20, outcome: "O artigo foi travado. Os registos continuam secretos." },
+        { id: "restructure",label: "Reestruturar empresas",                         heat_change: -15, outcome: "Dissolveste as empresas expostas. Operação parada 6 horas." },
+      ],
+    },
+  ],
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// OFFSHORE BANK — Banco Offshore (tier-3 launder, 35 000/hr base)
+// ─────────────────────────────────────────────────────────────────────────────
+const OFFSHORE_BANK: BusinessTypeDef = {
+  type: "offshore_bank",
+  label: "Banco Offshore",
+  icon: "🏦",
+  tagline: "Movimenta fortunas através das fronteiras",
+  description_short: "Banco privado em jurisdição offshore. Wire transfers internacionais instantâneas. O método mais discreto e eficiente para mover grandes fortunas.",
+  risk_level: "medium",
+  heat_per_hour: 6,
+  income_type: "launder",
+  unique_mechanic: "Wire transfers — cada banqueiro especializado aumenta o cap de lavagem horário em $3.000",
+  launder_cap_per_worker: 3000,
+  production_multipliers: { low: 0.35, normal: 1.0, overdrive: 1.75 },
+  heat_multipliers:       { low: 0.30, normal: 1.0, overdrive: 2.50 },
+  worker_pool: [
+    { id: "ob_rodrigo",    name: "Rodrigo",       skill: "production", trait: "dedicated", salary: 250, production_bonus: 0.25, efficiency_bonus: 0.12, stealth_bonus: 0.08, description: "Gestor de fortunas. Especialista em jurisdições offshore de alto risco." },
+    { id: "ob_isabel",     name: "Isabel",        skill: "efficiency", trait: "efficient", salary: 220, production_bonus: 0.08, efficiency_bonus: 0.32, stealth_bonus: 0.10, description: "Directora de compliance. Faz tudo parecer absolutamente legítimo." },
+    { id: "ob_mikael",     name: "Mikael",        skill: "stealth",    trait: "paranoid",  salary: 240, production_bonus: -0.05, efficiency_bonus: 0,   stealth_bonus: 0.32, description: "Especialista em cripto anonimizado. Não confia em ninguém." },
+    { id: "ob_goncalo",    name: "Gonçalo",       skill: "production", trait: "risky",     salary: 260, production_bonus: 0.38, efficiency_bonus: 0,   stealth_bonus: -0.18, description: "Trader agressivo. Multiplica o volume mas pode atrair atenção." },
+    { id: "ob_dora",       name: "Dora",          skill: "stealth",    trait: "loyal",     salary: 230, production_bonus: 0.12, efficiency_bonus: 0.08, stealth_bonus: 0.22, description: "Directora bancária. Nunca revelou um cliente em 20 anos de carreira." },
+    { id: "ob_ze",         name: "Zé",            skill: "efficiency", trait: "greedy",    salary: 200, production_bonus: 0.15, efficiency_bonus: 0.22, stealth_bonus: 0, description: "Courier de documentos. Bónus por cada transferência completada." },
+  ],
+  upgrades: [
+    { id: "ob_correspondent", name: "Banco Correspondente",  description: "Rede de bancos parceiros: +35% capacidade de transferência", cost: 40000, icon: "🌐", income_bonus: 0.35, heat_reduction: 0,    capacity_bonus: 0 },
+    { id: "ob_encryption",    name: "Encriptação Avançada",   description: "Comunicações militares: -40% rastreabilidade (calor)",       cost: 25000, icon: "🔐", income_bonus: 0,    heat_reduction: 0.40, capacity_bonus: 0 },
+    { id: "ob_vip_desk",      name: "Balcão VIP",             description: "Serviço exclusivo: +30% eficiência, +2 gestores",            cost: 35000, icon: "💎", income_bonus: 0.30, heat_reduction: 0,    capacity_bonus: 2 },
+    { id: "ob_crypto_desk",   name: "Mesa de Criptomoedas",   description: "Mixing avançado de cripto: +45% volume anónimo",             cost: 50000, icon: "₿",  income_bonus: 0.45, heat_reduction: 0,    capacity_bonus: 0 },
+  ],
+  events: [
+    {
+      id: "ob_wire_freeze", title: "Wire Transfer Congelada", icon: "🧊", severity: "danger", min_heat: 45, base_chance: 0.15, expires_hours: 8,
+      description: "Um banco correspondente congelou uma transferência por actividade suspeita.",
+      choices: [
+        { id: "unfreeze",   label: "Pagar desbloqueio ($12.000)", cash_cost: 12000, heat_change: -20, outcome: "Transferência desbloqueada. Fundos chegaram sem rastos.", success_chance: 0.70, fail_outcome: "O banco recusou. Os fundos foram reportados às autoridades!", fail_heat_change: 45 },
+        { id: "abandon",    label: "Abandonar a transferência",                      heat_change: -30, outcome: "Cancelaste a operação. Perdeste os fundos desta transferência." },
+      ],
+    },
+    {
+      id: "ob_regulatory", title: "Investigação Regulatória", icon: "🔎", severity: "warning", min_heat: 35, base_chance: 0.12, expires_hours: 24,
+      description: "O Banco Central está a investigar movimentos irregulares nas tuas contas.",
+      choices: [
+        { id: "lawyer",     label: "Contratar advogados ($9.000)",  cash_cost: 9000, heat_change: -25, outcome: "Os advogados bloquearam a investigação. Por enquanto." },
+        { id: "move_funds", label: "Mover fundos imediatamente",                     heat_change: -15, outcome: "Moveste tudo antes de serem localizados. Operação temporariamente mais lenta." },
+      ],
+    },
+    {
+      id: "ob_deposit", title: "Depósito Anónimo Enorme", icon: "💰", severity: "info", min_heat: 0, base_chance: 0.09, expires_hours: 10,
+      description: "Um cliente anónimo quer depositar uma quantia enorme. Sem perguntas.",
+      choices: [
+        { id: "accept",     label: "Aceitar (taxa $3.000)", cash_cost: 3000, heat_change: 8, dirty_gain: 50000, outcome: "Depósito processado. Enorme comissão.", success_chance: 0.75, fail_outcome: "O depósito era operação de isco da Europol!", fail_heat_change: 55 },
+        { id: "decline",    label: "Recusar",                heat_change: 0,                                    outcome: "Recusaste. Não vale o risco." },
+      ],
+    },
+    {
+      id: "ob_leak", title: "Fuga de Documentos Secretos", icon: "📁", severity: "danger", min_heat: 60, base_chance: 0.18, expires_hours: 6,
+      description: "Registos secretos do banco foram partilhados com a imprensa internacional.",
+      choices: [
+        { id: "bribe",      label: "Subornar jornalista ($15.000)", cash_cost: 15000, heat_change: -35, outcome: "A história foi suprimida. Os documentos destruídos.", success_chance: 0.65, fail_outcome: "O jornalista recusou e publicou tudo!", fail_heat_change: 60 },
+        { id: "relocate",   label: "Mudar operação para nova jurisdição",              heat_change: -40, outcome: "Banco relocalizado. Operação parada 1 dia mas quase invisível." },
+      ],
+    },
+  ],
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CLANDESTINE CASINO — Casino Clandestino (tier-4 launder, 50 000/hr base)
+// ─────────────────────────────────────────────────────────────────────────────
+const CLANDESTINE_CASINO: BusinessTypeDef = {
+  type: "clandestine_casino",
+  label: "Casino Clandestino",
+  icon: "🎰",
+  tagline: "O lugar onde o dinheiro sujo entra e sai limpo",
+  description_short: "Casino ilegal de alto perfil. Chips trocam dinheiro sujo por fichas que voltam como ganhos legítimos. O método mais rápido — e arriscado.",
+  risk_level: "high",
+  heat_per_hour: 18,
+  income_type: "launder",
+  unique_mechanic: "Fichas de casino — mais croupiers = mais mesas = +$4.000/hr de cap de lavagem por trabalhador",
+  launder_cap_per_worker: 4000,
+  production_multipliers: { low: 0.35, normal: 1.0, overdrive: 1.75 },
+  heat_multipliers:       { low: 0.30, normal: 1.0, overdrive: 2.50 },
+  worker_pool: [
+    { id: "cc_afonso",     name: "Afonso",        skill: "production", trait: "dedicated", salary: 180, production_bonus: 0.28, efficiency_bonus: 0.10, stealth_bonus: 0.05, description: "Croupier experiente. Sabe exactamente quando deixar ganhar." },
+    { id: "cc_graca",      name: "Graça",         skill: "efficiency", trait: "efficient", salary: 200, production_bonus: 0.10, efficiency_bonus: 0.30, stealth_bonus: 0.10, description: "Chefe de sala. Gere 12 mesas em simultâneo sem perder o fio." },
+    { id: "cc_renato",     name: "Renato",        skill: "stealth",    trait: "loyal",     salary: 220, production_bonus: 0.08, efficiency_bonus: 0.05, stealth_bonus: 0.28, description: "Pit boss. Viu tudo neste negócio e nunca disse nada a ninguém." },
+    { id: "cc_liliana",    name: "Liliana",       skill: "stealth",    trait: "paranoid",  salary: 190, production_bonus: -0.05, efficiency_bonus: 0,   stealth_bonus: 0.35, description: "Caixa-forte humana. Nenhuma transacção é rastreável quando passa por ela." },
+    { id: "cc_tomas",      name: "Tomás",         skill: "production", trait: "risky",     salary: 165, production_bonus: 0.35, efficiency_bonus: 0,   stealth_bonus: -0.20, description: "Dealer mais rápido da cidade. Também o mais descuidado." },
+    { id: "cc_beatriz",    name: "Beatriz",       skill: "efficiency", trait: "greedy",    salary: 210, production_bonus: 0.18, efficiency_bonus: 0.25, stealth_bonus: 0, description: "Anfitriã VIP. Traz whales com dinheiro para lavar, quer 10% de comissão." },
+    { id: "cc_monteiro",   name: "Monteiro",      skill: "stealth",    trait: "dedicated", salary: 175, production_bonus: 0.05, efficiency_bonus: 0.05, stealth_bonus: 0.22, description: "Segurança discreto. Resolve situações 'delicadas' silenciosamente." },
+  ],
+  upgrades: [
+    { id: "cc_vip_room",   name: "Sala VIP Exclusiva",  description: "Mesas privadas para jogadores de alto valor: +35% volume de fichas", cost: 35000, icon: "🥂", income_bonus: 0.35, heat_reduction: 0,    capacity_bonus: 0 },
+    { id: "cc_cameras",    name: "Sistema Anti-Rusga",   description: "Câmeras externas + alertas: -30% calor policial",                    cost: 20000, icon: "📹", income_bonus: 0,    heat_reduction: 0.30, capacity_bonus: 0 },
+    { id: "cc_tables",     name: "Mesas Extra",           description: "Expansão do casino: +20% output, +3 croupiers adicionais",           cost: 28000, icon: "🃏", income_bonus: 0.20, heat_reduction: 0,    capacity_bonus: 3 },
+    { id: "cc_crypto",     name: "Fichas Cripto",         description: "Fichas anónimas em blockchain: +40% volume, -10% calor",            cost: 45000, icon: "🔮", income_bonus: 0.40, heat_reduction: 0.10, capacity_bonus: 0 },
+  ],
+  events: [
+    {
+      id: "cc_high_roller", title: "High Roller Suspeito", icon: "🎲", severity: "info", min_heat: 0, base_chance: 0.11, expires_hours: 8,
+      description: "Um jogador misterioso apareceu com uma mala cheia de dinheiro. Quer entrar.",
+      choices: [
+        { id: "allow",      label: "Deixar entrar",            heat_change: 12, dirty_gain: 40000, outcome: "Noite épica! Enormes somas passaram pelas tuas mesas.", success_chance: 0.75, fail_outcome: "Era agente encoberto. Operação comprometida!", fail_heat_change: 50 },
+        { id: "refuse",     label: "Recusar entrada",           heat_change: 0,                    outcome: "Recusaste. Demasiado arriscado sem verificação." },
+      ],
+    },
+    {
+      id: "cc_police_raid", title: "Rusga Policial Iminente", icon: "🚔", severity: "danger", min_heat: 60, base_chance: 0.22, expires_hours: 4,
+      description: "Informações de que a PSP vai fazer uma rusga esta noite. Tens poucas horas.",
+      choices: [
+        { id: "evacuate",   label: "Evacuar e fechar",          heat_change: -45, outcome: "Casino fechado a tempo. Quando chegaram estava vazio." },
+        { id: "bribe",      label: "Subornar comandante ($12.000)", cash_cost: 12000, heat_change: -35, outcome: "A rusga foi cancelada.", success_chance: 0.60, fail_outcome: "Suborno recusado! Casino invadido esta noite.", fail_heat_change: 60 },
+      ],
+    },
+    {
+      id: "cc_rigged", title: "Mesa Viciada Descoberta", icon: "🃏", severity: "warning", min_heat: 20, base_chance: 0.13, expires_hours: 12,
+      description: "Um jogador descobriu que as mesas estão viciadas e está a fazer escândalo.",
+      choices: [
+        { id: "pay_off",    label: "Pagar silêncio ($4.000)",  cash_cost: 4000, heat_change: -10, outcome: "O jogador foi compensado e calou-se." },
+        { id: "remove",     label: "Remover o jogador",                         heat_change: 5,   outcome: "O segurança 'resolveu' a situação. Pode falar mais tarde.", success_chance: 0.65, fail_outcome: "A situação escalou e chegou à polícia!", fail_heat_change: 25 },
+      ],
+    },
+    {
+      id: "cc_seizure", title: "Confisco de Fichas", icon: "💸", severity: "danger", min_heat: 70, base_chance: 0.20, expires_hours: 6,
+      description: "As autoridades têm mandado para confiscar as fichas e registos do casino.",
+      choices: [
+        { id: "hide",       label: "Esconder tudo ($5.000)",   cash_cost: 5000, heat_change: -30, outcome: "Tudo escondido antes de chegarem. Mandado executado a vazio.", success_chance: 0.65, fail_outcome: "Encontraram tudo. Enorme prejuízo!", fail_heat_change: 55 },
+        { id: "surrender",  label: "Cooperar parcialmente",                     heat_change: -20, outcome: "Entregaste alguma coisa. Perda parcial mas evitaste o pior." },
+      ],
+    },
+  ],
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
 // REGISTRY
 // ─────────────────────────────────────────────────────────────────────────────
 export const BUSINESS_DEFS: Record<string, BusinessTypeDef> = {
-  weed_farm:      WEED_FARM,
-  pill_factory:   PILL_FACTORY,
-  crypto_mining:  CRYPTO_MINING,
-  scam_office:    SCAM_OFFICE,
-  chop_shop:      CHOP_SHOP,
-  counterfeit_lab: COUNTERFEIT_LAB,
-  nightclub:      NIGHTCLUB,
+  weed_farm:           WEED_FARM,
+  pill_factory:        PILL_FACTORY,
+  crypto_mining:       CRYPTO_MINING,
+  scam_office:         SCAM_OFFICE,
+  chop_shop:           CHOP_SHOP,
+  counterfeit_lab:     COUNTERFEIT_LAB,
+  nightclub:           NIGHTCLUB,
+  phantom_corp:        PHANTOM_CORP,
+  offshore_bank:       OFFSHORE_BANK,
+  clandestine_casino:  CLANDESTINE_CASINO,
 };
 
 export function getBusinessDef(type: string): BusinessTypeDef | undefined {
