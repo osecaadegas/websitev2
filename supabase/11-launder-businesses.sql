@@ -5,11 +5,16 @@
 -- ═══════════════════════════════════════════════════════════════════════════
 
 -- ─── 1. Add new enum values ───────────────────────────────────────────────────
+-- ⚠️  RUN THIS BLOCK FIRST, then click Run again for Part 2 below.
+-- PostgreSQL requires new enum values to be committed before they can be used.
 alter type business_type add value if not exists 'phantom_corp';
 alter type business_type add value if not exists 'clandestine_casino';
 -- 'offshore_bank' already exists in the enum from a previous migration
 
+-- ─── STOP HERE ─── Run the statements above first, then run Part 2 below ─────
+
 -- ─── 2. Seed the businesses ───────────────────────────────────────────────────
+-- ⚠️  Run this block in a SEPARATE execution after Part 1 has committed.
 insert into businesses (
   name, type, description,
   purchase_price, base_income_per_hour, max_employees, employee_cost_per_hour,

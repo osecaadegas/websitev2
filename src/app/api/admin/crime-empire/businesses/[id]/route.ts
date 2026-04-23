@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 const EDITABLE = [
   "name","description","purchase_price","base_income_per_hour","max_employees",
   "employee_cost_per_hour","required_level","required_items","raid_risk","enabled",
-  "risk_level","heat_per_hour","tagline",
+  "risk_level","heat_per_hour","tagline","launder_cap_per_hour",
 ];
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {

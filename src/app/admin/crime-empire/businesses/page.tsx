@@ -10,6 +10,7 @@ type Business = {
   max_employees: number; employee_cost_per_hour: number;
   required_level: number; required_items: any[]; raid_risk: number; enabled: boolean;
   risk_level: string; heat_per_hour: number; tagline: string;
+  launder_cap_per_hour: number | null;
 };
 
 type OutputItem = {
@@ -24,7 +25,7 @@ const BLANK: Partial<Business> = {
   name: "", type: "", description: "", purchase_price: 0, base_income_per_hour: 0,
   max_employees: 5, employee_cost_per_hour: 0, required_level: 1,
   required_items: [], raid_risk: 0.05, enabled: true,
-  risk_level: "medium", heat_per_hour: 5, tagline: "",
+  risk_level: "medium", heat_per_hour: 5, tagline: "", launder_cap_per_hour: null,
 };
 
 const RISK_LEVELS = ["low", "medium", "high", "extreme"];
@@ -290,6 +291,16 @@ export default function BusinessesAdminPage() {
                     {nf("required_level", "Nível Req.")}
                     {nf("raid_risk", "Risco Raid (0-1)", "0.01")}
                   </div>
+
+                  <p className="text-[10px] uppercase tracking-widest text-[#555] pt-2">Lavagem de Dinheiro</p>
+                  <label className="block">
+                    <span className="text-xs text-[#666] mb-1 block">Cap de Lavagem/hora ($) — deixar vazio para negócios normais</span>
+                    <input type="number" step="500" min="0"
+                      value={form.launder_cap_per_hour ?? ""}
+                      onChange={e => setForm(f => ({ ...f, launder_cap_per_hour: e.target.value === "" ? null : Number(e.target.value) }))}
+                      placeholder="Ex: 20000"
+                      className="w-full bg-[#0a0a0a] border border-[#333] rounded-lg px-3 py-2 text-sm text-white" />
+                  </label>
 
                   <p className="text-[10px] uppercase tracking-widest text-[#555] pt-2">Heat & Risco (v2)</p>
                   <div className="grid grid-cols-2 gap-3">
