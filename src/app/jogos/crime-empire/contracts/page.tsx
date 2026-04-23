@@ -648,7 +648,7 @@ function ThreeCardFan({
 
   return (
     <div
-      className="flex items-start justify-center"
+      className="flex items-start justify-end pr-4 md:pr-10"
       style={{ perspective: "1100px", perspectiveOrigin: "50% 20%" }}
     >
       {sorted.map((contract) => {
@@ -757,14 +757,19 @@ export default function ContractsPage() {
     fetchData();
   }, [user, fetchData, router]);
 
-  /* Auto-select first available contract */
+  /* Auto-select medium contract on load so it starts centered; fall back to first available */
   useEffect(() => {
     if (contracts.length && !selected) {
-      const first = contracts.find((c) => {
+      const medium = contracts.find((c) => {
+        const st = playerContracts.find((pc) => pc.contract_id === c.id)?.status ?? null;
+        return st !== "completed" && c.difficulty === "medium";
+      });
+      const fallback = contracts.find((c) => {
         const st = playerContracts.find((pc) => pc.contract_id === c.id)?.status ?? null;
         return st !== "completed";
       });
-      if (first) setSelected(first.id);
+      const pick = medium ?? fallback;
+      if (pick) setSelected(pick.id);
     }
   }, [contracts, playerContracts, selected]);
 
