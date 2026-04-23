@@ -68,9 +68,15 @@ export async function GET() {
     .eq("player_id", player.id)
     .not("businesses.type", "in", `(${brothelTypes.join(",")})`);
 
+  // Normalise owned businesses: expose the player_business UUID as `pb_id`
+  const normalisedOwned = (ownedBusinesses ?? []).map((pb: any) => ({
+    ...pb,
+    pb_id: pb.id, // the player_business UUID used for management route
+  }));
+
   return NextResponse.json({
     businesses: businesses || [],
-    ownedBusinesses: ownedBusinesses || [],
+    ownedBusinesses: normalisedOwned,
     player: {
       level: player.level,
       dirty_cash: player.dirty_cash,

@@ -1,315 +1,366 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import {
+  BUSINESS_DEFS,
+  STATUS_META,
+  type BusinessStatus,
+  type ProductionLevel,
+  type RiskLevel,
+} from "@/lib/business-defs";
 
+// ── types ─────────────────────────────────────────────────────────────────────
 interface Business {
-  id: string;
-  name: string;
-  type: string;
-  description: string;
-  purchase_price: number;
-  base_income_per_hour: number;
-  max_employees: number;
-  employee_cost_per_hour: number;
-  required_level: number;
+  id: string; name: string; type: string; description: string;
+  purchase_price: number; base_income_per_hour: number;
+  max_employees: number; required_level: number;
+  heat_per_hour?: number; risk_level?: string; tagline?: string;
 }
-
 interface OwnedBusiness {
-  id: string;
-  business_id: string;
-  employees: number;
-  max_employees: number;
-  last_collection: string;
-  last_wage_payment: string;
+  id: string; pb_id: string; business_id: string; employees: number;
+  max_employees: number; last_collection: string; upgrade_level: number;
+  production_level: ProductionLevel; status: BusinessStatus; heat: number;
   business: Business;
 }
+interface Player { level: number; cash: number; dirty_cash: number; class: string; }
 
+// ── helpers ───────────────────────────────────────────────────────────────────
+function heatColor(h: number) {
+  if (h < 30) return "#22c55e";
+  if (h < 60) return "#eab308";
+  if (h < 80) return "#f97316";
+  return "#ef4444";
+}
+function riskBadge(risk?: string) {
+  if (risk === "high")   return <span className="text-xs px-1.5 py-0.5 rounded-full bg-red-500/10 border border-red-500/30 text-red-400">🔴 Alto</span>;
+  if (risk === "medium") return <span className="text-xs px-1.5 py-0.5 rounded-full bg-yellow-500/10 border border-yellow-500/30 text-yellow-400">🟡 Médio</span>;
+  return <span className="text-xs px-1.5 py-0.5 rounded-full bg-green-500/10 border border-green-500/30 text-green-400">🟢 Baixo</span>;
+}
+
+// ── Owned Business Card ───────────────────────────────────────────────────────
+function OwnedCard({ ob, onView }: { ob: OwnedBusiness; onView: () => void }) {
+  const def = BUSINESS_DEFS[ob.business.type];
+  const status = ob.status ?? "running";
+  const statusMeta = STATUS_META[status as BusinessStatus] ?? STATUS_META.running;
+  const heatPct = Math.min(100, ob.heat ?? 0);
+  const hoursElapsed = (Date.now() - new Date(ob.last_collection).getTime()) / 3_600_000;
+  const accumulated = Math.floor(hoursElapsed * ob.business.base_income_per_hour);
+
+  return (
+    <div
+      className="rounded-2xl border overflow-hidden flex flex-col transition-all hover:border-orange-500/30 cursor-pointer"
+      style={{ background: "#111", borderColor: "rgba(255,255,255,0.07)" }}
+      onClick={onView}
+    >
+      {/* top gradient band */}
+      <div className="h-1" style={{ background: status === "raided" ? "#ef4444" : status === "idle" ? "#eab308" : "#ff6a00" }} />
+
+      <div className="p-4 flex gap-3">
+        <span className="text-4xl flex-shrink-0">{def?.icon ?? "🏢"}</span>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-start justify-between gap-2">
+            <p className="font-black text-white truncate">{ob.business.name}</p>
+            <span className={`text-xs font-bold px-2 py-0.5 rounded-full border flex-shrink-0 ${statusMeta.bg} ${statusMeta.color}`}>
+              ● {statusMeta.label}
+            </span>
+          </div>
+          <p className="text-xs text-gray-500 mt-0.5">{def?.tagline ?? ob.business.description}</p>
+        </div>
+      </div>
+
+      {/* stats */}
+      <div className="px-4 pb-3 grid grid-cols-3 gap-2 text-center text-xs">
+        <div className="rounded-lg p-2" style={{ background: "#0d0d0d" }}>
+          <p className="text-gray-500">Income/hr</p>
+          <p className="text-orange-400 font-bold">${ob.business.base_income_per_hour.toLocaleString()}</p>
+        </div>
+        <div className="rounded-lg p-2" style={{ background: "#0d0d0d" }}>
+          <p className="text-gray-500">Acumulado</p>
+          <p className="text-yellow-400 font-bold">${accumulated.toLocaleString()}</p>
+        </div>
+        <div className="rounded-lg p-2" style={{ background: "#0d0d0d" }}>
+          <p className="text-gray-500">Trab.</p>
+          <p className="text-blue-400 font-bold">{ob.employees}/{ob.max_employees}</p>
+        </div>
+      </div>
+
+      {/* heat bar */}
+      <div className="px-4 pb-4">
+        <div className="flex justify-between text-xs mb-1">
+          <span className="text-gray-600">🌡️ Calor</span>
+          <span style={{ color: heatColor(heatPct) }}>{heatPct.toFixed(0)}%</span>
+        </div>
+        <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.07)" }}>
+          <div
+            className={`h-full rounded-full ${heatPct >= 85 ? "animate-pulse" : ""}`}
+            style={{ width: `${heatPct}%`, background: heatColor(heatPct) }}
+          />
+        </div>
+      </div>
+
+      {/* CTA */}
+      <div className="px-4 pb-4">
+        <button
+          onClick={(e) => { e.stopPropagation(); onView(); }}
+          className="w-full py-2.5 rounded-xl font-black text-sm bg-gradient-to-r from-[#ff6a00] to-[#ff8533] hover:from-[#ff8533] hover:to-[#ff6a00] transition-all shadow-lg shadow-orange-900/20"
+        >
+          ⚙️ Gerir Negócio
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ── Available Business Card ───────────────────────────────────────────────────
+function AvailableCard({ business, playerLevel, playerCash, onBuy, processing }: {
+  business: Business; playerLevel: number; playerCash: number;
+  onBuy: (id: string) => void; processing: boolean;
+}) {
+  const def = BUSINESS_DEFS[business.type];
+  const locked = playerLevel < business.required_level;
+  const canAfford = playerCash >= business.purchase_price;
+
+  return (
+    <div
+      className={`rounded-2xl border overflow-hidden flex flex-col transition-all ${locked ? "opacity-50 grayscale" : "hover:border-orange-500/20"}`}
+      style={{ background: "#111", borderColor: "rgba(255,255,255,0.07)" }}
+    >
+      <div className="h-1" style={{ background: locked ? "#374151" : "rgba(255,106,0,0.4)" }} />
+
+      <div className="p-4 flex gap-3">
+        <span className="text-4xl flex-shrink-0">{def?.icon ?? "🏢"}</span>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-start justify-between gap-2">
+            <p className="font-black text-white truncate">{business.name}</p>
+            {locked && (
+              <span className="text-xs px-2 py-0.5 rounded-full bg-gray-700 border border-gray-600 text-gray-400 flex-shrink-0">
+                🔒 Nv.{business.required_level}
+              </span>
+            )}
+          </div>
+          <p className="text-xs text-gray-500 mt-0.5 line-clamp-1">{def?.tagline ?? business.description}</p>
+        </div>
+      </div>
+
+      <div className="px-4 pb-3 flex flex-wrap gap-2 text-xs">
+        {riskBadge(def?.risk_level ?? (business.risk_level as RiskLevel | undefined))}
+        <span className="px-1.5 py-0.5 rounded-full bg-[#1a1a1a] border border-white/10 text-gray-400">
+          👥 Máx {business.max_employees} trabalhadores
+        </span>
+        <span className="px-1.5 py-0.5 rounded-full bg-[#1a1a1a] border border-white/10 text-gray-400">
+          Nv.{business.required_level}+
+        </span>
+      </div>
+
+      <div className="px-4 pb-3 grid grid-cols-2 gap-2 text-xs text-center">
+        <div className="rounded-lg p-2" style={{ background: "#0d0d0d" }}>
+          <p className="text-gray-500">Rendimento base</p>
+          <p className="text-orange-400 font-bold">${business.base_income_per_hour.toLocaleString()}/hr</p>
+        </div>
+        <div className="rounded-lg p-2" style={{ background: "#0d0d0d" }}>
+          <p className="text-gray-500">Preço</p>
+          <p className={`font-bold ${canAfford ? "text-green-400" : "text-red-400"}`}>
+            ${business.purchase_price.toLocaleString()}
+          </p>
+        </div>
+      </div>
+
+      {def?.unique_mechanic && (
+        <p className="px-4 pb-2 text-xs text-gray-600 italic">{def.unique_mechanic}</p>
+      )}
+
+      <div className="px-4 pb-4 mt-auto">
+        {locked ? (
+          <div className="w-full py-2.5 rounded-xl text-sm font-bold text-center border border-gray-700 text-gray-600 cursor-not-allowed">
+            Nível {business.required_level} necessário
+          </div>
+        ) : (
+          <button
+            onClick={() => onBuy(business.id)}
+            disabled={processing || !canAfford}
+            className={`w-full py-2.5 rounded-xl font-black text-sm transition-all ${
+              canAfford
+                ? "bg-gradient-to-r from-green-700 to-green-600 hover:from-green-600 hover:to-green-500 shadow-lg shadow-green-900/20"
+                : "border border-gray-700 text-gray-500 cursor-not-allowed"
+            } disabled:opacity-50`}
+          >
+            {canAfford ? `💰 Comprar por $${business.purchase_price.toLocaleString()}` : "Sem fundos suficientes"}
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── main page ─────────────────────────────────────────────────────────────────
 export default function BusinessesPage() {
   const { user } = useAuth();
   const router = useRouter();
+
   const [loading, setLoading] = useState(true);
   const [businesses, setBusinesses] = useState<Business[]>([]);
   const [ownedBusinesses, setOwnedBusinesses] = useState<OwnedBusiness[]>([]);
-  const [player, setPlayer] = useState<any>(null);
-  const [selectedBusiness, setSelectedBusiness] = useState<string | null>(null);
-  const [launderAmount, setLaunderAmount] = useState("");
+  const [player, setPlayer] = useState<Player | null>(null);
   const [processing, setProcessing] = useState(false);
+  const [toast, setToast] = useState<{ msg: string; type: "success" | "error" } | null>(null);
 
-  useEffect(() => {
-    if (!user) {
-      router.push("/");
-      return;
-    }
-    fetchData();
-  }, [user]);
+  const showToast = (msg: string, type: "success" | "error" = "success") => {
+    setToast({ msg, type });
+    setTimeout(() => setToast(null), 4000);
+  };
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     try {
       const res = await fetch("/api/crime-empire/businesses");
       const data = await res.json();
       setBusinesses(data.businesses || []);
       setOwnedBusinesses(data.ownedBusinesses || []);
       setPlayer(data.player);
-    } catch (error) {
-      console.error("Error fetching businesses:", error);
+    } catch {
+      showToast("Erro ao carregar negócios", "error");
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const handleAction = async (action: string, businessId: string, amount?: number) => {
+  useEffect(() => {
+    if (!user) { router.push("/"); return; }
+    fetchData();
+  }, [user, fetchData, router]);
+
+  const handleBuy = async (businessId: string) => {
     setProcessing(true);
     try {
       const res = await fetch("/api/crime-empire/businesses", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action, businessId, amount }),
+        body: JSON.stringify({ action: "purchase", businessId }),
       });
-
       const data = await res.json();
-
-      if (data.success) {
-        alert(data.message || `${action} successful!`);
-        fetchData();
-      } else {
-        alert(data.error || `Failed to ${action}`);
-      }
-    } catch (error) {
-      console.error("Error:", error);
-      alert("An error occurred");
+      if (data.success) { showToast(data.message || "Negócio comprado!"); await fetchData(); }
+      else showToast(data.error || "Erro ao comprar", "error");
+    } catch {
+      showToast("Erro de rede", "error");
     } finally {
       setProcessing(false);
-      setSelectedBusiness(null);
-      setLaunderAmount("");
     }
   };
 
-  const getTimeSinceCollection = (lastCollection: string) => {
-    const now = new Date();
-    const last = new Date(lastCollection);
-    const hours = (now.getTime() - last.getTime()) / (1000 * 60 * 60);
-    if (hours < 1) return `${Math.floor(hours * 60)}m`;
-    return `${Math.floor(hours)}h`;
-  };
-
-  if (loading) {
-    return (
-      <div className="flex-1 flex items-center justify-center">
-        <div className="text-white text-xl">A carregar...</div>
-      </div>
-    );
-  }
-
-  const availableBusinesses = businesses.filter(
-    (b) => !ownedBusinesses.find((ob) => ob.business_id === b.id)
+  if (loading) return (
+    <div className="flex-1 flex items-center justify-center" style={{ background: "#0B0B0B" }}>
+      <p className="text-white text-xl">A carregar...</p>
+    </div>
   );
 
+  const ownedIds = new Set(ownedBusinesses.map((ob) => ob.business_id));
+  const available = businesses.filter((b) => !ownedIds.has(b.id));
+
   return (
-    <div className="flex-1 text-white py-12 px-6">
-      <div className="max-w-7xl mx-auto">
-        <div className="flex justify-between items-start mb-8">
+    <div className="flex-1 text-white min-h-screen" style={{ background: "#0B0B0B" }}>
+      {/* Toast */}
+      {toast && (
+        <div className={`fixed top-4 right-4 z-50 px-4 py-3 rounded-xl shadow-2xl border text-sm font-medium ${
+          toast.type === "error" ? "bg-red-900/90 border-red-500/50 text-red-100" : "bg-[#1a1a1a] border-orange-500/40 text-white"
+        }`}>
+          {toast.msg}
+        </div>
+      )}
+
+      <div className="py-6 px-4 md:px-8 max-w-7xl mx-auto space-y-8">
+        {/* ── Header ──────────────────────────────────────────────────────────── */}
+        <div className="flex flex-col md:flex-row md:items-end gap-4 justify-between">
           <div>
-            <h1 className="text-4xl font-black mb-2 bg-gradient-to-r from-[#ff6a00] to-[#ff8533] bg-clip-text text-transparent">
-              🏢 NEGÓCIOS
-            </h1>
-            <p className="text-[#888888]">
-              Gere os teus negócios ilegais e maximiza os lucros
-            </p>
+            <p className="text-xs text-gray-600 uppercase tracking-widest mb-1">Crime Empire</p>
+            <h1 className="text-3xl font-black text-white">Os Meus Negócios</h1>
+            <p className="text-gray-500 text-sm mt-1">Gere o teu império criminoso. Contrata pessoal, controla a produção, evita a polícia.</p>
           </div>
-          <div className="text-right">
-            <p className="text-sm text-[#888888]">Dinheiro Limpo</p>
-            <p className="text-2xl font-bold text-green-400">
-              ${player?.cash.toLocaleString()}
-            </p>
-            <p className="text-sm text-[#888888] mt-2">Dinheiro Sujo</p>
-            <p className="text-xl font-bold text-yellow-400">
-              ${player?.dirty_cash.toLocaleString()}
-            </p>
-          </div>
+          {player && (
+            <div className="flex gap-3 text-sm flex-shrink-0">
+              <div className="rounded-xl px-4 py-2 border text-center" style={{ background: "#111", borderColor: "rgba(255,255,255,0.07)" }}>
+                <p className="text-gray-500 text-xs">Dinheiro Limpo</p>
+                <p className="text-green-400 font-bold">${player.cash.toLocaleString()}</p>
+              </div>
+              <div className="rounded-xl px-4 py-2 border text-center" style={{ background: "#111", borderColor: "rgba(255,255,255,0.07)" }}>
+                <p className="text-gray-500 text-xs">Dinheiro Sujo</p>
+                <p className="text-yellow-400 font-bold">${player.dirty_cash.toLocaleString()}</p>
+              </div>
+              <div className="rounded-xl px-4 py-2 border text-center" style={{ background: "#111", borderColor: "rgba(255,255,255,0.07)" }}>
+                <p className="text-gray-500 text-xs">Nível</p>
+                <p className="text-orange-400 font-bold">{player.level}</p>
+              </div>
+            </div>
+          )}
         </div>
 
-        {/* Owned Businesses */}
+        {/* ── Owned businesses ─────────────────────────────────────────────────── */}
         {ownedBusinesses.length > 0 && (
-          <>
-            <h2 className="text-2xl font-bold mb-4">Os Teus Negócios</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-12">
+          <section>
+            <div className="flex items-center gap-3 mb-4">
+              <p className="font-black text-white text-sm uppercase tracking-widest">Os Meus Negócios</p>
+              <span className="px-2 py-0.5 rounded-full text-xs bg-orange-500/10 border border-orange-500/30 text-orange-400">
+                {ownedBusinesses.length}
+              </span>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {ownedBusinesses.map((ob) => (
-                <div
+                <OwnedCard
                   key={ob.id}
-                  className="p-6 rounded-xl bg-gradient-to-br from-[#1a1a1a] to-[#121212] border-2 border-[#ff6a00]"
-                >
-                  <div className="flex justify-between items-start mb-4">
-                    <div>
-                      <h3 className="text-xl font-bold text-[#ff6a00]">
-                        {ob.business.name}
-                      </h3>
-                      <p className="text-sm text-[#888888]">{ob.business.description}</p>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-3 mb-4">
-                    <div className="p-3 rounded-lg bg-[#0a0a0a]">
-                      <p className="text-xs text-[#888888]">Workers</p>
-                      <p className="text-lg font-bold">
-                        {ob.employees}/{ob.max_employees}
-                      </p>
-                    </div>
-                    <div className="p-3 rounded-lg bg-[#0a0a0a]">
-                      <p className="text-xs text-[#888888]">Última Coleta</p>
-                      <p className="text-lg font-bold">
-                        {getTimeSinceCollection(ob.last_collection)}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-2 mb-4">
-                    <button
-                      onClick={() =>
-                        ob.employees < ob.max_employees &&
-                        handleAction("hire", ob.business_id, 1)
-                      }
-                      disabled={processing || ob.employees >= ob.max_employees}
-                      className="px-4 py-2 rounded-lg bg-green-600 hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium text-sm transition-all"
-                    >
-                      + Contratar
-                    </button>
-                    <button
-                      onClick={() =>
-                        ob.employees > 0 && handleAction("fire", ob.business_id, 1)
-                      }
-                      disabled={processing || ob.employees === 0}
-                      className="px-4 py-2 rounded-lg bg-red-600 hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium text-sm transition-all"
-                    >
-                      - Despedir
-                    </button>
-                  </div>
-
-                  {ob.business.type === "chop_shop" || ob.business.type === "offshore_bank" || ob.business.type === "shell_company" ? (
-                    <div>
-                      <input
-                        type="number"
-                        placeholder="Quantia sujo"
-                        value={launderAmount}
-                        onChange={(e) => setLaunderAmount(e.target.value)}
-                        className="w-full px-4 py-2 rounded-lg bg-[#0a0a0a] border border-[#222222] mb-2 text-white"
-                      />
-                      <button
-                        onClick={() => {
-                          const amount = parseInt(launderAmount);
-                          if (amount > 0) {
-                            handleAction("launder", ob.business_id, amount);
-                          }
-                        }}
-                        disabled={processing || !launderAmount || parseInt(launderAmount) <= 0}
-                        className="w-full px-4 py-3 rounded-lg bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 disabled:opacity-50 disabled:cursor-not-allowed font-bold transition-all"
-                      >
-                        {ob.business.type === "chop_shop" && (
-                          <>💧 Lavar Dinheiro ({ob.employees > 0 ? `${(player?.class === "scammer" ? 70 : 60) + ob.employees * 3}%${player?.class === "scammer" ? " 🎭" : ""}` : "Precisa Workers"})</>
-                        )}
-                        {ob.business.type === "offshore_bank" && (
-                          <>💧 Lavar Dinheiro ({ob.employees > 0 ? `${(player?.class === "scammer" ? 80 : 70) + ob.employees * 2}%${player?.class === "scammer" ? " 🎭" : ""}` : "Precisa Workers"})</>
-                        )}
-                        {ob.business.type === "shell_company" && (
-                          <>💧 Lavar Dinheiro ({ob.employees > 0 ? `${Math.min(player?.class === "scammer" ? 99 : 98, (player?.class === "scammer" ? 90 : 80) + Math.floor(ob.employees * 1.5))}%${player?.class === "scammer" ? " 🎭" : ""}` : "Precisa Workers"})</>
-                        )}
-                      </button>
-                    </div>
-                  ) : (
-                    <button
-                      onClick={() => handleAction("collect", ob.business_id)}
-                      disabled={processing}
-                      className="w-full px-4 py-3 rounded-lg bg-gradient-to-r from-[#ff6a00] to-[#ff8533] hover:from-[#ff8533] hover:to-[#ff6a00] disabled:opacity-50 disabled:cursor-not-allowed font-bold transition-all"
-                    >
-                      💰 Coletar
-                    </button>
-                  )}
-
-                  <p className="text-xs text-[#666666] mt-3 text-center">
-                    Custo semanal: ${(ob.employees * ob.business.employee_cost_per_hour * 168).toLocaleString()}
-                  </p>
-                </div>
+                  ob={ob}
+                  onView={() => router.push(`/jogos/crime-empire/businesses/${ob.pb_id ?? ob.id}`)}
+                />
               ))}
             </div>
-          </>
+          </section>
         )}
 
-        {/* Available Businesses */}
-        <h2 className="text-2xl font-bold mb-4">Negócios Disponíveis</h2>
-        {availableBusinesses.length === 0 ? (
-          <div className="p-8 rounded-xl bg-[#121212] border border-[#222222] text-center">
-            <p className="text-[#888888]">
-              🎉 Já tens todos os negócios disponíveis!
-            </p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {availableBusinesses.map((business) => {
-              const canAfford = player.cash >= business.purchase_price;
-              const meetsLevel = player.level >= business.required_level;
-              const canPurchase = canAfford && meetsLevel;
-
-              return (
-                <div
-                  key={business.id}
-                  className={`p-6 rounded-xl border-2 transition-all ${
-                    canPurchase
-                      ? "bg-[#1a1a1a] border-[#333333] hover:border-[#ff6a00]"
-                      : "bg-[#0f0f0f] border-[#222222] opacity-60"
-                  }`}
-                >
-                  <h3 className="text-xl font-bold mb-2">{business.name}</h3>
-                  <p className="text-sm text-[#888888] mb-4 h-12">
-                    {business.description}
-                  </p>
-
-                  <div className="space-y-2 mb-4">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-[#888888]">Preço:</span>
-                      <span className={canAfford ? "text-green-400" : "text-red-400"}>
-                        ${business.purchase_price.toLocaleString()}
-                      </span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-[#888888]">Level Required:</span>
-                      <span className={meetsLevel ? "text-green-400" : "text-red-400"}>
-                        {business.required_level}
-                      </span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-[#888888]">Max Workers:</span>
-                      <span className="text-blue-400">{business.max_employees}</span>
-                    </div>
-                  </div>
-
-                  <button
-                    onClick={() => handleAction("purchase", business.id)}
-                    disabled={!canPurchase || processing}
-                    className="w-full px-4 py-3 rounded-lg bg-gradient-to-r from-[#ff6a00] to-[#ff8533] hover:from-[#ff8533] hover:to-[#ff6a00] disabled:opacity-50 disabled:cursor-not-allowed font-bold transition-all"
-                  >
-                    {!meetsLevel
-                      ? `Level ${business.required_level} Necessário`
-                      : !canAfford
-                      ? "Sem Dinheiro"
-                      : "Comprar"}
-                  </button>
-                </div>
-              );
-            })}
+        {/* ── Empty owned ──────────────────────────────────────────────────────── */}
+        {ownedBusinesses.length === 0 && (
+          <div className="rounded-2xl border p-10 text-center" style={{ background: "#111", borderColor: "rgba(255,255,255,0.07)" }}>
+            <p className="text-4xl mb-3">🏚️</p>
+            <p className="text-white font-bold text-lg">Ainda não tens negócios</p>
+            <p className="text-gray-500 text-sm mt-1">Compra o teu primeiro negócio abaixo para começar a acumular rendimento.</p>
           </div>
         )}
 
-        <div className="mt-8 text-center">
-          <Link
-            href="/jogos/crime-empire/dashboard"
-            className="inline-block px-6 py-3 rounded-lg bg-[#222222] hover:bg-[#2a2a2a] border border-[#333333] font-medium transition-all"
-          >
-            ← Voltar ao Dashboard
-          </Link>
-        </div>
+        {/* ── Divider ──────────────────────────────────────────────────────────── */}
+        {available.length > 0 && (
+          <div className="border-t" style={{ borderColor: "rgba(255,255,255,0.05)" }} />
+        )}
+
+        {/* ── Available businesses ─────────────────────────────────────────────── */}
+        {available.length > 0 && (
+          <section>
+            <div className="flex items-center gap-3 mb-4">
+              <p className="font-black text-white text-sm uppercase tracking-widest">Mercado Negro</p>
+              <span className="text-xs text-gray-500">{available.length} disponíveis</span>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {available.map((b) => (
+                <AvailableCard
+                  key={b.id}
+                  business={b}
+                  playerLevel={player?.level ?? 1}
+                  playerCash={player?.cash ?? 0}
+                  onBuy={handleBuy}
+                  processing={processing}
+                />
+              ))}
+            </div>
+          </section>
+        )}
+
+        {available.length === 0 && ownedBusinesses.length > 0 && (
+          <div className="rounded-2xl border p-8 text-center" style={{ background: "#111", borderColor: "rgba(255,255,255,0.07)" }}>
+            <p className="text-3xl mb-2">🎉</p>
+            <p className="text-white font-bold">Já tens todos os negócios disponíveis!</p>
+          </div>
+        )}
       </div>
     </div>
   );
 }
+
+

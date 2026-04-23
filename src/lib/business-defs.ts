@@ -1,0 +1,629 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// CRIME EMPIRE — BUSINESS DEFINITIONS
+// All static game data: worker pools, upgrade trees, event pools per type.
+// ─────────────────────────────────────────────────────────────────────────────
+
+export type SkillType = "production" | "efficiency" | "stealth";
+export type TraitType =
+  | "loyal"
+  | "lazy"
+  | "risky"
+  | "efficient"
+  | "paranoid"
+  | "greedy"
+  | "dedicated";
+export type ProductionLevel = "low" | "normal" | "overdrive";
+export type RiskLevel = "low" | "medium" | "high";
+export type BusinessStatus = "running" | "idle" | "raided" | "suspended";
+
+// ── Worker ──────────────────────────────────────────────────────────────────
+export interface WorkerDef {
+  id: string;
+  name: string;
+  skill: SkillType;
+  trait: TraitType;
+  salary: number; // per hour (deducted from income)
+  production_bonus: number; // multiplier added to income  0.0–0.50
+  efficiency_bonus: number; // reduces effective salary cost  0.0–0.30
+  stealth_bonus: number; // reduces heat generation  0.0–0.30
+  description: string; // flavour
+}
+
+// ── Upgrade ─────────────────────────────────────────────────────────────────
+export interface UpgradeDef {
+  id: string;
+  name: string;
+  description: string;
+  cost: number;
+  icon: string;
+  income_bonus: number; // additive multiplier e.g. 0.25 = +25%
+  heat_reduction: number; // fraction 0.0–0.50
+  capacity_bonus: number; // extra max_employees
+}
+
+// ── Event ───────────────────────────────────────────────────────────────────
+export interface EventChoice {
+  id: string;
+  label: string;
+  cash_cost?: number;
+  dirty_cost?: number;
+  heat_change: number; // negative = reduces heat
+  cash_gain?: number;
+  dirty_gain?: number;
+  outcome: string; // message after choice
+  success_chance?: number; // if undefined = 100%
+  fail_outcome?: string;
+  fail_heat_change?: number;
+}
+
+export interface EventDef {
+  id: string;
+  title: string;
+  description: string;
+  icon: string;
+  severity: "info" | "warning" | "danger";
+  min_heat: number; // minimum heat to spawn (0 = always eligible)
+  base_chance: number; // 0–1 chance per collect attempt
+  expires_hours: number;
+  choices: EventChoice[];
+}
+
+// ── Business type ────────────────────────────────────────────────────────────
+export interface BusinessTypeDef {
+  type: string;
+  label: string;
+  icon: string;
+  tagline: string;
+  description_short: string;
+  risk_level: RiskLevel;
+  heat_per_hour: number; // at normal production
+  income_type: "dirty_cash" | "launder"; // launder = converts dirty→clean
+  unique_mechanic: string; // one-liner description
+  production_multipliers: { low: number; normal: number; overdrive: number };
+  heat_multipliers: { low: number; normal: number; overdrive: number };
+  worker_pool: WorkerDef[];
+  upgrades: UpgradeDef[];
+  events: EventDef[];
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// TRAIT META
+// ─────────────────────────────────────────────────────────────────────────────
+export const TRAIT_META: Record<TraitType, { label: string; color: string; icon: string }> = {
+  loyal:     { label: "Leal",        color: "text-blue-400",   icon: "🤝" },
+  lazy:      { label: "Preguiçoso",  color: "text-gray-400",   icon: "😴" },
+  risky:     { label: "Arriscado",   color: "text-red-400",    icon: "⚡" },
+  efficient: { label: "Eficiente",   color: "text-green-400",  icon: "⚙️" },
+  paranoid:  { label: "Paranoico",   color: "text-purple-400", icon: "👁️" },
+  greedy:    { label: "Ganancioso",  color: "text-yellow-500", icon: "💰" },
+  dedicated: { label: "Dedicado",    color: "text-orange-400", icon: "🔥" },
+};
+
+export const SKILL_META: Record<SkillType, { label: string; icon: string }> = {
+  production: { label: "Produção",    icon: "🔧" },
+  efficiency: { label: "Eficiência",  icon: "⚙️" },
+  stealth:    { label: "Furtividade", icon: "🎭" },
+};
+
+export const PRODUCTION_META: Record<ProductionLevel, {
+  label: string; income: number; heat: number; color: string;
+}> = {
+  low:       { label: "Baixa",     income: 0.35, heat: 0.30, color: "text-green-400" },
+  normal:    { label: "Normal",    income: 1.00, heat: 1.00, color: "text-yellow-400" },
+  overdrive: { label: "Overdrive", income: 1.75, heat: 2.50, color: "text-red-400" },
+};
+
+export const STATUS_META: Record<BusinessStatus, { label: string; color: string; bg: string }> = {
+  running:   { label: "Ativo",      color: "text-green-400",  bg: "bg-green-400/10 border-green-400/30" },
+  idle:      { label: "Inativo",    color: "text-yellow-400", bg: "bg-yellow-400/10 border-yellow-400/30" },
+  raided:    { label: "Invadido!",  color: "text-red-400",    bg: "bg-red-400/10 border-red-400/30" },
+  suspended: { label: "Suspenso",   color: "text-gray-400",   bg: "bg-gray-400/10 border-gray-400/30" },
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// BUSINESS DEFINITIONS
+// ─────────────────────────────────────────────────────────────────────────────
+
+const WEED_FARM: BusinessTypeDef = {
+  type: "weed_farm",
+  label: "Quinta de Cannabis",
+  icon: "🌿",
+  tagline: "Cultiva e vende cannabis de alta qualidade",
+  description_short: "Negócio de cultivo com risco policial constante. Gere bem os teus trabalhadores e mantém o calor baixo.",
+  risk_level: "medium",
+  heat_per_hour: 8,
+  income_type: "dirty_cash",
+  unique_mechanic: "Calor policial — quanto mais produzires, maior a chance de inspeção",
+  production_multipliers: { low: 0.35, normal: 1.0, overdrive: 1.75 },
+  heat_multipliers:       { low: 0.30, normal: 1.0, overdrive: 2.50 },
+  worker_pool: [
+    { id: "wf_carlos",  name: "Carlos",  skill: "production", trait: "loyal",     salary: 45, production_bonus: 0.18, efficiency_bonus: 0.05, stealth_bonus: 0.05, description: "Trabalha com dedicação e nunca falta" },
+    { id: "wf_joao",    name: "João",    skill: "stealth",    trait: "paranoid",  salary: 52, production_bonus: -0.05, efficiency_bonus: 0,   stealth_bonus: 0.25, description: "Extremamente discreto, nunca atrai atenção" },
+    { id: "wf_miguel",  name: "Miguel",  skill: "production", trait: "risky",     salary: 58, production_bonus: 0.32, efficiency_bonus: 0,   stealth_bonus: -0.15, description: "Produz muito mas é imprudente" },
+    { id: "wf_rui",     name: "Rui",     skill: "efficiency", trait: "efficient", salary: 40, production_bonus: 0.08, efficiency_bonus: 0.28, stealth_bonus: 0.05, description: "Otimiza cada recurso ao máximo" },
+    { id: "wf_paulo",   name: "Paulo",   skill: "production", trait: "greedy",    salary: 35, production_bonus: 0.14, efficiency_bonus: 0,   stealth_bonus: -0.05, description: "Pode desviar dinheiro da caixa" },
+    { id: "wf_tiago",   name: "Tiago",   skill: "production", trait: "dedicated", salary: 60, production_bonus: 0.22, efficiency_bonus: 0.10, stealth_bonus: 0.12, description: "Totalmente comprometido com o negócio" },
+    { id: "wf_andre",   name: "André",   skill: "efficiency", trait: "lazy",      salary: 28, production_bonus: -0.18, efficiency_bonus: 0.10, stealth_bonus: 0.03, description: "Faz o mínimo possível" },
+    { id: "wf_nuno",    name: "Nuno",    skill: "stealth",    trait: "paranoid",  salary: 54, production_bonus: -0.03, efficiency_bonus: 0,   stealth_bonus: 0.30, description: "Obcecado com segurança e discrição" },
+  ],
+  upgrades: [
+    { id: "wf_lights",   name: "Iluminação LED",         description: "Sistema de iluminação especial aumenta produção em 25%",   cost: 5000,  icon: "💡", income_bonus: 0.25, heat_reduction: 0,    capacity_bonus: 0 },
+    { id: "wf_cameras",  name: "Câmeras de Segurança",   description: "Sistema de vigilância avançado reduz calor em 30%",        cost: 8000,  icon: "📷", income_bonus: 0,    heat_reduction: 0.30, capacity_bonus: 0 },
+    { id: "wf_van",      name: "Van de Distribuição",    description: "Distribuição direta a clientes aumenta lucros em 35%",     cost: 12000, icon: "🚐", income_bonus: 0.35, heat_reduction: 0,    capacity_bonus: 0 },
+    { id: "wf_estufa",   name: "Estufa Avançada",        description: "Expansão do espaço: +3 trabalhadores e +20% produção",     cost: 20000, icon: "🏠", income_bonus: 0.20, heat_reduction: 0,    capacity_bonus: 3 },
+  ],
+  events: [
+    {
+      id: "wf_supplier", title: "Fornecedor de Sementes", icon: "🌱", severity: "info", min_heat: 0, base_chance: 0.12, expires_hours: 12,
+      description: "Um fornecedor contactou-te com sementes de qualidade superior por um preço especial.",
+      choices: [
+        { id: "buy",    label: "Comprar ($2.000)",   cash_cost: 2000, heat_change: 2,  dirty_gain: 8000, outcome: "Ótimo negócio! As novas sementes vão render muito mais." },
+        { id: "ignore", label: "Ignorar",             heat_change: 0,                              outcome: "Passaste a oportunidade. Próxima vez talvez." },
+      ],
+    },
+    {
+      id: "wf_steal", title: "Trabalhador Ladrão", icon: "🤬", severity: "warning", min_heat: 0, base_chance: 0.10, expires_hours: 8,
+      description: "Um dos teus trabalhadores foi apanhado a desviar produto para venda própria.",
+      choices: [
+        { id: "fire",   label: "Despedir (perde 1 worker)",  heat_change: -5,  outcome: "Despediste o ladrão. A equipa está mais concentrada agora." },
+        { id: "pay",    label: "Comprar silêncio ($1.500)",  cash_cost: 1500, heat_change: -10, outcome: "Pagaste o silêncio. O trabalhador ficou e está 'grato'." },
+      ],
+    },
+    {
+      id: "wf_inspection", title: "Inspeção Policial", icon: "🚔", severity: "danger", min_heat: 55, base_chance: 0.18, expires_hours: 6,
+      description: "Informação chegou de que a polícia planeia fazer uma inspeção à tua quinta.",
+      choices: [
+        { id: "bribe",    label: "Subornar ($3.500)",    cash_cost: 3500,  heat_change: -25, outcome: "O polícia saiu de mãos cheias. Inspeção cancelada.", success_chance: 0.80, fail_outcome: "O suborno foi recusado! A polícia vai aparecer.", fail_heat_change: 15 },
+        { id: "shutdown", label: "Fechar temporariamente", heat_change: -30,              outcome: "Fechaste tudo. Sem produção por enquanto, mas estás seguro." },
+      ],
+    },
+    {
+      id: "wf_equipment", title: "Avaria de Equipamento", icon: "🔧", severity: "warning", min_heat: 0, base_chance: 0.08, expires_hours: 16,
+      description: "O sistema de rega avariou. A produção está a ser afetada.",
+      choices: [
+        { id: "repair",  label: "Reparar ($1.200)",  cash_cost: 1200, heat_change: 0, outcome: "Equipamento reparado. Produção voltou ao normal." },
+        { id: "ignore",  label: "Ignorar",            heat_change: 5,               outcome: "Deixaste avariar. A produção está 20% abaixo do normal." },
+      ],
+    },
+    {
+      id: "wf_buyer", title: "Comprador VIP", icon: "💎", severity: "info", min_heat: 0, base_chance: 0.07, expires_hours: 10,
+      description: "Um comprador de alto nível quer comprar toda a produção de uma vez por um preço premium.",
+      choices: [
+        { id: "sell",   label: "Vender (ganho triplo!)", heat_change: 8,  dirty_gain: 0, outcome: "Negócio fechado! Recebeste 3x o valor normal desta coleta." },
+        { id: "refuse", label: "Recusar",                heat_change: 0,               outcome: "Recusaste. Continua com o negócio normal." },
+      ],
+    },
+  ],
+};
+
+const PILL_FACTORY: BusinessTypeDef = {
+  type: "pill_factory",
+  label: "Fábrica de Pílulas",
+  icon: "💊",
+  tagline: "Produz pílulas ilegais em escala industrial",
+  description_short: "Alto risco, alto retorno. A eficiência dos teus trabalhadores determina o output. Escala gradualmente.",
+  risk_level: "high",
+  heat_per_hour: 13,
+  income_type: "dirty_cash",
+  unique_mechanic: "Escala de eficiência — mais trabalhadores eficientes = produção exponencial",
+  production_multipliers: { low: 0.35, normal: 1.0, overdrive: 1.75 },
+  heat_multipliers:       { low: 0.30, normal: 1.0, overdrive: 2.50 },
+  worker_pool: [
+    { id: "pf_filipe",  name: "Filipe",  skill: "production", trait: "dedicated", salary: 80, production_bonus: 0.25, efficiency_bonus: 0.10, stealth_bonus: 0.05, description: "Químico especializado, sabe o que faz" },
+    { id: "pf_diana",   name: "Diana",   skill: "efficiency", trait: "efficient", salary: 72, production_bonus: 0.08, efficiency_bonus: 0.30, stealth_bonus: 0.05, description: "Otimiza o processo de produção como ninguém" },
+    { id: "pf_hugo",    name: "Hugo",    skill: "production", trait: "risky",     salary: 90, production_bonus: 0.35, efficiency_bonus: 0,   stealth_bonus: -0.18, description: "Trabalha em overdrive mas é descuidado" },
+    { id: "pf_sofia",   name: "Sofia",   skill: "stealth",    trait: "paranoid",  salary: 75, production_bonus: -0.05, efficiency_bonus: 0,  stealth_bonus: 0.28, description: "Deixa zero rasto nas operações" },
+    { id: "pf_marco",   name: "Marco",   skill: "production", trait: "loyal",     salary: 70, production_bonus: 0.20, efficiency_bonus: 0.05, stealth_bonus: 0.08, description: "Confiável, nunca falta, nunca rouba" },
+    { id: "pf_ines",    name: "Inês",    skill: "efficiency", trait: "greedy",    salary: 55, production_bonus: 0.12, efficiency_bonus: 0.18, stealth_bonus: -0.05, description: "Trabalha bem mas vai querer bónus extra" },
+    { id: "pf_pedro",   name: "Pedro",   skill: "production", trait: "lazy",      salary: 45, production_bonus: -0.20, efficiency_bonus: 0.05, stealth_bonus: 0.03, description: "Faz o mínimo, frequentemente ausente" },
+    { id: "pf_luis",    name: "Luís",    skill: "stealth",    trait: "efficient", salary: 78, production_bonus: 0.10, efficiency_bonus: 0.22, stealth_bonus: 0.20, description: "Especialista em cobertura e logística" },
+  ],
+  upgrades: [
+    { id: "pf_centrifuge", name: "Centrífuga Industrial",   description: "Equipamento de produção avançado: +30% output total",           cost: 10000, icon: "⚗️", income_bonus: 0.30, heat_reduction: 0,    capacity_bonus: 0 },
+    { id: "pf_ventilation",name: "Sistema de Ventilação",   description: "Elimina cheiros e vestígios: -35% geração de calor",             cost: 12000, icon: "💨", income_bonus: 0,    heat_reduction: 0.35, capacity_bonus: 0 },
+    { id: "pf_lab",        name: "Laboratório Secreto",     description: "Laboratório adicional no sub-solo: +4 trabalhadores, +15% income", cost: 25000, icon: "🔬", income_bonus: 0.15, heat_reduction: 0,    capacity_bonus: 4 },
+    { id: "pf_distribution",name: "Rede de Distribuição",  description: "Canal de distribuição próprio: +40% lucro líquido",               cost: 18000, icon: "🌐", income_bonus: 0.40, heat_reduction: 0,    capacity_bonus: 0 },
+  ],
+  events: [
+    {
+      id: "pf_shortage", title: "Falta de Matéria-Prima", icon: "⚠️", severity: "warning", min_heat: 0, base_chance: 0.12, expires_hours: 12,
+      description: "O teu fornecedor de químicos cortou o abastecimento. Precisas de resolver isto.",
+      choices: [
+        { id: "buy",    label: "Comprar no mercado negro ($4.000)", cash_cost: 4000, heat_change: 5,  outcome: "Conseguiste matéria-prima. Produção mantida." },
+        { id: "reduce", label: "Reduzir produção",                   heat_change: -5,                  outcome: "Reduziste a produção para o stock existente durar." },
+      ],
+    },
+    {
+      id: "pf_rival", title: "Rival Quer Território", icon: "⚔️", severity: "danger", min_heat: 40, base_chance: 0.10, expires_hours: 8,
+      description: "Uma gang rival descobriu a tua fábrica e ameaça destruí-la se não pagares proteção.",
+      choices: [
+        { id: "pay",    label: "Pagar proteção ($5.000)",   cash_cost: 5000, heat_change: -8,  outcome: "Pagaste. Ficaste em paz por agora." },
+        { id: "resist", label: "Resistir",                   heat_change: 20,                  outcome: "Resististe! Mas o calor aumentou muito. Cuidado.", success_chance: 0.60, fail_outcome: "Perdeste a batalha. Parte do stock foi destruído.", fail_heat_change: 35 },
+      ],
+    },
+    {
+      id: "pf_defective", title: "Lote Defeituoso", icon: "☣️", severity: "warning", min_heat: 0, base_chance: 0.10, expires_hours: 16,
+      description: "Um lote saiu com defeitos. Os clientes estão insatisfeitos e a reputação está em risco.",
+      choices: [
+        { id: "replace", label: "Substituir o lote ($2.500)",  cash_cost: 2500, heat_change: -5, outcome: "Substituíste. Reputação mantida." },
+        { id: "sell",    label: "Vender mesmo assim",           heat_change: 12,                 outcome: "Vendeste na mesma. Mas a reputação caiu — e os clientes falam." },
+      ],
+    },
+    {
+      id: "pf_tip", title: "Denúncia Anónima", icon: "📞", severity: "danger", min_heat: 60, base_chance: 0.20, expires_hours: 6,
+      description: "Alguém denunciou a tua operação anonimamente. A polícia está a investigar.",
+      choices: [
+        { id: "shutdown", label: "Fechar operação (24h idle)", heat_change: -40, outcome: "Fechaste tudo. Perdeste produção mas safaste-te da investigação." },
+        { id: "bribe",    label: "Subornar investigador ($6.000)", cash_cost: 6000, heat_change: -20, outcome: "Investigação cancelada.", success_chance: 0.70, fail_outcome: "O investigador era honesto. Calor disparou!", fail_heat_change: 30 },
+      ],
+    },
+    {
+      id: "pf_inspector", title: "Trabalhador Destacado", icon: "⭐", severity: "info", min_heat: 0, base_chance: 0.08, expires_hours: 24,
+      description: "Um dos teus trabalhadores pediu um aumento em troca de dobrar a produção esta semana.",
+      choices: [
+        { id: "bonus",  label: "Dar bónus ($1.000)", cash_cost: 1000, heat_change: 0, dirty_gain: 4000, outcome: "Pagaste o bónus. O trabalhador produziu o dobro!" },
+        { id: "refuse", label: "Recusar",              heat_change: 0,                                   outcome: "Recusaste. O trabalhador ficou desmotivado por uns dias." },
+      ],
+    },
+  ],
+};
+
+const CRYPTO_MINING: BusinessTypeDef = {
+  type: "crypto_mining",
+  label: "Mining de Crypto",
+  icon: "⛏️",
+  tagline: "Minera criptomoedas com rigs ilegais",
+  description_short: "Lucros flutuantes conforme o mercado. Pouco calor mas electricidade cara. Gere a eficiência.",
+  risk_level: "low",
+  heat_per_hour: 3,
+  income_type: "dirty_cash",
+  unique_mechanic: "Lucros flutuantes — o mercado sobe e desce aleatoriamente a cada coleta",
+  production_multipliers: { low: 0.35, normal: 1.0, overdrive: 1.75 },
+  heat_multipliers:       { low: 0.30, normal: 1.0, overdrive: 2.50 },
+  worker_pool: [
+    { id: "cm_diogo",  name: "Diogo",   skill: "efficiency", trait: "efficient", salary: 120, production_bonus: 0.10, efficiency_bonus: 0.30, stealth_bonus: 0.05, description: "Guru de hardware, otimiza cada GPU" },
+    { id: "cm_beatriz",name: "Beatriz", skill: "stealth",    trait: "paranoid",  salary: 130, production_bonus: -0.05, efficiency_bonus: 0.05, stealth_bonus: 0.28, description: "Especialista em VPNs e anonimato" },
+    { id: "cm_ana",    name: "Ana",     skill: "production", trait: "dedicated", salary: 145, production_bonus: 0.25, efficiency_bonus: 0.10, stealth_bonus: 0.08, description: "Mantém os rigs a funcionar 24/7" },
+    { id: "cm_ricardo",name: "Ricardo", skill: "efficiency", trait: "greedy",    salary: 100, production_bonus: 0.08, efficiency_bonus: 0.20, stealth_bonus: -0.05, description: "Bom tecnicamente mas quer cortes extras" },
+    { id: "cm_vasco",  name: "Vasco",   skill: "production", trait: "risky",     salary: 155, production_bonus: 0.35, efficiency_bonus: 0,    stealth_bonus: -0.20, description: "Overclocka tudo, afunda tudo eventualmente" },
+    { id: "cm_helena", name: "Helena",  skill: "stealth",    trait: "loyal",     salary: 125, production_bonus: 0.12, efficiency_bonus: 0.08, stealth_bonus: 0.18, description: "Discreta, confiável, nunca deixa rasto" },
+  ],
+  upgrades: [
+    { id: "cm_asics",    name: "ASICs Dedicados",     description: "Hardware de mining profissional: +35% hashrate",                  cost: 15000, icon: "🖥️", income_bonus: 0.35, heat_reduction: 0,    capacity_bonus: 0 },
+    { id: "cm_solar",    name: "Painéis Solares",     description: "Electricidade gratuita reduz custos em 25% e calor em 20%",      cost: 12000, icon: "☀️", income_bonus: 0.25, heat_reduction: 0.20, capacity_bonus: 0 },
+    { id: "cm_cooling",  name: "Sistema de Cooling",  description: "Refrigeração avançada: mais capacidade +2 e +15% estabilidade",  cost: 8000,  icon: "❄️", income_bonus: 0.15, heat_reduction: 0.15, capacity_bonus: 2 },
+    { id: "cm_vpn",      name: "VPN Enterprise",      description: "Infraestrutura anonimizada: -40% geração de calor total",        cost: 10000, icon: "🔒", income_bonus: 0,    heat_reduction: 0.40, capacity_bonus: 0 },
+  ],
+  events: [
+    {
+      id: "cm_boom", title: "Boom do Mercado", icon: "📈", severity: "info", min_heat: 0, base_chance: 0.12, expires_hours: 8,
+      description: "O preço da crypto subiu 300%! Esta é a janela de oportunidade para maximizar o output.",
+      choices: [
+        { id: "overdrive", label: "Overdrive total (calor +20)", heat_change: 20, dirty_gain: 0, outcome: "Puseste tudo no limite. Os lucros desta coleta foram 3x!" },
+        { id: "normal",    label: "Manter ritmo",                 heat_change: 0,                outcome: "Mantiveste o ritmo. Perdeste a oportunidade mas evitaste calor." },
+      ],
+    },
+    {
+      id: "cm_crash", title: "Crash do Mercado", icon: "📉", severity: "warning", min_heat: 0, base_chance: 0.10, expires_hours: 12,
+      description: "O mercado caiu 80%. Continuar a minar agora é quase um prejuízo.",
+      choices: [
+        { id: "pause",    label: "Pausar operação",               heat_change: -15, outcome: "Pausaste. Evitaste prejuízo e reduziste calor." },
+        { id: "continue", label: "Continuar (income -60%)",       heat_change: 0,   outcome: "Continuaste. Perdeste margem mas mantiveste operação ativa." },
+      ],
+    },
+    {
+      id: "cm_electric", title: "Fatura de Electricidade", icon: "⚡", severity: "warning", min_heat: 0, base_chance: 0.15, expires_hours: 24,
+      description: "A fatura de electricidade está astronómica. A empresa distribuidora está a investigar o consumo anormal.",
+      choices: [
+        { id: "pay",    label: "Pagar + propina ($3.000)", cash_cost: 3000, heat_change: -10, outcome: "Resolveste discretamente. A investigação foi encerrada." },
+        { id: "reduce", label: "Reduzir consumo",           heat_change: -8,                  outcome: "Reduziste o consumo. Produção caiu mas a suspeita baixou." },
+      ],
+    },
+    {
+      id: "cm_hack", title: "Tentativa de Hack", icon: "💻", severity: "danger", min_heat: 30, base_chance: 0.08, expires_hours: 6,
+      description: "Detetaste uma tentativa de intrusão nos teus sistemas. Alguém quer roubar a tua carteira.",
+      choices: [
+        { id: "secure", label: "Investir em segurança ($2.500)", cash_cost: 2500, heat_change: -5,  outcome: "Sistemas seguros. O ataque foi repelido." },
+        { id: "ignore", label: "Ignorar",                         heat_change: 5,  dirty_gain: -5000, outcome: "Foste hackeado. Perdeste fundos da carteira." },
+      ],
+    },
+  ],
+};
+
+const SCAM_OFFICE: BusinessTypeDef = {
+  type: "scam_office",
+  label: "Escritório de Scams",
+  icon: "🎭",
+  tagline: "Operações de fraude digital em grande escala",
+  description_short: "Cada operação tem chance de falhar. Trabalhadores com alta inteligência aumentam a taxa de sucesso.",
+  risk_level: "medium",
+  heat_per_hour: 7,
+  income_type: "dirty_cash",
+  unique_mechanic: "Taxa de sucesso — cada operação pode falhar baseado nos teus trabalhadores",
+  production_multipliers: { low: 0.35, normal: 1.0, overdrive: 1.75 },
+  heat_multipliers:       { low: 0.30, normal: 1.0, overdrive: 2.50 },
+  worker_pool: [
+    { id: "so_catarina",name: "Catarina", skill: "production", trait: "dedicated", salary: 65, production_bonus: 0.28, efficiency_bonus: 0.08, stealth_bonus: 0.05, description: "Engenheira social brilhante, fecha qualquer deal" },
+    { id: "so_gustavo", name: "Gustavo",  skill: "stealth",    trait: "paranoid",  salary: 70, production_bonus: -0.03, efficiency_bonus: 0,   stealth_bonus: 0.30, description: "Nunca deixa rasto digital, paranóico profissional" },
+    { id: "so_mariana", name: "Mariana",  skill: "efficiency", trait: "efficient", salary: 58, production_bonus: 0.08, efficiency_bonus: 0.28, stealth_bonus: 0.08, description: "Otimiza os scripts de scam ao máximo" },
+    { id: "so_tomas",   name: "Tomás",    skill: "production", trait: "greedy",    salary: 50, production_bonus: 0.20, efficiency_bonus: 0,   stealth_bonus: -0.08, description: "Bom a vender mentiras, mas quer corte extra" },
+    { id: "so_marta",   name: "Marta",    skill: "production", trait: "loyal",     salary: 62, production_bonus: 0.18, efficiency_bonus: 0.05, stealth_bonus: 0.08, description: "A mais confiável da equipa, zero falhas" },
+    { id: "so_afonso",  name: "Afonso",   skill: "efficiency", trait: "risky",     salary: 72, production_bonus: 0.30, efficiency_bonus: 0.15, stealth_bonus: -0.12, description: "Muito capaz mas usa métodos perigosos" },
+    { id: "so_leonor",  name: "Leonor",   skill: "stealth",    trait: "efficient", salary: 60, production_bonus: 0.10, efficiency_bonus: 0.20, stealth_bonus: 0.22, description: "Mestre em cobrir os rastos digitais" },
+    { id: "so_gabriel", name: "Gabriel",  skill: "production", trait: "lazy",      salary: 35, production_bonus: -0.22, efficiency_bonus: 0.05, stealth_bonus: 0.02, description: "Dorme mais do que trabalha" },
+  ],
+  upgrades: [
+    { id: "so_servers",  name: "Servidores VPS",      description: "Infraestrutura profissional: +25% taxa de sucesso e income",  cost: 8000,  icon: "🖥️", income_bonus: 0.25, heat_reduction: 0.10, capacity_bonus: 0 },
+    { id: "so_scripts",  name: "Scripts Avançados",   description: "Automação de operações: +30% volume de scams",                cost: 12000, icon: "📝", income_bonus: 0.30, heat_reduction: 0,    capacity_bonus: 0 },
+    { id: "so_vpn",      name: "VPN Cadeia Dupla",    description: "Anonimato total: -35% geração de calor",                      cost: 10000, icon: "🔐", income_bonus: 0,    heat_reduction: 0.35, capacity_bonus: 0 },
+    { id: "so_callcenter",name: "Call Center Falso",  description: "Operação maior: +5 operadores, +20% income",                  cost: 20000, icon: "📞", income_bonus: 0.20, heat_reduction: 0,    capacity_bonus: 5 },
+  ],
+  events: [
+    {
+      id: "so_bigfish", title: "Peixe Grande Fisgado", icon: "🐟", severity: "info", min_heat: 0, base_chance: 0.10, expires_hours: 6,
+      description: "Um dos teus operadores fisgou um alvo de alto valor. Esta operação pode render muito.",
+      choices: [
+        { id: "execute", label: "Executar operação ($500 risco)", cash_cost: 500, heat_change: 8, dirty_gain: 15000, outcome: "Operação perfeita! Lucro enorme desta vez.", success_chance: 0.75, fail_outcome: "O alvo desconfiou e denunciou. Calor aumentou!", fail_heat_change: 20 },
+        { id: "skip",    label: "Passar à frente",                heat_change: 0,                                    outcome: "Passaste o alvo. Talvez na próxima." },
+      ],
+    },
+    {
+      id: "so_exposed", title: "Operador Identificado", icon: "😨", severity: "danger", min_heat: 50, base_chance: 0.15, expires_hours: 8,
+      description: "Um dos teus operadores foi identificado pela Polícia Judiciária. Estão a fechar o cerco.",
+      choices: [
+        { id: "relocate", label: "Realocar operação ($4.000)", cash_cost: 4000, heat_change: -30, outcome: "Mudaste de localização. Safaste-te desta." },
+        { id: "shutdown", label: "Suspender temporariamente",   heat_change: -20,                 outcome: "Suspendeste por 48h. Calor baixou mas perdeste produção." },
+      ],
+    },
+    {
+      id: "so_intern", title: "Novato Promissor", icon: "🌟", severity: "info", min_heat: 0, base_chance: 0.08, expires_hours: 24,
+      description: "Um novo recruta mostrou talento extraordinário. Quer trabalhar para ti.",
+      choices: [
+        { id: "hire",   label: "Contratar ($500 bónus)",  cash_cost: 500, heat_change: 0, outcome: "O novato entrou. +1 slot de trabalhador disponível com bónus de 15%." },
+        { id: "refuse", label: "Recusar",                  heat_change: 0,                outcome: "Recusaste o novato. Ficou chateado e pode falar..." },
+      ],
+    },
+    {
+      id: "so_raid", title: "Operação Policial", icon: "🚨", severity: "danger", min_heat: 65, base_chance: 0.22, expires_hours: 4,
+      description: "Recebes aviso de que a PJ tem mandado de busca ao teu escritório.",
+      choices: [
+        { id: "run",    label: "Evacuar tudo",                    heat_change: -35, outcome: "Evacuaste a tempo. Perdeste um dia de produção mas ficaste livre." },
+        { id: "bribe",  label: "Subornar agente ($8.000)",         cash_cost: 8000, heat_change: -25, outcome: "O agente foi subornado. Mandado retirado.", success_chance: 0.65, fail_outcome: "O agente era incorruptível! Escritório invadido!", fail_heat_change: 40 },
+      ],
+    },
+  ],
+};
+
+const CHOP_SHOP: BusinessTypeDef = {
+  type: "chop_shop",
+  label: "Chop Shop",
+  icon: "🔧",
+  tagline: "Desmonta carros roubados e lava dinheiro",
+  description_short: "Negócio de lavagem. Converte dinheiro sujo em limpo. Mais trabalhadores = taxa de conversão mais alta.",
+  risk_level: "high",
+  heat_per_hour: 15,
+  income_type: "launder",
+  unique_mechanic: "Lavagem de dinheiro — taxa de conversão de sujo para limpo baseada nos teus trabalhadores",
+  production_multipliers: { low: 0.35, normal: 1.0, overdrive: 1.75 },
+  heat_multipliers:       { low: 0.30, normal: 1.0, overdrive: 2.50 },
+  worker_pool: [
+    { id: "cs_jorge",  name: "Jorge",   skill: "efficiency", trait: "dedicated", salary: 90, production_bonus: 0.20, efficiency_bonus: 0.30, stealth_bonus: 0.05, description: "Especialista em lavagem, conhece todos os truques" },
+    { id: "cs_bruno",  name: "Bruno",   skill: "production", trait: "loyal",     salary: 80, production_bonus: 0.22, efficiency_bonus: 0.08, stealth_bonus: 0.08, description: "Mecânico de confiança, mão de ferro" },
+    { id: "cs_estela", name: "Estela",  skill: "stealth",    trait: "paranoid",  salary: 85, production_bonus: -0.05, efficiency_bonus: 0,   stealth_bonus: 0.28, description: "Faz tudo no segredo absoluto" },
+    { id: "cs_rafa",   name: "Rafa",    skill: "production", trait: "risky",     salary: 95, production_bonus: 0.35, efficiency_bonus: 0,   stealth_bonus: -0.15, description: "Muito rápido mas deixa rastos" },
+    { id: "cs_simao",  name: "Simão",   skill: "efficiency", trait: "efficient", salary: 75, production_bonus: 0.10, efficiency_bonus: 0.28, stealth_bonus: 0.08, description: "Maximiza cada euro lavado" },
+    { id: "cs_teresa", name: "Teresa",  skill: "stealth",    trait: "greedy",    salary: 65, production_bonus: 0.12, efficiency_bonus: 0.05, stealth_bonus: 0.18, description: "Discreta mas quer comissão em tudo" },
+  ],
+  upgrades: [
+    { id: "cs_press",   name: "Prensa Hidráulica",    description: "Processa carros mais rápido: +30% taxa de lavagem",        cost: 12000, icon: "⚙️", income_bonus: 0.30, heat_reduction: 0,    capacity_bonus: 0 },
+    { id: "cs_cameras", name: "Câmeras Falsas",        description: "Câmeras apontadas para fora: -30% calor das ruas",         cost: 8000,  icon: "📹", income_bonus: 0,    heat_reduction: 0.30, capacity_bonus: 0 },
+    { id: "cs_garage",  name: "Garagem Subterrânea",   description: "Operação expandida: +3 mecânicos, +20% eficiência",        cost: 22000, icon: "🏗️", income_bonus: 0.20, heat_reduction: 0.15, capacity_bonus: 3 },
+    { id: "cs_network", name: "Rede de Fornecedores",  description: "Carros chegam automaticamente: +40% volume de operações",  cost: 18000, icon: "🌐", income_bonus: 0.40, heat_reduction: 0,    capacity_bonus: 0 },
+  ],
+  events: [
+    {
+      id: "cs_heist", title: "Oportunidade de Negócio", icon: "🚗", severity: "info", min_heat: 0, base_chance: 0.10, expires_hours: 8,
+      description: "Um ladrão quer descarregar 5 carros de luxo de uma vez. Podes processar tudo?",
+      choices: [
+        { id: "accept", label: "Aceitar ($1.000 upfront)", cash_cost: 1000, heat_change: 15, dirty_gain: 20000, outcome: "Processaste tudo! Grande lucro.", success_chance: 0.80, fail_outcome: "Os carros eram armadilha da polícia!", fail_heat_change: 45 },
+        { id: "refuse", label: "Recusar",                  heat_change: 0,                                      outcome: "Recusaste. Era demasiado arriscado." },
+      ],
+    },
+    {
+      id: "cs_snitch", title: "Vizinho Curioso", icon: "👀", severity: "warning", min_heat: 30, base_chance: 0.14, expires_hours: 10,
+      description: "Um vizinho está a tirar fotos à tua garagem e ao movimento de carros.",
+      choices: [
+        { id: "bribe",  label: "Subornar ($1.500)", cash_cost: 1500, heat_change: -15, outcome: "O vizinho ficou em silêncio. Por agora." },
+        { id: "move",   label: "Mudar operação",     heat_change: -20,                 outcome: "Mudaste para outra garagem. Produção parada 12h." },
+      ],
+    },
+    {
+      id: "cs_bust", title: "Rusga Policial", icon: "🚔", severity: "danger", min_heat: 70, base_chance: 0.25, expires_hours: 4,
+      description: "A PSP está com viaturas paradas perto do teu negócio. Algo vai acontecer.",
+      choices: [
+        { id: "evacuate", label: "Evacuar tudo",             heat_change: -40, outcome: "Evacuaste a tempo. Garagem vazia quando chegaram." },
+        { id: "bribe",    label: "Subornar ($7.000)",        cash_cost: 7000, heat_change: -30, outcome: "Os agentes foram subornados.", success_chance: 0.60, fail_outcome: "Suborno recusado! Negócio invadido.", fail_heat_change: 50 },
+      ],
+    },
+    {
+      id: "cs_tools", title: "Ferramenta Avariada", icon: "🔩", severity: "warning", min_heat: 0, base_chance: 0.08, expires_hours: 20,
+      description: "O equipamento principal avariou. A lavagem está a 30% da eficiência.",
+      choices: [
+        { id: "repair",  label: "Reparar ($2.000)", cash_cost: 2000, heat_change: 0, outcome: "Equipamento reparado. Back to full speed." },
+        { id: "workaround", label: "Continuar na mesma", heat_change: 3,              outcome: "Continuaste degradado. Mas a operação não parou." },
+      ],
+    },
+  ],
+};
+
+const COUNTERFEIT_LAB: BusinessTypeDef = {
+  type: "counterfeit_lab",
+  label: "Lab. de Contrafação",
+  icon: "🖨️",
+  tagline: "Produz dinheiro e documentos falsos",
+  description_short: "Alto risco, alto retorno. Trabalhadores com stealth são críticos. Um erro e a operação cai.",
+  risk_level: "high",
+  heat_per_hour: 14,
+  income_type: "dirty_cash",
+  unique_mechanic: "Qualidade do produto — trabalhadores de stealth reduzem detecção de notas falsas",
+  production_multipliers: { low: 0.35, normal: 1.0, overdrive: 1.75 },
+  heat_multipliers:       { low: 0.30, normal: 1.0, overdrive: 2.50 },
+  worker_pool: [
+    { id: "cl_aida",    name: "Aída",    skill: "production", trait: "dedicated", salary: 100, production_bonus: 0.28, efficiency_bonus: 0.08, stealth_bonus: 0.05, description: "Gravurista mestre, produz notas impecáveis" },
+    { id: "cl_norberto",name: "Norberto",skill: "stealth",    trait: "paranoid",  salary: 95,  production_bonus: -0.05, efficiency_bonus: 0,   stealth_bonus: 0.32, description: "Distribui as notas sem nunca levantar suspeitas" },
+    { id: "cl_vanda",   name: "Vanda",   skill: "efficiency", trait: "efficient", salary: 85,  production_bonus: 0.10, efficiency_bonus: 0.30, stealth_bonus: 0.08, description: "Gerente de produção, nunca desperdiça papel" },
+    { id: "cl_paulo2",  name: "Paulinho",skill: "production", trait: "risky",     salary: 108, production_bonus: 0.38, efficiency_bonus: 0,   stealth_bonus: -0.20, description: "O mais rápido da equipa, o mais descuidado também" },
+    { id: "cl_lurdes",  name: "Lurdes",  skill: "stealth",    trait: "loyal",     salary: 88,  production_bonus: 0.12, efficiency_bonus: 0.05, stealth_bonus: 0.22, description: "Vinte anos no negócio, nunca traiu ninguém" },
+    { id: "cl_fenix",   name: "Fénix",   skill: "production", trait: "greedy",    salary: 75,  production_bonus: 0.20, efficiency_bonus: 0,   stealth_bonus: -0.08, description: "Bom impressor, quer % de tudo que sai" },
+  ],
+  upgrades: [
+    { id: "cl_printer",  name: "Impressora Industrial",  description: "Impressão profissional: +35% output de notas",           cost: 15000, icon: "🖨️", income_bonus: 0.35, heat_reduction: 0,    capacity_bonus: 0 },
+    { id: "cl_paper",    name: "Papel Especial",          description: "Papel indetectável: -30% chance de detecção (calor)",    cost: 10000, icon: "📄", income_bonus: 0,    heat_reduction: 0.30, capacity_bonus: 0 },
+    { id: "cl_uv",       name: "Tinta UV Avançada",       description: "Notas passam em qualquer máquina: +25% income, -15% heat", cost: 20000, icon: "💜", income_bonus: 0.25, heat_reduction: 0.15, capacity_bonus: 0 },
+    { id: "cl_warehouse",name: "Armazém Secreto",         description: "Espaço expandido: +3 operadores, +20% produção",         cost: 18000, icon: "🏭", income_bonus: 0.20, heat_reduction: 0,    capacity_bonus: 3 },
+  ],
+  events: [
+    {
+      id: "cl_detection", title: "Nota Detetada", icon: "🔍", severity: "danger", min_heat: 50, base_chance: 0.18, expires_hours: 6,
+      description: "Uma das tuas notas foi detetada numa caixa de supermercado. O banco está a investigar.",
+      choices: [
+        { id: "abort",   label: "Abortar lote atual",           heat_change: -20, outcome: "Abortaste o lote defeituoso. Perda de produção mas estás seguro." },
+        { id: "distract",label: "Distração ($3.000)",           cash_cost: 3000, heat_change: -10, outcome: "Criaste ruído suficiente para desviar as atenções." },
+      ],
+    },
+    {
+      id: "cl_supplier2", title: "Papel Especial Disponível", icon: "📦", severity: "info", min_heat: 0, base_chance: 0.10, expires_hours: 12,
+      description: "O teu fornecedor tem stock de papel de segurança roubado. Está a preço de saldo.",
+      choices: [
+        { id: "buy",    label: "Comprar ($3.500)", cash_cost: 3500, heat_change: 3, dirty_gain: 10000, outcome: "Comprado! O novo papel vai melhorar a qualidade." },
+        { id: "skip",   label: "Passar",           heat_change: 0,                                     outcome: "Passaste a oportunidade." },
+      ],
+    },
+    {
+      id: "cl_raid2", title: "Mandado de Busca", icon: "🚨", severity: "danger", min_heat: 70, base_chance: 0.20, expires_hours: 4,
+      description: "Mandado de busca emitido para o teu laboratório. Tens poucas horas.",
+      choices: [
+        { id: "run",   label: "Evacuar laboratório",       heat_change: -45, outcome: "Evacuaste tudo. Quando chegaram estava vazio." },
+        { id: "bribe", label: "Subornar juiz ($10.000)",   cash_cost: 10000, heat_change: -30, outcome: "Mandado cancelado.", success_chance: 0.55, fail_outcome: "Juiz recusou. Operação descoberta!", fail_heat_change: 55 },
+      ],
+    },
+    {
+      id: "cl_newclient", title: "Cliente Novo em Quantidade", icon: "💼", severity: "info", min_heat: 0, base_chance: 0.08, expires_hours: 10,
+      description: "Um intermediário quer comprar grandes quantidades de forma regular.",
+      choices: [
+        { id: "deal",   label: "Fechar contrato", heat_change: 5, dirty_gain: 12000, outcome: "Contrato fechado! Rendimento garantido.", success_chance: 0.85, fail_outcome: "Era polícia disfarçado. Calor disparou!", fail_heat_change: 35 },
+        { id: "refuse", label: "Recusar",          heat_change: 0,                    outcome: "Recusaste. Segurança acima de tudo." },
+      ],
+    },
+  ],
+};
+
+const NIGHTCLUB: BusinessTypeDef = {
+  type: "nightclub",
+  label: "Nightclub",
+  icon: "🎵",
+  tagline: "A fachada perfeita para lavar dinheiro",
+  description_short: "Negócio legítimo na fachada. Popularidade atrai mais clientes e aumenta o dinheiro lavado.",
+  risk_level: "low",
+  heat_per_hour: 2,
+  income_type: "dirty_cash",
+  unique_mechanic: "Sistema de popularidade — eventos e promoções aumentam o fluxo de dinheiro",
+  production_multipliers: { low: 0.35, normal: 1.0, overdrive: 1.75 },
+  heat_multipliers:       { low: 0.30, normal: 1.0, overdrive: 2.50 },
+  worker_pool: [
+    { id: "nc_sergio",  name: "Sérgio",  skill: "production", trait: "dedicated", salary: 180, production_bonus: 0.25, efficiency_bonus: 0.10, stealth_bonus: 0.10, description: "Manager geral, sabe como encher a casa" },
+    { id: "nc_patricia",name: "Patrícia",skill: "efficiency", trait: "efficient", salary: 160, production_bonus: 0.08, efficiency_bonus: 0.30, stealth_bonus: 0.08, description: "Gere as finanças sem deixar buracos" },
+    { id: "nc_dj_mike", name: "DJ Mike", skill: "production", trait: "loyal",     salary: 200, production_bonus: 0.30, efficiency_bonus: 0.05, stealth_bonus: 0.05, description: "O DJ mais popular da cidade, atrai multidões" },
+    { id: "nc_carla",   name: "Carla",   skill: "stealth",    trait: "paranoid",  salary: 155, production_bonus: -0.05, efficiency_bonus: 0,   stealth_bonus: 0.28, description: "Responsável pela 'contabilidade criativa'" },
+    { id: "nc_chefe",   name: "Chefe",   skill: "production", trait: "greedy",    salary: 145, production_bonus: 0.18, efficiency_bonus: 0,   stealth_bonus: -0.05, description: "Arranja clientes VIP, quer comissão em tudo" },
+    { id: "nc_seguranca",name: "Romão",  skill: "stealth",    trait: "dedicated", salary: 170, production_bonus: 0.08, efficiency_bonus: 0.05, stealth_bonus: 0.25, description: "Segurança discreto que gere situações silenciosamente" },
+    { id: "nc_lara",    name: "Lara",    skill: "efficiency", trait: "loyal",     salary: 150, production_bonus: 0.10, efficiency_bonus: 0.25, stealth_bonus: 0.10, description: "Gestora de evento, reduz custos e maximiza lucro" },
+  ],
+  upgrades: [
+    { id: "nc_vip",      name: "Área VIP",           description: "Atrai clientes de alto valor: +30% income por noite",     cost: 20000, icon: "💎", income_bonus: 0.30, heat_reduction: 0,    capacity_bonus: 0 },
+    { id: "nc_soundsys", name: "Sistema de Som",     description: "Melhor experiência = mais clientes: +25% income",         cost: 15000, icon: "🔊", income_bonus: 0.25, heat_reduction: 0,    capacity_bonus: 0 },
+    { id: "nc_lawyers",  name: "Advogados em Reter", description: "Proteção legal: -45% calor de qualquer fonte",            cost: 25000, icon: "⚖️", income_bonus: 0,    heat_reduction: 0.45, capacity_bonus: 0 },
+    { id: "nc_expansion",name: "Expansão do Espaço", description: "Capacidade dobrada: +5 staff, +20% fluxo de clientes",   cost: 30000, icon: "🏗️", income_bonus: 0.20, heat_reduction: 0,    capacity_bonus: 5 },
+  ],
+  events: [
+    {
+      id: "nc_celebrity", title: "Celebridade Quer Vir", icon: "⭐", severity: "info", min_heat: 0, base_chance: 0.10, expires_hours: 8,
+      description: "Uma celebridade quer vir ao teu clube esta semana. Vai trazer atenção — e muita gente.",
+      choices: [
+        { id: "invite",  label: "Convidar (pagar $3.000)", cash_cost: 3000, heat_change: 5,  dirty_gain: 18000, outcome: "A noite foi um sucesso total. Casa cheia, caixa cheia!" },
+        { id: "decline", label: "Recusar",                  heat_change: 0,                                      outcome: "Recusaste a atenção extra. Mais seguro assim." },
+      ],
+    },
+    {
+      id: "nc_inspector", title: "Inspeção das Finanças", icon: "📊", severity: "warning", min_heat: 40, base_chance: 0.12, expires_hours: 24,
+      description: "A Autoridade Tributária vai fazer uma auditoria às tuas contas.",
+      choices: [
+        { id: "bribe",   label: "Preparar documentos ($5.000)", cash_cost: 5000, heat_change: -20, outcome: "Contabilidade 'ajustada'. Auditoria passou sem problemas." },
+        { id: "comply",  label: "Cooperar",                     heat_change: -10,                  outcome: "Cooperaste. Multa pequena mas ficaste limpo oficialmente." },
+      ],
+    },
+    {
+      id: "nc_fight", title: "Briga no Club", icon: "👊", severity: "warning", min_heat: 0, base_chance: 0.12, expires_hours: 10,
+      description: "Uma briga séria aconteceu. Há filmagens e a polícia foi chamada.",
+      choices: [
+        { id: "security", label: "Contratar mais segurança ($2.000)", cash_cost: 2000, heat_change: -5,  outcome: "Situação controlada. Reputação mantida." },
+        { id: "ignore",   label: "Ignorar",                            heat_change: 12,                   outcome: "A história correu nas redes sociais. Má imprensa." },
+      ],
+    },
+    {
+      id: "nc_drug", title: "Droga Encontrada", icon: "🚨", severity: "danger", min_heat: 55, base_chance: 0.16, expires_hours: 6,
+      description: "A polícia encontrou droga nas casas de banho durante uma rusga.",
+      choices: [
+        { id: "bribe",   label: "Subornar ($9.000)",    cash_cost: 9000, heat_change: -30, outcome: "Situação resolvida discretamente.", success_chance: 0.70, fail_outcome: "Suborno recusado. Club sob investigação!", fail_heat_change: 40 },
+        { id: "lawyer",  label: "Chamar advogados",     heat_change: -15,                  outcome: "Os advogados controlaram o dano. Pode custar mais tarde." },
+      ],
+    },
+  ],
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// REGISTRY
+// ─────────────────────────────────────────────────────────────────────────────
+export const BUSINESS_DEFS: Record<string, BusinessTypeDef> = {
+  weed_farm:      WEED_FARM,
+  pill_factory:   PILL_FACTORY,
+  crypto_mining:  CRYPTO_MINING,
+  scam_office:    SCAM_OFFICE,
+  chop_shop:      CHOP_SHOP,
+  counterfeit_lab: COUNTERFEIT_LAB,
+  nightclub:      NIGHTCLUB,
+};
+
+export function getBusinessDef(type: string): BusinessTypeDef | undefined {
+  return BUSINESS_DEFS[type];
+}
+
+// Helper — compute effective income rate per hour
+export function computeIncomeRate(params: {
+  base_income_per_hour: number;
+  production_level: ProductionLevel;
+  workers: { production_bonus: number; salary: number }[];
+  upgrades: { income_bonus: number }[];
+}): number {
+  const { base_income_per_hour, production_level, workers, upgrades } = params;
+  const prodMult = PRODUCTION_META[production_level].income;
+  const workerIncome = workers.reduce((s, w) => s + Math.max(0, w.production_bonus), 0);
+  const upgIncome    = upgrades.reduce((s, u) => s + u.income_bonus, 0);
+  const grossRate    = base_income_per_hour * prodMult * (1 + workerIncome + upgIncome);
+  const salaryCost   = workers.reduce((s, w) => s + w.salary, 0);
+  return Math.max(0, grossRate - salaryCost);
+}
+
+// Helper — compute effective heat rate per hour
+export function computeHeatRate(params: {
+  base_heat_per_hour: number;
+  production_level: ProductionLevel;
+  workers: { stealth_bonus: number }[];
+  upgrades: { heat_reduction: number }[];
+}): number {
+  const { base_heat_per_hour, production_level, workers, upgrades } = params;
+  const heatMult    = PRODUCTION_META[production_level].heat;
+  const stealthRed  = Math.min(0.65, workers.reduce((s, w) => s + Math.max(0, w.stealth_bonus), 0));
+  const upgradeRed  = Math.min(0.75, upgrades.reduce((s, u) => s + u.heat_reduction, 0));
+  return base_heat_per_hour * heatMult * (1 - stealthRed) * (1 - upgradeRed);
+}
