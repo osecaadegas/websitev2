@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { supabase } from "@/lib/supabase";
+import { deductDirtyMoney } from "@/lib/dirty-money";
 
 export const dynamic = "force-dynamic";
 
@@ -289,10 +290,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Deduct info cost
-    await supabase
-      .from("crime_players")
-      .update({ dirty_cash: player.dirty_cash - crash.info_cost })
-      .eq("id", player.id);
+    await deductDirtyMoney(player.id, crash.info_cost);
 
     if (interaction) {
       await supabase

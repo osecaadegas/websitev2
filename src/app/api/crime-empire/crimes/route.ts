@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { supabase } from "@/lib/supabase";
+import { grantDirtyMoney } from "@/lib/dirty-money";
 
 export const dynamic = "force-dynamic";
 
@@ -205,7 +206,6 @@ export async function POST(request: Request) {
   const updates: any = {
     stamina: (freshPlayer?.stamina ?? player.stamina) - crime.stamina_cost,
     last_stamina_update: now.toISOString(),
-    dirty_cash: (freshPlayer?.dirty_cash ?? player.dirty_cash) + dirtyCashEarned,
     cash: ((freshPlayer as any)?.cash ?? player.cash ?? 0) + cleanCashEarned,
     respect: (freshPlayer?.respect ?? player.respect) + respectEarned,
     xp: newXP,
@@ -219,6 +219,7 @@ export async function POST(request: Request) {
   }
 
   await supabase.from("crime_players").update(updates).eq("id", player.id);
+  if (dirtyCashEarned > 0) await grantDirtyMoney(player.id, dirtyCashEarned);
 
   // Record attempt
   await supabase.from("crime_attempts").insert({

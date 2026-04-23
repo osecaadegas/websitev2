@@ -79,6 +79,7 @@ export interface BusinessTypeDef {
   heat_per_hour: number; // at normal production
   income_type: "dirty_cash" | "launder"; // launder = converts dirty→clean
   unique_mechanic: string; // one-liner description
+  launder_cap_per_worker?: number; // extra $/hr of launder throughput per hired worker
   production_multipliers: { low: number; normal: number; overdrive: number };
   heat_multipliers: { low: number; normal: number; overdrive: number };
   worker_pool: WorkerDef[];
@@ -404,6 +405,7 @@ const CHOP_SHOP: BusinessTypeDef = {
   heat_per_hour: 15,
   income_type: "launder",
   unique_mechanic: "Lavagem de dinheiro — taxa de conversão de sujo para limpo baseada nos teus trabalhadores",
+  launder_cap_per_worker: 1000, // +$1 000/hr de cap por trabalhador
   production_multipliers: { low: 0.35, normal: 1.0, overdrive: 1.75 },
   heat_multipliers:       { low: 0.30, normal: 1.0, overdrive: 2.50 },
   worker_pool: [

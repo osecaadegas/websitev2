@@ -25,6 +25,7 @@ interface ManagementData {
     status: BusinessStatus; heat: number; income_per_hour: number; heat_rate_per_hour: number;
     accumulated_income: number; hours_elapsed: number; last_collection: string;
     upgrade_level: number;
+    launder_effective_cap: number; launder_remaining: number; launder_window_reset_at: string;
   };
   business: { id: string; name: string; type: string; base_income_per_hour: number; max_employees: number; };
   def: BusinessTypeDef | null;
@@ -371,6 +372,8 @@ export default function BusinessManagementPage({ params }: { params: Promise<{ i
   const statusMeta = STATUS_META[status] ?? STATUS_META.running;
   const production = pb.production_level as ProductionLevel;
   const isLaunder = def?.income_type === "launder";
+  const maxLaunderThisAction = Math.min(pb.launder_remaining ?? 0, player.dirty_cash);
+  const launderResetMins = Math.max(0, Math.ceil((new Date(pb.launder_window_reset_at ?? Date.now()).getTime() - Date.now()) / 60_000));
 
   // Build event + def pairs
   const eventPairs = active_events
@@ -446,21 +449,51 @@ export default function BusinessManagementPage({ params }: { params: Promise<{ i
         <div className="flex flex-wrap gap-3 items-center">
           {/* Collect / Launder */}
           {isLaunder ? (
-            <div className="flex items-center gap-2 rounded-xl border p-3" style={{ background: "#111", borderColor: "rgba(255,255,255,0.07)" }}>
-              <input
-                type="number"
-                placeholder="Quantia suja"
-                value={launderAmount}
-                onChange={(e) => setLaunderAmount(e.target.value)}
-                className="w-40 px-3 py-2 rounded-lg text-sm bg-[#0a0a0a] border border-white/10 text-white focus:outline-none focus:border-orange-500/50"
-              />
-              <button
-                onClick={handleLaunder}
-                disabled={processing || !launderAmount || parseInt(launderAmount) <= 0}
-                className="px-4 py-2 rounded-xl text-sm font-bold bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
-              >
-                💧 Lavar Dinheiro
-              </button>
+            <div className="rounded-xl border p-4 space-y-3" style={{ background: "#111", borderColor: "rgba(255,255,255,0.07)" }}>
+              <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">💧 Lavandaria</p>
+              <div className="flex flex-wrap gap-2 text-xs">
+                <div className="px-3 py-1.5 rounded-lg" style={{ background: "#0a0a0a", border: "1px solid rgba(255,255,255,0.06)" }}>
+                  <p className="text-gray-500 uppercase tracking-wide" style={{ fontSize: "9px" }}>Dinheiro Sujo</p>
+                  <p className="font-black text-white">${player.dirty_cash.toLocaleString()}</p>
+                </div>
+                <div className="px-3 py-1.5 rounded-lg" style={{ background: "#0a0a0a", border: "1px solid rgba(255,255,255,0.06)" }}>
+                  <p className="text-gray-500 uppercase tracking-wide" style={{ fontSize: "9px" }}>Cap/Hora</p>
+                  <p className="font-black text-blue-400">${pb.launder_effective_cap.toLocaleString()}</p>
+                </div>
+                <div className="px-3 py-1.5 rounded-lg" style={{ background: "#0a0a0a", border: "1px solid rgba(255,255,255,0.06)" }}>
+                  <p className="text-gray-500 uppercase tracking-wide" style={{ fontSize: "9px" }}>Restante</p>
+                  <p className={`font-black ${pb.launder_remaining > 0 ? "text-green-400" : "text-red-400"}`}>
+                    ${pb.launder_remaining.toLocaleString()}
+                  </p>
+                </div>
+                {pb.launder_remaining <= 0 && (
+                  <div className="px-3 py-1.5 rounded-lg" style={{ background: "#0a0a0a", border: "1px solid rgba(255,106,0,0.2)" }}>
+                    <p className="text-gray-500 uppercase tracking-wide" style={{ fontSize: "9px" }}>Recarrega em</p>
+                    <p className="font-black text-orange-400">{launderResetMins}min</p>
+                  </div>
+                )}
+              </div>
+              <div className="flex items-center gap-2">
+                <input
+                  type="number"
+                  placeholder={`Máx. $${maxLaunderThisAction.toLocaleString()}`}
+                  value={launderAmount}
+                  onChange={(e) => setLaunderAmount(e.target.value)}
+                  className="flex-1 min-w-0 px-3 py-2 rounded-lg text-sm bg-[#0a0a0a] border border-white/10 text-white focus:outline-none focus:border-blue-500/50"
+                />
+                <button
+                  onClick={() => setLaunderAmount(String(maxLaunderThisAction))}
+                  disabled={maxLaunderThisAction <= 0}
+                  className="px-2 py-2 rounded-lg text-xs text-gray-400 hover:text-white border border-white/10 bg-[#0a0a0a] transition-all disabled:opacity-30"
+                >MAX</button>
+                <button
+                  onClick={handleLaunder}
+                  disabled={processing || !launderAmount || parseInt(launderAmount) <= 0 || pb.launder_remaining <= 0 || player.dirty_cash <= 0}
+                  className="px-4 py-2 rounded-xl text-sm font-bold bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 disabled:opacity-40 disabled:cursor-not-allowed transition-all whitespace-nowrap"
+                >
+                  💧 Lavar
+                </button>
+              </div>
             </div>
           ) : (
             <button

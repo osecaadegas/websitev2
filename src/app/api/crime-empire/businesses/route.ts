@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
 import { cookies } from "next/headers";
+import { grantDirtyMoney, deductDirtyMoney } from "@/lib/dirty-money";
 
 export const dynamic = "force-dynamic";
 
@@ -391,11 +392,7 @@ async function handleCollect(player: any, businessId: string) {
   if (collectedMoney > 0) {
     // Businessman gets +20% income on regular businesses
     if (player.class === "businessman") collectedMoney = Math.floor(collectedMoney * 1.20);
-    const { data: fpCollect } = await supabase.from("crime_players").select("dirty_cash").eq("id", player.id).single();
-    await supabase
-      .from("crime_players")
-      .update({ dirty_cash: (fpCollect?.dirty_cash ?? player.dirty_cash) + collectedMoney })
-      .eq("id", player.id);
+    await grantDirtyMoney(player.id, collectedMoney);
   }
 
   // Update last collection time
@@ -475,13 +472,14 @@ async function handleLaunder(player: any, businessId: string, amount: number) {
   
   const cleanMoney = Math.floor(amount * conversionRate);
 
-  const { data: fpLaunder } = await supabase.from("crime_players").select("dirty_cash, cash").eq("id", player.id).single();
+  const deductResult = await deductDirtyMoney(player.id, amount);
+  if (!deductResult.success) {
+    return NextResponse.json({ error: "Dinheiro sujo insuficiente" }, { status: 400 });
+  }
+  const { data: fpCash } = await supabase.from("crime_players").select("cash").eq("id", player.id).single();
   await supabase
     .from("crime_players")
-    .update({
-      dirty_cash: (fpLaunder?.dirty_cash ?? player.dirty_cash) - amount,
-      cash: (fpLaunder?.cash ?? player.cash) + cleanMoney,
-    })
+    .update({ cash: (fpCash?.cash ?? player.cash) + cleanMoney })
     .eq("id", player.id);
 
   // Update last collection to prevent spam

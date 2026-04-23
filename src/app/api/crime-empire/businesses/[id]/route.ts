@@ -9,6 +9,7 @@ import {
   type ProductionLevel,
   type BusinessStatus,
 } from "@/lib/business-defs";
+import { grantDirtyMoney, deductDirtyMoney, getDirtyMoneyBalance } from "@/lib/dirty-money";
 
 export const dynamic = "force-dynamic";
 
@@ -110,6 +111,16 @@ export async function GET(
   const hoursElapsed = (Date.now() - new Date(pb.last_collection).getTime()) / 3_600_000;
   const accumulatedIncome = Math.max(0, Math.floor(hoursElapsed * incomeRate));
 
+  // Launder cap computation (for launder businesses)
+  const launderCapPerWorker = def?.launder_cap_per_worker ?? 0;
+  const baseLaunderCap: number = (pb.business.launder_cap_per_hour as number) ?? 0;
+  const effectiveLaunderCap = baseLaunderCap + activeWorkers.length * launderCapPerWorker;
+  const windowStart = new Date(pb.launder_window_start ?? pb.purchased_at);
+  const windowAgeHours = (Date.now() - windowStart.getTime()) / 3_600_000;
+  const launderUsedThisWindow = windowAgeHours >= 1 ? 0 : (pb.launder_used ?? 0);
+  const launderRemaining = Math.max(0, effectiveLaunderCap - launderUsedThisWindow);
+  const launderWindowResetAt = new Date(windowStart.getTime() + 3_600_000).toISOString();
+
   // Available workers to hire (pool minus already hired)
   const hiredIds = activeWorkers.map((w: { worker_def_id: string }) => w.worker_def_id);
   const availableWorkers = (def?.worker_pool ?? []).filter((w) => !hiredIds.includes(w.id));
@@ -125,6 +136,9 @@ export async function GET(
       heat_rate_per_hour: heatRate,
       accumulated_income: accumulatedIncome,
       hours_elapsed: hoursElapsed,
+      launder_effective_cap: effectiveLaunderCap,
+      launder_remaining: launderRemaining,
+      launder_window_reset_at: launderWindowResetAt,
     },
     business: pb.business,
     def: def ?? null,
@@ -296,18 +310,12 @@ async function handleCollect(pb: any, player: any, pbId: string) {
     await supabase.from("player_businesses").update({ status: "raided", heat: newHeat, last_heat_update: now.toISOString(), last_collection: now.toISOString() }).eq("id", pbId);
     // Spawn raid event
     await spawnEvent(pbId, player.id, "police_raid_aftermath", {});
-    if (earned > 0) {
-      const { data: fp } = await supabase.from("crime_players").select("dirty_cash").eq("id", player.id).single();
-      await supabase.from("crime_players").update({ dirty_cash: (fp?.dirty_cash ?? player.dirty_cash) + earned }).eq("id", player.id);
-    }
+    if (earned > 0) await grantDirtyMoney(player.id, earned);
     return NextResponse.json({ success: true, earned, raided: true, message: `Foste invadido! A polícia apreendeu 70% dos fundos. Recuperaste $${earned.toLocaleString()} sujos.`, heat: newHeat });
   }
 
   // Normal collect
-  if (earned > 0) {
-    const { data: fp } = await supabase.from("crime_players").select("dirty_cash").eq("id", player.id).single();
-    await supabase.from("crime_players").update({ dirty_cash: (fp?.dirty_cash ?? player.dirty_cash) + earned }).eq("id", player.id);
-  }
+  if (earned > 0) await grantDirtyMoney(player.id, earned);
 
   await supabase.from("player_businesses").update({
     last_collection: now.toISOString(),
@@ -331,26 +339,84 @@ async function handleCollect(pb: any, player: any, pbId: string) {
 async function handleLaunder(pb: any, body: any, player: any, pbId: string) {
   const { amount } = body as { amount: number };
   if (!amount || amount <= 0) return NextResponse.json({ error: "Valor inválido" }, { status: 400 });
-  if (amount > player.dirty_cash) return NextResponse.json({ error: "Sem dinheiro sujo suficiente" }, { status: 403 });
 
-  const { data: workers } = await supabase.from("player_business_workers").select("*").eq("player_business_id", pbId).eq("is_active", true);
-  const workerCount = (workers ?? []).length;
-
-  const scammerBonus = player.class === "scammer" ? 0.10 : 0;
-  let rate: number;
-  switch (pb.business.type) {
-    case "chop_shop":    rate = Math.min(0.90 + scammerBonus, (0.60 + scammerBonus) + workerCount * 0.03); break;
-    case "offshore_bank":rate = Math.min(0.95 + scammerBonus, (0.70 + scammerBonus) + workerCount * 0.02); break;
-    default:             rate = Math.min(Math.min(0.98 + scammerBonus, 0.99), (0.80 + scammerBonus) + workerCount * 0.015);
+  const def = BUSINESS_DEFS[pb.business.type];
+  if (!def || def.income_type !== "launder") {
+    return NextResponse.json({ error: "Este negócio não lava dinheiro" }, { status: 400 });
   }
 
-  const clean = Math.floor(amount * rate);
-  const { data: fp } = await supabase.from("crime_players").select("dirty_cash, cash").eq("id", player.id).single();
-  await supabase.from("crime_players").update({ dirty_cash: (fp?.dirty_cash ?? player.dirty_cash) - amount, cash: (fp?.cash ?? player.cash) + clean }).eq("id", player.id);
-  await supabase.from("player_businesses").update({ last_collection: new Date().toISOString() }).eq("id", pbId);
+  // Load workers to compute effective cap
+  const { data: workers } = await supabase
+    .from("player_business_workers")
+    .select("*")
+    .eq("player_business_id", pbId)
+    .eq("is_active", true);
+  const workerCount = (workers ?? []).length;
+
+  const baseLaunderCap: number = pb.business.launder_cap_per_hour ?? 0;
+  const effectiveCap = baseLaunderCap + workerCount * (def.launder_cap_per_worker ?? 0);
+
+  // Check / reset hourly window
+  const windowStart = new Date(pb.launder_window_start ?? pb.purchased_at);
+  const windowExpired = (Date.now() - windowStart.getTime()) >= 3_600_000;
+  const launderUsed: number = windowExpired ? 0 : (pb.launder_used ?? 0);
+  const remaining = Math.max(0, effectiveCap - launderUsed);
+
+  if (remaining <= 0) {
+    const resetAt = new Date(windowStart.getTime() + 3_600_000);
+    const minsLeft = Math.ceil((resetAt.getTime() - Date.now()) / 60_000);
+    return NextResponse.json(
+      { error: `Cap de lavagem atingido. Recarrega em ${minsLeft} min.` },
+      { status: 429 }
+    );
+  }
+
+  // Clamp to remaining cap and dirty balance
+  const dirtyBalance = await getDirtyMoneyBalance(player.id);
+  if (dirtyBalance <= 0) return NextResponse.json({ error: "Sem dinheiro sujo para lavar" }, { status: 403 });
+
+  const finalAmount = Math.min(amount, remaining, dirtyBalance);
+
+  // Conversion rate (Scammer bonus applies)
+  const scammerBonus = player.class === "scammer" ? 0.10 : 0;
+  const rate = Math.min(0.90 + scammerBonus, (0.60 + scammerBonus) + workerCount * 0.03);
+  const clean = Math.floor(finalAmount * rate);
+
+  // Deduct dirty money from inventory + balance
+  const deductResult = await deductDirtyMoney(player.id, finalAmount);
+  if (!deductResult.success) {
+    return NextResponse.json({ error: "Sem dinheiro sujo suficiente" }, { status: 403 });
+  }
+
+  // Add clean cash
+  const { data: fpCash } = await supabase.from("crime_players").select("cash").eq("id", player.id).single();
+  await supabase.from("crime_players")
+    .update({ cash: (fpCash?.cash ?? player.cash) + clean })
+    .eq("id", player.id);
+
+  // Update launder window tracking
+  const now = new Date();
+  if (windowExpired) {
+    await supabase.from("player_businesses")
+      .update({ launder_used: finalAmount, launder_window_start: now.toISOString() })
+      .eq("id", pbId);
+  } else {
+    await supabase.from("player_businesses")
+      .update({ launder_used: launderUsed + finalAmount })
+      .eq("id", pbId);
+  }
+
   await grantXP(player.id, Math.max(5, Math.floor(clean / 200)));
 
-  return NextResponse.json({ success: true, dirty_amount: amount, clean_amount: clean, rate: (rate * 100).toFixed(0), loss: amount - clean });
+  return NextResponse.json({
+    success: true,
+    dirty_amount: finalAmount,
+    clean_amount: clean,
+    rate: (rate * 100).toFixed(0),
+    loss: finalAmount - clean,
+    launder_cap: effectiveCap,
+    launder_remaining: remaining - finalAmount,
+  });
 }
 
 // ── resolve_event ─────────────────────────────────────────────────────────────
@@ -384,8 +450,9 @@ async function handleResolveEvent(pb: any, body: any, player: any, _pbId: string
 
   // Apply cash changes
   const newCash = currentCash - cashCost + cashGain;
-  const newDirty = currentDirty - dirtyCost + dirtyGain;
-  await supabase.from("crime_players").update({ cash: newCash, dirty_cash: newDirty }).eq("id", player.id);
+  await supabase.from("crime_players").update({ cash: newCash }).eq("id", player.id);
+  if (dirtyCost > 0) await deductDirtyMoney(player.id, dirtyCost);
+  if (dirtyGain > 0) await grantDirtyMoney(player.id, dirtyGain);
 
   // Apply heat change
   const { data: pbFresh } = await supabase.from("player_businesses").select("heat, last_heat_update, production_level, status").eq("id", event.player_business_id).single();

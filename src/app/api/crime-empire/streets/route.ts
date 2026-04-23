@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { supabase } from "@/lib/supabase";
+import { grantDirtyMoney } from "@/lib/dirty-money";
 
 export const dynamic = "force-dynamic";
 
@@ -185,11 +186,10 @@ export async function POST(req: NextRequest) {
   }
 
   // Add dirty cash + update cooldown (re-fetch to avoid race condition)
-  const { data: freshStreet } = await supabase.from("crime_players").select("dirty_cash").eq("id", player.id).single();
   await supabase.from("crime_players").update({
-    dirty_cash: (freshStreet?.dirty_cash ?? player.dirty_cash) + earned,
     last_street_sale_at: now.toISOString(),
   }).eq("id", player.id);
+  if (earned > 0) await grantDirtyMoney(player.id, earned);
 
   // E8: XP for drug sale
   const streetXP = Math.max(5, Math.floor(earned / 50));
