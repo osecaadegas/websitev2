@@ -4,6 +4,7 @@ import { cookies } from "next/headers";
 import {
   BUSINESS_DEFS,
   computeIncomeRate,
+  computeDrugOutputRate,
   computeHeatRate,
   PRODUCTION_META,
   type ProductionLevel,
@@ -121,6 +122,20 @@ export async function GET(
   const launderRemaining = Math.max(0, effectiveLaunderCap - launderUsedThisWindow);
   const launderWindowResetAt = new Date(windowStart.getTime() + 3_600_000).toISOString();
 
+  // Drug output rate (for drug businesses)
+  const isDrugBusiness = def?.income_type === "drugs";
+  const drugOutputRate = isDrugBusiness
+    ? computeDrugOutputRate({ base_output_per_hour: (pb.business.drug_output_per_hour as number) ?? 0, production_level: pb.production_level as ProductionLevel, workers: activeWorkers, upgrades: activeUpgradeDefs })
+    : 0;
+  const accumulatedDrugQty = isDrugBusiness ? Math.max(0, Math.floor(hoursElapsed * drugOutputRate)) : 0;
+
+  // Drug item name
+  let drugItemName = "";
+  if (isDrugBusiness && pb.business.drug_output_item_id) {
+    const { data: drugItem } = await supabase.from("items").select("name").eq("id", pb.business.drug_output_item_id).single();
+    drugItemName = drugItem?.name ?? "";
+  }
+
   // Available workers to hire (pool minus already hired)
   const hiredIds = activeWorkers.map((w: { worker_def_id: string }) => w.worker_def_id);
   const availableWorkers = (def?.worker_pool ?? []).filter((w) => !hiredIds.includes(w.id));
@@ -132,10 +147,13 @@ export async function GET(
     player_business: {
       ...pb,
       heat: currentHeat,
-      income_per_hour: incomeRate,
+      income_per_hour: isDrugBusiness ? 0 : incomeRate,
       heat_rate_per_hour: heatRate,
-      accumulated_income: accumulatedIncome,
+      accumulated_income: isDrugBusiness ? 0 : accumulatedIncome,
       hours_elapsed: hoursElapsed,
+      drug_output_per_hour: drugOutputRate,
+      accumulated_drug_qty: accumulatedDrugQty,
+      drug_item_name: drugItemName,
       launder_effective_cap: effectiveLaunderCap,
       launder_remaining: launderRemaining,
       launder_window_reset_at: launderWindowResetAt,
@@ -274,6 +292,16 @@ async function handleFireWorker(_pb: any, body: any, _player: any, _pbId: string
   return NextResponse.json({ success: true, message: `${w.name} foi despedido.` });
 }
 
+// ── grantDrugItem — upsert drug item into player inventory ───────────────────
+async function grantDrugItem(playerId: string, itemId: string, qty: number) {
+  const { data: existing } = await supabase.from("player_inventory").select("id, quantity").eq("player_id", playerId).eq("item_id", itemId).maybeSingle();
+  if (existing) {
+    await supabase.from("player_inventory").update({ quantity: existing.quantity + qty }).eq("id", existing.id);
+  } else {
+    await supabase.from("player_inventory").insert({ player_id: playerId, item_id: itemId, quantity: qty });
+  }
+}
+
 // ── collect ───────────────────────────────────────────────────────────────────
 async function handleCollect(pb: any, player: any, pbId: string) {
   const now = new Date();
@@ -293,31 +321,62 @@ async function handleCollect(pb: any, player: any, pbId: string) {
   const ownedIds = (ownedUpgrades ?? []).map((u: any) => u.upgrade_def_id);
   const activeDefs = (def?.upgrades ?? []).filter((u) => ownedIds.includes(u.id));
 
-  const incomeRate = def ? computeIncomeRate({ base_income_per_hour: pb.business.base_income_per_hour, production_level: pb.production_level as ProductionLevel, workers: workers ?? [], upgrades: activeDefs }) : 0;
   const heatRate = def ? computeHeatRate({ base_heat_per_hour: def.heat_per_hour, production_level: pb.production_level as ProductionLevel, workers: workers ?? [], upgrades: activeDefs }) : 0;
-
-  let earned = Math.floor(hoursElapsed * incomeRate);
-  if (player.class === "businessman") earned = Math.floor(earned * 1.20);
 
   // Update heat
   const hours = (now.getTime() - new Date(pb.last_heat_update ?? pb.purchased_at).getTime()) / 3_600_000;
   let newHeat = Math.min(100, (pb.heat ?? 0) + hours * heatRate);
 
-  // Raid check at heat >= 90
+  // ── DRUG BUSINESSES ───────────────────────────────────────────────────────
+  if (def?.income_type === "drugs") {
+    const drugOutputRate = computeDrugOutputRate({
+      base_output_per_hour: (pb.business.drug_output_per_hour as number) ?? 0,
+      production_level: pb.production_level as ProductionLevel,
+      workers: workers ?? [],
+      upgrades: activeDefs,
+    });
+    let drugQty = Math.max(0, Math.floor(hoursElapsed * drugOutputRate));
+
+    if (newHeat >= 90) {
+      const seized = Math.floor(drugQty * 0.70);
+      drugQty = drugQty - seized;
+      newHeat = 30;
+      await supabase.from("player_businesses").update({ status: "raided", heat: newHeat, last_heat_update: now.toISOString(), last_collection: now.toISOString() }).eq("id", pbId);
+      await spawnEvent(pbId, player.id, "police_raid_aftermath", {});
+      if (drugQty > 0 && pb.business.drug_output_item_id) {
+        await grantDrugItem(player.id, pb.business.drug_output_item_id, drugQty);
+      }
+      const itemName = pb.business.drug_output_item_slug ?? "droga";
+      return NextResponse.json({ success: true, drug_qty: drugQty, raided: true, message: `Foste invadido! A polícia apreendeu 70% da ${itemName}. Recuperaste ${drugQty} unidades.`, heat: newHeat });
+    }
+
+    if (drugQty > 0 && pb.business.drug_output_item_id) {
+      await grantDrugItem(player.id, pb.business.drug_output_item_id, drugQty);
+    }
+    await supabase.from("player_businesses").update({ last_collection: now.toISOString(), heat: newHeat, last_heat_update: now.toISOString() }).eq("id", pbId);
+    await grantXP(player.id, Math.max(5, Math.floor(drugQty * 5)));
+    let newEvent = null;
+    if (def) newEvent = await maybeSpawnEvent(pb, def, player.id, pbId, newHeat);
+    return NextResponse.json({ success: true, drug_qty: drugQty, heat: newHeat, raided: false, new_event: newEvent });
+  }
+
+  // ── CASH BUSINESSES ───────────────────────────────────────────────────────
+  const incomeRate = def ? computeIncomeRate({ base_income_per_hour: pb.business.base_income_per_hour, production_level: pb.production_level as ProductionLevel, workers: workers ?? [], upgrades: activeDefs }) : 0;
+  let earned = Math.floor(hoursElapsed * incomeRate);
+  if (player.class === "businessman") earned = Math.floor(earned * 1.20);
+
   let raided = false;
   if (newHeat >= 90) {
     raided = true;
     const seized = Math.floor(earned * 0.70);
     earned = earned - seized;
-    newHeat = 30; // reset after raid
+    newHeat = 30;
     await supabase.from("player_businesses").update({ status: "raided", heat: newHeat, last_heat_update: now.toISOString(), last_collection: now.toISOString() }).eq("id", pbId);
-    // Spawn raid event
     await spawnEvent(pbId, player.id, "police_raid_aftermath", {});
     if (earned > 0) await grantDirtyMoney(player.id, earned);
     return NextResponse.json({ success: true, earned, raided: true, message: `Foste invadido! A polícia apreendeu 70% dos fundos. Recuperaste $${earned.toLocaleString()} sujos.`, heat: newHeat });
   }
 
-  // Normal collect
   if (earned > 0) await grantDirtyMoney(player.id, earned);
 
   await supabase.from("player_businesses").update({

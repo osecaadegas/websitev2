@@ -26,6 +26,7 @@ interface ManagementData {
     accumulated_income: number; hours_elapsed: number; last_collection: string;
     upgrade_level: number;
     launder_effective_cap: number; launder_remaining: number; launder_window_reset_at: string;
+    drug_output_per_hour: number; accumulated_drug_qty: number; drug_item_name: string;
   };
   business: { id: string; name: string; type: string; base_income_per_hour: number; max_employees: number; };
   def: BusinessTypeDef | null;
@@ -240,10 +241,12 @@ export default function BusinessManagementPage({ params }: { params: Promise<{ i
   const [toast, setToast] = useState<{ msg: string; type: "success" | "error" | "info" } | null>(null);
   const [showHirePanel, setShowHirePanel] = useState(false);
   const [pendingIncome, setPendingIncome] = useState(0);
+  const [pendingDrugQty, setPendingDrugQty] = useState(0);
   const [currentHeat, setCurrentHeat] = useState(0);
   const [launderAmount, setLaunderAmount] = useState("");
   const [collectCooldownSecs, setCollectCooldownSecs] = useState(0);
   const incomeIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const drugIntervalRef   = useRef<ReturnType<typeof setInterval> | null>(null);
   const heatIntervalRef   = useRef<ReturnType<typeof setInterval> | null>(null);
   const collectTimerRef   = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -259,6 +262,7 @@ export default function BusinessManagementPage({ params }: { params: Promise<{ i
       const json: ManagementData = await res.json();
       setData(json);
       setPendingIncome(json.player_business.accumulated_income);
+      setPendingDrugQty(json.player_business.accumulated_drug_qty ?? 0);
       setCurrentHeat(json.player_business.heat);
     } catch {
       showToast("Erro de rede", "error");
@@ -274,13 +278,23 @@ export default function BusinessManagementPage({ params }: { params: Promise<{ i
 
   // Live income ticker
   useEffect(() => {
-    if (!data) return;
+    if (!data || data.def?.income_type === "drugs") return;
     const rate = data.player_business.income_per_hour / 3600;
     incomeIntervalRef.current = setInterval(() => {
       setPendingIncome((prev) => Math.floor(prev + rate));
     }, 1000);
     return () => { if (incomeIntervalRef.current) clearInterval(incomeIntervalRef.current); };
-  }, [data?.player_business.income_per_hour, data?.player_business.accumulated_income]);
+  }, [data?.player_business.income_per_hour, data?.player_business.accumulated_income, data?.def?.income_type]);
+
+  // Live drug output ticker
+  useEffect(() => {
+    if (!data || data.def?.income_type !== "drugs") return;
+    const rate = (data.player_business.drug_output_per_hour ?? 0) / 3600;
+    drugIntervalRef.current = setInterval(() => {
+      setPendingDrugQty((prev) => Math.floor(prev + rate));
+    }, 1000);
+    return () => { if (drugIntervalRef.current) clearInterval(drugIntervalRef.current); };
+  }, [data?.player_business.drug_output_per_hour, data?.player_business.accumulated_drug_qty, data?.def?.income_type]);
 
   // Live heat ticker
   useEffect(() => {
@@ -334,7 +348,12 @@ export default function BusinessManagementPage({ params }: { params: Promise<{ i
     const result = await doAction({ action: "collect" });
     if (result?.success) {
       if (result.raided) showToast(`⚠️ ${result.message}`, "error");
-      else showToast(`💰 +$${result.earned?.toLocaleString()} dinheiro sujo coletado!`);
+      else if (result.drug_qty !== undefined) {
+        const itemName = data?.player_business.drug_item_name || "unidades";
+        showToast(`📦 +${result.drug_qty} ${itemName} coletados!`);
+      } else {
+        showToast(`💰 +$${result.earned?.toLocaleString()} dinheiro sujo coletado!`);
+      }
     }
   };
 
@@ -393,6 +412,8 @@ export default function BusinessManagementPage({ params }: { params: Promise<{ i
   const statusMeta = STATUS_META[status] ?? STATUS_META.running;
   const production = pb.production_level as ProductionLevel;
   const isLaunder = def?.income_type === "launder";
+  const isDrug = def?.income_type === "drugs";
+  const drugItemName = pb.drug_item_name || "droga";
   const maxLaunderThisAction = Math.min(pb.launder_remaining ?? 0, player.dirty_cash);
   const launderResetMins = Math.max(0, Math.ceil((new Date(pb.launder_window_reset_at ?? Date.now()).getTime() - Date.now()) / 60_000));
 
@@ -441,13 +462,19 @@ export default function BusinessManagementPage({ params }: { params: Promise<{ i
 
           {/* right: income + heat */}
           <div className="md:ml-auto flex flex-col md:items-end gap-3">
-            {/* Income */}
+            {/* Income / Drug output */}
             <div className="text-right">
-              <p className="text-xs text-gray-500 uppercase tracking-wide">Rendimento/hora</p>
-              <p className="text-2xl font-black" style={{ color: "#ff6a00" }}>
-                ${pb.income_per_hour.toLocaleString()}
+              <p className="text-xs text-gray-500 uppercase tracking-wide">
+                {isDrug ? "Produção/hora" : "Rendimento/hora"}
               </p>
-              <p className="text-xs text-gray-500">Salários: -${salaryCostPerHour.toLocaleString()}/hr</p>
+              <p className="text-2xl font-black" style={{ color: isDrug ? "#a78bfa" : "#ff6a00" }}>
+                {isDrug ? `${(pb.drug_output_per_hour ?? 0).toFixed(1)} ud.` : `$${pb.income_per_hour.toLocaleString()}`}
+              </p>
+              {isDrug ? (
+                <p className="text-xs text-gray-500">{drugItemName}</p>
+              ) : (
+                <p className="text-xs text-gray-500">Salários: -${salaryCostPerHour.toLocaleString()}/hr</p>
+              )}
             </div>
             {/* Heat bar */}
             <div className="w-full md:w-56">
@@ -515,6 +542,21 @@ export default function BusinessManagementPage({ params }: { params: Promise<{ i
                   💧 Lavar
                 </button>
               </div>
+            </div>
+          ) : isDrug ? (
+            <div className="flex flex-col items-start gap-1">
+              <button
+                onClick={handleCollect}
+                disabled={processing || status === "raided" || collectCooldownSecs > 0}
+                className="px-6 py-3 rounded-xl font-black text-base bg-gradient-to-r from-purple-700 to-purple-500 hover:from-purple-600 hover:to-purple-400 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-lg shadow-purple-900/20"
+              >
+                📦 Coletar{pendingDrugQty > 0 ? ` ${pendingDrugQty} ${drugItemName}` : ""}
+              </button>
+              {collectCooldownSecs > 0 && (
+                <p className="text-xs text-gray-500 pl-1">
+                  ⏳ Disponível em {Math.floor(collectCooldownSecs / 60)}m {collectCooldownSecs % 60}s
+                </p>
+              )}
             </div>
           ) : (
             <div className="flex flex-col items-start gap-1">
@@ -686,18 +728,32 @@ export default function BusinessManagementPage({ params }: { params: Promise<{ i
 
               {/* Income/hr highlight */}
               <div className="rounded-xl p-3 mb-3 border border-orange-500/20" style={{ background: "#0d0d0d" }}>
-                <p className="text-xs text-gray-500 mb-0.5">💰 Rendimento Efectivo/hora</p>
-                <p className="font-black text-orange-400 text-2xl">${pb.income_per_hour.toLocaleString()}<span className="text-sm font-normal text-gray-500">/hr</span></p>
-                <p className="text-xs text-gray-600 mt-0.5">
-                  Base: ${business.base_income_per_hour.toLocaleString()}/hr
-                  {salaryCostPerHour > 0 && <> · <span className="text-red-400/70">Salários: −${salaryCostPerHour.toLocaleString()}/hr</span></>}
-                </p>
+                {isDrug ? (
+                  <>
+                    <p className="text-xs text-gray-500 mb-0.5">📦 Produção Efectiva/hora</p>
+                    <p className="font-black text-purple-400 text-2xl">{(pb.drug_output_per_hour ?? 0).toFixed(1)}<span className="text-sm font-normal text-gray-500"> ud./hr</span></p>
+                    <p className="text-xs text-gray-600 mt-0.5">{drugItemName}</p>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-xs text-gray-500 mb-0.5">💰 Rendimento Efectivo/hora</p>
+                    <p className="font-black text-orange-400 text-2xl">${pb.income_per_hour.toLocaleString()}<span className="text-sm font-normal text-gray-500">/hr</span></p>
+                    <p className="text-xs text-gray-600 mt-0.5">
+                      Base: ${business.base_income_per_hour.toLocaleString()}/hr
+                      {salaryCostPerHour > 0 && <> · <span className="text-red-400/70">Salários: −${salaryCostPerHour.toLocaleString()}/hr</span></>}
+                    </p>
+                  </>
+                )}
               </div>
 
               <div className="grid grid-cols-2 gap-3 text-sm">
                 <div className="rounded-xl p-3" style={{ background: "#0d0d0d" }}>
                   <p className="text-xs text-gray-500">Acumulado</p>
-                  <p className="font-bold text-orange-400">${pendingIncome.toLocaleString()}</p>
+                  {isDrug ? (
+                    <p className="font-bold text-purple-400">{pendingDrugQty} ud.</p>
+                  ) : (
+                    <p className="font-bold text-orange-400">${pendingIncome.toLocaleString()}</p>
+                  )}
                 </div>
                 <div className="rounded-xl p-3" style={{ background: "#0d0d0d" }}>
                   <p className="text-xs text-gray-500">Nível de Risco</p>

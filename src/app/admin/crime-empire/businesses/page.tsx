@@ -11,6 +11,8 @@ type Business = {
   required_level: number; required_items: any[]; raid_risk: number; enabled: boolean;
   risk_level: string; heat_per_hour: number; tagline: string;
   launder_cap_per_hour: number | null;
+  drug_output_item_id: string | null;
+  drug_output_per_hour: number;
 };
 
 type OutputItem = {
@@ -26,6 +28,7 @@ const BLANK: Partial<Business> = {
   max_employees: 5, employee_cost_per_hour: 0, required_level: 1,
   required_items: [], raid_risk: 0.05, enabled: true,
   risk_level: "medium", heat_per_hour: 5, tagline: "", launder_cap_per_hour: null,
+  drug_output_item_id: null, drug_output_per_hour: 0,
 };
 
 const RISK_LEVELS = ["low", "medium", "high", "extreme"];
@@ -291,6 +294,29 @@ export default function BusinessesAdminPage() {
                     {nf("required_level", "Nível Req.")}
                     {nf("raid_risk", "Risco Raid (0-1)", "0.01")}
                   </div>
+
+                  <p className="text-[10px] uppercase tracking-widest text-[#555] pt-2">Produção de Droga</p>
+                  <label className="block">
+                    <span className="text-xs text-[#666] mb-1 block">Item de Droga Produzido</span>
+                    <select
+                      value={form.drug_output_item_id ?? ""}
+                      onChange={e => setForm(f => ({ ...f, drug_output_item_id: e.target.value || null }))}
+                      className="w-full bg-[#0a0a0a] border border-[#333] rounded-lg px-3 py-2 text-sm text-white">
+                      <option value="">— Não produz drogas —</option>
+                      {items.filter(i => i.category === "drug").map(i => (
+                        <option key={i.id} value={i.id}>{i.name}</option>
+                      ))}
+                    </select>
+                  </label>
+                  {form.drug_output_item_id && (
+                    <label className="block">
+                      <span className="text-xs text-[#666] mb-1 block">Output Base/hora (unidades)</span>
+                      <input type="number" step="1" min="0"
+                        value={form.drug_output_per_hour ?? 0}
+                        onChange={e => setForm(f => ({ ...f, drug_output_per_hour: Number(e.target.value) }))}
+                        className="w-full bg-[#0a0a0a] border border-[#333] rounded-lg px-3 py-2 text-sm text-white" />
+                    </label>
+                  )}
 
                   <p className="text-[10px] uppercase tracking-widest text-[#555] pt-2">Lavagem de Dinheiro</p>
                   <label className="block">

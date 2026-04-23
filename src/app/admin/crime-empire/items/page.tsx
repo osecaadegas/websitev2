@@ -12,7 +12,7 @@ type Item = {
 
 type ImageManifest = Record<string, string[]>;
 
-const CATEGORIES = ["weapon","armor","consumable","special","material"];
+const CATEGORIES = ["weapon","armor","consumable","special","material","drug"];
 const RARITIES   = ["common","rare","epic","legendary"];
 
 const RARITY_COLOR: Record<string,string> = {

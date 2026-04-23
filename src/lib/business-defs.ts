@@ -77,7 +77,8 @@ export interface BusinessTypeDef {
   description_short: string;
   risk_level: RiskLevel;
   heat_per_hour: number; // at normal production
-  income_type: "dirty_cash" | "launder"; // launder = converts dirty→clean
+  income_type: "dirty_cash" | "launder" | "drugs"; // drugs = produces drug items
+  drug_output_item_slug?: string; // display name of the drug item produced (reference only)
   unique_mechanic: string; // one-liner description
   launder_cap_per_worker?: number; // extra $/hr of launder throughput per hired worker
   production_multipliers: { low: number; normal: number; overdrive: number };
@@ -133,7 +134,8 @@ const WEED_FARM: BusinessTypeDef = {
   description_short: "Negócio de cultivo com risco policial constante. Gere bem os teus trabalhadores e mantém o calor baixo.",
   risk_level: "medium",
   heat_per_hour: 8,
-  income_type: "dirty_cash",
+  income_type: "drugs",
+  drug_output_item_slug: "Cannabis",
   unique_mechanic: "Calor policial — quanto mais produzires, maior a chance de inspeção",
   production_multipliers: { low: 0.35, normal: 1.0, overdrive: 1.75 },
   heat_multipliers:       { low: 0.30, normal: 1.0, overdrive: 2.50 },
@@ -205,7 +207,8 @@ const PILL_FACTORY: BusinessTypeDef = {
   description_short: "Alto risco, alto retorno. A eficiência dos teus trabalhadores determina o output. Escala gradualmente.",
   risk_level: "high",
   heat_per_hour: 13,
-  income_type: "dirty_cash",
+  income_type: "drugs",
+  drug_output_item_slug: "Pastilhas",
   unique_mechanic: "Escala de eficiência — mais trabalhadores eficientes = produção exponencial",
   production_multipliers: { low: 0.35, normal: 1.0, overdrive: 1.75 },
   heat_multipliers:       { low: 0.30, normal: 1.0, overdrive: 2.50 },
@@ -785,9 +788,137 @@ const CLANDESTINE_CASINO: BusinessTypeDef = {
 // ─────────────────────────────────────────────────────────────────────────────
 // REGISTRY
 // ─────────────────────────────────────────────────────────────────────────────
+const LSD_LAB: BusinessTypeDef = {
+  type: "lsd_lab",
+  label: "Laboratório de LSD",
+  icon: "🔬",
+  tagline: "Síntese ilegal de lisergida em escala industrial",
+  description_short: "Laboratório de alta precisão. A qualidade dos químicos determina a potência. Risco extremo.",
+  risk_level: "high",
+  heat_per_hour: 18,
+  income_type: "drugs",
+  drug_output_item_slug: "Frasco de Gotas",
+  unique_mechanic: "Síntese química — qualidade dos químicos aumenta a potência e volume do produto",
+  production_multipliers: { low: 0.35, normal: 1.0, overdrive: 1.75 },
+  heat_multipliers:       { low: 0.30, normal: 1.0, overdrive: 2.50 },
+  worker_pool: [
+    { id: "ll_marco",    name: "Marco",    skill: "production", trait: "dedicated", salary: 120, production_bonus: 0.28, efficiency_bonus: 0.10, stealth_bonus: 0.05, description: "Químico de elite, síntese impecável" },
+    { id: "ll_vera",     name: "Vera",     skill: "efficiency", trait: "efficient", salary: 110, production_bonus: 0.10, efficiency_bonus: 0.30, stealth_bonus: 0.08, description: "Otimiza cada grama do processo" },
+    { id: "ll_rafael",   name: "Rafael",   skill: "stealth",    trait: "paranoid",  salary: 115, production_bonus: -0.03, efficiency_bonus: 0,   stealth_bonus: 0.30, description: "Distribui sem deixar rasto algum" },
+    { id: "ll_serena",   name: "Serena",   skill: "production", trait: "loyal",     salary: 105, production_bonus: 0.22, efficiency_bonus: 0.05, stealth_bonus: 0.08, description: "Confiável, zero erros em 3 anos" },
+    { id: "ll_fabricio", name: "Fabrício", skill: "production", trait: "risky",     salary: 130, production_bonus: 0.38, efficiency_bonus: 0,    stealth_bonus: -0.18, description: "Produz muito mas trabalha no limite" },
+    { id: "ll_odete",    name: "Odete",    skill: "efficiency", trait: "greedy",    salary: 90,  production_bonus: 0.12, efficiency_bonus: 0.20, stealth_bonus: -0.05, description: "Boa técnica mas quer percentagem em tudo" },
+  ],
+  upgrades: [
+    { id: "ll_reactor",     name: "Reator de Síntese",     description: "Equipamento profissional: +35% output de produto",            cost: 18000, icon: "⚗️",  income_bonus: 0.35, heat_reduction: 0,    capacity_bonus: 0 },
+    { id: "ll_ventilation", name: "Ventilação Industrial", description: "Elimina gases e odores: -35% calor gerado",                    cost: 14000, icon: "💨",  income_bonus: 0,    heat_reduction: 0.35, capacity_bonus: 0 },
+    { id: "ll_isolamento",  name: "Câmaras de Isolamento", description: "Laboratório expandido: +3 químicos, +20% produção",            cost: 28000, icon: "🏗️", income_bonus: 0.20, heat_reduction: 0.15, capacity_bonus: 3 },
+    { id: "ll_rede",        name: "Rede de Distribuição",  description: "Canal dedicado de distribuição: +40% output total",            cost: 22000, icon: "🌐",  income_bonus: 0.40, heat_reduction: 0,    capacity_bonus: 0 },
+  ],
+  events: [
+    {
+      id: "ll_precursors", title: "Precursores Escassos", icon: "⚠️", severity: "warning", min_heat: 0, base_chance: 0.12, expires_hours: 12,
+      description: "Os precursores químicos estão escassos no mercado. Precisas de resolver o abastecimento.",
+      choices: [
+        { id: "buy",    label: "Mercado negro ($5.000)", cash_cost: 5000, heat_change: 6,  outcome: "Conseguiste precursores. Produção mantida mas calor subiu." },
+        { id: "reduce", label: "Reduzir produção",        heat_change: -8,                  outcome: "Reduziste a síntese. Produto escasseia mas estás mais seguro." },
+      ],
+    },
+    {
+      id: "ll_fire", title: "Incêndio no Laboratório", icon: "🔥", severity: "danger", min_heat: 40, base_chance: 0.10, expires_hours: 6,
+      description: "Uma reação instável causou um incêndio. Os danos podem ser graves.",
+      choices: [
+        { id: "extinguish", label: "Controlar ($3.000)", cash_cost: 3000, heat_change: 15, outcome: "Controlaste o incêndio. Lab funcional mas calor disparou.", success_chance: 0.80, fail_outcome: "O incêndio alastrou! Lab parcialmente destruído.", fail_heat_change: 40 },
+        { id: "evacuate",   label: "Evacuar tudo",        heat_change: -5,                  outcome: "Evacuaste. Produção parada mas sem exposição." },
+      ],
+    },
+    {
+      id: "ll_bigorder", title: "Encomenda Grande", icon: "💼", severity: "info", min_heat: 0, base_chance: 0.09, expires_hours: 10,
+      description: "Um distribuidor quer uma encomenda de grandes quantidades a preço premium.",
+      choices: [
+        { id: "accept", label: "Aceitar (calor +10)", heat_change: 10, outcome: "Encomenda processada! Grande produção esta coleta." },
+        { id: "refuse", label: "Recusar",              heat_change: 0,  outcome: "Recusaste. Segurança em primeiro lugar." },
+      ],
+    },
+    {
+      id: "ll_raid", title: "Operação Anti-Droga", icon: "🚨", severity: "danger", min_heat: 65, base_chance: 0.22, expires_hours: 4,
+      description: "A PJ tem um mandado de busca ao teu laboratório. Tens poucas horas.",
+      choices: [
+        { id: "evacuate", label: "Evacuar laboratório",               heat_change: -45, outcome: "Evacuaste tudo. Lab vazio quando chegaram." },
+        { id: "bribe",    label: "Subornar investigador ($9.000)",    cash_cost: 9000,  heat_change: -28, outcome: "Investigação suspensa.", success_chance: 0.60, fail_outcome: "Investigador honesto! Lab invadido.", fail_heat_change: 55 },
+      ],
+    },
+  ],
+};
+
+const CARTEL_EMPIRE: BusinessTypeDef = {
+  type: "cartel_empire",
+  label: "Cartel Empire",
+  icon: "🏴",
+  tagline: "A operação de cocaína mais sofisticada do país",
+  description_short: "O nível máximo do tráfico. Rotas de importação, processamento e distribuição próprias. Risco máximo.",
+  risk_level: "high",
+  heat_per_hour: 25,
+  income_type: "drugs",
+  drug_output_item_slug: "KG de Coca",
+  unique_mechanic: "Rotas de tráfico — cada trabalhador abre uma rota mais eficiente",
+  production_multipliers: { low: 0.35, normal: 1.0, overdrive: 1.75 },
+  heat_multipliers:       { low: 0.30, normal: 1.0, overdrive: 2.50 },
+  worker_pool: [
+    { id: "ce_boss",    name: "El Jefe",   skill: "production", trait: "dedicated", salary: 250, production_bonus: 0.30, efficiency_bonus: 0.10, stealth_bonus: 0.08, description: "O coordenador-chefe de toda a operação" },
+    { id: "ce_pilot",   name: "Aviador",   skill: "stealth",    trait: "paranoid",  salary: 220, production_bonus: -0.02, efficiency_bonus: 0,   stealth_bonus: 0.32, description: "Piloto experiente, rotas indetectáveis" },
+    { id: "ce_chemist", name: "Químico",   skill: "production", trait: "efficient", salary: 200, production_bonus: 0.25, efficiency_bonus: 0.15, stealth_bonus: 0.05, description: "Processa a coca com pureza máxima" },
+    { id: "ce_guard",   name: "Guarda",    skill: "stealth",    trait: "loyal",     salary: 180, production_bonus: 0,    efficiency_bonus: 0.05, stealth_bonus: 0.28, description: "Protege a operação, fiel até ao fim" },
+    { id: "ce_runner",  name: "Correio",   skill: "production", trait: "risky",     salary: 160, production_bonus: 0.35, efficiency_bonus: 0,    stealth_bonus: -0.15, description: "Distribui rápido mas arrisca demasiado" },
+    { id: "ce_account", name: "Contadora", skill: "efficiency", trait: "greedy",    salary: 190, production_bonus: 0.08, efficiency_bonus: 0.28, stealth_bonus: -0.05, description: "Gere as finanças do cartel, sempre quer mais" },
+  ],
+  upgrades: [
+    { id: "ce_labpro",   name: "Laboratório Avançado", description: "Processamento puro: +40% output de cocaína",                cost: 30000, icon: "🧪", income_bonus: 0.40, heat_reduction: 0,    capacity_bonus: 0 },
+    { id: "ce_aircraft", name: "Aeronave Privada",      description: "Transporte aéreo próprio: -30% calor de distribuição",     cost: 50000, icon: "✈️", income_bonus: 0,    heat_reduction: 0.30, capacity_bonus: 0 },
+    { id: "ce_couriers", name: "Rede de Correiros",     description: "Rede de distribuição: +4 operativos, +20% output",         cost: 40000, icon: "🌐", income_bonus: 0.20, heat_reduction: 0,    capacity_bonus: 4 },
+    { id: "ce_bunker",   name: "Bunker de Produção",    description: "Instalação subterrânea: +45% produção, -20% calor",        cost: 60000, icon: "🏰", income_bonus: 0.45, heat_reduction: 0.20, capacity_bonus: 0 },
+  ],
+  events: [
+    {
+      id: "ce_seizure", title: "Apreensão na Fronteira", icon: "🛃", severity: "danger", min_heat: 30, base_chance: 0.12, expires_hours: 8,
+      description: "Um dos teus carregamentos foi intercetado na fronteira. Precisas de uma solução.",
+      choices: [
+        { id: "abort",     label: "Abandonar a carga",          heat_change: -20, outcome: "Abandonaste. Perda de produto mas sem ligação a ti." },
+        { id: "negotiate", label: "Negociar ($15.000)",         cash_cost: 15000, heat_change: -30, outcome: "Carga libertada.", success_chance: 0.65, fail_outcome: "Negociação falhou! Investigação aberta.", fail_heat_change: 40 },
+      ],
+    },
+    {
+      id: "ce_war", title: "Guerra de Cartel", icon: "⚔️", severity: "danger", min_heat: 50, base_chance: 0.10, expires_hours: 8,
+      description: "Um cartel rival está a invadir o teu território. Exigem rendição ou represálias.",
+      choices: [
+        { id: "fight", label: "Defender território",       heat_change: 25,  outcome: "Defendeste! Mas atraiu muita atenção das autoridades.", success_chance: 0.65, fail_outcome: "Perdeste o confronto. Produção afetada.", fail_heat_change: 45 },
+        { id: "pay",   label: "Pagar tributo ($20.000)",  cash_cost: 20000, heat_change: -10, outcome: "Pagaste. A paz tem um preço." },
+      ],
+    },
+    {
+      id: "ce_supplier", title: "Fornecedor Premium", icon: "🌿", severity: "info", min_heat: 0, base_chance: 0.09, expires_hours: 10,
+      description: "Um fornecedor colombiano oferece coca de pureza extrema por preço especial.",
+      choices: [
+        { id: "buy",  label: "Comprar ($8.000)", cash_cost: 8000, heat_change: 4, outcome: "Matéria-prima de elite vai aumentar o output." },
+        { id: "pass", label: "Passar",            heat_change: 0,                  outcome: "Passaste. Produto standard mantido." },
+      ],
+    },
+    {
+      id: "ce_dea", title: "Operação da DEA", icon: "🦅", severity: "danger", min_heat: 75, base_chance: 0.25, expires_hours: 4,
+      description: "Informação classificada: a DEA tem uma operação contra o teu cartel em 4 horas.",
+      choices: [
+        { id: "scatter", label: "Dispersar toda a operação",             heat_change: -50, outcome: "Quando chegaram não havia nada." },
+        { id: "bribe",   label: "Infiltrar e subornar ($25.000)", cash_cost: 25000, heat_change: -35, outcome: "Operação sabotada por dentro.", success_chance: 0.55, fail_outcome: "Infiltrado identificado! Operação comprometida.", fail_heat_change: 60 },
+      ],
+    },
+  ],
+};
+
 export const BUSINESS_DEFS: Record<string, BusinessTypeDef> = {
   weed_farm:           WEED_FARM,
   pill_factory:        PILL_FACTORY,
+  lsd_lab:             LSD_LAB,
+  cartel_empire:       CARTEL_EMPIRE,
   crypto_mining:       CRYPTO_MINING,
   scam_office:         SCAM_OFFICE,
   chop_shop:           CHOP_SHOP,
@@ -800,6 +931,20 @@ export const BUSINESS_DEFS: Record<string, BusinessTypeDef> = {
 
 export function getBusinessDef(type: string): BusinessTypeDef | undefined {
   return BUSINESS_DEFS[type];
+}
+
+// Helper — compute drug output rate per hour (no salary deduction; output is in item units)
+export function computeDrugOutputRate(params: {
+  base_output_per_hour: number;
+  production_level: ProductionLevel;
+  workers: { production_bonus: number }[];
+  upgrades: { income_bonus: number }[];
+}): number {
+  const { base_output_per_hour, production_level, workers, upgrades } = params;
+  const prodMult    = PRODUCTION_META[production_level].income;
+  const workerBonus = workers.reduce((s, w) => s + Math.max(0, w.production_bonus), 0);
+  const upgBonus    = upgrades.reduce((s, u) => s + u.income_bonus, 0);
+  return Math.max(0, base_output_per_hour * prodMult * (1 + workerBonus + upgBonus));
 }
 
 // Helper — compute effective income rate per hour
