@@ -22,6 +22,7 @@ interface Contract {
   max_cash: number;
   respect_reward: number;
   enabled: boolean;
+  image?: string | null;
 }
 
 interface PlayerContract {
@@ -304,6 +305,40 @@ function ContractBriefing({
           <div className="h-px flex-1 bg-amber-900/18" />
         </div>
 
+        {/* TARGET PORTRAIT */}
+        {contract.image && (
+          <div className="flex justify-center mb-3">
+            <div className="relative">
+              {/* Frame glow */}
+              <div className="absolute -inset-1 rounded-sm bg-amber-900/20 blur-sm" />
+              {/* Image frame */}
+              <div
+                className="relative w-40 h-32 rounded-sm overflow-hidden"
+                style={{ boxShadow: "inset 0 0 18px rgba(0,0,0,0.35),0 2px 10px rgba(0,0,0,0.25),0 0 0 2px rgba(120,53,15,0.22)" }}
+              >
+                {/* Sepia overlay on image */}
+                <img
+                  src={contract.image === "hacker"
+                    ? `/images/contracts/contrac_hacker.png`
+                    : `/images/contracts/contract_${contract.image}.png`}
+                  alt={contract.name}
+                  className="w-full h-full object-cover object-top"
+                  style={{ filter: "sepia(0.35) contrast(1.08) brightness(0.94)" }}
+                  onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+                />
+                {/* Burn vignette over image */}
+                <div
+                  className="absolute inset-0 pointer-events-none"
+                  style={{ background: "radial-gradient(ellipse at center,transparent 40%,rgba(40,15,5,0.30) 75%,rgba(20,5,0,0.55) 100%)" }}
+                />
+              </div>
+              {/* Torn corner decorations */}
+              <div className="absolute -top-1 -right-1 w-3 h-3 rotate-45" style={{ background: "rgba(245,220,170,0.65)" }} />
+              <div className="absolute -bottom-1 -left-1 w-2 h-2 -rotate-12" style={{ background: "rgba(245,220,170,0.55)" }} />
+            </div>
+          </div>
+        )}
+
         {/* TARGET NAME */}
         <h2
           className="text-2xl font-black tracking-[0.18em] text-center leading-tight mb-2"
@@ -311,8 +346,6 @@ function ContractBriefing({
         >
           {contract.name}
         </h2>
-
-        {/* MISSION STATUS */}
         {(isCompleted || isFailed) && (
           <div className="flex justify-center mb-3">
             <span
