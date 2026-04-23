@@ -35,18 +35,18 @@ where id not in (
 );
 
 -- ─── 4. Set correct required_level for all 12 businesses ─────────────────────
-update businesses set required_level =  5  where type = 'weed_farm';
-update businesses set required_level = 10  where type = 'pill_factory';
-update businesses set required_level = 12  where type = 'scam_office';
-update businesses set required_level = 15  where type = 'crypto_mining';
-update businesses set required_level = 18  where type = 'chop_shop';
-update businesses set required_level = 20  where type = 'nightclub';
-update businesses set required_level = 22  where type = 'counterfeit_lab';
-update businesses set required_level = 25  where type = 'phantom_corp';
-update businesses set required_level = 30  where type = 'lsd_lab';
-update businesses set required_level = 35  where type = 'offshore_bank';
-update businesses set required_level = 45  where type = 'clandestine_casino';
-update businesses set required_level = 50  where type = 'cartel_empire';
+update businesses set required_level =   5  where type = 'weed_farm';
+update businesses set required_level =  12  where type = 'pill_factory';
+update businesses set required_level =  18  where type = 'scam_office';
+update businesses set required_level =  25  where type = 'crypto_mining';
+update businesses set required_level =  32  where type = 'chop_shop';
+update businesses set required_level =  40  where type = 'nightclub';
+update businesses set required_level =  50  where type = 'counterfeit_lab';
+update businesses set required_level =  60  where type = 'phantom_corp';
+update businesses set required_level =  68  where type = 'lsd_lab';
+update businesses set required_level =  75  where type = 'offshore_bank';
+update businesses set required_level =  85  where type = 'clandestine_casino';
+update businesses set required_level = 100  where type = 'cartel_empire';
 
 -- ─── 5. Ensure all 12 businesses are enabled ─────────────────────────────────
 update businesses set enabled = true
