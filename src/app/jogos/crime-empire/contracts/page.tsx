@@ -600,6 +600,9 @@ function RoadmapNode({ level, completed, unlocked, active }: {
 }
 
 /* ─────────────────────────── THREE-CARD FAN ─────────────────────── */
+const DIFF_ORDER = ["easy", "medium", "hard"] as const;
+type DiffKey = (typeof DIFF_ORDER)[number];
+
 function ThreeCardFan({
   levelContracts, selected, getStatus, levelDone, levelUnlocked, player,
   isHitman, processing, onSelect, onExecute,
@@ -615,10 +618,17 @@ function ThreeCardFan({
   onSelect: (id: string) => void;
   onExecute: (id: string) => void;
 }) {
-  const [hovered, setHovered] = useState<string | null>(null);
+  const [centerDiff, setCenterDiff] = useState<DiffKey>("medium");
+  const [hovered, setHovered]       = useState<DiffKey | null>(null);
 
-  const DIFF_ORDER = ["easy", "medium", "hard"] as const;
-  type DiffKey = (typeof DIFF_ORDER)[number];
+  // Sync centerDiff when selected changes from outside (e.g. sidebar click)
+  useEffect(() => {
+    if (!selected) return;
+    const c = levelContracts.find((lc) => lc.id === selected);
+    if (c && DIFF_ORDER.includes(c.difficulty as DiffKey)) {
+      setCenterDiff(c.difficulty as DiffKey);
+    }
+  }, [selected, levelContracts]);
 
   const sorted = DIFF_ORDER
     .map((d) => levelContracts.find((c) => c.difficulty === d))
@@ -626,70 +636,76 @@ function ThreeCardFan({
 
   if (sorted.length === 0) return null;
 
+  const centerIdx = DIFF_ORDER.indexOf(centerDiff);
+
+  const getRole = (diff: DiffKey): "center" | "left" | "right" | "far-left" | "far-right" => {
+    const rel = DIFF_ORDER.indexOf(diff) - centerIdx;
+    if (rel ===  0) return "center";
+    if (rel === -1) return "left";
+    if (rel ===  1) return "right";
+    return rel < 0 ? "far-left" : "far-right";
+  };
+
   return (
     <div
       className="flex items-start justify-center"
       style={{ perspective: "1100px", perspectiveOrigin: "50% 20%" }}
     >
       {sorted.map((contract) => {
-        const diff    = contract.difficulty as DiffKey;
-        const isSel   = contract.id === selected;
-        const isHov   = hovered === diff;
-        const isLeft   = diff === "easy";
-        const isCenter = diff === "medium";
+        const diff = contract.difficulty as DiffKey;
+        const role = getRole(diff);
+        const isHov = hovered === diff;
 
         let transform: string;
         let zIndex: number;
         let opacity: number;
         let marginR = "0px";
         let marginL = "0px";
-        let width = "330px";
+        let width: string;
+        let cursor: string;
 
-        if (isCenter) {
-          transform = isHov
-            ? "rotateY(0deg) translateZ(28px) scale(1.018)"
-            : "rotateY(0deg) translateZ(0) scale(1)";
-          zIndex  = isHov ? 15 : 10;
-          opacity = 1;
-          width   = "330px";
-        } else if (isLeft) {
-          transform = isHov
-            ? "rotateY(5deg) translateZ(12px) scale(0.91)"
-            : "rotateY(14deg) translateZ(-85px) scale(0.80)";
-          zIndex  = isHov ? 9 : 2;
-          opacity = isHov ? 0.90 : isSel ? 0.80 : 0.50;
-          marginR = isHov ? "-24px" : "-62px";
-          width   = "270px";
-        } else {
-          transform = isHov
-            ? "rotateY(-5deg) translateZ(12px) scale(0.91)"
-            : "rotateY(-14deg) translateZ(-85px) scale(0.80)";
-          zIndex  = isHov ? 9 : 2;
-          opacity = isHov ? 0.90 : isSel ? 0.80 : 0.50;
-          marginL = isHov ? "-24px" : "-62px";
-          width   = "270px";
+        switch (role) {
+          case "center":
+            transform = isHov ? "rotateY(0deg) translateZ(28px) scale(1.018)" : "rotateY(0deg) translateZ(0px) scale(1)";
+            zIndex = isHov ? 15 : 10; opacity = 1; width = "330px"; cursor = "default";
+            break;
+          case "left":
+            transform = isHov ? "rotateY(6deg) translateZ(15px) scale(0.90)" : "rotateY(14deg) translateZ(-85px) scale(0.80)";
+            zIndex = isHov ? 9 : 2; opacity = isHov ? 0.88 : 0.50;
+            marginR = isHov ? "-28px" : "-62px"; width = "270px"; cursor = "pointer";
+            break;
+          case "right":
+            transform = isHov ? "rotateY(-6deg) translateZ(15px) scale(0.90)" : "rotateY(-14deg) translateZ(-85px) scale(0.80)";
+            zIndex = isHov ? 9 : 2; opacity = isHov ? 0.88 : 0.50;
+            marginL = isHov ? "-28px" : "-62px"; width = "270px"; cursor = "pointer";
+            break;
+          case "far-left":
+            transform = "rotateY(22deg) translateZ(-160px) scale(0.62)";
+            zIndex = 1; opacity = 0.22; marginR = "-90px"; width = "220px"; cursor = "pointer";
+            break;
+          default: // far-right
+            transform = "rotateY(-22deg) translateZ(-160px) scale(0.62)";
+            zIndex = 1; opacity = 0.22; marginL = "-90px"; width = "220px"; cursor = "pointer";
+            break;
         }
 
         return (
           <div
             key={contract.id}
             style={{
-              width,
-              flexShrink: 0,
-              position: "relative",
-              zIndex,
-              transform,
+              width, flexShrink: 0, position: "relative", zIndex, transform,
               transformStyle: "preserve-3d",
-              transition:
-                "transform 0.55s cubic-bezier(0.25,0.46,0.45,0.94), opacity 0.38s ease, margin 0.42s ease, width 0.35s ease",
-              opacity,
-              marginRight: marginR,
-              marginLeft:  marginL,
-              cursor: isCenter && !isHov ? "default" : "pointer",
+              transition: "transform 0.58s cubic-bezier(0.25,0.46,0.45,0.94), opacity 0.42s ease, margin 0.46s ease, width 0.38s ease",
+              opacity, marginRight: marginR, marginLeft: marginL, cursor,
             }}
-            onMouseEnter={() => setHovered(diff)}
+            onMouseEnter={() => { if (role !== "center") setHovered(diff); }}
             onMouseLeave={() => setHovered(null)}
-            onClick={() => { if (contract.id !== selected) onSelect(contract.id); }}
+            onClick={() => {
+              if (role !== "center") {
+                setCenterDiff(diff);
+                onSelect(contract.id);
+              }
+            }}
           >
             <ContractBriefing
               contract={contract}
@@ -864,7 +880,7 @@ export default function ContractsPage() {
 
       {toast && <CEToast msg={toast.msg} ok={toast.ok} details={toast.details} />}
 
-      <div className="relative z-10 max-w-6xl mx-auto py-8 px-4 md:px-8 flex flex-col gap-6">
+      <div className="relative z-10 max-w-6xl mx-auto py-8 pl-2 pr-4 md:pl-3 md:pr-8 flex flex-col gap-6">
 
         {/* ── Page header ── */}
         <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
@@ -910,7 +926,7 @@ export default function ContractsPage() {
             <p className="text-[9px] uppercase tracking-[0.4em]" style={{ color: "rgba(180,110,40,0.40)" }}>Sem contratos disponiveis</p>
           </div>
         ) : (
-          <div className="flex flex-col lg:flex-row gap-6 items-start">
+          <div className="flex flex-col lg:flex-row gap-3 items-start">
 
             {/* ── LEFT: Roadmap + List ── */}
             <div
@@ -944,10 +960,7 @@ export default function ContractsPage() {
                           levelUnlocked={unlocked}
                           isHitman={isHitman}
                           onClick={() => {
-                            if (selected !== c.id) {
-                              setSelected(c.id);
-                              setBriefingKey((k) => k + 1);
-                            }
+                            if (selected !== c.id) setSelected(c.id);
                           }}
                         />
                       ))}
@@ -967,7 +980,7 @@ export default function ContractsPage() {
             {/* ── RIGHT: 3-Card Fan ── */}
             <div className="flex-1 flex items-start justify-center pt-2 min-w-0 overflow-x-auto">
               {selectedContract ? (
-                <div key={briefingKey} className="ce-fade-slide w-full">
+                <div key={selectedLevel ?? "none"} className="ce-fade-slide w-full">
                   <ThreeCardFan
                     levelContracts={levelContracts}
                     selected={selected}
@@ -977,7 +990,7 @@ export default function ContractsPage() {
                     player={player}
                     isHitman={isHitman}
                     processing={processing}
-                    onSelect={(id) => { setSelected(id); setBriefingKey((k) => k + 1); }}
+                    onSelect={(id) => setSelected(id)}
                     onExecute={attemptContract}
                   />
                 </div>
