@@ -18,6 +18,7 @@ interface Business {
   purchase_price: number; base_income_per_hour: number;
   max_employees: number; required_level: number;
   heat_per_hour?: number; risk_level?: string; tagline?: string;
+  launder_cap_per_hour?: number | null; launder_fee_percent?: number | null;
 }
 interface OwnedBusiness {
   id: string; pb_id: string; business_id: string; employees: number;
@@ -156,10 +157,23 @@ function AvailableCard({ business, playerLevel, playerCash, onBuy, processing }:
       </div>
 
       <div className="px-4 pb-3 grid grid-cols-2 gap-2 text-xs text-center">
-        <div className="rounded-lg p-2" style={{ background: "#0d0d0d" }}>
-          <p className="text-gray-500">Rendimento base</p>
-          <p className="text-orange-400 font-bold">${business.base_income_per_hour.toLocaleString()}/hr</p>
-        </div>
+        {business.launder_cap_per_hour ? (
+          <>
+            <div className="rounded-lg p-2" style={{ background: "#0d0d0d" }}>
+              <p className="text-gray-500">Cap/hora</p>
+              <p className="text-blue-400 font-bold">${business.launder_cap_per_hour.toLocaleString()}</p>
+            </div>
+            <div className="rounded-lg p-2" style={{ background: "#0d0d0d" }}>
+              <p className="text-gray-500">Taxa da casa</p>
+              <p className="text-orange-400 font-bold">{business.launder_fee_percent ?? 20}%</p>
+            </div>
+          </>
+        ) : (
+          <div className="rounded-lg p-2" style={{ background: "#0d0d0d" }}>
+            <p className="text-gray-500">Rendimento base</p>
+            <p className="text-orange-400 font-bold">${business.base_income_per_hour.toLocaleString()}/hr</p>
+          </div>
+        )}
         <div className="rounded-lg p-2" style={{ background: "#0d0d0d" }}>
           <p className="text-gray-500">Preço</p>
           <p className={`font-bold ${canAfford ? "text-green-400" : "text-red-400"}`}>

@@ -28,7 +28,7 @@ interface ManagementData {
     launder_effective_cap: number; launder_remaining: number; launder_window_reset_at: string;
     drug_output_per_hour: number; accumulated_drug_qty: number; drug_item_name: string;
   };
-  business: { id: string; name: string; type: string; base_income_per_hour: number; max_employees: number; };
+  business: { id: string; name: string; type: string; base_income_per_hour: number; max_employees: number; launder_fee_percent?: number | null; };
   def: BusinessTypeDef | null;
   workers: HiredWorker[];
   owned_upgrade_ids: string[];
@@ -507,6 +507,10 @@ export default function BusinessManagementPage({ params }: { params: Promise<{ i
                 <div className="px-3 py-1.5 rounded-lg" style={{ background: "#0a0a0a", border: "1px solid rgba(255,255,255,0.06)" }}>
                   <p className="text-gray-500 uppercase tracking-wide" style={{ fontSize: "9px" }}>Cap/Hora</p>
                   <p className="font-black text-blue-400">${pb.launder_effective_cap.toLocaleString()}</p>
+                </div>
+                <div className="px-3 py-1.5 rounded-lg" style={{ background: "#0a0a0a", border: "1px solid rgba(255,106,0,0.15)" }}>
+                  <p className="text-gray-500 uppercase tracking-wide" style={{ fontSize: "9px" }}>Taxa da Casa</p>
+                  <p className="font-black text-orange-400">{business.launder_fee_percent ?? 20}%</p>
                 </div>
                 <div className="px-3 py-1.5 rounded-lg" style={{ background: "#0a0a0a", border: "1px solid rgba(255,255,255,0.06)" }}>
                   <p className="text-gray-500 uppercase tracking-wide" style={{ fontSize: "9px" }}>Restante</p>

@@ -11,6 +11,7 @@ type Business = {
   required_level: number; required_items: any[]; raid_risk: number; enabled: boolean;
   risk_level: string; heat_per_hour: number; tagline: string;
   launder_cap_per_hour: number | null;
+  launder_fee_percent: number;
   drug_output_item_id: string | null;
   drug_output_per_hour: number;
   drug_item?: { name: string } | null;
@@ -30,7 +31,7 @@ const BLANK: Partial<Business> = {
   max_employees: 5, employee_cost_per_hour: 0, required_level: 1,
   required_items: [], raid_risk: 0.05, enabled: true,
   risk_level: "medium", heat_per_hour: 5, tagline: "",
-  launder_cap_per_hour: null, drug_output_item_id: null, drug_output_per_hour: 0,
+  launder_cap_per_hour: null, launder_fee_percent: 20, drug_output_item_id: null, drug_output_per_hour: 0,
 };
 
 const RISK_LEVELS = ["low", "medium", "high", "extreme"];
@@ -291,6 +292,7 @@ export default function BusinessesAdminPage() {
                       <div>
                         <span className="text-blue-400 text-xs font-bold">💧 Lavagem</span>
                         <span className="text-[#555] text-[10px]"> · cap ${b.launder_cap_per_hour.toLocaleString()}/hr</span>
+                        <p className="text-orange-400/80 text-[10px]">taxa {b.launder_fee_percent ?? 20}%</p>
                         {b.base_income_per_hour > 0 && (
                           <p className="text-[#555] text-[10px]">base ${b.base_income_per_hour.toLocaleString()}/hr</p>
                         )}
@@ -496,14 +498,23 @@ export default function BusinessesAdminPage() {
                     {!!form.launder_cap_per_hour && !form.drug_output_item_id && (
                       <div className="rounded-xl border border-blue-900/30 bg-blue-950/10 p-3 space-y-2">
                         <p className="text-[10px] text-blue-400 font-bold uppercase tracking-wider">Configuração de Lavagem</p>
-                        <label className="block">
-                          <span className={labelCls}>Cap de Lavagem/hora ($)</span>
-                          <input type="number" step="500" min="0"
-                            value={form.launder_cap_per_hour ?? ""}
-                            onChange={e => setForm(f => ({ ...f, launder_cap_per_hour: e.target.value === "" ? null : Number(e.target.value) }))}
-                            className={inputCls} />
-                        </label>
-                        <p className="text-[10px] text-[#555]">Quantidade máxima de dinheiro sujo que este negócio consegue lavar por hora.</p>
+                        <div className="grid grid-cols-2 gap-3">
+                          <label className="block">
+                            <span className={labelCls}>Cap de Lavagem/hora ($)</span>
+                            <input type="number" step="500" min="0"
+                              value={form.launder_cap_per_hour ?? ""}
+                              onChange={e => setForm(f => ({ ...f, launder_cap_per_hour: e.target.value === "" ? null : Number(e.target.value) }))}
+                              className={inputCls} />
+                          </label>
+                          <label className="block">
+                            <span className={labelCls}>Taxa da Casa (%)</span>
+                            <input type="number" step="1" min="1" max="95"
+                              value={form.launder_fee_percent ?? 20}
+                              onChange={e => setForm(f => ({ ...f, launder_fee_percent: Number(e.target.value) }))}
+                              className={inputCls} />
+                          </label>
+                        </div>
+                        <p className="text-[10px] text-[#555]">Cap: máx. lavado por hora. Taxa: % que o negócio fica (ex: 20 = jogador recebe 80% limpo).</p>
                       </div>
                     )}
 

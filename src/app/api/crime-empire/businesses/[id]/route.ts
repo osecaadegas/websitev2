@@ -439,9 +439,12 @@ async function handleLaunder(pb: any, body: any, player: any, pbId: string) {
 
   const finalAmount = Math.min(amount, remaining, dirtyBalance);
 
-  // Conversion rate (Scammer bonus applies)
+  // Conversion rate — base rate from admin-configured fee, workers reduce the fee slightly
+  const feePercent: number = pb.business.launder_fee_percent ?? 20;
+  const baseRate = 1 - feePercent / 100;
   const scammerBonus = player.class === "scammer" ? 0.10 : 0;
-  const rate = Math.min(0.90 + scammerBonus, (0.60 + scammerBonus) + workerCount * 0.03);
+  const workerBonus = workerCount * 0.015; // each worker reduces fee by 1.5%
+  const rate = Math.min(0.95, baseRate + scammerBonus + workerBonus);
   const clean = Math.floor(finalAmount * rate);
 
   // Deduct dirty money from inventory + balance
