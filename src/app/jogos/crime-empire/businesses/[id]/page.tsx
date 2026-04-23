@@ -622,6 +622,17 @@ export default function BusinessManagementPage({ params }: { params: Promise<{ i
             {/* Stats card */}
             <div className="rounded-2xl border p-4" style={{ background: "#111", borderColor: "rgba(255,255,255,0.07)" }}>
               <p className="font-black text-white text-sm uppercase tracking-widest mb-3">Estatísticas</p>
+
+              {/* Income/hr highlight */}
+              <div className="rounded-xl p-3 mb-3 border border-orange-500/20" style={{ background: "#0d0d0d" }}>
+                <p className="text-xs text-gray-500 mb-0.5">💰 Rendimento Efectivo/hora</p>
+                <p className="font-black text-orange-400 text-2xl">${pb.income_per_hour.toLocaleString()}<span className="text-sm font-normal text-gray-500">/hr</span></p>
+                <p className="text-xs text-gray-600 mt-0.5">
+                  Base: ${business.base_income_per_hour.toLocaleString()}/hr
+                  {salaryCostPerHour > 0 && <> · <span className="text-red-400/70">Salários: −${salaryCostPerHour.toLocaleString()}/hr</span></>}
+                </p>
+              </div>
+
               <div className="grid grid-cols-2 gap-3 text-sm">
                 <div className="rounded-xl p-3" style={{ background: "#0d0d0d" }}>
                   <p className="text-xs text-gray-500">Acumulado</p>
