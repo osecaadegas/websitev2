@@ -75,16 +75,16 @@ function PlayerHUD({ player, isHitman }: { player: Player; isHitman: boolean }) 
   const stPct = Math.max(0, Math.min(100, (player.stamina / player.max_stamina) * 100));
   const hpPct = Math.max(0, Math.min(100, (player.hp / player.max_hp) * 100));
   return (
-    <div className="flex items-center gap-5 flex-wrap border-b border-[#161616] pb-4 mb-5">
+    <div className="flex items-center gap-5 flex-wrap border-b border-[#222] pb-4 mb-5">
       <div className="flex items-center gap-2">
-        <span className="text-[8px] uppercase tracking-[0.3em] text-[#3a3a3a]">NIV</span>
+        <span className="text-[8px] uppercase tracking-[0.3em] text-[#666]">NIV</span>
         <span className="text-sm font-black text-white bg-[#181818] border border-[#222] rounded px-3 py-1 tabular-nums">
           {player.level}
         </span>
       </div>
       <div className="flex flex-col gap-0.5">
         <div className="flex items-center justify-between gap-6">
-          <span className="text-[8px] uppercase tracking-[0.3em] text-[#3a3a3a]">STAMINA</span>
+          <span className="text-[8px] uppercase tracking-[0.3em] text-[#666]">STAMINA</span>
           <span className="text-[9px] font-bold tabular-nums" style={{ color: stPct > 40 ? "#f59e0b" : "#ef4444" }}>
             {player.stamina}/{player.max_stamina}
           </span>
@@ -96,7 +96,7 @@ function PlayerHUD({ player, isHitman }: { player: Player; isHitman: boolean }) 
       </div>
       <div className="flex flex-col gap-0.5">
         <div className="flex items-center justify-between gap-6">
-          <span className="text-[8px] uppercase tracking-[0.3em] text-[#3a3a3a]">HP</span>
+          <span className="text-[8px] uppercase tracking-[0.3em] text-[#666]">HP</span>
           <span className="text-[9px] font-bold tabular-nums" style={{ color: hpPct > 40 ? "#22c55e" : "#ef4444" }}>
             {player.hp}/{player.max_hp}
           </span>
@@ -107,7 +107,7 @@ function PlayerHUD({ player, isHitman }: { player: Player; isHitman: boolean }) 
         </div>
       </div>
       {isHitman && (
-        <span className="text-[8px] font-black tracking-[0.2em] text-red-400 bg-red-900/20 border border-red-800/40 rounded px-2.5 py-1 uppercase">
+          <span className="text-[8px] font-black tracking-[0.2em] text-red-300 bg-red-900/30 border border-red-700/50 rounded px-2.5 py-1 uppercase">
           HITMAN +
         </span>
       )}
@@ -233,9 +233,9 @@ function ContractBriefing({
       {/* ── TOP: classification bar ── */}
       <div className="flex items-center justify-between mb-5">
         <div className="flex items-center gap-2">
-          <div className="h-px w-6 bg-[#2a2a2a]" />
-          <span className="text-[7px] uppercase tracking-[0.4em] text-[#2e2e2e]">DOSSIE CONFIDENCIAL</span>
-          <div className="h-px w-6 bg-[#2a2a2a]" />
+          <div className="h-px w-6 bg-[#333]" />
+          <span className="text-[7px] uppercase tracking-[0.4em] text-[#555]">DOSSIE CONFIDENCIAL</span>
+          <div className="h-px w-6 bg-[#333]" />
         </div>
         <span
           className="text-[8px] font-black tracking-[0.25em] px-2.5 py-1 rounded"
@@ -247,7 +247,7 @@ function ContractBriefing({
 
       {/* ── TARGET HEADER ── */}
       <div className="mb-5">
-        <p className="text-[8px] uppercase tracking-[0.35em] text-[#2e2e2e] mb-1">ALVO DESIGNADO</p>
+        <p className="text-[8px] uppercase tracking-[0.35em] text-[#666] mb-1">ALVO DESIGNADO</p>
         <h2 className="text-3xl md:text-4xl font-black text-white leading-none tracking-tight mb-2">
           {contract.name}
         </h2>
@@ -261,20 +261,20 @@ function ContractBriefing({
       </div>
 
       {/* ── INTEL ── */}
-      <div className="mb-5 border-l-2 border-[#1e1e1e] pl-4">
-        <p className="text-[8px] uppercase tracking-[0.3em] text-[#333] mb-2">INTEL</p>
-        <p className="text-[12px] text-[#555] leading-relaxed italic">
+      <div className="mb-5 border-l-2 border-[#2a2a2a] pl-4">
+        <p className="text-[8px] uppercase tracking-[0.3em] text-[#666] mb-2">INTEL</p>
+        <p className="text-[12px] text-[#888] leading-relaxed italic">
           {contract.description}
         </p>
       </div>
 
-      <div className="border-t border-[#141414] mb-5" />
+      <div className="border-t border-[#222] mb-5" />
 
       {/* ── VISUAL STATS ── */}
       <div className="mb-5 space-y-3">
         <div className="flex items-center gap-4">
           <div className="w-[80px] flex-shrink-0">
-            <p className="text-[7px] uppercase tracking-[0.3em] text-[#2e2e2e] mb-1">SUCESSO</p>
+            <p className="text-[7px] uppercase tracking-[0.3em] text-[#666] mb-1">SUCESSO</p>
             <p className="text-sm font-black tabular-nums" style={{ color: displayRate >= 60 ? "#22c55e" : displayRate >= 40 ? "#f59e0b" : "#ef4444" }}>
               {displayRate}%{isHitman ? " ✦" : ""}
             </p>
@@ -285,7 +285,7 @@ function ContractBriefing({
         </div>
         <div className="flex items-center gap-4">
           <div className="w-[80px] flex-shrink-0">
-            <p className="text-[7px] uppercase tracking-[0.3em] text-[#2e2e2e] mb-1">RISCO</p>
+            <p className="text-[7px] uppercase tracking-[0.3em] text-[#666] mb-1">RISCO</p>
             <p className="text-sm font-black tabular-nums text-red-500">{riskDisplay}%</p>
           </div>
           <div className="flex-1">
@@ -294,12 +294,12 @@ function ContractBriefing({
         </div>
         <div className="flex items-center gap-4">
           <div className="w-[80px] flex-shrink-0">
-            <p className="text-[7px] uppercase tracking-[0.3em] text-[#2e2e2e] mb-1">STAMINA</p>
-            <p className="text-sm font-black tabular-nums text-[#888]">-{contract.stamina_cost}</p>
+            <p className="text-[7px] uppercase tracking-[0.3em] text-[#666] mb-1">STAMINA</p>
+            <p className="text-sm font-black tabular-nums text-[#aaa]">-{contract.stamina_cost}</p>
           </div>
-          <div className="text-[10px] text-[#333]">
+          <div className="text-[10px] text-[#555]">
             {hasStamina ? (
-              <span className="text-[#2e2e2e]">Disponivel</span>
+              <span className="text-[#666]">Disponivel</span>
             ) : (
               <span className="text-red-700">Stamina insuficiente</span>
             )}
@@ -307,49 +307,49 @@ function ContractBriefing({
         </div>
       </div>
 
-      <div className="border-t border-[#141414] mb-5" />
+      <div className="border-t border-[#222] mb-5" />
 
       {/* ── REWARDS ── */}
       <div className="mb-5">
-        <p className="text-[8px] uppercase tracking-[0.3em] text-[#2e2e2e] mb-3">RECOMPENSA ESTIMADA</p>
+        <p className="text-[8px] uppercase tracking-[0.3em] text-[#666] mb-3">RECOMPENSA ESTIMADA</p>
         <div className="flex items-end gap-6">
           <div>
-            <p className="text-[8px] uppercase tracking-[0.2em] text-[#2a2a2a] mb-0.5">CASH</p>
+            <p className="text-[8px] uppercase tracking-[0.2em] text-[#555] mb-0.5">CASH</p>
             <p className="text-2xl font-black text-green-400 tabular-nums leading-none">
               ${contract.min_cash.toLocaleString("pt-PT")}
-              <span className="text-sm text-[#333] font-normal"> - </span>
+              <span className="text-sm text-[#555] font-normal"> — </span>
               ${contract.max_cash.toLocaleString("pt-PT")}
             </p>
           </div>
           <div className="pb-0.5">
-            <p className="text-[8px] uppercase tracking-[0.2em] text-[#2a2a2a] mb-0.5">RESPEITO</p>
+            <p className="text-[8px] uppercase tracking-[0.2em] text-[#555] mb-0.5">RESPEITO</p>
             <p className="text-xl font-black text-yellow-500 leading-none">+{contract.respect_reward}</p>
           </div>
         </div>
       </div>
 
-      <div className="border-t border-[#141414] mb-5" />
+      <div className="border-t border-[#222] mb-5" />
 
       {/* ── CONSEQUENCES ── */}
       <div className="mb-6">
-        <p className="text-[8px] uppercase tracking-[0.3em] text-[#2e2e2e] mb-3">POSSIVEIS CONSEQUENCIAS</p>
+        <p className="text-[8px] uppercase tracking-[0.3em] text-[#666] mb-3">POSSIVEIS CONSEQUENCIAS</p>
         <div className="space-y-2">
           <div className="flex items-start gap-3">
-            <div className="w-1 h-1 rounded-full bg-red-700 mt-1.5 flex-shrink-0" />
-            <p className="text-[11px] text-[#444]">
+            <div className="w-1 h-1 rounded-full bg-red-500 mt-1.5 flex-shrink-0" />
+            <p className="text-[11px] text-[#999]">
               Em caso de falha, HP cai para 0 — serás enviado ao hospital.
             </p>
           </div>
           <div className="flex items-start gap-3">
-            <div className="w-1 h-1 rounded-full bg-red-700 mt-1.5 flex-shrink-0" />
-            <p className="text-[11px] text-[#444]">
-              <span className="text-red-700 font-bold">{arrestDisplay}% de chance</span> de ser preso (30–90 min).
+            <div className="w-1 h-1 rounded-full bg-red-500 mt-1.5 flex-shrink-0" />
+            <p className="text-[11px] text-[#999]">
+              <span className="text-red-400 font-bold">{arrestDisplay}% de chance</span> de ser preso (30–90 min).
             </p>
           </div>
           {!meetsLevel && (
             <div className="flex items-start gap-3">
               <div className="w-1 h-1 rounded-full bg-red-700 mt-1.5 flex-shrink-0" />
-              <p className="text-[11px] text-red-800">
+              <p className="text-[11px] text-red-400">
                 Requer nivel {contract.required_level} — o teu atual e insuficiente.
               </p>
             </div>
@@ -360,7 +360,7 @@ function ContractBriefing({
       {/* ── EXECUTE BUTTON ── */}
       <div className="mt-auto">
         {disabledReason ? (
-          <div className="w-full py-3 rounded-xl text-center text-[9px] font-black tracking-[0.3em] uppercase text-[#2a2a2a] bg-[#0d0d0d] border border-[#161616]">
+          <div className="w-full py-3 rounded-xl text-center text-[9px] font-black tracking-[0.3em] uppercase text-[#666] bg-[#0d0d0d] border border-[#222]">
             {disabledReason}
           </div>
         ) : (
@@ -385,7 +385,7 @@ function ContractBriefing({
           </button>
         )}
         {!disabledReason && (
-          <p className="text-center text-[8px] text-[#252525] mt-2 uppercase tracking-wider">
+          <p className="text-center text-[8px] text-[#555] mt-2 uppercase tracking-wider">
             Esta acao nao pode ser revertida
           </p>
         )}
@@ -410,7 +410,7 @@ function RoadmapNode({ level, completed, unlocked, active }: {
         {completed ? "✓" : unlocked || active ? level : "—"}
       </div>
       <span className={`text-[8px] uppercase tracking-[0.2em] font-bold ${
-        completed ? "text-green-600" : active ? "text-orange-600" : "text-[#222]"
+        completed ? "text-green-400" : active ? "text-orange-400" : "text-[#444]"
       }`}>
         CAP {level}
       </span>
@@ -520,7 +520,7 @@ export default function ContractsPage() {
             <div className="absolute inset-2 rounded-full border border-red-800/30 animate-pulse" />
             <div className="absolute inset-0 flex items-center justify-center text-xl">🎯</div>
           </div>
-          <p className="text-[8px] uppercase tracking-[0.4em] text-[#333]">A CARREGAR BRIEFING</p>
+          <p className="text-[8px] uppercase tracking-[0.4em] text-[#666]">A CARREGAR BRIEFING</p>
         </div>
       </div>
     );
@@ -560,7 +560,7 @@ export default function ContractsPage() {
         {/* ── Page title + HUD ── */}
         <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
           <div>
-            <p className="text-[7px] uppercase tracking-[0.5em] text-[#292929] mb-1">CRIME EMPIRE / CONTRATOS</p>
+            <p className="text-[7px] uppercase tracking-[0.5em] text-[#555] mb-1">CRIME EMPIRE / CONTRATOS</p>
             <h1 className="text-4xl md:text-5xl font-black tracking-tighter text-white leading-none">CONTRATOS</h1>
           </div>
           {player && <PlayerHUD player={player} isHitman={isHitman} />}
@@ -570,13 +570,13 @@ export default function ContractsPage() {
         {isHitman && (
           <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-[#0e0404] border border-red-900/30 text-[10px] text-red-800">
             <span className="flex-shrink-0">🔪</span>
-            <span><strong className="text-red-600">BONUS HITMAN:</strong> +15% taxa de sucesso · -50% chance de ser preso</span>
+            <span className="text-red-400"><strong className="text-red-300">BONUS HITMAN:</strong> +15% taxa de sucesso · -50% chance de ser preso</span>
           </div>
         )}
         {player?.in_jail && (
           <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-[#0d0b00] border border-yellow-900/30 text-[10px] text-yellow-900">
             <span className="flex-shrink-0">🚔</span>
-            <span><strong className="text-yellow-700">DETIDO:</strong> Nao podes aceitar contratos enquanto estiveres preso.</span>
+            <span className="text-yellow-600"><strong className="text-yellow-400">DETIDO:</strong> Nao podes aceitar contratos enquanto estiveres preso.</span>
           </div>
         )}
 
@@ -584,7 +584,7 @@ export default function ContractsPage() {
         {contracts.length === 0 ? (
           <div className="text-center py-24">
             <p className="text-2xl opacity-10 mb-3">🎯</p>
-            <p className="text-[9px] uppercase tracking-[0.4em] text-[#2e2e2e]">Sem contratos disponiveis</p>
+            <p className="text-[9px] uppercase tracking-[0.4em] text-[#555]">Sem contratos disponiveis</p>
           </div>
         ) : (
           <div className="flex flex-col lg:flex-row gap-4 items-start">
@@ -633,7 +633,7 @@ export default function ContractsPage() {
 
               {/* Footer note */}
               <div className="px-2 pt-2 border-t border-[#121212]">
-                <p className="text-[7px] uppercase tracking-[0.25em] text-[#1e1e1e] leading-relaxed">
+                <p className="text-[7px] uppercase tracking-[0.25em] text-[#555] leading-relaxed">
                   Falhar envia-te ao hospital com 0 HP. Possivel prisao de 30-90 min.
                 </p>
               </div>
@@ -656,7 +656,7 @@ export default function ContractsPage() {
                 </div>
               ) : (
                 <div className="h-full flex items-center justify-center">
-                  <p className="text-[8px] uppercase tracking-[0.4em] text-[#1e1e1e]">
+                  <p className="text-[8px] uppercase tracking-[0.4em] text-[#555]">
                     Seleciona um contrato
                   </p>
                 </div>
