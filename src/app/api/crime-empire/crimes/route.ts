@@ -147,18 +147,23 @@ export async function POST(request: Request) {
 
   // Calculate rewards
   let dirtyCashEarned = 0;
+  let cleanCashEarned = 0;
   let xpEarned = 0;
   let respectEarned = 0;
 
   if (success) {
     // Reward is exactly within the displayed min/max range
-    dirtyCashEarned = Math.floor(Math.random() * (crime.max_dirty_cash - crime.min_dirty_cash + 1)) + crime.min_dirty_cash;
+    const totalCash = Math.floor(Math.random() * (crime.max_dirty_cash - crime.min_dirty_cash + 1)) + crime.min_dirty_cash;
+    const cleanPct = Math.max(0, Math.min(100, crime.clean_cash_pct ?? 0));
+    cleanCashEarned = Math.floor(totalCash * cleanPct / 100);
+    dirtyCashEarned = totalCash - cleanCashEarned;
     xpEarned = Math.floor(crime.xp_reward);
     respectEarned = crime.respect_reward;
 
     // Apply class bonuses
     if (player.class === 'thief') {
       dirtyCashEarned = Math.floor(dirtyCashEarned * 1.1);
+      cleanCashEarned  = Math.floor(cleanCashEarned  * 1.1);
     }
     if (player.class === 'hooligan') {
       respectEarned = Math.floor(respectEarned * 1.2);
@@ -194,13 +199,14 @@ export async function POST(request: Request) {
   const newXPToNext = Math.floor(100 * Math.pow(1.25, newLevel - 1));
 
   // Re-fetch fresh balance to prevent race conditions
-  const { data: freshPlayer } = await supabase.from("crime_players").select("dirty_cash, respect, stamina").eq("id", player.id).single();
+  const { data: freshPlayer } = await supabase.from("crime_players").select("dirty_cash, cash, respect, stamina").eq("id", player.id).single();
 
   // Update player
   const updates: any = {
     stamina: (freshPlayer?.stamina ?? player.stamina) - crime.stamina_cost,
     last_stamina_update: now.toISOString(),
     dirty_cash: (freshPlayer?.dirty_cash ?? player.dirty_cash) + dirtyCashEarned,
+    cash: ((freshPlayer as any)?.cash ?? player.cash ?? 0) + cleanCashEarned,
     respect: (freshPlayer?.respect ?? player.respect) + respectEarned,
     xp: newXP,
     level: newLevel,
@@ -266,7 +272,7 @@ export async function POST(request: Request) {
         total_crimes_attempted: currentStats.total_crimes_attempted + 1,
         total_crimes_succeeded: currentStats.total_crimes_succeeded + (success ? 1 : 0),
         times_jailed: currentStats.times_jailed + (wentToJail ? 1 : 0),
-        total_dirty_cash_earned: currentStats.total_dirty_cash_earned + dirtyCashEarned,
+        total_dirty_cash_earned: currentStats.total_dirty_cash_earned + dirtyCashEarned + cleanCashEarned,
       })
       .eq("player_id", player.id);
   }
@@ -327,6 +333,7 @@ export async function POST(request: Request) {
     jail_release_at: jailReleaseAt,
     jail_time_minutes: jailTimeMinutes,
     dirty_cash_earned: dirtyCashEarned,
+    clean_cash_earned: cleanCashEarned,
     xp_earned: xpEarned,
     respect_earned: respectEarned,
     leveled_up: leveledUp,

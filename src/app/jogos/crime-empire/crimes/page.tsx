@@ -25,6 +25,7 @@ interface Crime {
   max_dirty_cash: number;
   xp_reward: number;
   required_level: number;
+  clean_cash_pct: number;
 }
 
 const DIFFICULTY_ICONS: Record<string, string> = {
@@ -106,12 +107,15 @@ function FeaturedCrime({
           <span className="text-sm font-black text-green-400 flex-shrink-0 mt-1">{successPct}%</span>
         </div>
         <p className="text-[#555] text-sm mb-5 leading-relaxed">{crime.description}</p>
-        <div className="flex items-center gap-4 mb-6 flex-wrap text-sm font-bold">
+        <div className="flex items-center gap-3 mb-6 flex-wrap text-sm font-bold">
           <span className="text-green-400">Sucesso {successPct}%</span>
           <span className="text-red-400">Prisao {jailPct}%</span>
           <span className={canAfford ? "text-blue-400" : "text-red-400"}>Stamina {crime.stamina_cost}</span>
           <span className="text-yellow-400">${fmt(crime.min_dirty_cash)} - ${fmt(crime.max_dirty_cash)}</span>
           <span className="text-purple-400">+{crime.xp_reward} XP</span>
+          {crime.clean_cash_pct > 0 && (
+            <span className="text-emerald-400">💴 {crime.clean_cash_pct}% limpo</span>
+          )}
         </div>
         <motion.button
           whileTap={canCommit ? { scale: 0.97 } : {}}
@@ -381,10 +385,11 @@ export default function CrimesPage() {
                 {crimeResult.success && (
                   <div className="space-y-2 mb-3">
                     {[
-                      { icon: "💵", label: "Dinheiro Sujo", value: `+$${(crimeResult.dirty_cash_earned as number)?.toLocaleString()}`, color: "#4ade80", delay: 0.05 },
+                      crimeResult.dirty_cash_earned > 0 ? { icon: "💵", label: "Dinheiro Sujo", value: `+$${(crimeResult.dirty_cash_earned as number)?.toLocaleString()}`, color: "#4ade80", delay: 0.05 } : null,
+                      crimeResult.clean_cash_earned  > 0 ? { icon: "💴", label: "Dinheiro Limpo", value: `+$${(crimeResult.clean_cash_earned  as number)?.toLocaleString()}`, color: "#34d399", delay: 0.08 } : null,
                       { icon: "⭐", label: "XP",            value: `+${crimeResult.xp_earned}`,                                       color: "#60a5fa", delay: 0.1  },
                       { icon: "👑", label: "Respeito",      value: `+${crimeResult.respect_earned}`,                                  color: "#c084fc", delay: 0.15 },
-                    ].map((r) => (
+                    ].filter(Boolean).map((r: any) => (
                       <motion.div
                         key={r.label}
                         initial={{ opacity: 0, x: -12 }}
