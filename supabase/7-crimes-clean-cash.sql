@@ -12,7 +12,8 @@ alter table crimes
 update crimes set clean_cash_pct = 30 where difficulty = 'petty';
 update crimes set clean_cash_pct = 20 where difficulty = 'small';
 update crimes set clean_cash_pct = 10 where difficulty = 'medium';
-update crimes set clean_cash_pct = 0  where difficulty in ('big', 'legendary');
+update crimes set clean_cash_pct = 5  where difficulty = 'big';
+update crimes set clean_cash_pct = 0  where difficulty = 'legendary';
 
 -- Also cap by required_level as a safety net (anything level 1-2 should be petty)
 update crimes set clean_cash_pct = 30 where required_level <= 2 and clean_cash_pct = 0;
