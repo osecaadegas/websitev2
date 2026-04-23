@@ -648,7 +648,7 @@ function ThreeCardFan({
 
   return (
     <div
-      className="flex items-start justify-end pr-6 md:pr-20"
+      className="flex items-start justify-end pr-0"
       style={{ perspective: "1100px", perspectiveOrigin: "50% 20%" }}
     >
       {sorted.map((contract) => {
