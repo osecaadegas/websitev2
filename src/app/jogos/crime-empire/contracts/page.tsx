@@ -127,17 +127,17 @@ function ContractListItem({ contract, status, selected, levelUnlocked, isHitman,
     ? Math.min(95, Math.round((contract.base_success_rate + contract.hitman_bonus) * 100))
     : Math.round(contract.base_success_rate * 100);
 
-  const itemBg = selected      ? "rgba(139,69,9,0.18)"
-    : isCompleted ? "rgba(22,101,52,0.10)"
-    : isFailed    ? "rgba(127,29,29,0.09)"
+  const itemBg = selected      ? "rgba(255,255,255,0.07)"
+    : isCompleted ? "rgba(34,197,94,0.06)"
+    : isFailed    ? "rgba(239,68,68,0.06)"
     : locked      ? "transparent"
-    : "rgba(139,90,43,0.08)";
+    : "transparent";
 
-  const itemBorder = selected      ? "rgba(139,69,9,0.50)"
-    : isCompleted  ? "rgba(22,101,52,0.28)"
-    : isFailed     ? "rgba(127,29,29,0.25)"
-    : locked       ? "rgba(139,90,43,0.15)"
-    : "rgba(139,90,43,0.25)";
+  const itemBorder = selected      ? "rgba(255,255,255,0.14)"
+    : isCompleted  ? "rgba(34,197,94,0.18)"
+    : isFailed     ? "rgba(239,68,68,0.18)"
+    : locked       ? "rgba(255,255,255,0.04)"
+    : "transparent";
 
   return (
     <button
@@ -152,34 +152,33 @@ function ContractListItem({ contract, status, selected, levelUnlocked, isHitman,
       style={{
         background: itemBg,
         border: `1px solid ${itemBorder}`,
-        boxShadow: selected ? "0 0 14px rgba(180,83,9,0.18)" : undefined,
+        boxShadow: selected ? "0 0 0 1px rgba(255,255,255,0.10), 0 2px 12px rgba(0,0,0,0.40)" : undefined,
       }}
     >
       <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{
-        background: isCompleted ? "#166534" : isFailed ? "#7f1d1d" : selected ? "#92400e" : "rgba(139,90,43,0.45)"
+        background: isCompleted ? "#22c55e" : isFailed ? "#ef4444" : selected ? "#ffffff" : "rgba(255,255,255,0.20)"
       }} />
-      <span className="text-[11px] font-bold flex-1 truncate" style={{
-        ...serif,
-        color: isCompleted ? "rgba(22,101,52,0.80)" : isFailed ? "rgba(127,29,29,0.70)" : locked ? "rgba(101,63,15,0.28)" : selected ? "rgba(55,26,3,0.92)" : "rgba(55,26,3,0.72)"
+      <span className="text-[11px] font-semibold flex-1 truncate" style={{
+        color: isCompleted ? "rgba(134,239,172,0.80)" : isFailed ? "rgba(252,165,165,0.65)" : locked ? "rgba(255,255,255,0.18)" : selected ? "rgba(255,255,255,0.95)" : "rgba(255,255,255,0.65)",
+        letterSpacing: "0.01em",
       }}>
         {locked ? "🔒 " : ""}{contract.name}
       </span>
       <span
         className="text-[7px] font-black tracking-[0.2em] px-1.5 py-0.5 rounded flex-shrink-0"
         style={{
-          background: locked ? "rgba(139,90,43,0.08)" : contract.difficulty === "easy" ? "rgba(22,101,52,0.12)" : contract.difficulty === "hard" ? "rgba(127,29,29,0.12)" : "rgba(146,64,14,0.12)",
-          color: locked ? "rgba(101,63,15,0.30)" : contract.difficulty === "easy" ? "#166534" : contract.difficulty === "hard" ? "#7f1d1d" : "#92400e",
+          background: locked ? "rgba(255,255,255,0.04)" : contract.difficulty === "easy" ? "rgba(34,197,94,0.10)" : contract.difficulty === "hard" ? "rgba(239,68,68,0.10)" : "rgba(251,191,36,0.10)",
+          color: locked ? "rgba(255,255,255,0.18)" : contract.difficulty === "easy" ? "#4ade80" : contract.difficulty === "hard" ? "#f87171" : "#fbbf24",
           borderWidth: "1px", borderStyle: "solid",
-          borderColor: locked ? "rgba(139,90,43,0.15)" : contract.difficulty === "easy" ? "rgba(22,101,52,0.28)" : contract.difficulty === "hard" ? "rgba(127,29,29,0.28)" : "rgba(146,64,14,0.28)",
-          ...serif,
+          borderColor: locked ? "rgba(255,255,255,0.06)" : contract.difficulty === "easy" ? "rgba(74,222,128,0.20)" : contract.difficulty === "hard" ? "rgba(248,113,113,0.20)" : "rgba(251,191,36,0.20)",
+          fontSize: "7px", letterSpacing: "0.15em", fontWeight: 700,
         }}
       >
         {diff.label}
       </span>
       {!locked && (
-        <span className="text-[9px] font-black tabular-nums flex-shrink-0 w-8 text-right" style={{
-          ...serif,
-          color: displayRate >= 60 ? "rgba(22,101,52,0.85)" : displayRate >= 40 ? "rgba(146,64,14,0.85)" : "rgba(127,29,29,0.85)"
+        <span className="text-[9px] font-bold tabular-nums flex-shrink-0 w-8 text-right" style={{
+          color: displayRate >= 60 ? "rgba(74,222,128,0.85)" : displayRate >= 40 ? "rgba(251,191,36,0.85)" : "rgba(248,113,113,0.85)"
         }}>
           {displayRate}%
         </span>
@@ -576,23 +575,23 @@ function RoadmapNode({ level, completed, unlocked, active }: {
       <div
         className={[
           "w-7 h-7 rounded-full flex items-center justify-center text-[9px] font-black flex-shrink-0 transition-all duration-300",
-          completed ? "border border-green-800/50 text-green-800" :
-          active    ? "border border-amber-800/60 text-amber-900 ce-pulse-orange" : "",
+          completed ? "" :
+          active    ? "ce-pulse-orange" : "",
         ].join(" ")}
         style={
           completed
-            ? { background: "rgba(22,101,52,0.10)", border: "1px solid rgba(22,101,52,0.40)" }
+            ? { background: "rgba(34,197,94,0.10)", border: "1px solid rgba(34,197,94,0.30)", color: "#4ade80" }
             : active
-            ? { background: "rgba(139,69,9,0.15)", border: "1px solid rgba(139,69,9,0.55)" }
+            ? { background: "rgba(255,255,255,0.10)", border: "1px solid rgba(255,255,255,0.30)", color: "#ffffff" }
             : unlocked
-            ? { background: "rgba(139,90,43,0.18)", border: "1px solid rgba(139,90,43,0.42)", color: "rgba(101,63,15,0.75)" }
-            : { background: "transparent", border: "1px solid rgba(139,90,43,0.20)", color: "rgba(101,63,15,0.30)" }
+            ? { background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.12)", color: "rgba(255,255,255,0.55)" }
+            : { background: "transparent", border: "1px solid rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.20)" }
         }
       >
         {completed ? "✓" : unlocked || active ? level : "—"}
       </div>
-      <span className="text-[8px] uppercase tracking-[0.2em] font-bold" style={{ ...serif,
-        color: completed ? "rgba(22,101,52,0.80)" : active ? "rgba(146,64,14,0.90)" : "rgba(101,63,15,0.55)"
+      <span className="text-[8px] uppercase tracking-[0.25em] font-semibold" style={{
+        color: completed ? "rgba(74,222,128,0.70)" : active ? "rgba(255,255,255,0.85)" : "rgba(255,255,255,0.25)"
       }}>
         CAP {level}
       </span>
@@ -803,26 +802,14 @@ export default function ContractsPage() {
         ) : (
           <div className="flex flex-col lg:flex-row gap-6 items-start">
 
-            {/* ── LEFT: Roadmap + List — Dossier ── */}
-            <div className="relative w-full lg:w-[260px] flex-shrink-0 rounded-sm overflow-hidden" style={{ transform: "rotate(-0.3deg)" }}>
-              {/* Paper base */}
-              <div className="absolute inset-0" style={{ background: "linear-gradient(170deg,#e8d9b0 0%,#dece9c 50%,#d4c28a 100%)" }} />
-              {/* Grain */}
-              <div className="absolute inset-0 pointer-events-none mix-blend-multiply poster-grain" style={{ backgroundImage: `url("${noiseSvg}")`, backgroundSize: "200px 200px", opacity: 0.09 }} />
-              {/* Burned edges */}
-              <div className="absolute inset-0 pointer-events-none" style={{ background: "radial-gradient(ellipse at center,transparent 30%,rgba(60,30,10,0.10) 55%,rgba(40,15,5,0.35) 78%,rgba(20,5,0,0.62) 100%)" }} />
-              {/* Corner embers */}
-              <div className="absolute inset-0 overflow-hidden pointer-events-none">
-                <div className="absolute top-0 left-0 w-16 h-16 bg-gradient-to-br from-amber-950/40 via-amber-900/15 to-transparent poster-ember" />
-                <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-bl from-amber-950/40 via-amber-900/15 to-transparent poster-ember" style={{ animationDelay: "0.8s" }} />
-                <div className="absolute bottom-0 left-0 w-16 h-16 bg-gradient-to-tr from-amber-950/40 via-amber-900/15 to-transparent poster-ember" style={{ animationDelay: "1.6s" }} />
-                <div className="absolute bottom-0 right-0 w-16 h-16 bg-gradient-to-tl from-amber-950/40 via-amber-900/15 to-transparent poster-ember" style={{ animationDelay: "2.4s" }} />
+            {/* ── LEFT: Roadmap + List ── */}
+            <div
+              className="w-full lg:w-[260px] flex-shrink-0 rounded-2xl p-4 space-y-5"
+              style={{ background: "#111111", border: "1px solid rgba(255,255,255,0.07)" }}
+            >
+              <div className="pb-3" style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+                <p className="text-[9px] font-semibold tracking-[0.45em] uppercase" style={{ color: "rgba(255,255,255,0.30)" }}>Dossie de Alvos</p>
               </div>
-              {/* Content */}
-              <div className="relative z-10 p-4 space-y-5">
-                <div className="text-center pb-2.5" style={{ borderBottom: "1px solid rgba(139,90,43,0.30)" }}>
-                  <p className="text-[9px] font-black tracking-[0.5em] uppercase poster-ink" style={{ ...serif, color: "rgba(101,63,15,0.65)" }}>Dossie de Alvos</p>
-                </div>
               {levels.map((lvl) => {
                 const lvlContracts = contracts.filter((c) => c.roadmap_level === lvl);
                 const unlocked     = levelUnlocked(lvl);
@@ -834,7 +821,7 @@ export default function ContractsPage() {
                     {/* Spine line */}
                     <div
                       className="absolute left-3 top-7 bottom-0 w-px -z-10"
-                      style={{ background: "rgba(139,90,43,0.35)" }}
+                      style={{ background: "rgba(255,255,255,0.06)" }}
                     />
                     <RoadmapNode level={lvl} completed={completed} unlocked={unlocked} active={isActive} />
                     <div className="mt-2 ml-4 space-y-1">
@@ -860,12 +847,11 @@ export default function ContractsPage() {
               })}
 
               {/* Footer note */}
-              <div className="px-1 pt-2" style={{ borderTop: "1px solid rgba(139,90,43,0.25)" }}>
-                <p className="text-[7px] uppercase tracking-[0.25em] leading-relaxed" style={{ ...serif, color: "rgba(101,63,15,0.55)" }}>
+              <div className="px-1 pt-3" style={{ borderTop: "1px solid rgba(255,255,255,0.05)" }}>
+                <p className="text-[7px] uppercase tracking-[0.20em] leading-relaxed" style={{ color: "rgba(255,255,255,0.22)" }}>
                   Falhar envia-te ao hospital com 0 HP. Possível prisão de 30–90 min.
                 </p>
               </div>
-              </div>{/* /content */}
             </div>
 
             {/* ── RIGHT: Briefing Panel ── */}
