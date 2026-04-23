@@ -599,6 +599,115 @@ function RoadmapNode({ level, completed, unlocked, active }: {
   );
 }
 
+/* ─────────────────────────── THREE-CARD FAN ─────────────────────── */
+function ThreeCardFan({
+  levelContracts, selected, getStatus, levelDone, levelUnlocked, player,
+  isHitman, processing, onSelect, onExecute,
+}: {
+  levelContracts: Contract[];
+  selected: string | null;
+  getStatus: (id: string) => "completed" | "failed" | "pending" | null;
+  levelDone: boolean;
+  levelUnlocked: boolean;
+  player: Player | null;
+  isHitman: boolean;
+  processing: string | null;
+  onSelect: (id: string) => void;
+  onExecute: (id: string) => void;
+}) {
+  const [hovered, setHovered] = useState<string | null>(null);
+
+  const DIFF_ORDER = ["easy", "medium", "hard"] as const;
+  type DiffKey = (typeof DIFF_ORDER)[number];
+
+  const sorted = DIFF_ORDER
+    .map((d) => levelContracts.find((c) => c.difficulty === d))
+    .filter((c): c is Contract => Boolean(c));
+
+  if (sorted.length === 0) return null;
+
+  return (
+    <div
+      className="flex items-start justify-center"
+      style={{ perspective: "1100px", perspectiveOrigin: "50% 20%" }}
+    >
+      {sorted.map((contract) => {
+        const diff    = contract.difficulty as DiffKey;
+        const isSel   = contract.id === selected;
+        const isHov   = hovered === diff;
+        const isLeft   = diff === "easy";
+        const isCenter = diff === "medium";
+
+        let transform: string;
+        let zIndex: number;
+        let opacity: number;
+        let marginR = "0px";
+        let marginL = "0px";
+        let width = "330px";
+
+        if (isCenter) {
+          transform = isHov
+            ? "rotateY(0deg) translateZ(28px) scale(1.018)"
+            : "rotateY(0deg) translateZ(0) scale(1)";
+          zIndex  = isHov ? 15 : 10;
+          opacity = 1;
+          width   = "330px";
+        } else if (isLeft) {
+          transform = isHov
+            ? "rotateY(5deg) translateZ(12px) scale(0.91)"
+            : "rotateY(14deg) translateZ(-85px) scale(0.80)";
+          zIndex  = isHov ? 9 : 2;
+          opacity = isHov ? 0.90 : isSel ? 0.80 : 0.50;
+          marginR = isHov ? "-24px" : "-62px";
+          width   = "270px";
+        } else {
+          transform = isHov
+            ? "rotateY(-5deg) translateZ(12px) scale(0.91)"
+            : "rotateY(-14deg) translateZ(-85px) scale(0.80)";
+          zIndex  = isHov ? 9 : 2;
+          opacity = isHov ? 0.90 : isSel ? 0.80 : 0.50;
+          marginL = isHov ? "-24px" : "-62px";
+          width   = "270px";
+        }
+
+        return (
+          <div
+            key={contract.id}
+            style={{
+              width,
+              flexShrink: 0,
+              position: "relative",
+              zIndex,
+              transform,
+              transformStyle: "preserve-3d",
+              transition:
+                "transform 0.55s cubic-bezier(0.25,0.46,0.45,0.94), opacity 0.38s ease, margin 0.42s ease, width 0.35s ease",
+              opacity,
+              marginRight: marginR,
+              marginLeft:  marginL,
+              cursor: isCenter && !isHov ? "default" : "pointer",
+            }}
+            onMouseEnter={() => setHovered(diff)}
+            onMouseLeave={() => setHovered(null)}
+            onClick={() => { if (contract.id !== selected) onSelect(contract.id); }}
+          >
+            <ContractBriefing
+              contract={contract}
+              status={getStatus(contract.id)}
+              player={player}
+              levelDone={levelDone}
+              levelUnlocked={levelUnlocked}
+              isHitman={isHitman}
+              processing={processing === contract.id}
+              onExecute={() => onExecute(contract.id)}
+            />
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 /* ─────────────────────────── MAIN PAGE ───────────────────────────── */
 export default function ContractsPage() {
   const { user } = useAuth();
@@ -690,6 +799,7 @@ export default function ContractsPage() {
   const selectedStatus   = selected ? getStatus(selected) : null;
   const selLevelDone     = selectedLevel !== null ? levelCompleted(selectedLevel) : false;
   const selLevelUnlocked = selectedLevel !== null ? levelUnlocked(selectedLevel) : false;
+  const levelContracts   = selectedLevel !== null ? contracts.filter((c) => c.roadmap_level === selectedLevel) : [];
 
   /* ─ Loading ─ */
   if (loading) {
@@ -854,19 +964,21 @@ export default function ContractsPage() {
               </div>
             </div>
 
-            {/* ── RIGHT: Briefing Panel ── */}
-            <div className="flex-1 flex items-start justify-center pt-2">
+            {/* ── RIGHT: 3-Card Fan ── */}
+            <div className="flex-1 flex items-start justify-center pt-2 min-w-0 overflow-x-auto">
               {selectedContract ? (
                 <div key={briefingKey} className="ce-fade-slide w-full">
-                  <ContractBriefing
-                    contract={selectedContract}
-                    status={selectedStatus}
-                    player={player}
+                  <ThreeCardFan
+                    levelContracts={levelContracts}
+                    selected={selected}
+                    getStatus={getStatus}
                     levelDone={selLevelDone}
                     levelUnlocked={selLevelUnlocked}
+                    player={player}
                     isHitman={isHitman}
-                    processing={processing === selected}
-                    onExecute={() => selected && attemptContract(selected)}
+                    processing={processing}
+                    onSelect={(id) => { setSelected(id); setBriefingKey((k) => k + 1); }}
+                    onExecute={attemptContract}
                   />
                 </div>
               ) : (
