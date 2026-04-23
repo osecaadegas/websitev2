@@ -645,46 +645,44 @@ function ThreeCardFan({
     return "left"; // rel === 2
   };
 
+  // Role → absolute transform. left: "50%" on each card anchors to container center,
+  // then translateX(-50% ± offset) positions left/center/right purely via CSS.
+  // DOM order never affects layout so the carousel rotation is always clean.
+  const roleStyles: Record<"center" | "left" | "right", React.CSSProperties> = {
+    center: {
+      transform: "translateX(-50%) rotateY(0deg) translateZ(0px)",
+      opacity: 1, zIndex: 10, cursor: "default",
+    },
+    left: {
+      transform: "translateX(calc(-50% - 220px)) rotateY(16deg) translateZ(-90px)",
+      opacity: 0.55, zIndex: 2, cursor: "pointer",
+    },
+    right: {
+      transform: "translateX(calc(-50% + 220px)) rotateY(-16deg) translateZ(-90px)",
+      opacity: 0.55, zIndex: 2, cursor: "pointer",
+    },
+  };
+
   return (
     <div
-      className="flex items-start justify-center"
-      style={{ perspective: "1100px", perspectiveOrigin: "50% 20%" }}
+      className="relative w-full overflow-hidden"
+      style={{ perspective: "1100px", perspectiveOrigin: "50% 20%", minHeight: "740px" }}
     >
       {sorted.map((contract) => {
         const diff = contract.difficulty as DiffKey;
         const role = getRole(diff);
 
-        let transform: string;
-        let zIndex: number;
-        let opacity: number;
-        let marginR = "0px";
-        let marginL = "0px";
-        const width = "360px";
-        let cursor: string;
-
-        switch (role) {
-          case "center":
-            transform = "rotateY(0deg) translateZ(0px)";
-            zIndex = 10; opacity = 1; cursor = "default";
-            break;
-          case "left":
-            transform = "rotateY(16deg) translateZ(-90px)";
-            zIndex = 2; opacity = 0.52; marginR = "-70px"; cursor = "pointer";
-            break;
-          default: // right
-            transform = "rotateY(-16deg) translateZ(-90px)";
-            zIndex = 2; opacity = 0.52; marginL = "-70px"; cursor = "pointer";
-            break;
-        }
-
         return (
           <div
             key={contract.id}
             style={{
-              width, flexShrink: 0, position: "relative", zIndex, transform,
+              position: "absolute",
+              left: "50%",
+              top: 0,
+              width: "360px",
               transformStyle: "preserve-3d",
-              transition: "transform 0.58s cubic-bezier(0.25,0.46,0.45,0.94), opacity 0.42s ease, margin 0.46s ease",
-              opacity, marginRight: marginR, marginLeft: marginL, cursor,
+              transition: "transform 0.58s cubic-bezier(0.25,0.46,0.45,0.94), opacity 0.42s ease",
+              ...roleStyles[role],
             }}
             onClick={() => {
               if (role !== "center") {
@@ -969,7 +967,7 @@ export default function ContractsPage() {
             </div>
 
             {/* ── RIGHT: 3-Card Fan ── */}
-            <div className="flex-1 flex items-start justify-end pt-2 min-w-0 overflow-x-auto">
+            <div className="flex-1 pt-2 min-w-0" style={{ minHeight: "740px" }}>
               {selectedContract ? (
                 <div key={selectedLevel ?? "none"} className="ce-fade-slide w-full">
                   <ThreeCardFan
