@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 import Link from "next/link";
 
-interface Brothel {
+interface BrothelType {
   id: string;
   name: string;
   type: string;
@@ -13,16 +13,16 @@ interface Brothel {
   purchase_price: number;
   base_income_per_hour: number;
   max_employees: number;
-  employee_cost_per_hour: number;
   required_level: number;
+  uses_crypto: boolean;
+  sort_order: number;
 }
 
 interface OwnedBrothel {
   id: string;
-  business_id: string;
+  brothel_type_id: string;
   max_employees: number;
-  employees: number;
-  businesses: Brothel;
+  brothel_type: BrothelType;
 }
 
 interface Worker {
@@ -38,7 +38,7 @@ export default function RuaDasLuzesPage() {
   const { user } = useAuth();
   const router = useRouter();
   const [loading, setLoading] = useState(true);
-  const [brothels, setBrothels] = useState<Brothel[]>([]);
+  const [brothelTypes, setBrothelTypes] = useState<BrothelType[]>([]);
   const [ownedBrothels, setOwnedBrothels] = useState<OwnedBrothel[]>([]);
   const [workers, setWorkers] = useState<Worker[]>([]);
   const [playerClass, setPlayerClass] = useState("");
@@ -62,7 +62,7 @@ export default function RuaDasLuzesPage() {
     try {
       const res = await fetch("/api/crime-empire/brothels");
       const data = await res.json();
-      setBrothels(data.brothels || []);
+      setBrothelTypes(data.brothelTypes || []);
       setOwnedBrothels(data.ownedBrothels || []);
       setWorkers(data.workers || []);
       setPlayerClass(data.playerClass || "");
@@ -76,12 +76,12 @@ export default function RuaDasLuzesPage() {
     }
   };
 
-  const handlePurchase = async (brothelId: string) => {
+  const handlePurchase = async (brothelTypeId: string) => {
     try {
       const res = await fetch("/api/crime-empire/brothels", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "purchase", brothelId }),
+        body: JSON.stringify({ action: "purchase", brothelTypeId }),
       });
 
       const data = await res.json();
@@ -98,7 +98,7 @@ export default function RuaDasLuzesPage() {
     }
   };
 
-  const handleHire = async (playerBusinessId: string) => {
+  const handleHire = async (playerBrothelId: string) => {
     if (!workerName.trim()) {
       alert("Dá um nome à worker!");
       return;
@@ -108,7 +108,7 @@ export default function RuaDasLuzesPage() {
       const res = await fetch("/api/crime-empire/brothels", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "hire", playerBusinessId, workerName }),
+        body: JSON.stringify({ action: "hire", playerBrothelId, workerName }),
       });
 
       const data = await res.json();
@@ -177,8 +177,8 @@ export default function RuaDasLuzesPage() {
 
   const incomeWithBonus = playerClass === "pimp" ? Math.floor(totalIncome * 1.2) : totalIncome;
 
-  const availableBrothels = brothels.filter(
-    (b) => !ownedBrothels.find((ob) => ob.business_id === b.id)
+  const availableBrothels = brothelTypes.filter(
+    (b) => !ownedBrothels.find((ob) => ob.brothel_type_id === b.id)
   );
 
   if (loading) {
@@ -251,16 +251,16 @@ export default function RuaDasLuzesPage() {
           <div className="mb-12">
             <h2 className="text-2xl font-bold mb-4">Os Teus Bordéis</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {ownedBrothels.filter((ob) => ob.businesses).map((ob) => (
+              {ownedBrothels.filter((ob) => ob.brothel_type).map((ob) => (
                 <div
                   key={ob.id}
                   className="p-6 rounded-xl bg-[#1a1a1a] border border-pink-500/30"
                 >
                   <h3 className="text-xl font-bold text-pink-400 mb-2">
-                    {ob.businesses?.name}
+                    {ob.brothel_type?.name}
                   </h3>
                   <p className="text-sm text-[#888888] mb-4">
-                    {ob.businesses?.description}
+                    {ob.brothel_type?.description}
                   </p>
                   <div className="mb-4">
                     <p className="text-sm text-[#888888]">
@@ -292,7 +292,7 @@ export default function RuaDasLuzesPage() {
                               onClick={() => handleHire(ob.id)}
                               className="flex-1 px-4 py-2 rounded-lg bg-pink-600 hover:bg-pink-500 font-bold"
                             >
-                              {CRYPTO_BROTHEL_TYPES.includes(ob.businesses?.type)
+                              {CRYPTO_BROTHEL_TYPES.includes(ob.brothel_type?.type)
                                 ? "Contratar (🪙 10,000)"
                                 : "Contratar ($10,000)"}
                             </button>
