@@ -91,3 +91,23 @@ INSERT INTO street_customers (name, type, budget_min, budget_max, patience, risk
 ('Investigadora Luz','undercover',350, 1300, 7, 6, 1.00, 6, 3)
 
 ON CONFLICT DO NOTHING;
+
+-- ── RLS ────────────────────────────────────────────────────────────────────
+ALTER TABLE street_customers  ENABLE ROW LEVEL SECURITY;
+ALTER TABLE street_sessions   ENABLE ROW LEVEL SECURITY;
+ALTER TABLE street_deals      ENABLE ROW LEVEL SECURITY;
+
+-- street_customers: public read, no direct writes from client
+CREATE POLICY "Public read street_customers"  ON street_customers  FOR SELECT USING (true);
+CREATE POLICY "Service insert street_customers" ON street_customers FOR INSERT WITH CHECK (true);
+
+-- street_sessions: full access via anon key (server-side API only)
+CREATE POLICY "Public read street_sessions"   ON street_sessions   FOR SELECT USING (true);
+CREATE POLICY "Public insert street_sessions" ON street_sessions   FOR INSERT WITH CHECK (true);
+CREATE POLICY "Public update street_sessions" ON street_sessions   FOR UPDATE USING (true);
+CREATE POLICY "Public delete street_sessions" ON street_sessions   FOR DELETE USING (true);
+
+-- street_deals: full access via anon key
+CREATE POLICY "Public read street_deals"      ON street_deals      FOR SELECT USING (true);
+CREATE POLICY "Public insert street_deals"    ON street_deals      FOR INSERT WITH CHECK (true);
+CREATE POLICY "Public update street_deals"    ON street_deals      FOR UPDATE USING (true);
