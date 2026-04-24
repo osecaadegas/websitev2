@@ -181,7 +181,8 @@ async function handleStartSession(body: any, user: any) {
     .single();
 
   if (error || !session) {
-    return NextResponse.json({ error: "Erro ao iniciar sessão" }, { status: 500 });
+    console.error("[streets] insert error:", error);
+    return NextResponse.json({ error: "Erro ao iniciar sessão", detail: error?.message, code: error?.code }, { status: 500 });
   }
 
   return NextResponse.json({ session });

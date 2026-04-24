@@ -222,7 +222,7 @@ export default function StreetsPage() {
       body: JSON.stringify({ action: "start_session", zoneId }),
     });
     const data = await res.json();
-    if (!res.ok) { showToast(data.error || "Erro", false); setPhase("zone_select"); return; }
+    if (!res.ok) { showToast((data.detail || data.error) + (data.code ? ` [${data.code}]` : ""), false); setPhase("zone_select"); return; }
     setSession(data.session);
     setHeat(0);
     setHeatStage("safe");
