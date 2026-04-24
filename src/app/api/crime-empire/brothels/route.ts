@@ -14,12 +14,15 @@ const UPGRADE_COSTS: Record<string, number> = {
   marketing: 40000,
 };
 
-// Extra worker slots granted per upgrade
+// Strict purchase order — each upgrade requires the previous one
+const UPGRADE_ORDER = ["lighting", "marketing", "security", "vip_rooms"];
+
+// Worker slots unlocked per upgrade (cumulative on top of brothel base)
 const UPGRADE_SLOT_BONUS: Record<string, number> = {
-  vip_rooms: 1,
-  lighting:  0,
-  security:  1,
-  marketing: 1,
+  lighting:  3,
+  marketing: 3,
+  security:  5,
+  vip_rooms: 10,
 };
 
 const SUPPLY_REFILL_COST = 5000; // per supply type
@@ -268,7 +271,7 @@ export async function POST(req: NextRequest) {
 
     /* â”€â”€ UPGRADE â”€â”€ */
     if (action === "upgrade") {
-      const { playerBrothelId, upgradeType } = body; // 'vip_rooms' | 'lighting' | 'security' | 'marketing'
+      const { playerBrothelId, upgradeType } = body; // 'lighting' | 'marketing' | 'security' | 'vip_rooms'
       const cost = UPGRADE_COSTS[upgradeType];
       if (!cost) return NextResponse.json({ error: "Upgrade invÃ¡lido." }, { status: 400 });
       const { data: pb } = await supabase
@@ -276,15 +279,25 @@ export async function POST(req: NextRequest) {
       if (!pb) return NextResponse.json({ error: "Estabelecimento nÃ£o encontrado." }, { status: 404 });
       const col = `upgrade_${upgradeType}` as keyof typeof pb;
       if (pb[col]) return NextResponse.json({ error: "JÃ¡ tens este upgrade!" }, { status: 400 });
+
+      // Enforce purchase order: must own all previous upgrades first
+      const orderIdx = UPGRADE_ORDER.indexOf(upgradeType);
+      for (let i = 0; i < orderIdx; i++) {
+        const prevCol = `upgrade_${UPGRADE_ORDER[i]}` as keyof typeof pb;
+        if (!pb[prevCol]) {
+          const prevLabel = UPGRADE_ORDER[i].replace("_", " ");
+          return NextResponse.json({ error: `Compra primeiro o upgrade "${prevLabel}"!` }, { status: 400 });
+        }
+      }
+
       if (player.cash < cost)
-        return NextResponse.json({ error: `Precisas de $${cost.toLocaleString()}!` }, { status: 400 });
+        return NextResponse.json({ error: `Precisas de ${cost.toLocaleString()}!` }, { status: 400 });
       await supabase.from("crime_players").update({ cash: player.cash - cost }).eq("id", player.id);
       const slotBonus = UPGRADE_SLOT_BONUS[upgradeType] ?? 0;
       const updatePayload: Record<string, unknown> = { [col]: true };
       if (slotBonus > 0) updatePayload.max_employees = pb.max_employees + slotBonus;
-      await supabase.from("player_brothels")
-        .update(updatePayload).eq("id", playerBrothelId);
-      const slotMsg = slotBonus > 0 ? ` (+${slotBonus} vaga de worker)` : "";
+      await supabase.from("player_brothels").update(updatePayload).eq("id", playerBrothelId);
+      const slotMsg = slotBonus > 0 ? ` (+${slotBonus} vagas de worker)` : "";
       return NextResponse.json({ success: true, message: `Upgrade aplicado!${slotMsg}` });
     }
 

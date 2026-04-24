@@ -55,40 +55,6 @@ function SupplyBar({ label, value, icon, onRefill, canAfford }: {
   );
 }
 
-function UpgradeCard({ title, desc, icon, cost, owned, onBuy, canAfford }: {
-  title: string; desc: string; icon: string; cost: number;
-  owned: boolean; onBuy: () => void; canAfford: boolean;
-}) {
-  return (
-    <div className={`p-4 rounded-xl border transition-all ${
-      owned ? "border-green-500/40 bg-green-900/10" : "border-[#333] bg-[#111] hover:border-pink-500/40"
-    }`}>
-      <div className="flex items-start gap-3">
-        <span className="text-2xl">{icon}</span>
-        <div className="flex-1">
-          <div className="flex items-center gap-2 mb-1">
-            <h4 className="font-bold text-sm text-white">{title}</h4>
-            {owned && <span className="text-xs text-green-400 font-bold">✓ ATIVO</span>}
-          </div>
-          <p className="text-xs text-[#777] mb-3">{desc}</p>
-          {!owned && (
-            <button
-              onClick={onBuy}
-              disabled={!canAfford}
-              className={`w-full py-2 rounded-lg text-sm font-bold transition-all
-                ${canAfford
-                  ? "bg-gradient-to-r from-pink-700 to-purple-700 hover:from-pink-600 hover:to-purple-600 hover:scale-[1.02] active:scale-95"
-                  : "bg-[#1a1a1a] text-[#555] cursor-not-allowed border border-[#222]"}`}
-            >
-              {canAfford ? `$${cost.toLocaleString()}` : `$${cost.toLocaleString()} — Saldo insuficiente`}
-            </button>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
-
 function FloatingIncome({ amount }: { amount: number }) {
   return (
     <div className="absolute -top-6 left-1/2 -translate-x-1/2 text-green-400 font-bold text-sm animate-float pointer-events-none z-10">
@@ -436,22 +402,60 @@ export default function BrothelManagePage() {
         {/* ── UPGRADES TAB ── */}
         {tab === "upgrades" && (
           <div>
-          <div className="mb-3 text-sm text-[#888]">
-            Saldo disponível: <span className="text-green-400 font-bold">${playerCash.toLocaleString()}</span>
+          <div className="mb-3 flex items-center justify-between">
+            <p className="text-xs text-[#666]">Compra pela ordem indicada. Cada upgrade desbloqueia o seguinte.</p>
+            <span className="text-sm text-green-400 font-bold">${playerCash.toLocaleString()}</span>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <UpgradeCard title="Quartos VIP" desc="+25% rendimento. Atrai clientes de alto valor." icon="👑"
-              cost={75000} owned={brothel.upgrade_vip_rooms}
-              onBuy={() => handleUpgrade("vip_rooms")} canAfford={playerCash >= 75000} />
-            <UpgradeCard title="Iluminação Premium" desc="+10% rendimento. Ambiente mais sofisticado." icon="💡"
-              cost={30000} owned={brothel.upgrade_lighting}
-              onBuy={() => handleUpgrade("lighting")} canAfford={playerCash >= 30000} />
-            <UpgradeCard title="Segurança Reforçada" desc="Reduz atenção policial e heat." icon="🛡️"
-              cost={50000} owned={brothel.upgrade_security}
-              onBuy={() => handleUpgrade("security")} canAfford={playerCash >= 50000} />
-            <UpgradeCard title="Marketing Discreto" desc="+15% rendimento. Mais clientes por hora." icon="📢"
-              cost={40000} owned={brothel.upgrade_marketing}
-              onBuy={() => handleUpgrade("marketing")} canAfford={playerCash >= 40000} />
+          <div className="flex flex-col gap-3">
+            {[
+              { key: "lighting",  title: "Iluminação Premium",  desc: "+10% rendimento. Ambiente mais sofisticado.", icon: "💡", cost: 30000, slots: 3, owned: brothel.upgrade_lighting,  prereq: null },
+              { key: "marketing", title: "Marketing Discreto",  desc: "+15% rendimento. Mais clientes por hora.",  icon: "📢", cost: 40000, slots: 3, owned: brothel.upgrade_marketing, prereq: "upgrade_lighting" },
+              { key: "security",  title: "Segurança Reforçada", desc: "Reduz atenção policial e heat.",             icon: "🛡️", cost: 50000, slots: 5, owned: brothel.upgrade_security,  prereq: "upgrade_marketing" },
+              { key: "vip_rooms", title: "Quartos VIP",         desc: "+25% rendimento. Atrai clientes de alto valor.", icon: "👑", cost: 75000, slots: 10, owned: brothel.upgrade_vip_rooms, prereq: "upgrade_security" },
+            ].map((upg, i) => {
+              const prereqOwned = upg.prereq === null || brothel[upg.prereq as keyof OwnedBrothel];
+              const locked = !upg.owned && !prereqOwned;
+              return (
+                <div key={upg.key} className={`p-4 rounded-xl border transition-all ${
+                  upg.owned ? "border-green-500/40 bg-green-900/10" : locked ? "border-[#222] bg-[#0a0a0a] opacity-60" : "border-[#333] bg-[#111] hover:border-pink-500/40"
+                }`}>
+                  <div className="flex items-center gap-4">
+                    <div className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-xs font-black border-2 border-[#333] text-[#666]">
+                      {i + 1}
+                    </div>
+                    <span className="text-2xl">{upg.icon}</span>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap mb-0.5">
+                        <h4 className="font-bold text-sm text-white">{upg.title}</h4>
+                        {upg.owned && <span className="text-xs text-green-400 font-bold">✓ ATIVO</span>}
+                        {locked && <span className="text-xs text-[#555] font-bold">🔒 BLOQUEADO</span>}
+                      </div>
+                      <p className="text-xs text-[#777]">{upg.desc}</p>
+                      <p className="text-xs text-pink-400 font-bold mt-0.5">+{upg.slots} vagas de worker</p>
+                    </div>
+                    <div className="flex-shrink-0 text-right">
+                      {upg.owned ? (
+                        <div className="text-green-400 text-xs font-bold">✓</div>
+                      ) : locked ? (
+                        <div className="text-xs text-[#555]">Requer anterior</div>
+                      ) : (
+                        <button
+                          onClick={() => handleUpgrade(upg.key)}
+                          disabled={playerCash < upg.cost}
+                          className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${
+                            playerCash >= upg.cost
+                              ? "bg-gradient-to-r from-pink-700 to-purple-700 hover:from-pink-600 hover:to-purple-600 hover:scale-[1.02] active:scale-95"
+                              : "bg-[#1a1a1a] text-[#555] cursor-not-allowed border border-[#222]"
+                          }`}
+                        >
+                          ${upg.cost.toLocaleString()}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
           </div>
           </div>
         )}
