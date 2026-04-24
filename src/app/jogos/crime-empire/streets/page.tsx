@@ -6,6 +6,7 @@ import { useAuth } from "@/lib/auth-context";
 import Image from "next/image";
 import Link from "next/link";
 import { CEToast } from "@/components/CEToast";
+import RaidEscape from "@/components/crime-empire/raid/RaidEscape";
 
 interface DrugItem {
   id: string;
@@ -52,6 +53,7 @@ export default function StreetsPage() {
   const [result, setResult] = useState<SaleResult | null>(null);
   const [toast, setToast] = useState<{ msg: string; ok: boolean } | null>(null);
   const [cooldownSecs, setCooldownSecs] = useState(0);
+  const [arrestEscape, setArrestEscape] = useState<{ token: string; jailMinutes: number } | null>(null);
 
   const showToast = (msg: string, ok = true) => {
     setToast({ msg, ok });
@@ -114,6 +116,9 @@ export default function StreetsPage() {
         return;
       }
       setResult(data);
+      if (data.escape_token) {
+        setArrestEscape({ token: data.escape_token, jailMinutes: data.jail_minutes });
+      }
       await fetchData();
     } catch {
       showToast("Erro de ligação", false);
@@ -326,6 +331,30 @@ export default function StreetsPage() {
           <p>• O dinheiro ganho vai direto para o teu dinheiro sujo.</p>
         </div>
       </div>
+      {arrestEscape && (
+        <RaidEscape
+          difficulty="medium"
+          cashAtRisk={0}
+          onEscape={async () => {
+            const token = arrestEscape.token;
+            setArrestEscape(null);
+            await fetch("/api/crime-empire/escape-attempt", {
+              method: "POST", headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ token, escaped: true }),
+            });
+            fetchData();
+          }}
+          onArrested={async () => {
+            const token = arrestEscape.token;
+            setArrestEscape(null);
+            await fetch("/api/crime-empire/escape-attempt", {
+              method: "POST", headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ token, escaped: false }),
+            });
+            fetchData();
+          }}
+        />
+      )}
     </div>
   );
 }

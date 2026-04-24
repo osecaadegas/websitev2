@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { supabase } from "@/lib/supabase";
+import { generateEscapeToken } from "@/lib/crime-empire/arrest-helpers";
 
 export const dynamic = "force-dynamic";
 
@@ -35,7 +36,7 @@ async function grantXP(playerId: string, xpEarned: number) {
 
 /** Roll for police raid after a gambling session ends. Returns jail info if arrested. */
 async function rollGamblingArrest(playerId: string, playerClass: string): Promise<{
-  arrested: boolean; jailMinutes?: number; jailReleaseAt?: string;
+  arrested: boolean; jailMinutes?: number; jailReleaseAt?: string; escapeToken?: string;
 }> {
   const baseRisk = 0.15; // 15% per session
   const risk = playerClass === "scammer" ? baseRisk * 0.5 : baseRisk;
@@ -43,14 +44,20 @@ async function rollGamblingArrest(playerId: string, playerClass: string): Promis
 
   const jailMinutes = 20 + Math.floor(Math.random() * 21);
   const jailReleaseAt = new Date(Date.now() + jailMinutes * 60_000).toISOString();
-  await supabase.from("crime_players").update({ in_jail: true, jail_release_at: jailReleaseAt }).eq("id", playerId);
+  const et = generateEscapeToken();
+  await supabase.from("crime_players").update({
+    in_jail: true,
+    jail_release_at: jailReleaseAt,
+    escape_token: et.escape_token,
+    escape_token_expires_at: et.escape_token_expires_at,
+  }).eq("id", playerId);
   await supabase.from("player_notifications").insert({
     player_id: playerId,
     type: "jail_released",
     title: "🚔 Apanhado no Casino!",
     message: `A polícia fez uma rusga ao casino. Ficaste preso por ${jailMinutes} minutos.`,
   });
-  return { arrested: true, jailMinutes, jailReleaseAt };
+  return { arrested: true, jailMinutes, jailReleaseAt, escapeToken: et.escape_token };
 }
 
 type Card = { suit: string; value: string };
@@ -199,7 +206,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({
         success: true, sessionId: session2?.id, playerHand, dealerHand,
         playerValue: pv, dealerValue: dv, status, result, payout, fee,
-        canDouble: false, arrested: arrestInfo.arrested, jailMinutes: arrestInfo.jailMinutes,
+        canDouble: false, arrested: arrestInfo.arrested, jailMinutes: arrestInfo.jailMinutes, escape_token: arrestInfo.escapeToken ?? null,
         stamina_gained: GAMBLING_STAMINA_GAIN, new_stamina: newStaminaBJ, new_addiction: newAddictionBJ,
       });
     }
@@ -261,7 +268,7 @@ export async function POST(req: NextRequest) {
     const newAddictionBust = Math.min(100, (player.addiction ?? 0) + GAMBLING_ADDICTION_GAIN);
     await supabase.from("crime_players").update({ stamina: newStaminaBust, addiction: newAddictionBust }).eq("id", player.id);
     const arrestInfo = await rollGamblingArrest(player.id, player.class);
-    return NextResponse.json({ success: true, playerHand, dealerHand, playerValue: pv, dealerValue: handValue(dealerHand), status: "finished", result: "bust", payout: 0, arrested: arrestInfo.arrested, jailMinutes: arrestInfo.jailMinutes, stamina_gained: GAMBLING_STAMINA_GAIN, new_stamina: newStaminaBust, new_addiction: newAddictionBust });
+    return NextResponse.json({ success: true, playerHand, dealerHand, playerValue: pv, dealerValue: handValue(dealerHand), status: "finished", result: "bust", payout: 0, arrested: arrestInfo.arrested, jailMinutes: arrestInfo.jailMinutes, escape_token: arrestInfo.escapeToken ?? null, stamina_gained: GAMBLING_STAMINA_GAIN, new_stamina: newStaminaBust, new_addiction: newAddictionBust });
   }
 
   // Hit but not bust → keep playing
@@ -300,5 +307,5 @@ export async function POST(req: NextRequest) {
   await supabase.from("gambling_history").insert({ player_id: player.id, game_type: "blackjack", bet_amount: bet, payout, profit: payout - bet });
   const arrestInfo = await rollGamblingArrest(player.id, player.class);
 
-  return NextResponse.json({ success: true, playerHand, dealerHand: dHand, playerValue: pv, dealerValue: dv, status: "finished", result, payout, arrested: arrestInfo.arrested, jailMinutes: arrestInfo.jailMinutes, stamina_gained: GAMBLING_STAMINA_GAIN, new_stamina: newStamina, new_addiction: newAddiction });
+  return NextResponse.json({ success: true, playerHand, dealerHand: dHand, playerValue: pv, dealerValue: dv, status: "finished", result, payout, arrested: arrestInfo.arrested, jailMinutes: arrestInfo.jailMinutes, escape_token: arrestInfo.escapeToken ?? null, stamina_gained: GAMBLING_STAMINA_GAIN, new_stamina: newStamina, new_addiction: newAddiction });
 }

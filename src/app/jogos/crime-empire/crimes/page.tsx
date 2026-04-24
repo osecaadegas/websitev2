@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/lib/auth-context";
+import RaidEscape from "@/components/crime-empire/raid/RaidEscape";
 
 interface Player {
   id: string;
@@ -221,6 +222,7 @@ export default function CrimesPage() {
   const [selectedCrime, setSelectedCrime] = useState<string | null>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [crimeResult, setCrimeResult] = useState<Record<string, any> | null>(null);
+  const [arrestEscape, setArrestEscape] = useState<{ token: string; jailMinutes: number } | null>(null);
 
   useEffect(() => {
     if (!user) { router.push("/"); return; }
@@ -259,6 +261,9 @@ export default function CrimesPage() {
       const data = await res.json();
       if (!res.ok) { alert(data.error); setSelectedCrime(null); return; }
       setCrimeResult(data);
+      if (data.escape_token) {
+        setArrestEscape({ token: data.escape_token, jailMinutes: data.jail_time_minutes });
+      }
       setTimeout(() => { fetchPlayer(); setSelectedCrime(null); setCrimeResult(null); }, 3000);
     } catch (e) { console.error(e); setSelectedCrime(null); }
   };
@@ -439,6 +444,30 @@ export default function CrimesPage() {
           </motion.div>
         )}
       </AnimatePresence>
+      {arrestEscape && (
+        <RaidEscape
+          difficulty={arrestEscape.jailMinutes >= 35 ? "high" : arrestEscape.jailMinutes >= 25 ? "medium" : "low"}
+          cashAtRisk={0}
+          onEscape={async () => {
+            const token = arrestEscape.token;
+            setArrestEscape(null);
+            await fetch("/api/crime-empire/escape-attempt", {
+              method: "POST", headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ token, escaped: true }),
+            });
+            fetchPlayer();
+          }}
+          onArrested={async () => {
+            const token = arrestEscape.token;
+            setArrestEscape(null);
+            await fetch("/api/crime-empire/escape-attempt", {
+              method: "POST", headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ token, escaped: false }),
+            });
+            fetchPlayer();
+          }}
+        />
+      )}
     </div>
   );
 }

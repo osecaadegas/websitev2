@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { supabase } from "@/lib/supabase";
+import { generateEscapeToken } from "@/lib/crime-empire/arrest-helpers";
 
 export const dynamic = "force-dynamic";
 
@@ -311,13 +312,18 @@ export async function POST(req: NextRequest) {
         });
 
       // Send to jail if caught
+      let buyerEscapeToken: string | null = null;
       if (buyerCaught) {
         const releaseAt = new Date(Date.now() + jailTime * 60 * 1000);
+        const et = generateEscapeToken();
+        buyerEscapeToken = et.escape_token;
         await supabase
           .from("crime_players")
           .update({
             in_jail: true,
             jail_release_at: releaseAt.toISOString(),
+            escape_token: et.escape_token,
+            escape_token_expires_at: et.escape_token_expires_at,
           })
           .eq("id", player.id);
 
@@ -359,6 +365,7 @@ export async function POST(req: NextRequest) {
           ? `⚠️ Compraste ${listing.items.name} mas foste apanhado! ${jailTime} minutos na prisão.`
           : `✅ Compraste ${listing.items.name} x${listing.quantity} por ${listing.total_crypto} crypto!`,
         caught: buyerCaught,
+        escape_token: buyerEscapeToken,
         jailTime: buyerCaught ? jailTime : 0,
       });
     }

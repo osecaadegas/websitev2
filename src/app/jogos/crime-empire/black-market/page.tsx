@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
 import { useRouter } from "next/navigation";
+import RaidEscape from "@/components/crime-empire/raid/RaidEscape";
 
 interface Item {
   name: string;
@@ -57,6 +58,7 @@ export default function BlackMarket() {
   const [sellQuantity, setSellQuantity] = useState(1);
   const [cryptoPrice, setCryptoPrice] = useState(10);
   const [selling, setSelling] = useState(false);
+  const [arrestEscape, setArrestEscape] = useState<{ token: string; jailMinutes: number } | null>(null);
 
   useEffect(() => {
     if (!user) {
@@ -606,6 +608,30 @@ export default function BlackMarket() {
           </>
         )}
       </div>
+      {arrestEscape && (
+        <RaidEscape
+          difficulty="medium"
+          cashAtRisk={0}
+          onEscape={async () => {
+            const token = arrestEscape.token;
+            setArrestEscape(null);
+            await fetch("/api/crime-empire/escape-attempt", {
+              method: "POST", headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ token, escaped: true }),
+            });
+            fetchData();
+          }}
+          onArrested={async () => {
+            const token = arrestEscape.token;
+            setArrestEscape(null);
+            await fetch("/api/crime-empire/escape-attempt", {
+              method: "POST", headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ token, escaped: false }),
+            });
+            fetchData();
+          }}
+        />
+      )}
     </div>
   );
 }

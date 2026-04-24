@@ -14,8 +14,10 @@ type MinigameType = "lock_sequence" | "heat_zone" | "escape_route";
 type Phase = "intro" | "game" | "escaped" | "arrested";
 
 interface Props {
-  /** base_income_per_hour — used to derive difficulty */
-  businessValue: number;
+  /** base_income_per_hour — used to derive difficulty (ignored when `difficulty` is set) */
+  businessValue?: number;
+  /** Direct difficulty override — skips businessValue calculation */
+  difficulty?: Difficulty;
   /** Pending income the player stands to lose */
   cashAtRisk: number;
   onEscape: (cashSaved: number) => void;
@@ -40,16 +42,16 @@ const MINIGAME_NAMES: Record<MinigameType, string> = {
   escape_route:  "Rota de Fuga",
 };
 
-export default function RaidEscape({ businessValue, cashAtRisk, onEscape, onArrested }: Props) {
-  const [mounted, setMounted] = useState(false);
-  const [phase, setPhase]     = useState<Phase>("intro");
+export default function RaidEscape({ businessValue, difficulty: difficultyProp, cashAtRisk, onEscape, onArrested }: Props) {
+  const [mounted, setMounted]     = useState(false);
+  const [phase, setPhase]         = useState<Phase>("intro");
   const [arrestPct, setArrestPct] = useState(0);
-  const [minigame]            = useState<MinigameType>(() => {
+  const [minigame]                = useState<MinigameType>(() => {
     const all: MinigameType[] = ["lock_sequence", "heat_zone", "escape_route"];
     return all[Math.floor(Math.random() * all.length)];
   });
 
-  const difficulty = getDifficulty(businessValue);
+  const difficulty = difficultyProp ?? getDifficulty(businessValue ?? 0);
   const phaseRef   = useRef<Phase>("intro");
   const doneRef    = useRef(false);
   phaseRef.current = phase;

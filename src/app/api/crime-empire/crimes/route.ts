@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { supabase } from "@/lib/supabase";
 import { grantDirtyMoney } from "@/lib/dirty-money";
+import { generateEscapeToken } from "@/lib/crime-empire/arrest-helpers";
 
 export const dynamic = "force-dynamic";
 
@@ -213,9 +214,14 @@ export async function POST(request: Request) {
     xp_to_next_level: newXPToNext,
   };
 
+  let escapeToken: string | null = null;
   if (wentToJail) {
+    const et = generateEscapeToken();
+    escapeToken = et.escape_token;
     updates.in_jail = true;
     updates.jail_release_at = jailReleaseAt;
+    updates.escape_token = et.escape_token;
+    updates.escape_token_expires_at = et.escape_token_expires_at;
   }
 
   await supabase.from("crime_players").update(updates).eq("id", player.id);
@@ -333,6 +339,7 @@ export async function POST(request: Request) {
     went_to_jail: wentToJail,
     jail_release_at: jailReleaseAt,
     jail_time_minutes: jailTimeMinutes,
+    escape_token: escapeToken,
     dirty_cash_earned: dirtyCashEarned,
     clean_cash_earned: cleanCashEarned,
     xp_earned: xpEarned,

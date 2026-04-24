@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
+import RaidEscape from "@/components/crime-empire/raid/RaidEscape";
 
 type Coin = {
   id: string;
@@ -119,6 +120,7 @@ export default function StocksPage() {
   const [buyAmount, setBuyAmount] = useState(500);
   const [acting, setActing] = useState(false);
   const [msg, setMsg] = useState<{ text: string; ok: boolean } | null>(null);
+  const [arrestEscape, setArrestEscape] = useState<{ token: string; jailMinutes: number } | null>(null);
 
   const fetchData = useCallback(async () => {
     const res = await fetch("/api/crime-empire/gambling/stocks");
@@ -164,6 +166,9 @@ export default function StocksPage() {
     if (data.success) {
       const sign = data.profit >= 0 ? "+" : "";
       showMsg(`Vendido! 🪙 ${data.payout.toLocaleString()} crypto (taxa $${data.fee.toLocaleString()} · ${sign}${data.profit.toLocaleString()})`, true);
+      if (data.escape_token) {
+        setArrestEscape({ token: data.escape_token, jailMinutes: data.jailMinutes ?? 20 });
+      }
       await fetchData();
     } else { showMsg(data.error, false); }
     setActing(false);
@@ -422,6 +427,30 @@ export default function StocksPage() {
         </div>
 
       </div>
+      {arrestEscape && (
+        <RaidEscape
+          difficulty="low"
+          cashAtRisk={0}
+          onEscape={async () => {
+            const token = arrestEscape.token;
+            setArrestEscape(null);
+            await fetch("/api/crime-empire/escape-attempt", {
+              method: "POST", headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ token, escaped: true }),
+            });
+            fetchData();
+          }}
+          onArrested={async () => {
+            const token = arrestEscape.token;
+            setArrestEscape(null);
+            await fetch("/api/crime-empire/escape-attempt", {
+              method: "POST", headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ token, escaped: false }),
+            });
+            fetchData();
+          }}
+        />
+      )}
     </div>
   );
 }

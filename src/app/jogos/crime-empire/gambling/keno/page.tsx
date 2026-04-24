@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import RaidEscape from "@/components/crime-empire/raid/RaidEscape";
 
 const MAX_PICKS = 10;
 
@@ -16,6 +17,7 @@ export default function KenoPage() {
   const [playing, setPlaying] = useState(false);
   const [hasResult, setHasResult] = useState(false);
   const [revealedDrawn, setRevealedDrawn] = useState<number[]>([]);
+  const [arrestEscape, setArrestEscape] = useState<{ token: string; jailMinutes: number } | null>(null);
 
   const loadPlayer = async () => {
     if (player) return;
@@ -59,6 +61,9 @@ export default function KenoPage() {
     setHasResult(true);
     setPlaying(false);
     setPlayer((p) => p ? { dirty_cash: p.dirty_cash - bet - (data.fee ?? 0), crypto: p.crypto + data.payout } : p);
+    if (data.escape_token) {
+      setArrestEscape({ token: data.escape_token, jailMinutes: data.jailMinutes ?? 20 });
+    }
   };
 
   const reset = () => {
@@ -140,6 +145,28 @@ export default function KenoPage() {
           </div>
         </div>
       </div>
+      {arrestEscape && (
+        <RaidEscape
+          difficulty="low"
+          cashAtRisk={0}
+          onEscape={async () => {
+            const token = arrestEscape.token;
+            setArrestEscape(null);
+            await fetch("/api/crime-empire/escape-attempt", {
+              method: "POST", headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ token, escaped: true }),
+            });
+          }}
+          onArrested={async () => {
+            const token = arrestEscape.token;
+            setArrestEscape(null);
+            await fetch("/api/crime-empire/escape-attempt", {
+              method: "POST", headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ token, escaped: false }),
+            });
+          }}
+        />
+      )}
     </div>
   );
 }

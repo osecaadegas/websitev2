@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { supabase } from "@/lib/supabase";
+import { generateEscapeToken } from "@/lib/crime-empire/arrest-helpers";
 
 export const dynamic = "force-dynamic";
 
@@ -54,15 +55,19 @@ async function grantXP(playerId: string, xpEarned: number) {
 
 async function rollGamblingArrest(playerId: string, playerClass: string) {
   const risk = playerClass === "scammer" ? 0.075 : 0.15;
-  if (Math.random() >= risk) return { arrested: false };
+  if (Math.random() >= risk) return { arrested: false, escapeToken: undefined as string | undefined };
   const jailMinutes = 20 + Math.floor(Math.random() * 21);
   const jailReleaseAt = new Date(Date.now() + jailMinutes * 60_000).toISOString();
-  await supabase.from("crime_players").update({ in_jail: true, jail_release_at: jailReleaseAt }).eq("id", playerId);
+  const et = generateEscapeToken();
+  await supabase.from("crime_players").update({
+    in_jail: true, jail_release_at: jailReleaseAt,
+    escape_token: et.escape_token, escape_token_expires_at: et.escape_token_expires_at,
+  }).eq("id", playerId);
   await supabase.from("player_notifications").insert({
     player_id: playerId, type: "jail_released", title: "🚔 Apanhado no Casino!",
     message: `A polícia fez uma rusga ao casino. Ficaste preso por ${jailMinutes} minutos.`,
   });
-  return { arrested: true, jailMinutes };
+  return { arrested: true, jailMinutes, escapeToken: et.escape_token };
 }
 
 export async function POST(req: NextRequest) {
@@ -112,5 +117,5 @@ export async function POST(req: NextRequest) {
 
   const arrestResult = await rollGamblingArrest(player.id, player.class);
 
-  return NextResponse.json({ success: true, flips, slot, multiplier, payout, fee, multipliers: mults, xp_earned: xpEarned, arrested: arrestResult.arrested, jail_minutes: arrestResult.arrested ? (arrestResult as any).jailMinutes : 0, stamina_gained: GAMBLING_STAMINA_GAIN, new_stamina: newStamina, new_addiction: newAddiction });
+  return NextResponse.json({ success: true, flips, slot, multiplier, payout, fee, multipliers: mults, xp_earned: xpEarned, arrested: arrestResult.arrested, jail_minutes: arrestResult.arrested ? (arrestResult as any).jailMinutes : 0, escape_token: arrestResult.arrested ? (arrestResult as any).escapeToken ?? null : null, stamina_gained: GAMBLING_STAMINA_GAIN, new_stamina: newStamina, new_addiction: newAddiction });
 }

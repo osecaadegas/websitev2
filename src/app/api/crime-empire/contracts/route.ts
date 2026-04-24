@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { supabase } from "@/lib/supabase";
+import { generateEscapeToken } from "@/lib/crime-empire/arrest-helpers";
 
 export const dynamic = "force-dynamic";
 
@@ -212,12 +213,16 @@ export async function POST(req: NextRequest) {
     };
 
     let jailMsg = "";
+    let contractJailMinutes = 0;
     if (arrested) {
-      const jailMinutes = 30 + Math.floor(Math.random() * 60); // 30-90 min
-      const releaseAt = new Date(Date.now() + jailMinutes * 60000).toISOString();
+      contractJailMinutes = 30 + Math.floor(Math.random() * 60); // 30-90 min
+      const releaseAt = new Date(Date.now() + contractJailMinutes * 60000).toISOString();
+      const et = generateEscapeToken();
       updates.in_jail = true;
       updates.jail_release_at = releaseAt;
-      jailMsg = ` Foste capturado e enviado para a prisão por ${jailMinutes} minutos.`;
+      updates.escape_token = et.escape_token;
+      updates.escape_token_expires_at = et.escape_token_expires_at;
+      jailMsg = ` Foste capturado e enviado para a prisão por ${contractJailMinutes} minutos.`;
     }
 
     await supabase.from("crime_players").update(updates).eq("id", player.id);
@@ -242,6 +247,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       success: false,
       arrested,
+      escape_token: arrested ? (updates.escape_token as string) : null,
+      jail_time_minutes: contractJailMinutes,
       message: `O alvo escapou! Foste enviado para o Hospital com 0 HP.${jailMsg}`,
       new_stamina: newStamina,
     });

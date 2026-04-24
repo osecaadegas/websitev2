@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
+import RaidEscape from "@/components/crime-empire/raid/RaidEscape";
 
 type TileState = null | "safe" | "mine";
 
@@ -21,6 +22,7 @@ export default function MinesPage() {
   const [loading, setLoading] = useState(true);
   const [acting, setActing] = useState(false);
   const [fee, setFee] = useState(0);
+  const [arrestEscape, setArrestEscape] = useState<{ token: string; jailMinutes: number } | null>(null);
 
   const fetchState = useCallback(async () => {
     const res = await fetch("/api/crime-empire/gambling/mines");
@@ -103,6 +105,9 @@ export default function MinesPage() {
     setCurrentPayout(data.payout);
     setCurrentMultiplier(data.multiplier);
     setPlayer((p) => p ? { ...p, crypto: p.crypto + data.payout } : p);
+    if (data.escape_token) {
+      setArrestEscape({ token: data.escape_token, jailMinutes: data.jailMinutes ?? 20 });
+    }
     setActing(false);
   };
 
@@ -196,6 +201,30 @@ export default function MinesPage() {
           </div>
         ) : null}
       </div>
+      {arrestEscape && (
+        <RaidEscape
+          difficulty="low"
+          cashAtRisk={0}
+          onEscape={async () => {
+            const token = arrestEscape.token;
+            setArrestEscape(null);
+            await fetch("/api/crime-empire/escape-attempt", {
+              method: "POST", headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ token, escaped: true }),
+            });
+            fetchState();
+          }}
+          onArrested={async () => {
+            const token = arrestEscape.token;
+            setArrestEscape(null);
+            await fetch("/api/crime-empire/escape-attempt", {
+              method: "POST", headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ token, escaped: false }),
+            });
+            fetchState();
+          }}
+        />
+      )}
     </div>
   );
 }

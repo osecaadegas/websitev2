@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { supabase } from "@/lib/supabase";
 import { grantDirtyMoney } from "@/lib/dirty-money";
+import { generateEscapeToken } from "@/lib/crime-empire/arrest-helpers";
 
 export const dynamic = "force-dynamic";
 
@@ -157,16 +158,20 @@ export async function POST(req: NextRequest) {
     // 20-40 min jail sentence
     const jailMinutes = 20 + Math.floor(Math.random() * 21);
     const releaseAt = new Date(now.getTime() + jailMinutes * 60000).toISOString();
+    const et = generateEscapeToken();
 
     await supabase.from("crime_players").update({
       in_jail: true,
       jail_release_at: releaseAt,
       last_street_sale_at: now.toISOString(),
+      escape_token: et.escape_token,
+      escape_token_expires_at: et.escape_token_expires_at,
     }).eq("id", player.id);
 
     return NextResponse.json({
       success: false,
       caught: true,
+      escape_token: et.escape_token,
       jail_minutes: jailMinutes,
       jail_release_at: releaseAt,
       drug_name: item.name,

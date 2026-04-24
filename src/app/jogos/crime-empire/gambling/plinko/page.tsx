@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import RaidEscape from "@/components/crime-empire/raid/RaidEscape";
 
 const MULTIPLIERS: Record<string, number[]> = {
   low:    [0.5, 0.7, 1.0, 1.2, 1.4, 1.2, 1.0, 0.7, 0.5],
@@ -62,6 +63,7 @@ export default function PlinkoPage() {
   const [payout, setPayout] = useState(0);
   const [playing, setPlaying] = useState(false);
   const [hasResult, setHasResult] = useState(false);
+  const [arrestEscape, setArrestEscape] = useState<{ token: string; jailMinutes: number } | null>(null);
 
   const loadPlayer = async () => {
     if (player) return;
@@ -96,6 +98,9 @@ export default function PlinkoPage() {
     setHasResult(true);
     setPlaying(false);
     setPlayer((p) => p ? { dirty_cash: p.dirty_cash - bet - (data.fee ?? 0), crypto: p.crypto + data.payout } : p);
+    if (data.escape_token) {
+      setArrestEscape({ token: data.escape_token, jailMinutes: data.jail_minutes ?? 20 });
+    }
   };
 
   const mults = MULTIPLIERS[risk];
@@ -163,6 +168,28 @@ export default function PlinkoPage() {
           </div>
         )}
       </div>
+      {arrestEscape && (
+        <RaidEscape
+          difficulty="low"
+          cashAtRisk={0}
+          onEscape={async () => {
+            const token = arrestEscape.token;
+            setArrestEscape(null);
+            await fetch("/api/crime-empire/escape-attempt", {
+              method: "POST", headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ token, escaped: true }),
+            });
+          }}
+          onArrested={async () => {
+            const token = arrestEscape.token;
+            setArrestEscape(null);
+            await fetch("/api/crime-empire/escape-attempt", {
+              method: "POST", headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ token, escaped: false }),
+            });
+          }}
+        />
+      )}
     </div>
   );
 }
