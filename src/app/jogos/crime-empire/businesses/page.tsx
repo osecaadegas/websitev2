@@ -24,7 +24,13 @@ interface OwnedBusiness {
   id: string; pb_id: string; business_id: string; employees: number;
   max_employees: number; last_collection: string; upgrade_level: number;
   production_level: ProductionLevel; status: BusinessStatus; heat: number;
-  business: Business;
+  // drug fields
+  drug_output_per_hour?: number | null;
+  // launder fields
+  launder_used?: number | null; launder_window_start?: string | null;
+  // extra
+  sick_workers?: number | null;
+  business: Business & { income_type?: string; launder_cap_per_hour?: number | null; drug_output_per_hour?: number | null; };
 }
 interface Player { level: number; cash: number; dirty_cash: number; class: string; }
 
@@ -47,44 +53,124 @@ function OwnedCard({ ob, onView }: { ob: OwnedBusiness; onView: () => void }) {
   const status = ob.status ?? "running";
   const statusMeta = STATUS_META[status as BusinessStatus] ?? STATUS_META.running;
   const heatPct = Math.min(100, ob.heat ?? 0);
-  const hoursElapsed = (Date.now() - new Date(ob.last_collection).getTime()) / 3_600_000;
-  const accumulated = Math.floor(hoursElapsed * ob.business.base_income_per_hour);
+
+  const incomeType = ob.business.income_type ?? "dirty_cash";
+  const isDrug = incomeType === "drugs";
+  const isLaunder = incomeType === "launder";
+
+  // Live tick — updates accumulated value every 10s
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const t = setInterval(() => setNow(Date.now()), 10_000);
+    return () => clearInterval(t);
+  }, []);
+
+  const hoursElapsed = (now - new Date(ob.last_collection).getTime()) / 3_600_000;
+
+  // Cash accumulation
+  const accumulated = (!isDrug && !isLaunder)
+    ? Math.floor(hoursElapsed * ob.business.base_income_per_hour)
+    : 0;
+
+  // Drug quantity pending
+  const drugRate = ob.business.drug_output_per_hour ?? ob.drug_output_per_hour ?? 0;
+  const drugQty = isDrug ? Math.floor(hoursElapsed * drugRate) : 0;
+
+  // Launder window remaining
+  const launderCap = ob.business.launder_cap_per_hour ?? 0;
+  const launderWindowExpired = !ob.launder_window_start ||
+    (now - new Date(ob.launder_window_start).getTime()) >= 3_600_000;
+  const launderUsed = launderWindowExpired ? 0 : (ob.launder_used ?? 0);
+  const launderRemaining = Math.max(0, launderCap - launderUsed);
+  const launderWindowResetAt = ob.launder_window_start
+    ? new Date(new Date(ob.launder_window_start).getTime() + 3_600_000)
+    : null;
+  const launderSecsLeft = launderWindowResetAt && !launderWindowExpired
+    ? Math.max(0, Math.ceil((launderWindowResetAt.getTime() - now) / 1000))
+    : 0;
+
+  const hasReady = (!isDrug && !isLaunder && accumulated >= ob.business.base_income_per_hour)
+    || (isDrug && drugQty > 0)
+    || (isLaunder && launderRemaining >= launderCap * 0.5);
 
   return (
     <div
-      className="rounded-2xl border overflow-hidden flex flex-col transition-all hover:border-orange-500/30 cursor-pointer"
-      style={{ background: "#111", borderColor: "rgba(255,255,255,0.07)" }}
+      className="rounded-2xl border overflow-hidden flex flex-col transition-all hover:border-orange-500/30 cursor-pointer relative"
+      style={{ background: "#111", borderColor: hasReady ? "rgba(255,106,0,0.40)" : "rgba(255,255,255,0.07)" }}
       onClick={onView}
     >
       {/* top gradient band */}
       <div className="h-1" style={{ background: status === "raided" ? "#ef4444" : status === "idle" ? "#eab308" : "#ff6a00" }} />
+
+      {/* "ready" badge */}
+      {hasReady && (
+        <div className="absolute top-2 right-2 z-10">
+          <span className="animate-pulse text-xs font-black px-2 py-0.5 rounded-full bg-orange-500/20 border border-orange-500/50 text-orange-400">
+            ● Pronto
+          </span>
+        </div>
+      )}
 
       <div className="p-4 flex gap-3">
         <span className="text-4xl flex-shrink-0">{def?.icon ?? "🏢"}</span>
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between gap-2">
             <p className="font-black text-white truncate">{ob.business.name}</p>
-            <span className={`text-xs font-bold px-2 py-0.5 rounded-full border flex-shrink-0 ${statusMeta.bg} ${statusMeta.color}`}>
-              ● {statusMeta.label}
-            </span>
+            {!hasReady && (
+              <span className={`text-xs font-bold px-2 py-0.5 rounded-full border flex-shrink-0 ${statusMeta.bg} ${statusMeta.color}`}>
+                ● {statusMeta.label}
+              </span>
+            )}
           </div>
           <p className="text-xs text-gray-500 mt-0.5">{def?.tagline ?? ob.business.description}</p>
         </div>
       </div>
 
-      {/* stats */}
+      {/* stats — type-aware */}
       <div className="px-4 pb-3 grid grid-cols-3 gap-2 text-center text-xs">
+        {/* col 1: income/cap rate */}
         <div className="rounded-lg p-2" style={{ background: "#0d0d0d" }}>
-          <p className="text-gray-500">Income/hr</p>
-          <p className="text-orange-400 font-bold">${ob.business.base_income_per_hour.toLocaleString()}</p>
+          <p className="text-gray-500">{isLaunder ? "Cap/hora" : isDrug ? "Produção/hr" : "Income/hr"}</p>
+          <p className={`font-bold ${isLaunder ? "text-blue-400" : isDrug ? "text-purple-400" : "text-orange-400"}`}>
+            {isLaunder
+              ? `$${launderCap.toLocaleString()}`
+              : isDrug
+              ? `${drugRate.toFixed(1)} ud.`
+              : `$${ob.business.base_income_per_hour.toLocaleString()}`}
+          </p>
         </div>
+
+        {/* col 2: pending amount */}
         <div className="rounded-lg p-2" style={{ background: "#0d0d0d" }}>
-          <p className="text-gray-500">Acumulado</p>
-          <p className="text-yellow-400 font-bold">${accumulated.toLocaleString()}</p>
+          <p className="text-gray-500">{isLaunder ? "Disponível" : isDrug ? "Pendente" : "Acumulado"}</p>
+          {isLaunder ? (
+            <p className={`font-bold ${launderRemaining > 0 ? "text-green-400" : "text-red-400"}`}>
+              ${launderRemaining.toLocaleString()}
+            </p>
+          ) : isDrug ? (
+            <p className={`font-bold ${drugQty > 0 ? "text-purple-400" : "text-gray-500"}`}>
+              {drugQty} ud.
+            </p>
+          ) : (
+            <p className="text-yellow-400 font-bold">${accumulated.toLocaleString()}</p>
+          )}
         </div>
+
+        {/* col 3: workers or timer */}
         <div className="rounded-lg p-2" style={{ background: "#0d0d0d" }}>
-          <p className="text-gray-500">Trab.</p>
-          <p className="text-blue-400 font-bold">{ob.employees}/{ob.max_employees}</p>
+          {isLaunder && launderSecsLeft > 0 ? (
+            <>
+              <p className="text-gray-500">Repõe em</p>
+              <p className="text-orange-400 font-bold tabular-nums">
+                {Math.floor(launderSecsLeft / 60)}m {(launderSecsLeft % 60).toString().padStart(2, "0")}s
+              </p>
+            </>
+          ) : (
+            <>
+              <p className="text-gray-500">Trab.</p>
+              <p className="text-blue-400 font-bold">{ob.employees}/{ob.max_employees}</p>
+            </>
+          )}
         </div>
       </div>
 
