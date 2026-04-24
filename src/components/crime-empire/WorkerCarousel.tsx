@@ -229,8 +229,9 @@ export default function WorkerCarousel({
                   className="relative flex-shrink-0 cursor-pointer"
                   style={{
                     transform: `scale(${dist === 0 ? 1 : dist === 1 ? 0.88 : 0.75}) translateY(${dist === 0 ? 0 : dist === 1 ? 8 : 20}px)`,
-                    opacity: dist === 0 ? 1 : dist === 1 ? 0.72 : 0.35,
+                    opacity: dist === 0 ? 1 : dist === 1 ? 0.72 : dist === 2 ? 0.35 : 0,
                     filter: dist > 1 ? "blur(1px)" : "none",
+                    pointerEvents: dist > 2 ? "none" : "auto",
                     transition: "all 0.45s cubic-bezier(0.25, 0.1, 0.25, 1)",
                     zIndex: 10 - dist,
                     width: "260px",
