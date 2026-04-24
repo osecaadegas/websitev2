@@ -368,6 +368,7 @@ function InventoryPanel() {
 
   function ItemCard({ entry, isEquipped }: { entry: InventoryEntry; isEquipped: boolean }) {
     const item = entry.items;
+    if (!item) return null;
     const bonuses = Object.entries(statLabel)
       .filter(([k]) => (item as unknown as Record<string, number>)[k] > 0)
       .map(([k, v]) => ({ ...v, value: (item as unknown as Record<string, number>)[k] }));
