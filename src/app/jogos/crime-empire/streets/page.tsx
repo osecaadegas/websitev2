@@ -186,6 +186,18 @@ export default function StreetsPage() {
   // -- Timer
   const [timerSecs, setTimerSecs] = useState(DECISION_SECS);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const maxTimerSecsRef = useRef(DECISION_SECS);
+
+  // -- Mobile detection
+  const isMobileRef = useRef(false);
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const mq = window.matchMedia("(max-width: 767px)");
+    isMobileRef.current = mq.matches;
+    const handler = (e: MediaQueryListEvent) => { isMobileRef.current = e.matches; };
+    mq.addEventListener("change", handler);
+    return () => mq.removeEventListener("change", handler);
+  }, []);
 
   // -- Arrest escape
   const [arrestEscape, setArrestEscape] = useState<{ token: string; jailMinutes: number; pendingCash: number } | null>(null);
@@ -255,11 +267,12 @@ export default function StreetsPage() {
 
   const startTimer = useCallback(() => {
     stopTimer();
-    setTimerSecs(DECISION_SECS);
+    const secs = isMobileRef.current ? DECISION_SECS + 4 : DECISION_SECS;
+    maxTimerSecsRef.current = secs;
+    setTimerSecs(secs);
     timerRef.current = setInterval(() => {
       setTimerSecs((s) => {
         if (s <= 1) {
-          // Time's up ? auto rush
           stopTimer();
           return 0;
         }
@@ -319,6 +332,24 @@ export default function StreetsPage() {
 
   // Cleanup timer on unmount
   useEffect(() => () => stopTimer(), [stopTimer]);
+
+  // Track phase and customer name in refs for the timer-expiry effect
+  const phaseRef = useRef<Phase>("loading");
+  useEffect(() => { phaseRef.current = phase; }, [phase]);
+  const customerNameRef = useRef<string | null>(null);
+  useEffect(() => { customerNameRef.current = customer?.name ?? null; }, [customer]);
+
+  // Customer walks away when countdown reaches zero
+  useEffect(() => {
+    if (timerSecs !== 0) return;
+    if (phaseRef.current !== "customer" && phaseRef.current !== "counter") return;
+    const name = customerNameRef.current ?? "O cliente";
+    addLog("🚶", "Cliente foi embora", `${name} perdeu a paciência e foi embora.`);
+    setCustomer(null);
+    setTypedDialogue("");
+    setDialogueDone(true);
+    setPhase("idle");
+  }, [timerSecs, addLog]);
 
   // Update price suggestion when drug changes
   useEffect(() => {
@@ -956,29 +987,68 @@ export default function StreetsPage() {
             {/* ── CENTER — MAIN INTERACTION ──────────────────────────────── */}
             <div className="flex-1 flex flex-col overflow-y-auto min-w-0" style={{ background: "#0a0a0b" }}>
 
-              {/* ── MOBILE-ONLY compact customer header (portrait hidden on mobile) ── */}
+              {/* ── MOBILE portrait card (shows actual portrait, replaces sidebar on mobile) ── */}
               {customer && (
-                <div className="md:hidden px-4 py-2.5 border-b border-[#141416] shrink-0 flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-full flex items-center justify-center text-lg shrink-0"
-                    style={{ background: "#111", border: "1px solid #1a1a1a" }}>
-                    {customerMeta?.icon ?? "👤"}
+                <div className={`md:hidden relative shrink-0 border-b border-[#141416] overflow-hidden ${customerAnim ? "client-enter" : ""}`}
+                  style={{ height: "210px" }}>
+
+                  {/* Section label */}
+                  <div className="absolute top-0 left-0 z-20 px-3 pt-2">
+                    <span className="text-[9px] font-black tracking-[0.18em] text-[#666] uppercase">Cliente chegou</span>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-white font-black text-sm leading-tight truncate">{customer.name.toUpperCase()}</p>
-                    <p className="text-[#555] text-[10px] mt-0.5">{customerMeta?.label ?? customer.type}</p>
-                  </div>
-                  <div className="flex items-center gap-2.5 shrink-0">
-                    <div className="text-right">
-                      <p className="text-[9px] text-[#444] uppercase tracking-wider leading-none mb-0.5">Suspeita</p>
-                      <p className="font-black text-sm leading-none" style={{ color: moodColor }}>{suspicion}%</p>
+
+                  {/* Portrait */}
+                  {portrait ? (
+                    <img src={portrait} alt={customer.name}
+                      className="absolute inset-0 w-full h-full object-cover object-top"
+                      onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
+                  ) : (
+                    <div className="absolute inset-0" style={{ background: "linear-gradient(160deg,#111,#0a0a0a)" }} />
+                  )}
+
+                  {/* Gradient overlays */}
+                  <div className="absolute inset-0 z-10"
+                    style={{ background: "linear-gradient(to bottom, rgba(0,0,0,0.25) 0%, transparent 30%, rgba(0,0,0,0.75) 78%, rgba(0,0,0,0.97) 100%)" }} />
+                  <div className="absolute inset-0 z-10"
+                    style={{ background: "linear-gradient(to right, rgba(0,0,0,0.45) 0%, transparent 55%)" }} />
+
+                  {/* Inspector reveal */}
+                  {inspectorRevealed && (
+                    <div className="absolute inset-0 z-30 flex items-center justify-center" style={{ background: "rgba(10,0,0,0.75)" }}>
+                      <div className="text-center">
+                        <p className="text-5xl mb-2">🚔</p>
+                        <p className="text-red-400 font-black text-2xl tracking-widest danger-text">POLÍCIA</p>
+                      </div>
                     </div>
-                    <div className="flex gap-0.5 items-center">
-                      {Array.from({ length: customer.patience }).map((_, i) => (
-                        <span key={i} className="w-1.5 h-4 rounded-sm transition-colors duration-300"
-                          style={{ background: i < customer.patience - customer.offersReceived ? "#22c55e" : "#1f1f1f" }} />
-                      ))}
+                  )}
+
+                  {/* Bottom info overlay */}
+                  {!inspectorRevealed && (
+                    <div className="absolute bottom-0 left-0 right-0 z-20 px-3 pb-2 flex items-end justify-between gap-2">
+                      <div className="flex-1 min-w-0">
+                        <p className="font-black italic text-white text-xl leading-tight drop-shadow-lg"
+                          style={{ fontFamily: "Georgia, serif", textShadow: "0 2px 12px rgba(0,0,0,1)" }}>
+                          {customer.name.toUpperCase()}
+                        </p>
+                        <p className="text-[#aaa] text-[10px] mt-0.5">{customerMeta?.icon} {customerMeta?.label ?? customer.type}</p>
+                        <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold mt-1"
+                          style={{ background: `${moodColor}18`, border: `1px solid ${moodColor}44`, color: moodColor }}>
+                          <span className="w-1.5 h-1.5 rounded-full" style={{ background: moodColor }} />
+                          {moodLabel.toUpperCase()}
+                        </div>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <p className="text-[9px] text-[#555] mb-0.5">Suspeita</p>
+                        <p className="font-black text-base" style={{ color: moodColor }}>{suspicion}%</p>
+                        <div className="flex gap-0.5 mt-1 justify-end">
+                          {Array.from({ length: customer.patience }).map((_, i) => (
+                            <span key={i} className="w-1 h-3 rounded-sm transition-colors duration-300"
+                              style={{ background: i < customer.patience - customer.offersReceived ? "#22c55e" : "#1f1f1f" }} />
+                          ))}
+                        </div>
+                      </div>
                     </div>
-                  </div>
+                  )}
                 </div>
               )}
 
@@ -1051,7 +1121,7 @@ export default function StreetsPage() {
                     <div className="mt-2">
                       <div className="h-0.5 bg-[#111] rounded-full overflow-hidden">
                         <div className={`h-full rounded-full transition-all duration-1000 ${timerSecs <= 10 ? "bg-red-600" : "bg-cyan-600"}`}
-                          style={{ width: `${(timerSecs / DECISION_SECS) * 100}%` }} />
+                          style={{ width: `${(timerSecs / maxTimerSecsRef.current) * 100}%` }} />
                       </div>
                       {timerSecs <= 10 && (
                         <p className="text-right text-[10px] text-red-500 danger-text mt-0.5 font-black">{timerSecs}s</p>
@@ -1118,8 +1188,93 @@ export default function StreetsPage() {
               {/* ── WHAT WILL YOU DO? — action buttons ── */}
               {phase === "customer" && dialogueDone && (
                 <div className="px-4 py-3 btn-reveal shrink-0">
-                  <p className="text-[9px] font-black tracking-[0.2em] text-[#333] uppercase mb-3">O Que Fazes?</p>
-                  <div className="grid grid-cols-5 gap-2">
+                  <p className="text-[9px] font-black tracking-[0.2em] text-[#333] uppercase mb-3">O Que Vai Fazer?</p>
+
+                  {/* ── MOBILE: full-width list ── */}
+                  <div className="flex flex-col gap-2 md:hidden">
+                    {/* ACCEPT */}
+                    <button
+                      onClick={() => { if (!customer) return; setPricePerUnit(fairPrice); setQuantity(customer.requestedQty); submitOffer("offer", fairPrice, customer.requestedQty); }}
+                      disabled={!selectedDrug}
+                      className="flex items-center gap-3 w-full px-4 py-3.5 rounded-xl transition-all active:scale-95 disabled:opacity-30"
+                      style={{ background: "rgba(34,197,94,0.08)", border: "1px solid rgba(34,197,94,0.2)" }}>
+                      <div className="w-9 h-9 rounded-full flex items-center justify-center shrink-0" style={{ background: "rgba(34,197,94,0.14)" }}>
+                        <span className="text-lg">🤝</span>
+                      </div>
+                      <div className="flex-1 text-left">
+                        <p className="text-white font-black text-sm leading-tight">ACEITAR NEGÓCIO</p>
+                        <p className="text-[#555] text-[11px] mt-0.5">Fechar o acordo por um preço justo.</p>
+                      </div>
+                      <p className="font-black text-sm shrink-0" style={{ color: "#4ade80" }}>${fairPrice.toLocaleString()}</p>
+                      <span className="text-[#333] shrink-0">›</span>
+                    </button>
+
+                    {/* RAISE PRICE */}
+                    <button
+                      onClick={() => submitOffer("push", highPrice, quantity)}
+                      disabled={!selectedDrug}
+                      className="flex items-center gap-3 w-full px-4 py-3.5 rounded-xl transition-all active:scale-95 disabled:opacity-30"
+                      style={{ background: "rgba(99,102,241,0.07)", border: "1px solid rgba(99,102,241,0.2)" }}>
+                      <div className="w-9 h-9 rounded-full flex items-center justify-center shrink-0" style={{ background: "rgba(99,102,241,0.14)" }}>
+                        <span className="text-lg">📈</span>
+                      </div>
+                      <div className="flex-1 text-left">
+                        <p className="text-white font-black text-sm leading-tight">AUMENTAR PREÇO</p>
+                        <p className="text-[#555] text-[11px] mt-0.5">Tentar ganhar mais.</p>
+                      </div>
+                      <span className="text-[#333] shrink-0">›</span>
+                    </button>
+
+                    {/* LOWER QTY */}
+                    <button
+                      onClick={() => submitOffer("offer", pricePerUnit, lessQty)}
+                      disabled={!selectedDrug || quantity <= 1}
+                      className="flex items-center gap-3 w-full px-4 py-3.5 rounded-xl transition-all active:scale-95 disabled:opacity-30"
+                      style={{ background: "rgba(148,163,184,0.04)", border: "1px solid rgba(148,163,184,0.12)" }}>
+                      <div className="w-9 h-9 rounded-full flex items-center justify-center shrink-0" style={{ background: "rgba(148,163,184,0.08)" }}>
+                        <span className="text-lg">🎒</span>
+                      </div>
+                      <div className="flex-1 text-left">
+                        <p className="text-white font-black text-sm leading-tight">REDUZIR QUANTIDADE</p>
+                        <p className="text-[#555] text-[11px] mt-0.5">Oferecer menos.</p>
+                      </div>
+                      <span className="text-[#333] shrink-0">›</span>
+                    </button>
+
+                    {/* SWAP */}
+                    <button
+                      onClick={() => { if (nextDrug) { setSelectedDrug(nextDrug); setPricePerUnit(Math.round(nextDrug.items.base_price * 1.2)); setQuantity(Math.min(customer?.requestedQty ?? 5, nextDrug.quantity)); } }}
+                      disabled={!nextDrug}
+                      className="flex items-center gap-3 w-full px-4 py-3.5 rounded-xl transition-all active:scale-95 disabled:opacity-30"
+                      style={{ background: "rgba(148,163,184,0.04)", border: "1px solid rgba(148,163,184,0.12)" }}>
+                      <div className="w-9 h-9 rounded-full flex items-center justify-center shrink-0" style={{ background: "rgba(148,163,184,0.08)" }}>
+                        <span className="text-lg">🔄</span>
+                      </div>
+                      <div className="flex-1 text-left">
+                        <p className="text-white font-black text-sm leading-tight">TROCAR PRODUTO</p>
+                        <p className="text-[#555] text-[11px] mt-0.5">Oferecer algo diferente.</p>
+                      </div>
+                      <span className="text-[#333] shrink-0">›</span>
+                    </button>
+
+                    {/* REJECT */}
+                    <button
+                      onClick={rejectCustomer}
+                      className="flex items-center gap-3 w-full px-4 py-3.5 rounded-xl transition-all active:scale-95"
+                      style={{ background: "rgba(239,68,68,0.07)", border: "1px solid rgba(239,68,68,0.2)" }}>
+                      <div className="w-9 h-9 rounded-full flex items-center justify-center shrink-0" style={{ background: "rgba(239,68,68,0.12)" }}>
+                        <span className="text-lg">✖</span>
+                      </div>
+                      <div className="flex-1 text-left">
+                        <p className="text-white font-black text-sm leading-tight">RECUSAR</p>
+                        <p className="text-[11px] mt-0.5" style={{ color: "#f87171" }}>Dispensar o cliente.</p>
+                      </div>
+                      <span className="text-[#333] shrink-0">›</span>
+                    </button>
+                  </div>
+
+                  {/* ── DESKTOP/TABLET: original 5-column grid ── */}
+                  <div className="hidden md:grid grid-cols-5 gap-2">
 
                     {/* ACCEPT DEAL */}
                     <button
@@ -1237,6 +1392,33 @@ export default function StreetsPage() {
                   <div className="rounded-xl border border-[#141416] bg-[#0d0d0f] p-6 text-center">
                     <div className={`w-6 h-6 border-2 border-t-transparent rounded-full animate-spin mx-auto mb-2 ${phase === "negotiating" ? "border-cyan-500" : "border-green-500"}`} />
                     <p className="text-[#333] text-sm">{phase === "negotiating" ? "A negociar..." : "A carregar..."}</p>
+                  </div>
+                </div>
+              )}
+
+              {/* ── MOBILE log preview ── */}
+              {log.length > 0 && (
+                <div className="lg:hidden border-t border-[#161618] shrink-0" style={{ background: "#0c0c0e" }}>
+                  <div className="px-4 py-2.5 flex items-center justify-between">
+                    <span className="text-[9px] font-black tracking-[0.15em] text-white uppercase">Registo da Rua</span>
+                    <div className="w-1.5 h-1.5 rounded-full bg-red-500" style={{ boxShadow: "0 0 6px #ef4444" }} />
+                  </div>
+                  <div>
+                    {log.slice(-4).map((entry, i) => (
+                      <div key={i} className="px-4 py-2 flex items-start gap-2.5 border-t border-[#0f0f11]">
+                        <div className="w-5 h-5 rounded-full flex items-center justify-center shrink-0 mt-0.5 text-[10px]"
+                          style={{ background: "#17171a" }}>
+                          {entry.icon}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-1">
+                            <p className="text-white text-[10px] font-bold leading-tight truncate">{entry.title}</p>
+                            <span className="text-[#252528] text-[9px] shrink-0 tabular-nums ml-auto">{entry.time}</span>
+                          </div>
+                          <p className="text-[#484848] text-[10px] leading-snug mt-0.5 break-words">{entry.desc}</p>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
               )}
