@@ -214,9 +214,18 @@ async function handleNextCustomer(body: any, user: any) {
   const zone = getZone(session.zone);
   if (!zone) return NextResponse.json({ error: "Zona inválida" }, { status: 500 });
 
+  // Fetch player's drug inventory to generate a realistic client request
+  const { data: inventory } = await supabase
+    .from("player_inventory")
+    .select("id, quantity, items(id, name, base_price, category)")
+    .eq("player_id", player.id)
+    .gt("quantity", 0);
+
+  const drugs = (inventory || []).filter((r: any) => r.items?.category === "drug");
+
   const heatPct = session.heat / 100;
   const type = pickCustomerType(zone, heatPct);
-  const customer = await spawnCustomer(type, player.level);
+  const customer = await spawnCustomer(type, player.level, drugs);
 
   if (!customer) {
     const { count } = await supabase.from("street_customers").select("*", { count: "exact", head: true }).eq("type", type);
@@ -224,7 +233,10 @@ async function handleNextCustomer(body: any, user: any) {
     return NextResponse.json({ error: `Sem clientes (tipo: ${type}, nível: ${player.level}, disponíveis: ${count ?? "erro RLS"})` }, { status: 400 });
   }
 
-  const greeting = getDialogue(type, "greeting");
+  const greeting = getDialogue(type, "greeting", {
+    drug: customer.requestedDrugName,
+    qty: customer.requestedQty,
+  });
 
   return NextResponse.json({
     customer,
@@ -299,6 +311,10 @@ async function handleNegotiate(body: any, user: any) {
     preferredQty: rawCustomer.preferred_quantity,
     offersReceived: customerState?.offersReceived ?? 0,
     suspicion: customerState?.suspicion ?? 0,
+    requestedDrugName: customerState?.requestedDrugName ?? item?.name ?? "produto",
+    requestedQty: customerState?.requestedQty ?? rawCustomer.preferred_quantity,
+    requestedPriceExpectation: customerState?.requestedPriceExpectation ?? rawCustomer.budget_min,
+    flexibility: customerState?.flexibility ?? 0.4,
   };
 
   const result = resolveNegotiation({
@@ -316,7 +332,10 @@ async function handleNegotiate(body: any, user: any) {
   const newHeat = Math.min(100, session.heat + result.heatDelta);
   await supabase.from("street_sessions").update({ heat: newHeat }).eq("id", sessionId);
 
-  const dialogue = getDialogue(customer.type as CustomerType, result.dialogueKey);
+  const dialogue = getDialogue(customer.type as CustomerType, result.dialogueKey, {
+    drug: item.name,
+    qty: quantity,
+  });
 
   if (result.outcome === "accept" && result.earned != null) {
     const caught = Math.random() < arrestRisk;
@@ -429,7 +448,7 @@ async function handleAcceptDeal(body: any, user: any) {
 
   return NextResponse.json({
     outcome: "accept", earned, heat: newHeat, heatStage: getHeatStage(newHeat),
-    dialogue: getDialogue("regular", "accept_fair"),
+    dialogue: getDialogue("regular", "accept_fair", {}),
   });
 }
 
@@ -528,7 +547,11 @@ async function deductInventory(inventoryId: string, currentQty: number, amount: 
   }
 }
 
-async function spawnCustomer(type: CustomerType, playerLevel: number): Promise<SpawnedCustomer | null> {
+async function spawnCustomer(
+  type: CustomerType,
+  playerLevel: number,
+  drugs: any[] = []
+): Promise<SpawnedCustomer | null> {
   const { data: pool, error } = await supabase
     .from("street_customers")
     .select("*")
@@ -546,6 +569,28 @@ async function spawnCustomer(type: CustomerType, playerLevel: number): Promise<S
   const raw = pool[Math.floor(Math.random() * pool.length)];
   const budget = raw.budget_min + Math.floor(Math.random() * (raw.budget_max - raw.budget_min + 1));
 
+  // Build client drug request from player's actual inventory
+  let requestedDrugName = "produto";
+  let requestedQty = raw.preferred_quantity;
+  let requestedPriceExpectation = 100;
+  let flexibility = 0.4;
+
+  if (drugs.length > 0) {
+    const pick = drugs[Math.floor(Math.random() * drugs.length)];
+    const item = pick.items;
+    requestedDrugName = item.name;
+    requestedPriceExpectation = Math.round(item.base_price * (0.8 + Math.random() * 0.5));
+    // Qty: respect preferred_quantity but cap at available stock
+    const maxQty = Math.min(raw.preferred_quantity, pick.quantity);
+    requestedQty = Math.max(1, Math.floor(maxQty * (0.5 + Math.random() * 0.5)));
+    // Flexibility: higher for regular/tourist, lower for dealer/junkie
+    flexibility = type === "tourist" ? 0.7
+      : type === "regular" ? 0.5
+      : type === "dealer" ? 0.3
+      : type === "junkie" ? 0.2
+      : 0.4; // undercover
+  }
+
   return {
     id: raw.id,
     name: raw.type === "undercover" ? "???" : raw.name,
@@ -557,6 +602,10 @@ async function spawnCustomer(type: CustomerType, playerLevel: number): Promise<S
     preferredQty: raw.preferred_quantity,
     offersReceived: 0,
     suspicion: 0,
+    requestedDrugName,
+    requestedQty,
+    requestedPriceExpectation,
+    flexibility,
   };
 }
 

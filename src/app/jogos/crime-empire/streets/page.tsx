@@ -55,6 +55,10 @@ interface Customer {
   preferredQty: number;
   offersReceived: number;
   suspicion: number;
+  requestedDrugName: string;
+  requestedQty: number;
+  requestedPriceExpectation: number;
+  flexibility: number;
 }
 
 type Phase =
@@ -156,6 +160,23 @@ export default function StreetsPage() {
     setFloaters((p) => [...p, { id, amount, left }]);
     setTimeout(() => setFloaters((p) => p.filter((f) => f.id !== id)), 1800);
   }, []);
+
+  // -- Typewriter dialogue
+  const [typedDialogue, setTypedDialogue] = useState("");
+  const typewriterRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const typeDialogue = useCallback((text: string) => {
+    if (typewriterRef.current) clearInterval(typewriterRef.current);
+    setTypedDialogue("");
+    let i = 0;
+    typewriterRef.current = setInterval(() => {
+      i++;
+      setTypedDialogue(text.slice(0, i));
+      if (i >= text.length) {
+        if (typewriterRef.current) clearInterval(typewriterRef.current);
+      }
+    }, 28);
+  }, []);
+  useEffect(() => () => { if (typewriterRef.current) clearInterval(typewriterRef.current); }, []);
 
   // -- Customer entrance animation
   const [customerAnim, setCustomerAnim] = useState(false);
@@ -280,6 +301,7 @@ export default function StreetsPage() {
     setCustomer({ ...data.customer, offersReceived: 0, suspicion: 0 });
     setGreeting(data.greeting);
     setDialogue(data.greeting);
+    typeDialogue(data.greeting);
     setSession((s) => s ? { ...s, heat: data.session.heat } : s);
     setHeat(data.session.heat);
     setHeatStage(heatStageFor(data.session.heat));
@@ -287,6 +309,17 @@ export default function StreetsPage() {
     setCustomerAnim(true); setTimeout(() => setCustomerAnim(false), 600);
     startTimer();
     addLog(`👤 ${data.customer.name} (${CUSTOMER_TYPE_META[data.customer.type as CustomerType]?.label ?? data.customer.type}) aproximou-se`, "text-yellow-300");
+
+    // Auto-select drug matching client's request
+    if (data.customer.requestedDrugName && drugs.length > 0) {
+      const match = drugs.find((d: DrugItem) =>
+        d.items.name.toLowerCase() === data.customer.requestedDrugName.toLowerCase()
+      );
+      const target = match ?? drugs[0];
+      setSelectedDrug(target);
+      setPricePerUnit(Math.round(target.items.base_price * 1.2));
+      setQuantity(Math.min(data.customer.requestedQty ?? 10, target.quantity));
+    }
   }
 
   async function submitOffer(action: Action = "offer") {
@@ -310,6 +343,10 @@ export default function StreetsPage() {
           patience: customer.patience,
           offersReceived: customer.offersReceived,
           suspicion: customer.suspicion,
+          requestedDrugName: customer.requestedDrugName,
+          requestedQty: customer.requestedQty,
+          requestedPriceExpectation: customer.requestedPriceExpectation,
+          flexibility: customer.flexibility,
         },
       }),
     });
@@ -321,6 +358,7 @@ export default function StreetsPage() {
     setHeatStage(data.heatStage ?? heatStage);
     setSuspicion(data.suspicion ?? suspicion);
     setDialogue(data.dialogue ?? "👤");
+    if (data.dialogue) typeDialogue(data.dialogue);
     setCustomer((c) => c ? { ...c, offersReceived: data.offersReceived ?? c.offersReceived + 1, suspicion: data.suspicion ?? c.suspicion } : c);
 
     await handleOutcome(data);
@@ -349,6 +387,7 @@ export default function StreetsPage() {
     setHeat(data.heat ?? heat);
     setHeatStage(data.heatStage ?? heatStage);
     setDialogue(data.dialogue ?? "👤");
+    if (data.dialogue) typeDialogue(data.dialogue);
     await handleOutcome(data);
   }
 
@@ -473,6 +512,10 @@ export default function StreetsPage() {
   const dealRatio  = pricePerUnit / basePrice;
   const dealColor  = dealRatio <= 0.9 ? "#22c55e" : dealRatio <= 1.15 ? "#06b6d4" : dealRatio <= 1.5 ? "#eab308" : "#ef4444";
   const dealLabel  = dealRatio <= 0.9 ? "Barato 🤑" : dealRatio <= 1.15 ? "Justo" : dealRatio <= 1.5 ? "Caro" : "Muito Caro 🚨";
+
+  // Does client's requested drug match selected drug?
+  const drugMatchesRequest = customer && selectedDrug
+    && selectedDrug.items.name.toLowerCase() === customer.requestedDrugName.toLowerCase();
 
   // Slider percentage for CSS track fill
   const sliderMin = Math.round(basePrice * 0.5);
@@ -740,6 +783,30 @@ export default function StreetsPage() {
                     </div>
                   </div>
 
+                  {/* ── CLIENT REQUEST ── */}
+                  <div className="rounded-xl border border-[#1f1f1f] p-3 space-y-2" style={{ background: "rgba(5,5,5,0.7)" }}>
+                    <p className="text-[10px] font-black text-[#333] uppercase tracking-widest">Pedido</p>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="px-2.5 py-1 rounded-lg text-xs font-black border"
+                        style={{ background: "#0d1a0d", borderColor: "#1a3a1a", color: "#4ade80" }}>
+                        🌿 {customer.requestedDrugName}
+                      </span>
+                      <span className="px-2.5 py-1 rounded-lg text-xs font-black border"
+                        style={{ background: "#0d0d1a", borderColor: "#1a1a3a", color: "#818cf8" }}>
+                        ⚖️ {customer.requestedQty}g
+                      </span>
+                      {!drugMatchesRequest && selectedDrug && (
+                        <span className="px-2 py-1 rounded-lg text-[10px] font-bold border border-yellow-900/40 text-yellow-600 bg-yellow-950/20">
+                          ⚠️ produto diferente
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-[10px] text-[#444]">
+                      Espera pagar até <span className="text-[#666] font-bold">${customer.requestedPriceExpectation}/g</span>
+                      <span className="text-[#333] ml-1">· flex {Math.round(customer.flexibility * 100)}%</span>
+                    </p>
+                  </div>
+
                   {/* Suspicion */}
                   <div>
                     <div className="flex justify-between text-xs mb-1.5">
@@ -789,16 +856,22 @@ export default function StreetsPage() {
             <div className="flex-1 flex flex-col p-4 gap-3 overflow-y-auto">
 
               {/* Dialogue bubble */}
-              <div className="rounded-2xl border border-[#1a1a1a] p-5 min-h-[72px]" style={{ background: "rgba(10,10,10,0.8)" }}>
-                {dialogue ? (
+              <div className="rounded-2xl border border-[#1a1a1a] p-5 min-h-[80px] relative overflow-hidden" style={{ background: "rgba(10,10,10,0.8)" }}>
+                {/* subtle scan-line texture */}
+                <div className="absolute inset-0 pointer-events-none opacity-[0.02]"
+                  style={{ backgroundImage: "repeating-linear-gradient(0deg,transparent,transparent 2px,#fff 2px,#fff 3px)" }} />
+                {typedDialogue ? (
                   <>
-                    <p className="text-[10px] text-[#444] font-black uppercase tracking-widest mb-2">
+                    <p className="text-[10px] text-[#444] font-black uppercase tracking-widest mb-2 relative z-10">
                       {customer ? customer.name : "Sistema"}
                     </p>
-                    <p className="text-white text-sm leading-relaxed italic">"{dialogue}"</p>
+                    <p className="text-white text-sm leading-relaxed italic relative z-10">
+                      "{renderDialogueWithHighlights(typedDialogue, customer)}"
+                      <span className="inline-block w-0.5 h-4 bg-white ml-0.5 align-middle animate-pulse" />
+                    </p>
                   </>
                 ) : (
-                  <p className="text-[#333] text-sm italic">Chama o próximo cliente para começar a negociar...</p>
+                  <p className="text-[#333] text-sm italic relative z-10">Chama o próximo cliente para começar a negociar...</p>
                 )}
               </div>
 
@@ -1015,6 +1088,26 @@ function heatStageFor(heat: number): HeatStage {
   if (heat >= 70)  return "danger";
   if (heat >= 40)  return "warning";
   return "safe";
+}
+
+/**
+ * Highlight drug names (green) and quantity numbers with "g" (indigo) in dialogue text.
+ * Returns a React node array.
+ */
+function renderDialogueWithHighlights(text: string, customer: Customer | null): React.ReactNode {
+  if (!customer) return text;
+  // Split on the drug name and Xg patterns
+  const drugName = customer.requestedDrugName;
+  const parts = text.split(new RegExp(`(${drugName}|\\d+g)`, "gi"));
+  return parts.map((part, i) => {
+    if (part.toLowerCase() === drugName.toLowerCase()) {
+      return <span key={i} style={{ color: "#4ade80", fontWeight: 900 }}>{part}</span>;
+    }
+    if (/^\d+g$/i.test(part)) {
+      return <span key={i} style={{ color: "#818cf8", fontWeight: 900 }}>{part}</span>;
+    }
+    return part;
+  });
 }
 
 
