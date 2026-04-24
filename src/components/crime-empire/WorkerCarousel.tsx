@@ -107,8 +107,7 @@ export default function WorkerCarousel({
     const trackWidth = trackRef.current.parentElement?.offsetWidth ?? 0;
     const cardLeft = card.offsetLeft;
     const cardWidth = card.offsetWidth;
-    // Shift center 112px right to account for the 224px sidebar
-    const scrollLeft = cardLeft + cardWidth / 2 - trackWidth / 2 - 112;
+    const scrollLeft = cardLeft + cardWidth / 2 - trackWidth / 2;
     trackRef.current.parentElement?.scrollTo({ left: scrollLeft, behavior: "smooth" });
   }, [activeIndex]);
 
@@ -413,7 +412,7 @@ export default function WorkerCarousel({
       <button
         onClick={() => setActiveIndex((i) => Math.max(0, i - 1))}
         disabled={activeIndex === 0}
-        className="absolute left-[232px] top-1/2 -translate-y-1/2 w-10 h-10 flex items-center justify-center rounded-full bg-[#111]/80 border border-[#333] text-white disabled:opacity-20 hover:bg-[#222] transition-all text-xl z-[10000]"
+        className="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 flex items-center justify-center rounded-full bg-[#111]/80 border border-[#333] text-white disabled:opacity-20 hover:bg-[#222] transition-all text-xl z-[10000]"
       >
         ‹
       </button>
