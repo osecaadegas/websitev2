@@ -25,7 +25,7 @@ export async function POST(req: NextRequest) {
 
   const { data: player } = await supabase
     .from("crime_players")
-    .select("id, escape_token, escape_token_expires_at")
+    .select("id, escape_token, escape_token_expires_at, escape_pending_cash, dirty_cash")
     .eq("user_id", user.id)
     .single();
 
@@ -36,26 +36,33 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Token inválido" }, { status: 403 });
   }
   if (!player.escape_token_expires_at || new Date(player.escape_token_expires_at) < new Date()) {
-    // Token expired — clear it, player stays in jail
+    // Token expired — clear it and pending cash, player stays in jail
     await supabase
       .from("crime_players")
-      .update({ escape_token: null, escape_token_expires_at: null })
+      .update({ escape_token: null, escape_token_expires_at: null, escape_pending_cash: 0 })
       .eq("id", player.id);
     return NextResponse.json({ success: false, escaped: false, reason: "expired" });
   }
 
   if (escaped) {
     // Player beat the minigame — release from jail
+    const pendingCash = player.escape_pending_cash ?? 0;
+    const newDirtyCash = (player.dirty_cash ?? 0) + pendingCash;
     await supabase
       .from("crime_players")
-      .update({ in_jail: false, jail_release_at: null, escape_token: null, escape_token_expires_at: null })
+      .update({
+        in_jail: false, jail_release_at: null,
+        escape_token: null, escape_token_expires_at: null,
+        escape_pending_cash: 0,
+        ...(pendingCash > 0 ? { dirty_cash: newDirtyCash } : {}),
+      })
       .eq("id", player.id);
-    return NextResponse.json({ success: true, escaped: true });
+    return NextResponse.json({ success: true, escaped: true, cash_granted: pendingCash });
   } else {
-    // Player failed the minigame — keep in jail, just clear token
+    // Player failed the minigame — keep in jail, just clear token and pending cash
     await supabase
       .from("crime_players")
-      .update({ escape_token: null, escape_token_expires_at: null })
+      .update({ escape_token: null, escape_token_expires_at: null, escape_pending_cash: 0 })
       .eq("id", player.id);
     return NextResponse.json({ success: true, escaped: false });
   }

@@ -188,7 +188,7 @@ export default function StreetsPage() {
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // -- Arrest escape
-  const [arrestEscape, setArrestEscape] = useState<{ token: string; jailMinutes: number } | null>(null);
+  const [arrestEscape, setArrestEscape] = useState<{ token: string; jailMinutes: number; pendingCash: number } | null>(null);
 
   // -- Log
   const [log, setLog] = useState<LogEntry[]>([]);
@@ -545,7 +545,7 @@ export default function StreetsPage() {
       setCustomer(null);
       if (data.heat >= 100) {
         // bust triggers arrest
-        setArrestEscape({ token: data.escape_token, jailMinutes: data.jail_minutes });
+        setArrestEscape({ token: data.escape_token, jailMinutes: data.jail_minutes, pendingCash: 0 });
         setPhase("arrested");
       } else {
         setPhase("idle");
@@ -559,7 +559,7 @@ export default function StreetsPage() {
       }
       addLog("🚔", "APANHADO!", "A polícia chegou. Tens de fugir agora!");
       setEscapesTotal((t) => t + 1);
-      setArrestEscape({ token: data.escape_token, jailMinutes: data.jail_minutes });
+      setArrestEscape({ token: data.escape_token, jailMinutes: data.jail_minutes, pendingCash: data.earned_pending ?? 0 });
       setSession(null);
       setPhase("arrested");
       await fetchDrugs();
@@ -628,12 +628,14 @@ export default function StreetsPage() {
         {toast && <CEToast msg={toast.msg} ok={toast.ok} />}
         <RaidEscape
           difficulty="high"
-          cashAtRisk={0}
+          cashAtRisk={arrestEscape.pendingCash}
           onEscape={async () => {
             const token = arrestEscape.token; setArrestEscape(null);
             await fetch("/api/crime-empire/escape-attempt", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ token, escaped: true }) });
             setEscapesSuccess((s) => s + 1);
-            setPhase("zone_select"); showToast("Escapaste!", true);
+            setPlayer(p => p ? { ...p, in_jail: false, jail_release_at: null } : p);
+            showToast("Escapaste!", true);
+            await fetchData();
           }}
           onArrested={async () => {
             const token = arrestEscape.token; setArrestEscape(null);

@@ -346,7 +346,7 @@ async function handleNegotiate(body: any, user: any) {
   if (result.outcome === "accept" && result.earned != null) {
     const caught = Math.random() < arrestRisk;
     if (caught) {
-      return await triggerArrest(sessionId, player.id, quantity, entry, item, zone, newHeat, policeMult);
+      return await triggerArrest(sessionId, player.id, quantity, entry, item, zone, newHeat, policeMult, result.earned);
     }
     await deductInventory(inventoryId, (entry as any).quantity, quantity);
     await grantDirtyMoney(player.id, result.earned);
@@ -437,10 +437,10 @@ async function handleAcceptDeal(body: any, user: any) {
 
   const policeMult = await getPoliceMultiplier();
   const baseArrestRisk = (player.class === "dealer" ? 0.05 : 0.10) * policeMult;
-  const caught = Math.random() < (baseArrestRisk + zone.riskMod);
-  if (caught) return await triggerArrest(sessionId, player.id, quantity, entry, item, zone, session.heat, policeMult);
-
   const earned = Math.floor(agreedPrice * quantity * zone.rewardMult);
+  const caught = Math.random() < (baseArrestRisk + zone.riskMod);
+  if (caught) return await triggerArrest(sessionId, player.id, quantity, entry, item, zone, session.heat, policeMult, earned);
+
   await deductInventory(inventoryId, (entry as any).quantity, quantity);
   await grantDirtyMoney(player.id, earned);
   await grantXP(player.id, Math.max(5, Math.floor(earned / 50)));
@@ -643,7 +643,7 @@ async function getQtyBounds(): Promise<{ min: number; max: number }> {
 
 async function triggerArrest(
   sessionId: string, playerId: string, quantity: number,
-  entry: any, item: any, zone: any, currentHeat: number, policeMult = 1.0
+  entry: any, item: any, zone: any, currentHeat: number, policeMult = 1.0, earnedPending = 0
 ) {
   await deductInventory(entry.id, entry.quantity, quantity);
   await supabase.from("street_sessions").update({
@@ -658,6 +658,7 @@ async function triggerArrest(
   await supabase.from("crime_players").update({
     in_jail: true, jail_release_at: releaseAt,
     escape_token: et.escape_token, escape_token_expires_at: et.escape_token_expires_at,
+    escape_pending_cash: earnedPending,
   }).eq("id", playerId);
 
   return NextResponse.json({
@@ -667,6 +668,7 @@ async function triggerArrest(
     jail_release_at: releaseAt,
     drug_name: item.name,
     amount_confiscated: quantity,
+    earned_pending: earnedPending,
   });
 }
 
@@ -683,6 +685,7 @@ async function triggerBust(sessionId: string, playerId: string, policeMult = 1.0
   await supabase.from("crime_players").update({
     in_jail: true, jail_release_at: releaseAt,
     escape_token: et.escape_token, escape_token_expires_at: et.escape_token_expires_at,
+    escape_pending_cash: 0,
   }).eq("id", playerId);
 
   return NextResponse.json({
@@ -690,5 +693,6 @@ async function triggerBust(sessionId: string, playerId: string, policeMult = 1.0
     escape_token: et.escape_token,
     jail_minutes: jailMinutes,
     jail_release_at: releaseAt,
+    earned_pending: 0,
   });
 }
