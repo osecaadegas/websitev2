@@ -98,10 +98,9 @@ export async function GET() {
     .maybeSingle();
 
   // Debug: verify street_customers is readable
-  const { data: custCheck, error: custErr } = await supabase
+  const { count: customerCount, error: custErr } = await supabase
     .from("street_customers")
-    .select("id", { count: "exact", head: true });
-  const customerCount = (custCheck as any)?.length ?? 0;
+    .select("*", { count: "exact", head: true });
 
   return NextResponse.json({
     player: {
@@ -222,7 +221,7 @@ async function handleNextCustomer(body: any, user: any) {
   if (!customer) {
     const { count } = await supabase.from("street_customers").select("*", { count: "exact", head: true }).eq("type", type);
     console.error("[streets] spawnCustomer null. type:", type, "level:", player.level, "count for type:", count);
-    return NextResponse.json({ error: `Sem clientes (${type}, nível ${player.level}). Verifica a tabela street_customers.` }, { status: 400 });
+    return NextResponse.json({ error: `Sem clientes (tipo: ${type}, nível: ${player.level}, disponíveis: ${count ?? "erro RLS"})` }, { status: 400 });
   }
 
   const greeting = getDialogue(type, "greeting");
@@ -530,13 +529,20 @@ async function deductInventory(inventoryId: string, currentQty: number, amount: 
 }
 
 async function spawnCustomer(type: CustomerType, playerLevel: number): Promise<SpawnedCustomer | null> {
-  const { data: pool } = await supabase
+  const { data: pool, error } = await supabase
     .from("street_customers")
     .select("*")
     .eq("type", type)
     .lte("unlock_level", playerLevel);
 
-  if (!pool || pool.length === 0) return null;
+  if (error) {
+    console.error("[spawnCustomer] Supabase error:", error.message, error.code);
+    return null;
+  }
+  if (!pool || pool.length === 0) {
+    console.warn("[spawnCustomer] Empty pool. type:", type, "level:", playerLevel);
+    return null;
+  }
   const raw = pool[Math.floor(Math.random() * pool.length)];
   const budget = raw.budget_min + Math.floor(Math.random() * (raw.budget_max - raw.budget_min + 1));
 
