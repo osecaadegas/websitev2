@@ -116,7 +116,8 @@ export async function GET(
   // Launder cap computation (for launder businesses)
   const launderCapPerWorker = def?.launder_cap_per_worker ?? 0;
   const baseLaunderCap: number = (pb.business.launder_cap_per_hour as number) ?? 0;
-  const effectiveLaunderCap = baseLaunderCap + activeWorkers.length * launderCapPerWorker;
+  const prodMultiplier = PRODUCTION_META[pb.production_level as ProductionLevel]?.income ?? 1;
+  const effectiveLaunderCap = Math.floor((baseLaunderCap + activeWorkers.length * launderCapPerWorker) * prodMultiplier);
   const windowStart = new Date(pb.launder_window_start ?? pb.purchased_at);
   const windowAgeHours = (Date.now() - windowStart.getTime()) / 3_600_000;
   const launderUsedThisWindow = windowAgeHours >= 1 ? 0 : (pb.launder_used ?? 0);
@@ -424,7 +425,8 @@ async function handleLaunder(pb: any, body: any, player: any, pbId: string) {
   const workerCount = (workers ?? []).length;
 
   const baseLaunderCap: number = pb.business.launder_cap_per_hour ?? 0;
-  const effectiveCap = baseLaunderCap + workerCount * (def.launder_cap_per_worker ?? 0);
+  const launderProdMult = PRODUCTION_META[pb.production_level as ProductionLevel]?.income ?? 1;
+  const effectiveCap = Math.floor((baseLaunderCap + workerCount * (def.launder_cap_per_worker ?? 0)) * launderProdMult);
 
   // Check / reset hourly window
   const windowStart = new Date(pb.launder_window_start ?? pb.purchased_at);
