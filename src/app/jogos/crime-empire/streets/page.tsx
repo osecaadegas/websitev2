@@ -857,11 +857,12 @@ export default function StreetsPage() {
 
                   {/* Full-bleed portrait */}
                   {portrait && (
-                    <div className="absolute inset-0">
+                    <div className="absolute inset-0 flex items-end justify-center overflow-hidden">
                       <img
                         src={portrait}
                         alt={customer.name}
-                        className="w-full h-full object-cover object-top"
+                        className="w-full object-contain object-bottom"
+                        style={{ maxHeight: "100%", maxWidth: "100%" }}
                         onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
                       />
                       {/* Bottom gradient overlay */}
