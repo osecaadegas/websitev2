@@ -217,6 +217,7 @@ export async function POST(
     case "launder":        return handleLaunder(pb, body, player, id);
     case "resolve_event":  return handleResolveEvent(pb, body, player, id);
     case "buy_upgrade":    return handleBuyUpgrade(pb, body, player, id);
+    case "raid_result":    return handleRaidResult(pb, body, player);
     default:               return NextResponse.json({ error: "Invalid action" }, { status: 400 });
   }
 }
@@ -543,6 +544,38 @@ async function handleResolveEvent(pb: any, body: any, player: any, _pbId: string
   }).eq("id", event_id);
 
   return NextResponse.json({ success: true, outcome: outcomeMsg, event_success: success, cash_change: cashGain - cashCost, dirty_change: dirtyGain - dirtyCost, heat_change: heatChange });
+}
+
+// ── raid_result ───────────────────────────────────────────────────────────────
+async function handleRaidResult(pb: any, body: any, player: any) {
+  const { escaped, cashAtRisk } = body as { escaped: boolean; cashAtRisk: number };
+
+  // Flush current heat so we operate on up-to-date value
+  const def = BUSINESS_DEFS[pb.business.type];
+  const { data: workers } = await supabase.from("player_business_workers").select("*").eq("player_business_id", pb.id).eq("is_active", true);
+  const { data: ownedUpgrades } = await supabase.from("player_business_upgrades").select("upgrade_def_id").eq("player_business_id", pb.id);
+  const ownedIds = (ownedUpgrades ?? []).map((u: any) => u.upgrade_def_id);
+  const activeDefs = (def?.upgrades ?? []).filter((u) => ownedIds.includes(u.id));
+  const heatRate = def ? computeHeatRate({ base_heat_per_hour: def.heat_per_hour, production_level: pb.production_level as ProductionLevel, workers: workers ?? [], upgrades: activeDefs }) : 0;
+  const hours = (Date.now() - new Date(pb.last_heat_update ?? pb.purchased_at).getTime()) / 3_600_000;
+  const currentHeat = Math.min(100, (pb.heat ?? 0) + hours * heatRate);
+
+  if (escaped) {
+    // Escape: reduce heat, grant XP
+    const newHeat = Math.max(0, currentHeat - 35);
+    await supabase.from("player_businesses").update({ heat: newHeat, last_heat_update: new Date().toISOString() }).eq("id", pb.id);
+    await grantXP(player.id, 50);
+    return NextResponse.json({ success: true, message: `Escapaste! Calor reduzido para ${newHeat.toFixed(0)}%. +50 XP` });
+  } else {
+    // Arrested: lose accumulated income, heat resets, status set to raided
+    const { data: fp } = await supabase.from("crime_players").select("dirty_cash").eq("id", player.id).single();
+    const cashLost = Math.min(cashAtRisk, fp?.dirty_cash ?? 0);
+    if (cashLost > 0) await deductDirtyMoney(player.id, cashLost);
+    await supabase.from("player_businesses")
+      .update({ heat: 0, last_heat_update: new Date().toISOString(), status: "raided", accumulated_income: 0 })
+      .eq("id", pb.id);
+    return NextResponse.json({ success: true, message: `Foste preso! Perdeste $${cashLost.toLocaleString()} e o negócio está sob investigação.` });
+  }
 }
 
 // ── buy_upgrade ───────────────────────────────────────────────────────────────

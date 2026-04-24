@@ -4,6 +4,7 @@ import { use, useEffect, useState, useRef, useCallback } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import RaidEscape from "@/components/crime-empire/raid/RaidEscape";
 import {
   TRAIT_META, SKILL_META, PRODUCTION_META, STATUS_META,
   type ProductionLevel, type BusinessStatus, type BusinessTypeDef,
@@ -246,6 +247,8 @@ export default function BusinessManagementPage({ params }: { params: Promise<{ i
   const [launderAmount, setLaunderAmount] = useState("");
   const [collectCooldownSecs, setCollectCooldownSecs] = useState(0);
   const [launderSecsLeft, setLaunderSecsLeft] = useState(0);
+  const [raidActive, setRaidActive] = useState(false);
+  const [raidCashAtRisk, setRaidCashAtRisk] = useState(0);
   const incomeIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const drugIntervalRef   = useRef<ReturnType<typeof setInterval> | null>(null);
   const heatIntervalRef   = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -399,6 +402,24 @@ export default function BusinessManagementPage({ params }: { params: Promise<{ i
     if (result?.success) showToast(result.message);
   };
 
+  const triggerRaid = () => {
+    const atRisk = Math.max(0, pendingIncome);
+    setRaidCashAtRisk(atRisk);
+    setRaidActive(true);
+  };
+
+  const handleRaidEscape = async (cashSaved: number) => {
+    setRaidActive(false);
+    const result = await doAction({ action: "raid_result", escaped: true, cashAtRisk: cashSaved });
+    if (result?.success) showToast(result.message || "Escapaste!");
+  };
+
+  const handleRaidArrested = async () => {
+    setRaidActive(false);
+    const result = await doAction({ action: "raid_result", escaped: false, cashAtRisk: raidCashAtRisk });
+    if (result?.success) showToast(result.message || "Foste preso!", "error");
+  };
+
   const handleLaunder = async () => {
     const amount = parseInt(launderAmount);
     if (!amount || amount <= 0) return;
@@ -454,6 +475,7 @@ export default function BusinessManagementPage({ params }: { params: Promise<{ i
   const salaryCostPerHour = workers.reduce((s, w) => s + w.salary, 0);
 
   return (
+    <>
     <div className="flex-1 text-white min-h-screen" style={{ background: "#0B0B0B" }}>
       {/* Toast */}
       {toast && (
@@ -514,6 +536,14 @@ export default function BusinessManagementPage({ params }: { params: Promise<{ i
                 />
               </div>
               <p className="text-xs text-gray-600 mt-0.5">+{pb.heat_rate_per_hour.toFixed(1)}/hr</p>
+              {heatPct >= 50 && (
+                <button
+                  onClick={triggerRaid}
+                  className="mt-1.5 w-full px-2 py-1.5 rounded-lg text-xs font-black bg-red-900/60 border border-red-500/60 text-red-300 hover:bg-red-800/70 transition-all animate-pulse"
+                >
+                  🚔 RAID!
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -813,5 +843,16 @@ export default function BusinessManagementPage({ params }: { params: Promise<{ i
         </div>
       </div>
     </div>
+
+    {/* ── RAID ESCAPE OVERLAY ── */}
+    {raidActive && (
+      <RaidEscape
+        businessValue={business.base_income_per_hour}
+        cashAtRisk={raidCashAtRisk}
+        onEscape={handleRaidEscape}
+        onArrested={handleRaidArrested}
+      />
+    )}
+    </>
   );
 }
