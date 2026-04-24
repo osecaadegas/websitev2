@@ -169,7 +169,7 @@ export default function BrothelManagePage() {
     if (brothel?.upgrade_vip_rooms) upMult += 0.25;
     if (brothel?.upgrade_lighting)  upMult += 0.10;
     if (brothel?.upgrade_marketing) upMult += 0.15;
-    setLiveIncome(Math.floor((perHour * supplyMod * upMult) / 3600));
+    setLiveIncome(Math.floor(perHour * supplyMod * upMult));
   }, [workers, brothel]);
 
   // Tick every 5 seconds
@@ -177,10 +177,12 @@ export default function BrothelManagePage() {
     if (tickRef.current) clearInterval(tickRef.current);
     tickRef.current = setInterval(() => {
       if (liveIncome > 0) {
-        const tick = liveIncome * 5;
-        setTickedSinceCollect((p) => p + tick);
-        setFloatingIncome(tick);
-        setTimeout(() => setFloatingIncome(null), 1200);
+        const tick = Math.round((liveIncome / 3600) * 5);
+        setTickedSinceCollect((p) => p + (liveIncome / 3600) * 5);
+        if (tick > 0) {
+          setFloatingIncome(tick);
+          setTimeout(() => setFloatingIncome(null), 1200);
+        }
       }
     }, 5000);
     return () => { if (tickRef.current) clearInterval(tickRef.current); };
@@ -307,11 +309,11 @@ export default function BrothelManagePage() {
           <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
             {/* Live income */}
             <div className="relative">
-              <p className="text-xs text-[#666] mb-1">Rendimento/seg</p>
-              <p className="text-2xl font-black text-green-400">${liveIncome}/s</p>
+              <p className="text-xs text-[#666] mb-1">Rendimento/hora</p>
+              <p className="text-2xl font-black text-green-400">${liveIncome.toLocaleString()}/h</p>
               {floatingIncome && <FloatingIncome amount={floatingIncome} />}
-              {tickedSinceCollect > 0 && (
-                <p className="text-xs text-green-300 mt-0.5">Acumulado: +${tickedSinceCollect.toLocaleString()}</p>
+              {tickedSinceCollect >= 1 && (
+                <p className="text-xs text-green-300 mt-0.5">Acumulado: ~${Math.floor(tickedSinceCollect).toLocaleString()}</p>
               )}
             </div>
             {/* Occupancy */}

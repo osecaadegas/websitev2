@@ -325,11 +325,8 @@ export async function POST(req: NextRequest) {
       // Update client satisfaction based on supplies avg
       const newSatisfaction = Math.floor((newDrinks + newHygiene + newSecurity) / 3);
 
-      const { data: freshPlayer } = await supabase
-        .from("crime_players").select("dirty_cash").eq("id", player.id).single();
-
       await supabase.from("crime_players").update({
-        dirty_cash: (freshPlayer?.dirty_cash ?? 0) + collected,
+        cash: player.cash + collected,
         last_brothel_collect_at: now.toISOString(),
       }).eq("id", player.id);
 
@@ -372,7 +369,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({
         success: true, collected, xp_earned: xpEarned,
         supply_drinks: newDrinks, supply_hygiene: newHygiene, supply_security: newSecurity,
-        message: `Recolheste $${collected.toLocaleString()} em dinheiro sujo!`,
+        message: `Recolheste $${collected.toLocaleString()}!`,
       });
     }
 
