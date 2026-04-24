@@ -732,10 +732,10 @@ export default function StreetsPage() {
 
           {/* Center — heat bar */}
           {session ? (
-            <div className="flex-1 flex flex-col items-center justify-center gap-1 px-6 max-w-xl mx-auto">
+            <div className="flex-1 flex flex-col items-center justify-center gap-1 px-2 sm:px-6 max-w-xl mx-auto">
               <div className="flex items-center gap-3 w-full">
-                <span className="text-[10px] font-bold text-[#3a3a3a] tracking-widest uppercase shrink-0">Nível de Calor</span>
-                <span className="text-[9px] text-[#2a2a2a] shrink-0">ⓘ</span>
+                <span className="hidden sm:inline text-[10px] font-bold text-[#3a3a3a] tracking-widest uppercase shrink-0">Nível de Calor</span>
+                <span className="hidden sm:inline text-[9px] text-[#2a2a2a] shrink-0">ⓘ</span>
                 <div className="flex-1 relative h-2 bg-[#181818] rounded-full overflow-hidden">
                   <div className="absolute inset-0 heat-bar-gradient opacity-20 rounded-full" />
                   <div className="absolute inset-y-0 left-0 heat-bar-gradient rounded-full transition-all duration-700"
@@ -747,7 +747,7 @@ export default function StreetsPage() {
                 <span className={`text-sm font-black tabular-nums shrink-0 ${heatStage === "danger" ? "danger-text text-red-400" : heatStage === "warning" ? "text-orange-400" : "text-white"}`}>
                   {heat}%
                 </span>
-                <span className={`text-[10px] font-black tracking-wider shrink-0 w-20 ${heatStage === "danger" ? "danger-text text-red-400" : heatStage === "warning" ? "text-orange-400" : "text-green-400"}`}>
+                <span className={`hidden sm:inline text-[10px] font-black tracking-wider shrink-0 w-20 ${heatStage === "danger" ? "danger-text text-red-400" : heatStage === "warning" ? "text-orange-400" : "text-green-400"}`}>
                   {heatStyle.label.toUpperCase()}
                 </span>
               </div>
@@ -851,7 +851,7 @@ export default function StreetsPage() {
           <div className="relative z-20 flex-1 flex min-h-0">
 
             {/* ── LEFT — CLIENT PORTRAIT ──────────────────────────────────── */}
-            <div className="w-[290px] xl:w-[320px] shrink-0 border-r border-[#161618] relative overflow-hidden"
+            <div className="hidden md:block md:w-[290px] xl:w-[320px] shrink-0 border-r border-[#161618] relative overflow-hidden"
               style={{ background: "#0c0c0e" }}>
 
               {customer ? (
@@ -955,6 +955,32 @@ export default function StreetsPage() {
 
             {/* ── CENTER — MAIN INTERACTION ──────────────────────────────── */}
             <div className="flex-1 flex flex-col overflow-y-auto min-w-0" style={{ background: "#0a0a0b" }}>
+
+              {/* ── MOBILE-ONLY compact customer header (portrait hidden on mobile) ── */}
+              {customer && (
+                <div className="md:hidden px-4 py-2.5 border-b border-[#141416] shrink-0 flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-full flex items-center justify-center text-lg shrink-0"
+                    style={{ background: "#111", border: "1px solid #1a1a1a" }}>
+                    {customerMeta?.icon ?? "👤"}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-white font-black text-sm leading-tight truncate">{customer.name.toUpperCase()}</p>
+                    <p className="text-[#555] text-[10px] mt-0.5">{customerMeta?.label ?? customer.type}</p>
+                  </div>
+                  <div className="flex items-center gap-2.5 shrink-0">
+                    <div className="text-right">
+                      <p className="text-[9px] text-[#444] uppercase tracking-wider leading-none mb-0.5">Suspeita</p>
+                      <p className="font-black text-sm leading-none" style={{ color: moodColor }}>{suspicion}%</p>
+                    </div>
+                    <div className="flex gap-0.5 items-center">
+                      {Array.from({ length: customer.patience }).map((_, i) => (
+                        <span key={i} className="w-1.5 h-4 rounded-sm transition-colors duration-300"
+                          style={{ background: i < customer.patience - customer.offersReceived ? "#22c55e" : "#1f1f1f" }} />
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* Dialogue box */}
               <div className="p-4 border-b border-[#141416] shrink-0">
@@ -1217,7 +1243,7 @@ export default function StreetsPage() {
             </div>
 
             {/* ── RIGHT — STREET LOG ───────────────────────────────────────── */}
-            <div className="w-[260px] xl:w-[290px] shrink-0 border-l border-[#161618] flex flex-col"
+            <div className="hidden lg:flex lg:w-[260px] xl:w-[290px] shrink-0 border-l border-[#161618] flex-col"
               style={{ background: "#0c0c0e" }}>
               {/* Header */}
               <div className="px-4 py-3 border-b border-[#161618] flex items-center gap-2.5 shrink-0">
@@ -1263,7 +1289,7 @@ export default function StreetsPage() {
 
         {/* ══ BOTTOM STATS BAR ═════════════════════════════════════════════ */}
         {session && phase !== "zone_select" && phase !== "session_end" && phase !== "arrested" && (
-          <div className="relative z-20 shrink-0 border-t border-[#161618] px-5 py-2.5 flex items-center gap-5"
+          <div className="relative z-20 shrink-0 border-t border-[#161618] px-3 sm:px-5 py-2.5 flex items-center gap-3 sm:gap-5 overflow-x-auto"
             style={{ background: "rgba(10,10,11,0.98)", backdropFilter: "blur(12px)" }}>
 
             {/* Cash */}
@@ -1325,7 +1351,7 @@ export default function StreetsPage() {
               </div>
             </div>
 
-            <div className="flex-1" />
+            <div className="hidden sm:block flex-1" />
 
             {/* Session earnings */}
             <div className="text-right shrink-0">

@@ -125,9 +125,10 @@ export default function CEAdminHub() {
               { href: `${BASE}/shop`,       label: "+ Listing Loja", color: "bg-orange-600/20 text-orange-400 hover:bg-orange-600/30" },
               { href: `${BASE}/system`,     label: "🎛️ Controlo",    color: "bg-blue-600/20 text-blue-400 hover:bg-blue-600/30" },
               { href: `${BASE}/logs`,       label: "📋 Ver Logs",    color: "bg-[#1a1a1a] text-[#888] hover:text-white" },
+              { href: `${BASE}/system`,     label: "🛣️ Config Ruas", color: "bg-emerald-600/20 text-emerald-400 hover:bg-emerald-600/30 col-span-2" },
             ].map((btn) => (
               <Link
-                key={btn.href}
+                key={btn.label}
                 href={btn.href}
                 className={`px-3 py-2.5 rounded-lg text-xs font-bold text-center transition-all ${btn.color}`}
               >
