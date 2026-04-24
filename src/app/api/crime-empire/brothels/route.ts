@@ -41,12 +41,18 @@ export async function GET() {
       .eq("enabled", true)
       .order("required_level", { ascending: true });
 
-    // Get player's owned brothels
-    const { data: ownedBrothels } = await supabase
+    const BROTHEL_TYPES = ["brothel_basic", "brothel_upgraded", "brothel_luxury", "brothel_exclusive", "brothel_empire"];
+
+    // Get player's owned brothels — fetch all owned businesses and filter in code
+    // (Supabase .in() on a join column nulls out the join but keeps the parent row)
+    const { data: allOwned } = await supabase
       .from("player_businesses")
       .select("*, businesses(*)")
-      .eq("player_id", player.id)
-      .in("businesses.type", ["brothel_basic", "brothel_upgraded", "brothel_luxury", "brothel_exclusive", "brothel_empire"]);
+      .eq("player_id", player.id);
+
+    const ownedBrothels = (allOwned || []).filter(
+      (ob) => ob.businesses && BROTHEL_TYPES.includes(ob.businesses.type)
+    );
 
     // Get hired workers for all brothels
     const { data: workers } = await supabase
@@ -57,7 +63,7 @@ export async function GET() {
     return NextResponse.json({
       success: true,
       brothels: brothels || [],
-      ownedBrothels: ownedBrothels || [],
+      ownedBrothels,
       workers: workers || [],
       playerClass: player.class,
       playerLevel: player.level,

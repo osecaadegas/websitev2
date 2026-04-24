@@ -251,16 +251,16 @@ export default function RuaDasLuzesPage() {
           <div className="mb-12">
             <h2 className="text-2xl font-bold mb-4">Os Teus Bordéis</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {ownedBrothels.map((ob) => (
+              {ownedBrothels.filter((ob) => ob.businesses).map((ob) => (
                 <div
                   key={ob.id}
                   className="p-6 rounded-xl bg-[#1a1a1a] border border-pink-500/30"
                 >
                   <h3 className="text-xl font-bold text-pink-400 mb-2">
-                    {ob.businesses.name}
+                    {ob.businesses?.name}
                   </h3>
                   <p className="text-sm text-[#888888] mb-4">
-                    {ob.businesses.description}
+                    {ob.businesses?.description}
                   </p>
                   <div className="mb-4">
                     <p className="text-sm text-[#888888]">
