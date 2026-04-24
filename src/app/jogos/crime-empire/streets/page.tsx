@@ -882,68 +882,66 @@ export default function StreetsPage() {
           <div className="relative z-20 flex-1 flex min-h-0">
 
             {/* ── LEFT — CLIENT PORTRAIT ──────────────────────────────────── */}
-            <div className="hidden md:block md:w-[290px] xl:w-[320px] shrink-0 border-r border-[#161618] relative overflow-hidden"
+            <div className="hidden md:flex md:w-[290px] xl:w-[320px] shrink-0 border-r border-[#161618] flex-col"
               style={{ background: "#0c0c0e" }}>
 
               {customer ? (
-                <div className={`absolute inset-0 ${customerAnim ? "client-enter" : ""} ${inspectorRevealed ? "inspector-reveal" : ""}`}>
+                <div className={`flex flex-col h-full ${customerAnim ? "client-enter" : ""}`}>
 
-                  {/* Full-bleed portrait */}
-                  {portrait && (
-                    <div className="absolute inset-0 flex items-end justify-center overflow-hidden">
-                      <img
-                        src={portrait}
-                        alt={customer.name}
-                        className="w-full object-contain object-bottom"
-                        style={{ maxHeight: "100%", maxWidth: "100%" }}
-                        onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
-                      />
-                      {/* Bottom gradient overlay */}
-                      <div className="absolute inset-0"
-                        style={{ background: "linear-gradient(to bottom, rgba(0,0,0,0.1) 0%, transparent 30%, transparent 45%, rgba(0,0,0,0.88) 75%, rgba(0,0,0,0.97) 100%)" }} />
-                      {/* Left edge shadow */}
-                      <div className="absolute inset-0"
-                        style={{ background: "linear-gradient(to right, rgba(0,0,0,0.3) 0%, transparent 35%)" }} />
-                    </div>
-                  )}
-                  {!portrait && (
-                    <div className="absolute inset-0" style={{ background: "linear-gradient(160deg,#111,#0a0a0a)" }} />
-                  )}
+                  {/* Portrait — top, grows to fill space */}
+                  <div className={`flex-1 relative overflow-hidden min-h-0 ${inspectorRevealed ? "inspector-reveal" : ""}`}>
+                    {portrait ? (
+                      <>
+                        <img
+                          src={portrait}
+                          alt={customer.name}
+                          className="absolute inset-0 w-full h-full object-cover object-top"
+                          onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+                        />
+                        <div className="absolute inset-0"
+                          style={{ background: "linear-gradient(to bottom, transparent 55%, rgba(12,12,14,0.55) 100%)" }} />
+                        <div className="absolute inset-0"
+                          style={{ background: "linear-gradient(to right, rgba(0,0,0,0.25) 0%, transparent 40%)" }} />
+                      </>
+                    ) : (
+                      <div className="absolute inset-0" style={{ background: "linear-gradient(160deg,#111,#0a0a0a)" }} />
+                    )}
 
-                  {/* Inspector reveal overlay */}
-                  {inspectorRevealed && (
-                    <div className="absolute inset-0 z-10 flex items-center justify-center"
-                      style={{ background: "rgba(10,0,0,0.7)" }}>
-                      <div className="text-center">
-                        <p className="text-7xl mb-3">🚔</p>
-                        <p className="text-red-400 font-black text-3xl tracking-widest danger-text">POLÍCIA</p>
-                        <p className="text-red-700 text-sm mt-1">Estás detido</p>
+                    {/* Inspector reveal overlay */}
+                    {inspectorRevealed && (
+                      <div className="absolute inset-0 z-10 flex items-center justify-center"
+                        style={{ background: "rgba(10,0,0,0.7)" }}>
+                        <div className="text-center">
+                          <p className="text-7xl mb-3">🚔</p>
+                          <p className="text-red-400 font-black text-3xl tracking-widest danger-text">POLÍCIA</p>
+                          <p className="text-red-700 text-sm mt-1">Estás detido</p>
+                        </div>
                       </div>
-                    </div>
-                  )}
+                    )}
+                  </div>
 
-                  {/* Bottom text overlay — name / type / mood / quote */}
+                  {/* Info — bottom fixed section */}
                   {!inspectorRevealed && (
-                    <div className="absolute bottom-0 left-0 right-0 p-5 z-10">
+                    <div className="shrink-0 px-4 py-4 border-t border-[#161618]" style={{ background: "#0c0c0e" }}>
                       <p className="font-black italic text-white leading-none mb-1 drop-shadow-lg"
-                        style={{ fontSize: "clamp(24px,3.5vw,36px)", fontFamily: "Georgia, serif", textShadow: "0 2px 16px rgba(0,0,0,1)" }}>
+                        style={{ fontSize: "clamp(20px,2.4vw,30px)", fontFamily: "Georgia, serif", textShadow: "0 2px 12px rgba(0,0,0,1)" }}>
                         {customer.name.toUpperCase()}
                       </p>
                       <p className="text-[#aaa] text-xs font-medium mb-2">
                         {customerMeta?.icon} {customerMeta?.label ?? customer.type}
                       </p>
-                      <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold mb-3"
+                      <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold mb-2.5"
                         style={{ background: `${moodColor}1a`, border: `1px solid ${moodColor}44`, color: moodColor }}>
                         <span className="w-1.5 h-1.5 rounded-full" style={{ background: moodColor }} />
                         {moodLabel.toUpperCase()}
                       </div>
                       {(player?.level ?? 1) >= 3 && (
-                        <p className="text-[#444] text-[11px] font-mono italic leading-snug">
+                        <p className="text-[#444] text-[11px] font-mono italic leading-snug mb-2.5">
                           &ldquo;{hintQuote(customer)}&rdquo;
                         </p>
                       )}
                       {/* Suspicion bar */}
-                      <div className={`mt-3 ${suspicion > 60 ? "suspicion-shake" : ""}`}>
+                      <div className={`${suspicion > 60 ? "suspicion-shake" : ""}`}>
                         <div className="flex justify-between text-[10px] mb-1">
                           <span className="text-[#333]">Suspeita</span>
                           <span className="font-black tabular-nums" style={{ color: moodColor }}>{suspicion}%</span>
@@ -966,7 +964,7 @@ export default function StreetsPage() {
                 </div>
               ) : (
                 /* No customer */
-                <div className="absolute inset-0 flex flex-col items-center justify-center gap-4"
+                <div className="flex-1 flex flex-col items-center justify-center gap-4"
                   style={{ background: "linear-gradient(180deg, #0c0c0e 0%, #0a0a0b 100%)" }}>
                   <div className="w-20 h-20 rounded-full flex items-center justify-center"
                     style={{ background: "#111", border: "1px solid #1a1a1a" }}>
@@ -985,7 +983,7 @@ export default function StreetsPage() {
             </div>
 
             {/* ── CENTER — MAIN INTERACTION ──────────────────────────────── */}
-            <div className="flex-1 flex flex-col overflow-y-auto min-w-0" style={{ background: "#0a0a0b" }}>
+            <div className="flex-1 flex flex-col overflow-y-auto md:overflow-y-hidden min-w-0" style={{ background: "#0a0a0b" }}>
 
               {/* ── MOBILE portrait card (shows actual portrait, replaces sidebar on mobile) ── */}
               {customer && (
@@ -1434,14 +1432,14 @@ export default function StreetsPage() {
                   style={{ boxShadow: "0 0 6px #ef4444", animation: "heatPulse 2s ease-in-out infinite" }} />
               </div>
 
-              {/* Log entries */}
-              <div ref={logRef} className="flex-1 overflow-y-auto py-1" style={{ scrollbarWidth: "none" }}>
+              {/* Log entries — capped at 14 rows, no scroll */}
+              <div className="flex-1 overflow-hidden py-1">
                 {log.length === 0 ? (
                   <div className="px-4 py-8 text-center">
                     <p className="text-[#1e1e1e] text-xs italic">Mais eventos vão aparecer aqui...</p>
                   </div>
                 ) : (
-                  log.map((entry, i) => (
+                  log.slice(-14).map((entry, i) => (
                     <div key={i}
                       className="log-entry px-3 py-2 hover:bg-[#111214] transition-colors"
                       style={{ borderBottom: "1px solid #0f0f11" }}>
