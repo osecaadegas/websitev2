@@ -803,7 +803,7 @@ export default function ContractsPage() {
     playerContracts.find((pc) => pc.contract_id === contractId)?.status ?? null;
 
   const levelCompleted = (level: number) =>
-    contracts.filter((c) => c.roadmap_level === level).some((c) => getStatus(c.id) === "completed");
+    contracts.filter((c) => c.roadmap_level === level).every((c) => getStatus(c.id) === "completed");
 
   const levelUnlocked = (level: number) => {
     if (level === levels[0]) return true;
