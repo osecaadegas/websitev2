@@ -270,7 +270,11 @@ export default function BrothelManagePage() {
     <div className="flex-1 text-white py-8 px-4 relative">
       {/* Event popup */}
       {events.length > 0 && (
-        <BrothelEventPopup event={events[0]} onResolve={handleResolveEvent} />
+        <BrothelEventPopup
+          event={events[0]}
+          onResolve={handleResolveEvent}
+          cashAtRisk={brothel ? brothel.brothel_type.base_income_per_hour * 4 : 5000}
+        />
       )}
 
       {/* Toast */}

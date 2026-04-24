@@ -242,7 +242,14 @@ export default function RuaDasLuzesPage() {
   return (
     <div className="flex-1 text-white py-8 px-4">
       {totalEvents > 0 && (
-        <BrothelEventPopup event={events[0]} onResolve={handleResolveEvent} />
+        <BrothelEventPopup
+          event={events[0]}
+          onResolve={handleResolveEvent}
+          cashAtRisk={(() => {
+            const brothel = ownedBrothels.find((b) => b.id === events[0].player_brothel_id);
+            return brothel ? brothel.brothel_type.base_income_per_hour * 4 : 5000;
+          })()}
+        />
       )}
 
       {toast && (

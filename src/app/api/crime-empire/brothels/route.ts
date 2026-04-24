@@ -445,6 +445,22 @@ export async function POST(req: NextRequest) {
         await supabase.from("player_brothels").update({ heat_level: Math.min(100, (pb?.heat_level ?? 0) + 30) }).eq("id", ev.player_brothel_id);
         message = "A polícia aumentou a vigilância!";
       }
+      if (choice === "police_risk_escaped") {
+        // Minigame: escaped — small heat bump, no fine
+        const { data: pb } = await supabase.from("player_brothels").select("heat_level").eq("id", ev.player_brothel_id).single();
+        await supabase.from("player_brothels").update({ heat_level: Math.min(100, (pb?.heat_level ?? 0) + 10) }).eq("id", ev.player_brothel_id);
+        message = "Fugiste! A polícia perdeu o rasto. (+10 calor)";
+      }
+      if (choice === "police_risk_arrested") {
+        // Minigame: arrested — heavy heat, cash fine
+        const fine = 8000;
+        const { data: fp } = await supabase.from("crime_players").select("cash").eq("id", player.id).single();
+        const newCash = Math.max(0, (fp?.cash ?? 0) - fine);
+        await supabase.from("crime_players").update({ cash: newCash }).eq("id", player.id);
+        const { data: pb } = await supabase.from("player_brothels").select("heat_level").eq("id", ev.player_brothel_id).single();
+        await supabase.from("player_brothels").update({ heat_level: Math.min(100, (pb?.heat_level ?? 0) + 50) }).eq("id", ev.player_brothel_id);
+        message = `Apanhado! Multado em $${fine.toLocaleString()} e calor disparou!`;
+      }
 
       await supabase.from("brothel_events").update({ resolved: true, resolved_choice: choice }).eq("id", eventId);
       return NextResponse.json({ success: true, message: message || "Evento resolvido." });

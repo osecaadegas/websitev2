@@ -1,4 +1,6 @@
 "use client";
+import { useState } from "react";
+import RaidEscape from "./raid/RaidEscape";
 
 interface EventChoice {
   label: string;
@@ -19,6 +21,7 @@ export interface BrothelEvent {
 interface Props {
   event: BrothelEvent;
   onResolve: (eventId: string, choice: string) => void;
+  cashAtRisk?: number;
 }
 
 const EVENT_ICONS: Record<string, string> = {
@@ -29,7 +32,28 @@ const EVENT_ICONS: Record<string, string> = {
   supply_low: "⚠️",
 };
 
-export default function BrothelEventPopup({ event, onResolve }: Props) {
+export default function BrothelEventPopup({ event, onResolve, cashAtRisk = 5000 }: Props) {
+  const [showRaid, setShowRaid] = useState(false);
+
+  const handleChoice = (action: string) => {
+    if (action === "police_risk") {
+      setShowRaid(true);
+      return;
+    }
+    onResolve(event.id, action);
+  };
+
+  if (showRaid) {
+    return (
+      <RaidEscape
+        difficulty="medium"
+        cashAtRisk={cashAtRisk}
+        onEscape={() => onResolve(event.id, "police_risk_escaped")}
+        onArrested={() => onResolve(event.id, "police_risk_arrested")}
+      />
+    );
+  }
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm animate-fadeIn">
       <div className="relative w-full max-w-md mx-4 p-6 rounded-2xl bg-gradient-to-br from-[#1a0a1a] to-[#110a1a] border-2 border-pink-500/60 shadow-[0_0_40px_rgba(236,72,153,0.3)]">
@@ -46,7 +70,7 @@ export default function BrothelEventPopup({ event, onResolve }: Props) {
           {event.choices.map((choice) => (
             <button
               key={choice.action}
-              onClick={() => onResolve(event.id, choice.action)}
+              onClick={() => handleChoice(choice.action)}
               className="w-full py-3 px-4 rounded-xl font-bold text-sm transition-all hover:scale-[1.02] active:scale-95
                 bg-gradient-to-r from-pink-700 to-purple-700 hover:from-pink-600 hover:to-purple-600
                 border border-pink-500/30 text-white shadow-lg"
