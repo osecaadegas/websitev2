@@ -27,13 +27,13 @@ const UPGRADE_SLOT_BONUS: Record<string, number> = {
 
 const SUPPLY_REFILL_COST = 5000; // per supply type
 
-const WORKER_TRAITS = ["Charmosa","Discreta","Ambiciosa","Extrovertida","Reservada","Elegante","CarismÃ¡tica"];
-const WORKER_TRAITS2 = ["PreguiÃ§osa","Cara","Eficiente","SimpÃ¡tica","Teimosa","Criativa","ConfiÃ¡vel"];
+const WORKER_TRAITS = ["Charmosa","Discreta","Ambiciosa","Extrovertida","Reservada","Elegante","Carismática"];
+const WORKER_TRAITS2 = ["Preguiçosa","Cara","Eficiente","Simpática","Teimosa","Criativa","Confiável"];
 
 const EVENTS = [
   {
     type: "vip_client",
-    title: "ðŸ‘‘ Cliente VIP!",
+    title: "👑 Cliente VIP!",
     description: "Um cliente muito rico chegou. Escolhe a tua melhor worker.",
     choices: [
       { label: "Enviar melhor worker", action: "vip_accept", reward_cash: 15000, reward_xp: 20 },
@@ -42,25 +42,25 @@ const EVENTS = [
   },
   {
     type: "worker_unhappy",
-    title: "ðŸ˜¤ Worker Insatisfeita",
-    description: "Uma das tuas workers estÃ¡ a ameaÃ§ar sair se nÃ£o receber bÃ³nus.",
+    title: "😤 Worker Insatisfeita",
+    description: "Uma das tuas workers está a ameaçar sair se não receber bónus.",
     choices: [
-      { label: "Pagar bÃ³nus ($3,000)", action: "bonus_pay", reward_cash: -3000, reward_xp: 5 },
-      { label: "Ignorar (risco de saÃ­da)", action: "ignore_unhappy", reward_cash: 0, reward_xp: 0 },
+      { label: "Pagar bónus ($3,000)", action: "bonus_pay", reward_cash: -3000, reward_xp: 5 },
+      { label: "Ignorar (risco de saída)", action: "ignore_unhappy", reward_cash: 0, reward_xp: 0 },
     ],
   },
   {
     type: "police",
-    title: "ðŸš” AtenÃ§Ã£o Policial",
-    description: "A polÃ­cia estÃ¡ a circular na zona. Reduz a atividade ou arrisca.",
+    title: "🚔 Atenção Policial",
+    description: "A polícia está a circular na zona. Reduz a atividade ou arrisca.",
     choices: [
-      { label: "Fechar temporariamente (âˆ’20% income)", action: "police_close", reward_cash: 0, reward_xp: 0 },
+      { label: "Fechar temporariamente (−20% income)", action: "police_close", reward_cash: 0, reward_xp: 0 },
       { label: "Continuar (risco de multa)", action: "police_risk", reward_cash: 0, reward_xp: 0 },
     ],
   },
   {
     type: "bonus",
-    title: "ðŸŽ‰ Noite Especial!",
+    title: "🎉 Noite Especial!",
     description: "Esta noite houve uma festa privada. Receitas extra para todos.",
     choices: [
       { label: "Aproveitar!", action: "bonus_collect", reward_cash: 8000, reward_xp: 15 },
@@ -133,9 +133,9 @@ export async function POST(req: NextRequest) {
     if (!player) return NextResponse.json({ error: "Player not found" }, { status: 404 });
 
     if (player.in_jail && player.jail_release_at && new Date(player.jail_release_at) > new Date())
-      return NextResponse.json({ error: "EstÃ¡s na prisÃ£o." }, { status: 403 });
+      return NextResponse.json({ error: "Estás na prisão." }, { status: 403 });
     if (player.hp <= 0)
-      return NextResponse.json({ error: "EstÃ¡s no hospital." }, { status: 403 });
+      return NextResponse.json({ error: "Estás no hospital." }, { status: 403 });
 
     const body = await req.json();
     const { action } = body;
@@ -145,17 +145,17 @@ export async function POST(req: NextRequest) {
       const { brothelTypeId } = body;
       const { data: brothelType } = await supabase
         .from("brothel_types").select("*").eq("id", brothelTypeId).eq("enabled", true).single();
-      if (!brothelType) return NextResponse.json({ error: "Estabelecimento nÃ£o encontrado." }, { status: 404 });
+      if (!brothelType) return NextResponse.json({ error: "Estabelecimento não encontrado." }, { status: 404 });
       if (player.level < brothelType.required_level)
-        return NextResponse.json({ error: `Precisas de nÃ­vel ${brothelType.required_level}!` }, { status: 400 });
+        return NextResponse.json({ error: `Precisas de nível ${brothelType.required_level}!` }, { status: 400 });
       const { data: existing } = await supabase
         .from("player_brothels").select("id")
         .eq("player_id", player.id).eq("brothel_type_id", brothelTypeId).single();
-      if (existing) return NextResponse.json({ error: "JÃ¡ tens este estabelecimento!" }, { status: 400 });
+      if (existing) return NextResponse.json({ error: "Já tens este estabelecimento!" }, { status: 400 });
 
       const usesCrypto = CRYPTO_BROTHEL_TYPES.includes(brothelType.type);
       if (usesCrypto && player.crypto < brothelType.purchase_price)
-        return NextResponse.json({ error: `Precisas de ðŸª™${brothelType.purchase_price.toLocaleString()} crypto!` }, { status: 400 });
+        return NextResponse.json({ error: `Precisas de �滋${brothelType.purchase_price.toLocaleString()} crypto!` }, { status: 400 });
       if (!usesCrypto && player.cash < brothelType.purchase_price)
         return NextResponse.json({ error: `Precisas de $${brothelType.purchase_price.toLocaleString()}!` }, { status: 400 });
 
@@ -260,7 +260,7 @@ export async function POST(req: NextRequest) {
     if (action === "refill_supplies") {
       const { playerBrothelId, supplyType } = body; // 'drinks' | 'hygiene' | 'security'
       if (!["drinks", "hygiene", "security"].includes(supplyType))
-        return NextResponse.json({ error: "Tipo de supply invÃ¡lido." }, { status: 400 });
+        return NextResponse.json({ error: "Tipo de supply inválido." }, { status: 400 });
       if (player.cash < SUPPLY_REFILL_COST)
         return NextResponse.json({ error: `Precisas de $${SUPPLY_REFILL_COST.toLocaleString()}!` }, { status: 400 });
       await supabase.from("crime_players").update({ cash: player.cash - SUPPLY_REFILL_COST }).eq("id", player.id);
@@ -273,12 +273,12 @@ export async function POST(req: NextRequest) {
     if (action === "upgrade") {
       const { playerBrothelId, upgradeType } = body; // 'lighting' | 'marketing' | 'security' | 'vip_rooms'
       const cost = UPGRADE_COSTS[upgradeType];
-      if (!cost) return NextResponse.json({ error: "Upgrade invÃ¡lido." }, { status: 400 });
+      if (!cost) return NextResponse.json({ error: "Upgrade inválido." }, { status: 400 });
       const { data: pb } = await supabase
         .from("player_brothels").select("*").eq("id", playerBrothelId).eq("player_id", player.id).single();
-      if (!pb) return NextResponse.json({ error: "Estabelecimento nÃ£o encontrado." }, { status: 404 });
+      if (!pb) return NextResponse.json({ error: "Estabelecimento não encontrado." }, { status: 404 });
       const col = `upgrade_${upgradeType}` as keyof typeof pb;
-      if (pb[col]) return NextResponse.json({ error: "JÃ¡ tens este upgrade!" }, { status: 400 });
+      if (pb[col]) return NextResponse.json({ error: "Já tens este upgrade!" }, { status: 400 });
 
       // Enforce purchase order: must own all previous upgrades first
       const orderIdx = UPGRADE_ORDER.indexOf(upgradeType);
@@ -309,14 +309,14 @@ export async function POST(req: NextRequest) {
       const { data: pb } = await supabase
         .from("player_brothels").select("*, brothel_type:brothel_types(*)")
         .eq("id", playerBrothelId).eq("player_id", player.id).single();
-      if (!pb) return NextResponse.json({ error: "Estabelecimento nÃ£o encontrado." }, { status: 404 });
+      if (!pb) return NextResponse.json({ error: "Estabelecimento não encontrado." }, { status: 404 });
 
       const { data: workers } = await supabase
         .from("brothel_workers").select("*")
         .eq("player_brothel_id", playerBrothelId).eq("status", "healthy");
 
       if (!workers || workers.length === 0)
-        return NextResponse.json({ error: "Sem workers saudÃ¡veis neste estabelecimento!" }, { status: 400 });
+        return NextResponse.json({ error: "Sem workers saudáveis neste estabelecimento!" }, { status: 400 });
 
       // Time-based (max 24h)
       const now = new Date();
@@ -411,11 +411,11 @@ export async function POST(req: NextRequest) {
       const { eventId, choice } = body;
       const { data: ev } = await supabase
         .from("brothel_events").select("*").eq("id", eventId).eq("player_id", player.id).single();
-      if (!ev || ev.resolved) return NextResponse.json({ error: "Evento invÃ¡lido." }, { status: 404 });
+      if (!ev || ev.resolved) return NextResponse.json({ error: "Evento inválido." }, { status: 404 });
 
       const choices = ev.choices as Array<{ label: string; action: string; reward_cash: number; reward_xp: number }>;
       const chosen = choices?.find((c) => c.action === choice);
-      if (!chosen) return NextResponse.json({ error: "Escolha invÃ¡lida." }, { status: 400 });
+      if (!chosen) return NextResponse.json({ error: "Escolha inválida." }, { status: 400 });
 
       // Apply reward
       let message = "";
@@ -443,7 +443,7 @@ export async function POST(req: NextRequest) {
         // Increase heat
         const { data: pb } = await supabase.from("player_brothels").select("heat_level").eq("id", ev.player_brothel_id).single();
         await supabase.from("player_brothels").update({ heat_level: Math.min(100, (pb?.heat_level ?? 0) + 30) }).eq("id", ev.player_brothel_id);
-        message = "A polÃ­cia aumentou a vigilÃ¢ncia!";
+        message = "A polícia aumentou a vigilância!";
       }
 
       await supabase.from("brothel_events").update({ resolved: true, resolved_choice: choice }).eq("id", eventId);
