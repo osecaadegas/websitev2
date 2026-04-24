@@ -225,8 +225,9 @@ async function handleNextCustomer(body: any, user: any) {
 
   const heatPct = session.heat / 100;
   const policeMult = await getPoliceMultiplier();
+  const qtyBounds = await getQtyBounds();
   const type = pickCustomerType(zone, heatPct, policeMult);
-  const customer = await spawnCustomer(type, player.level, drugs);
+  const customer = await spawnCustomer(type, player.level, drugs, qtyBounds);
 
   if (!customer) {
     const { count } = await supabase.from("street_customers").select("*", { count: "exact", head: true }).eq("type", type);
@@ -557,7 +558,8 @@ async function deductInventory(inventoryId: string, currentQty: number, amount: 
 async function spawnCustomer(
   type: CustomerType,
   playerLevel: number,
-  drugs: any[] = []
+  drugs: any[] = [],
+  qtyBounds: { min: number; max: number } = { min: 3, max: 100 }
 ): Promise<SpawnedCustomer | null> {
   const { data: pool, error } = await supabase
     .from("street_customers")
@@ -587,9 +589,11 @@ async function spawnCustomer(
     const item = pick.items;
     requestedDrugName = item.name;
     requestedPriceExpectation = Math.round(item.base_price * (0.8 + Math.random() * 0.5));
-    // Qty: respect preferred_quantity but cap at available stock
-    const maxQty = Math.min(raw.preferred_quantity, pick.quantity);
-    requestedQty = Math.max(1, Math.floor(maxQty * (0.5 + Math.random() * 0.5)));
+    // Qty: 75–140% of preferred_quantity, capped at available stock and admin bounds
+    const qtyFactor = 0.75 + Math.random() * 0.65;
+    const rawQty = Math.round(raw.preferred_quantity * qtyFactor);
+    const clampedQty = Math.min(rawQty, pick.quantity, qtyBounds.max);
+    requestedQty = Math.max(qtyBounds.min, clampedQty);
     // Flexibility: higher for regular/tourist, lower for dealer/junkie
     flexibility = type === "tourist" ? 0.7
       : type === "regular" ? 0.5
@@ -625,6 +629,16 @@ async function getPoliceMultiplier(): Promise<number> {
   const intensity = Number(data?.value ?? 50);
   // intensity 50 = 1.0× (default), 0 = no police, 100 = 2×
   return Math.min(2, Math.max(0, intensity / 50));
+}
+
+async function getQtyBounds(): Promise<{ min: number; max: number }> {
+  const { data } = await supabase
+    .from("ce_system_settings")
+    .select("key, value")
+    .in("key", ["street_qty_min", "street_qty_max"]);
+  const rows = data || [];
+  const get = (k: string, def: number) => Number(rows.find((r: any) => r.key === k)?.value ?? def);
+  return { min: get("street_qty_min", 3), max: get("street_qty_max", 100) };
 }
 
 async function triggerArrest(

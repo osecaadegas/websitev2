@@ -31,7 +31,7 @@ export async function PUT(req: NextRequest) {
   const body = await req.json();
   const { key, value } = body;
 
-  const ALLOWED_KEYS = ["police_intensity", "maintenance_mode", "crime_multiplier", "income_multiplier", "xp_multiplier"];
+  const ALLOWED_KEYS = ["police_intensity", "maintenance_mode", "crime_multiplier", "income_multiplier", "xp_multiplier", "street_qty_min", "street_qty_max"];
   if (!key || !ALLOWED_KEYS.includes(key)) {
     return NextResponse.json({ error: "Chave inválida" }, { status: 400 });
   }

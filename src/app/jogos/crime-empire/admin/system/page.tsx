@@ -10,6 +10,8 @@ const KEYS = [
   { key:"crime_multiplier",    label:"💰 Multiplicador Crimes",  min:0.1, max:5, step:0.1, type:"slider", desc:"Multiplicador do dinheiro ganho em crimes" },
   { key:"income_multiplier",   label:"🏢 Multiplicador Income",  min:0.1, max:5, step:0.1, type:"slider", desc:"Multiplicador do rendimento dos negócios" },
   { key:"xp_multiplier",       label:"⭐ Multiplicador XP",      min:0.1, max:5, step:0.1, type:"slider", desc:"Multiplicador de XP ganho em todas as ações" },
+  { key:"street_qty_min",      label:"📦 Qtd. Mínima Clientes",  min:1, max:50, step:1, type:"slider", desc:"Quantidade mínima de gramas que os clientes pedem na rua" },
+  { key:"street_qty_max",      label:"📦 Qtd. Máxima Clientes",  min:5, max:500, step:5, type:"slider", desc:"Quantidade máxima de gramas que os clientes pedem na rua" },
   { key:"maintenance_mode",    label:"🔧 Modo Manutenção",      type:"toggle", desc:"Bloqueia o acesso ao jogo para todos os jogadores" },
 ];
 
