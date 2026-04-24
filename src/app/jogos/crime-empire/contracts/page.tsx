@@ -577,9 +577,11 @@ function ContractBriefing({
 }
 
 /* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ ROADMAP NODE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
-function RoadmapNode({ level, completed, unlocked, active }: {
-  level: number; completed: boolean; unlocked: boolean; active: boolean;
+function RoadmapNode({ level, levelIndex, completed, unlocked, active }: {
+  level: number; levelIndex: number; completed: boolean; unlocked: boolean; active: boolean;
 }) {
+  const tierColors = ["#4ade80", "#f59e0b", "#f97316", "#ef4444"];
+  const tierColor  = tierColors[Math.min(levelIndex, tierColors.length - 1)];
   return (
     <div className="flex items-center gap-2">
       <div
@@ -600,11 +602,16 @@ function RoadmapNode({ level, completed, unlocked, active }: {
       >
         {completed ? "âœ“" : unlocked || active ? level : "â€”"}
       </div>
-      <span className="text-[8px] uppercase tracking-[0.25em] font-semibold" style={{
-        color: completed ? "rgba(74,222,128,0.70)" : active ? "rgba(255,255,255,0.85)" : "rgba(255,255,255,0.25)"
-      }}>
-        CAP {level}
-      </span>
+      <div className="flex flex-col gap-0">
+        <span className="text-[8px] uppercase tracking-[0.25em] font-semibold" style={{
+          color: completed ? "rgba(74,222,128,0.70)" : active ? "rgba(255,255,255,0.85)" : "rgba(255,255,255,0.25)"
+        }}>
+          CAP {level}
+        </span>
+        <span className="text-[8px] leading-none" style={{ color: completed ? "rgba(74,222,128,0.50)" : unlocked ? tierColor : "rgba(255,255,255,0.12)" }}>
+          {"☠".repeat(Math.min(levelIndex + 1, 4))}
+        </span>
+      </div>
     </div>
   );
 }
@@ -952,7 +959,7 @@ export default function ContractsPage() {
                       className="absolute left-3 top-7 bottom-0 w-px -z-10"
                       style={{ background: "rgba(255,255,255,0.06)" }}
                     />
-                    <RoadmapNode level={lvl} completed={completed} unlocked={unlocked} active={isActive} />
+                    <RoadmapNode level={lvl} levelIndex={lvlIdx} completed={completed} unlocked={unlocked} active={isActive} />
                     <div className="mt-2 ml-4 space-y-1">
                       {lvlContracts.map((c) => (
                         <ContractListItem
