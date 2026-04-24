@@ -290,7 +290,7 @@ async function handleNegotiate(body: any, user: any) {
 
   const customer: SpawnedCustomer = {
     id: rawCustomer.id,
-    name: rawCustomer.name,
+    name: rawCustomer.type === "undercover" ? "???" : rawCustomer.name,
     type: rawCustomer.type as CustomerType,
     budget: customerState?.budget ?? rawCustomer.budget_min,
     patience: customerState?.patience ?? rawCustomer.patience,
@@ -548,7 +548,7 @@ async function spawnCustomer(type: CustomerType, playerLevel: number): Promise<S
 
   return {
     id: raw.id,
-    name: raw.name,
+    name: raw.type === "undercover" ? "???" : raw.name,
     type: raw.type as CustomerType,
     budget,
     patience: raw.patience,
