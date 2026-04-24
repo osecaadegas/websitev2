@@ -75,9 +75,10 @@ type Phase =
 type Action = "offer" | "push" | "discount" | "rush";
 
 interface LogEntry {
+  icon: string;
+  title: string;
+  desc: string;
   time: string;
-  text: string;
-  color: string;
 }
 
 interface FloatEntry { id: number; amount: number; left: number; }
@@ -193,6 +194,11 @@ export default function StreetsPage() {
   const [log, setLog] = useState<LogEntry[]>([]);
   const logRef = useRef<HTMLDivElement>(null);
 
+  // -- Session stats (bottom bar)
+  const [sessionsToday, setSessionsToday] = useState(0);
+  const [escapesSuccess, setEscapesSuccess] = useState(0);
+  const [escapesTotal, setEscapesTotal] = useState(0);
+
   // -- Toast
   const [toast, setToast] = useState<{ msg: string; ok: boolean } | null>(null);
   const showToast = (msg: string, ok = true) => {
@@ -238,9 +244,9 @@ export default function StreetsPage() {
 
   // --- Helpers -------------------------------------------------------------
 
-  const addLog = useCallback((text: string, color = "text-gray-300") => {
+  const addLog = useCallback((icon: string, title: string, desc: string) => {
     const time = new Date().toLocaleTimeString("pt-PT", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
-    setLog((prev) => [...prev.slice(-49), { time, text, color }]);
+    setLog((prev) => [...prev.slice(-49), { icon, title, desc, time }]);
   }, []);
 
   const stopTimer = useCallback(() => {
@@ -339,7 +345,10 @@ export default function StreetsPage() {
     setSessionEarned(0);
     setSessionDeals(0);
     setLog([]);
-    addLog(`🌿 sessão iniciada em ${zones.find(z => z.id === zoneId)?.name ?? zoneId}`, "text-cyan-400");
+    setSessionsToday((s) => s + 1);
+    const _zoneName = zones.find(z => z.id === zoneId)?.name ?? zoneId;
+    addLog("🌍", "Sessão Iniciada", `Entraste em ${_zoneName}. Mantém a calma.`);
+    addLog("👁️", "A examinar a zona", "A rua parece calma... por agora.");
     setPhase("idle");
   }
 
@@ -356,7 +365,7 @@ export default function StreetsPage() {
       body: JSON.stringify({ action: "next_customer", sessionId: session.id }),
     });
     const data = await res.json();
-    if (!res.ok) { showToast(data.error || "Erro ao chamar cliente", false); addLog(`❌ ${data.error}`, "text-red-400"); setPhase("idle"); return; }
+    if (!res.ok) { showToast(data.error || "Erro ao chamar cliente", false); addLog("❌", "Erro", data.error ?? "Não há clientes disponíveis."); setPhase("idle"); return; }
 
     setCustomer({ ...data.customer, offersReceived: 0, suspicion: 0 });
     setGreeting(data.greeting);
@@ -370,7 +379,15 @@ export default function StreetsPage() {
     setPhase("customer");
     setCustomerAnim(true); setTimeout(() => setCustomerAnim(false), 600);
     startTimer();
-    addLog(`👤 ${data.customer.name} (${CUSTOMER_TYPE_META[data.customer.type as CustomerType]?.label ?? data.customer.type}) aproximou-se`, "text-yellow-300");
+    addLog("👤", "Novo cliente chegou", `${data.customer.name} aproximou-se.`);
+    addLog("💬", data.customer.name, data.greeting);
+    addLog("👁️", "A examinar a zona", data.session.heat > 50 ? "Há muita agitação por aqui..." : "A rua parece calma... por agora.");
+    addLog("🛡️", "Nível de Calor", `Calor atual: ${data.session.heat}%`);
+    if (data.session.heat > 40) {
+      addLog("ℹ️", "Dica", "Calor elevado aumenta a probabilidade de presença policial.");
+    } else {
+      addLog("❓", "Quem está a observar?", "Difícil dizer por agora...");
+    }
 
     // Auto-select drug matching client's request
     if (data.customer.requestedDrugName && drugs.length > 0) {
@@ -466,7 +483,7 @@ export default function StreetsPage() {
     const data = await res.json();
     setHeat(data.heat ?? heat);
     setHeatStage(heatStageFor(data.heat ?? heat));
-    addLog(`⏩ Ignoraste ${customer?.name}`, "text-gray-500");
+    addLog("⏩", "Cliente ignorado", `Mandaste ${customer?.name ?? "o cliente"} embora.`);
     setCustomer(null);
     setDialogue("");
     setPhase("idle");
@@ -490,7 +507,7 @@ export default function StreetsPage() {
     setSession(null);
     setCustomer(null);
     setPhase("session_end");
-    addLog("🚪 Saíste da rua", "text-gray-400");
+    addLog("🚪", "Sessão Encerrada", "Saíste da rua com segurança.");
   }
 
   async function handleOutcome(data: any) {
@@ -503,27 +520,28 @@ export default function StreetsPage() {
       setSessionEarned((s) => s + earned);
       setSessionDeals((s) => s + 1);
       showFloat(earned);
-      addLog(`✅ ${customer?.name} aceitou — +$${earned.toLocaleString()} sujos`, "text-green-400");
+      addLog("✅", "Negócio Fechado", `${customer?.name} aceitou — +$${earned.toLocaleString()} sujos`);
+      addLog("🛡️", "Nível de Calor", `Calor atual: ${data.heat ?? heat}%`);
       setCustomer(null);
       setPhase("result");
       await fetchDrugs();
     } else if (outcome === "counter") {
       setCounterPrice(data.counterPrice ?? null);
       setCounterQty(data.counterQty ?? null);
-      addLog(`↔️ ${customer?.name} contra-propôs $${data.counterPrice}/u × ${data.counterQty}g`, "text-yellow-400");
+      addLog("↔️", "Contra-proposta", `${customer?.name} propõe $${data.counterPrice}/u × ${data.counterQty}g`);
       setPhase("counter");
       startTimer();
     } else if (outcome === "reject") {
-      addLog(`❌ ${customer?.name} recusou a oferta`, "text-orange-400");
+      addLog("❌", "Recusa", `${customer?.name} recusou a tua oferta.`);
       setPhase("customer");
       startTimer();
     } else if (outcome === "hostile") {
-      addLog(`⚡ ${customer?.name} ficou hostil e foi embora`, "text-red-400");
+      addLog("⚡", "Cliente Hostil", `${customer?.name} ficou hostil e foi embora.`);
       setCustomer(null);
       setPhase("idle");
       await fetchDrugs();
     } else if (outcome === "snitch") {
-      addLog(`🚨 ${customer?.name} delatou-te! Calor disparou!`, "text-red-500");
+      addLog("🚨", "Delator!", `${customer?.name} delatou-te! Calor disparou!`);
       setCustomer(null);
       if (data.heat >= 100) {
         // bust triggers arrest
@@ -539,7 +557,8 @@ export default function StreetsPage() {
         if (data.dialogue) typeDialogue(data.dialogue);
         await new Promise((r) => setTimeout(r, 2200));
       }
-      addLog("🚔 APANHADO! A polícia está aqui!", "text-red-600");
+      addLog("🚔", "APANHADO!", "A polícia chegou. Tens de fugir agora!");
+      setEscapesTotal((t) => t + 1);
       setArrestEscape({ token: data.escape_token, jailMinutes: data.jail_minutes });
       setSession(null);
       setPhase("arrested");
@@ -573,26 +592,27 @@ export default function StreetsPage() {
   const zoneAccent    = currentZone ? (ZONE_ACCENT[currentZone.id] ?? "#22c55e") : "#22c55e";
 
   const moodColor = suspicion >= 70 ? "#ef4444" : suspicion >= 40 ? "#eab308" : "#22c55e";
-  const moodLabel = suspicion >= 70 ? "Muito suspeito" : suspicion >= 40 ? "Desconfiado" : "Calmo";
+  const moodLabel = suspicion >= 70 ? "Muito Suspeito" : suspicion >= 40 ? "Desconfiado" : "Calmo";
 
   const basePrice  = selectedDrug?.items.base_price ?? 100;
   const vignetteAlpha = Math.max(0, (heat - 20) / 80) * 0.65;
 
-  const drugMatchesRequest = customer && selectedDrug
-    && selectedDrug.items.name.toLowerCase() === customer.requestedDrugName.toLowerCase();
-
-  // Cinematic button values (no sliders)
   const fairPrice = customer ? Math.round(customer.requestedPriceExpectation) : Math.round(basePrice * 1.0);
   const highPrice = Math.round(pricePerUnit * 1.2);
-  const lowPrice  = Math.round(pricePerUnit * 0.85);
   const lessQty   = Math.max(1, quantity - 2);
   const nextDrug  = drugs.length > 1 ? drugs[(drugs.indexOf(selectedDrug!) + 1) % drugs.length] ?? drugs[0] : null;
   const portrait  = customer ? pickPortrait(customer.type, customer.id) : null;
 
+  const totalInventoryKg = drugs.reduce((sum, d) => sum + d.quantity, 0) / 1000;
+  const repLabel = reputationLabel(player?.level ?? 1);
+  const repPct   = Math.min(100, ((player?.level ?? 1) / 25) * 100);
+  const minExpected = customer ? Math.round(customer.requestedPriceExpectation * 0.85) : 0;
+  const maxExpected = customer ? Math.round(customer.requestedPriceExpectation * 1.15) : 0;
+
   // ─── Loading ──────────────────────────────────────────────────────────────
   if (phase === "loading" && !session && !player) {
     return (
-      <div className="flex-1 flex items-center justify-center bg-[#060608] text-white">
+      <div className="flex-1 flex items-center justify-center bg-[#0a0a0b] text-white">
         <div className="text-center">
           <div className="w-8 h-8 border-2 border-green-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
           <p className="text-[#444] text-sm">A carregar...</p>
@@ -612,6 +632,7 @@ export default function StreetsPage() {
           onEscape={async () => {
             const token = arrestEscape.token; setArrestEscape(null);
             await fetch("/api/crime-empire/escape-attempt", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ token, escaped: true }) });
+            setEscapesSuccess((s) => s + 1);
             setPhase("zone_select"); showToast("Escapaste!", true);
           }}
           onArrested={async () => {
@@ -635,7 +656,7 @@ export default function StreetsPage() {
         }
         @keyframes clientSlideIn {
           from { opacity: 0; transform: translateX(-40px) scale(0.94); filter: blur(4px); }
-          to   { opacity: 1; transform: translateX(0) scale(1);   filter: blur(0);   }
+          to   { opacity: 1; transform: translateX(0) scale(1); filter: blur(0); }
         }
         @keyframes heatPulse {
           0%, 100% { opacity: 0.45; }
@@ -646,10 +667,9 @@ export default function StreetsPage() {
           50%      { opacity: 0.5; }
         }
         @keyframes inspectorFlash {
-          0%, 100% { background: rgba(185,28,28,0.25); box-shadow: 0 0 0 rgba(239,68,68,0); }
-          25%      { background: rgba(185,28,28,0.7);  box-shadow: 0 0 60px rgba(239,68,68,0.7); }
-          50%      { background: rgba(185,28,28,0.15); box-shadow: 0 0 10px rgba(239,68,68,0.2); }
-          75%      { background: rgba(185,28,28,0.6);  box-shadow: 0 0 50px rgba(239,68,68,0.6); }
+          0%, 100% { background: rgba(185,28,28,0.25); }
+          25%      { background: rgba(185,28,28,0.7); box-shadow: 0 0 60px rgba(239,68,68,0.7); }
+          75%      { background: rgba(185,28,28,0.6); box-shadow: 0 0 50px rgba(239,68,68,0.6); }
         }
         @keyframes btnReveal {
           from { opacity: 0; transform: translateY(8px); }
@@ -660,6 +680,10 @@ export default function StreetsPage() {
           25%      { transform: translateX(-3px); }
           75%      { transform: translateX(3px); }
         }
+        @keyframes logEntry {
+          from { opacity: 0; transform: translateX(10px); }
+          to   { opacity: 1; transform: translateX(0); }
+        }
         .float-money      { animation: floatUp 1.8s ease-out forwards; }
         .client-enter     { animation: clientSlideIn 0.5s cubic-bezier(.22,.68,0,1.2) forwards; }
         .heat-vignette    { animation: heatPulse 2s ease-in-out infinite; }
@@ -667,19 +691,17 @@ export default function StreetsPage() {
         .inspector-reveal { animation: inspectorFlash 0.5s ease-in-out 3; }
         .btn-reveal       { animation: btnReveal 0.3s ease-out forwards; }
         .suspicion-shake  { animation: suspicionShake 0.35s ease-in-out; }
+        .log-entry        { animation: logEntry 0.25s ease-out forwards; }
+        .heat-bar-gradient {
+          background: linear-gradient(90deg,#22c55e 0%,#86efac 20%,#eab308 45%,#f97316 65%,#ef4444 85%,#dc2626 100%);
+        }
       `}</style>
 
-      <div className="flex-1 text-white flex flex-col min-h-screen relative overflow-hidden" style={{ background: "#060608" }}>
-
-        {/* ── Zone ambient glow ── */}
-        {session && currentZone && (
-          <div className="pointer-events-none fixed inset-0 z-0 transition-all duration-1000"
-            style={{ background: `radial-gradient(ellipse at 30% 80%, ${ZONE_GLOW[currentZone.id] ?? "rgba(34,197,94,0.04)"} 0%, transparent 70%)` }} />
-        )}
+      <div className="flex-1 text-white flex flex-col overflow-hidden" style={{ background: "#0a0a0b" }}>
 
         {/* ── Heat vignette ── */}
         {heat > 20 && (
-          <div className="pointer-events-none fixed inset-0 z-10 heat-vignette"
+          <div className="pointer-events-none fixed inset-0 z-0 heat-vignette"
             style={{ background: `radial-gradient(ellipse at center, transparent 20%, rgba(185,28,28,${vignetteAlpha}) 100%)` }} />
         )}
 
@@ -696,31 +718,35 @@ export default function StreetsPage() {
         {toast && <CEToast msg={toast.msg} ok={toast.ok} />}
 
         {/* ══ TOP BAR ══════════════════════════════════════════════════════ */}
-        <div className="relative z-20 flex items-center gap-3 px-4 md:px-6 py-3 border-b border-[#111]"
-          style={{ background: "rgba(0,0,0,0.85)", backdropFilter: "blur(12px)" }}>
-          <Link href="/jogos/crime-empire/dashboard"
-            className="text-[#ff6a00] hover:text-[#ffaa50] text-sm font-bold transition-colors shrink-0">
-            ←
-          </Link>
+        <div className="relative z-20 shrink-0 flex items-center gap-4 px-5 h-14 border-b border-[#161618]"
+          style={{ background: "rgba(10,10,11,0.98)", backdropFilter: "blur(12px)" }}>
 
+          {/* Left — title */}
+          <div className="flex items-center gap-3 shrink-0">
+            <Link href="/jogos/crime-empire/dashboard"
+              className="text-[#444] hover:text-white text-base transition-colors leading-none">&#8592;</Link>
+            <h1 className="text-xs font-black tracking-[0.18em] text-white uppercase">Street Dealings</h1>
+          </div>
+
+          {/* Center — heat bar */}
           {session ? (
-            <div className="flex-1 flex items-center gap-3">
-              {currentZone && (
-                <span className="text-xs px-2.5 py-1 rounded-full font-bold border shrink-0 hidden sm:inline"
-                  style={{ color: zoneAccent, borderColor: `${zoneAccent}44`, background: `${zoneAccent}11` }}>
-                  {currentZone.icon} {currentZone.name}
-                </span>
-              )}
-              <div className="flex-1 flex items-center gap-2">
-                <span className={`text-xs font-black shrink-0 w-6 text-right ${heatStyle.color} ${heatStage === "danger" ? "danger-text" : ""}`}>
-                  {heat}
-                </span>
-                <div className="flex-1 h-2.5 bg-[#111] rounded-full overflow-hidden border border-[#1a1a1a] relative">
-                  <div className={`h-full rounded-full transition-all duration-700 ${heatStyle.bg}`}
-                    style={{ width: `${heat}%`, boxShadow: heat > 60 ? `0 0 8px ${heatStage === "danger" ? "#ef4444" : "#eab308"}` : "none" }} />
+            <div className="flex-1 flex flex-col items-center justify-center gap-1 px-6 max-w-xl mx-auto">
+              <div className="flex items-center gap-3 w-full">
+                <span className="text-[10px] font-bold text-[#3a3a3a] tracking-widest uppercase shrink-0">Heat Level</span>
+                <span className="text-[9px] text-[#2a2a2a] shrink-0">ⓘ</span>
+                <div className="flex-1 relative h-2 bg-[#181818] rounded-full overflow-hidden">
+                  <div className="absolute inset-0 heat-bar-gradient opacity-20 rounded-full" />
+                  <div className="absolute inset-y-0 left-0 heat-bar-gradient rounded-full transition-all duration-700"
+                    style={{ width: `${heat}%` }} />
+                  {[25, 50, 75].map((p) => (
+                    <div key={p} className="absolute top-0 bottom-0 w-px bg-[#0a0a0b]" style={{ left: `${p}%`, opacity: 0.6 }} />
+                  ))}
                 </div>
-                <span className={`text-[10px] font-black shrink-0 w-20 text-right ${heatStyle.color} ${heatStage === "danger" ? "danger-text" : ""}`}>
-                  {heatStyle.label}
+                <span className={`text-sm font-black tabular-nums shrink-0 ${heatStage === "danger" ? "danger-text text-red-400" : heatStage === "warning" ? "text-orange-400" : "text-white"}`}>
+                  {heat}%
+                </span>
+                <span className={`text-[10px] font-black tracking-wider shrink-0 w-20 ${heatStage === "danger" ? "danger-text text-red-400" : heatStage === "warning" ? "text-orange-400" : "text-green-400"}`}>
+                  {heatStyle.label.toUpperCase()}
                 </span>
               </div>
             </div>
@@ -728,24 +754,32 @@ export default function StreetsPage() {
             <div className="flex-1" />
           )}
 
-          <div className="flex items-center gap-3 shrink-0">
-            <span className="text-xs text-[#444] font-mono">Nv.{player?.level ?? "–"}</span>
-            <span className="text-xs text-green-400 font-mono font-bold">${player?.dirty_cash?.toLocaleString() ?? 0}</span>
-          </div>
+          {/* Right — leave button */}
+          {session ? (
+            <button onClick={endSession}
+              className="shrink-0 flex items-center gap-2 px-4 py-1.5 rounded-lg border border-[#252528] text-[#555] hover:text-white hover:border-[#3a3a3a] transition-all text-[11px] font-bold tracking-wide">
+              ⬡ LEAVE STREET
+            </button>
+          ) : (
+            <Link href="/jogos/crime-empire/dashboard"
+              className="shrink-0 px-4 py-1.5 rounded-lg border border-[#252528] text-[#555] hover:text-white hover:border-[#3a3a3a] transition-all text-[11px] font-bold tracking-wide">
+              ← VOLTAR
+            </Link>
+          )}
         </div>
 
         {/* Jail banner */}
         {inJail && player?.jail_release_at && (
-          <div className="relative z-20 mx-4 mt-2 p-3 rounded-xl bg-red-950/50 border border-red-800/40 text-red-300 text-sm flex items-center gap-2">
+          <div className="relative z-20 mx-4 mt-2 p-3 rounded-xl bg-red-950/50 border border-red-800/40 text-red-300 text-sm flex items-center gap-2 shrink-0">
             <span>🚔</span>
             <span>Estás preso até <strong>{new Date(player.jail_release_at).toLocaleTimeString("pt-PT")}</strong></span>
             <Link href="/jogos/crime-empire/jail" className="ml-auto text-xs underline">Ir à cela →</Link>
           </div>
         )}
 
-        {/* ══ ZONE SELECT / SESSION END ═══════════════════════════════════ */}
+        {/* ══ ZONE SELECT / SESSION END ════════════════════════════════════ */}
         {(phase === "zone_select" || phase === "session_end") && (
-          <div className="relative z-20 flex-1 px-4 md:px-10 py-10">
+          <div className="relative z-20 flex-1 overflow-y-auto px-6 py-8">
             {phase === "session_end" && (
               <div className="mb-10 p-8 rounded-2xl border border-green-800/30 text-center max-w-sm mx-auto"
                 style={{ background: "linear-gradient(135deg, rgba(20,83,45,0.35), rgba(0,0,0,0.5))" }}>
@@ -789,10 +823,6 @@ export default function StreetsPage() {
                           locked ? "border-[#181818] opacity-30 cursor-not-allowed" : "border-[#1f1f1f] hover:border-[#2a2a2a] active:scale-95 cursor-pointer"
                         }`}
                         style={locked ? { background: "#0a0a0a" } : { background: `linear-gradient(135deg, ${accent}0d, #0a0a0a 60%)` }}>
-                        {!locked && (
-                          <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none rounded-2xl"
-                            style={{ background: `radial-gradient(ellipse at top left, ${accent}18 0%, transparent 55%)` }} />
-                        )}
                         <div className="relative z-10">
                           <div className="flex items-start justify-between mb-3">
                             <span className="text-3xl">{zone.icon}</span>
@@ -814,267 +844,308 @@ export default function StreetsPage() {
           </div>
         )}
 
-        {/* ══ ACTIVE SESSION — CINEMATIC ENCOUNTER ═══════════════════════ */}
+        {/* ══ ACTIVE SESSION — CINEMATIC THREE-COLUMN LAYOUT ═══════════════ */}
         {session && phase !== "zone_select" && phase !== "session_end" && phase !== "arrested" && (
-          <div className="relative z-20 flex-1 flex flex-col lg:flex-row min-h-0">
+          <div className="relative z-20 flex-1 flex min-h-0">
 
-            {/* ── LEFT — CLIENT PORTRAIT ────────────────────────────────── */}
-            <div className="w-full lg:w-72 xl:w-80 shrink-0 flex flex-col p-4 gap-3 lg:border-r border-[#101010]"
-              style={{ background: "rgba(0,0,0,0.5)" }}>
+            {/* ── LEFT — CLIENT PORTRAIT ──────────────────────────────────── */}
+            <div className="w-[290px] xl:w-[320px] shrink-0 border-r border-[#161618] relative overflow-hidden"
+              style={{ background: "#0c0c0e" }}>
 
               {customer ? (
-                <div
-                  className={`relative rounded-3xl overflow-hidden flex-1 flex flex-col min-h-[320px] lg:min-h-0 ${customerAnim ? "client-enter" : ""} ${inspectorRevealed ? "inspector-reveal" : ""}`}
-                  style={{
-                    border: `1.5px solid ${moodColor}55`,
-                    boxShadow: `0 0 40px ${moodColor}33, inset 0 0 20px ${moodColor}0a`,
-                    background: inspectorRevealed
-                      ? "linear-gradient(160deg,#1a0000,#0a0a0a)"
-                      : `linear-gradient(160deg,${moodColor}12,#0a0a0a)`,
-                    transition: "border-color 0.6s, box-shadow 0.6s, background 0.6s",
-                  }}>
+                <div className={`absolute inset-0 ${customerAnim ? "client-enter" : ""} ${inspectorRevealed ? "inspector-reveal" : ""}`}>
 
-                  {/* Portrait image — full bleed */}
+                  {/* Full-bleed portrait */}
                   {portrait && (
-                    <div className="relative w-full" style={{ paddingBottom: "100%" }}>
+                    <div className="absolute inset-0">
                       <img
                         src={portrait}
                         alt={customer.name}
-                        className="absolute inset-0 w-full h-full object-cover object-top"
+                        className="w-full h-full object-cover object-top"
                         onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
                       />
+                      {/* Bottom gradient overlay */}
                       <div className="absolute inset-0"
-                        style={{ background: "linear-gradient(to bottom, transparent 40%, rgba(0,0,0,0.92) 100%)" }} />
+                        style={{ background: "linear-gradient(to bottom, rgba(0,0,0,0.1) 0%, transparent 30%, transparent 45%, rgba(0,0,0,0.88) 75%, rgba(0,0,0,0.97) 100%)" }} />
+                      {/* Left edge shadow */}
+                      <div className="absolute inset-0"
+                        style={{ background: "linear-gradient(to right, rgba(0,0,0,0.3) 0%, transparent 35%)" }} />
+                    </div>
+                  )}
+                  {!portrait && (
+                    <div className="absolute inset-0" style={{ background: "linear-gradient(160deg,#111,#0a0a0a)" }} />
+                  )}
 
-                      {/* Inspector badge on reveal */}
-                      {inspectorRevealed && (
-                        <div className="absolute inset-0 flex items-center justify-center">
-                          <div className="text-center btn-reveal">
-                            <p className="text-6xl mb-2">🚔</p>
-                            <p className="text-red-400 font-black text-2xl tracking-widest">POLÍCIA</p>
-                            <p className="text-red-600 text-xs mt-1">Estás detido</p>
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Name + type over image */}
-                      <div className="absolute bottom-0 left-0 right-0 p-4">
-                        <p className="font-black text-white text-xl leading-tight drop-shadow-lg">{customer.name}</p>
-                        <div className="flex items-center gap-2 mt-1">
-                          <span className="text-xs font-bold px-2 py-0.5 rounded-full"
-                            style={{ background: `${moodColor}22`, color: moodColor, border: `1px solid ${moodColor}44` }}>
-                            {inspectorRevealed ? "🚔 Polícia" : (customer.type === "undercover" ? "🧑 Regular" : `${customerMeta?.icon} ${customerMeta?.label}`)}
-                          </span>
-                          <span className={`text-xs font-bold ${inspectorRevealed ? "danger-text" : suspicion >= 40 ? "danger-text" : ""}`}
-                            style={{ color: moodColor }}>
-                            {moodLabel}
-                          </span>
-                        </div>
+                  {/* Inspector reveal overlay */}
+                  {inspectorRevealed && (
+                    <div className="absolute inset-0 z-10 flex items-center justify-center"
+                      style={{ background: "rgba(10,0,0,0.7)" }}>
+                      <div className="text-center">
+                        <p className="text-7xl mb-3">🚔</p>
+                        <p className="text-red-400 font-black text-3xl tracking-widest danger-text">POLÍCIA</p>
+                        <p className="text-red-700 text-sm mt-1">Estás detido</p>
                       </div>
                     </div>
                   )}
 
-                  {/* Bottom section — stats */}
-                  <div className="p-4 flex flex-col gap-3">
-                    {!inspectorRevealed && (
-                      <div className="flex flex-wrap gap-2">
-                        <span className="px-3 py-1.5 rounded-xl text-xs font-black"
-                          style={{ background: "#0b1a0b", border: "1px solid #1a3a1a", color: "#4ade80" }}>
-                          🌿 {customer.requestedDrugName}
-                        </span>
-                        <span className="px-3 py-1.5 rounded-xl text-xs font-black"
-                          style={{ background: "#0b0b1a", border: "1px solid #1a1a3a", color: "#818cf8" }}>
-                          ⚖️ {customer.requestedQty}g
-                        </span>
-                        {!drugMatchesRequest && selectedDrug && (
-                          <span className="px-2 py-1 rounded-lg text-[10px] font-bold"
-                            style={{ background: "#1a1200", border: "1px solid #3a2800", color: "#d97706" }}>
-                            ⚠️ produto diferente
-                          </span>
-                        )}
+                  {/* Bottom text overlay — name / type / mood / quote */}
+                  {!inspectorRevealed && (
+                    <div className="absolute bottom-0 left-0 right-0 p-5 z-10">
+                      <p className="font-black italic text-white leading-none mb-1 drop-shadow-lg"
+                        style={{ fontSize: "clamp(24px,3.5vw,36px)", fontFamily: "Georgia, serif", textShadow: "0 2px 16px rgba(0,0,0,1)" }}>
+                        {customer.name.toUpperCase()}
+                      </p>
+                      <p className="text-[#aaa] text-xs font-medium mb-2">
+                        {customerMeta?.icon} {customerMeta?.label ?? customer.type}
+                      </p>
+                      <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold mb-3"
+                        style={{ background: `${moodColor}1a`, border: `1px solid ${moodColor}44`, color: moodColor }}>
+                        <span className="w-1.5 h-1.5 rounded-full" style={{ background: moodColor }} />
+                        {moodLabel.toUpperCase()}
                       </div>
-                    )}
-
-                    {/* Suspicion bar */}
-                    <div className={suspicion > 60 ? "suspicion-shake" : ""}>
-                      <div className="flex justify-between text-[11px] mb-1.5">
-                        <span style={{ color: "#333" }}>Suspeita</span>
-                        <span className="font-black tabular-nums" style={{ color: moodColor }}>{suspicion}%</span>
-                      </div>
-                      <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "#111" }}>
-                        <div className="h-full rounded-full transition-all duration-500"
-                          style={{ width: `${suspicion}%`, background: moodColor, boxShadow: suspicion > 60 ? `0 0 6px ${moodColor}` : "none" }} />
-                      </div>
-                    </div>
-
-                    {/* Patience pips */}
-                    <div>
-                      <div className="flex justify-between text-[11px] mb-1.5">
-                        <span style={{ color: "#333" }}>Paciência</span>
-                        <div className="flex gap-0.5">
-                          {Array.from({ length: customer.patience }).map((_, i) => (
-                            <span key={i} className="text-[9px] transition-colors duration-300"
-                              style={{ color: i < customer.patience - customer.offersReceived ? "#22c55e" : "#1f1f1f" }}>
-                              ●
-                            </span>
-                          ))}
+                      {(player?.level ?? 1) >= 3 && (
+                        <p className="text-[#444] text-[11px] font-mono italic leading-snug">
+                          &ldquo;{hintQuote(customer)}&rdquo;
+                        </p>
+                      )}
+                      {/* Suspicion bar */}
+                      <div className={`mt-3 ${suspicion > 60 ? "suspicion-shake" : ""}`}>
+                        <div className="flex justify-between text-[10px] mb-1">
+                          <span className="text-[#333]">Suspeita</span>
+                          <span className="font-black tabular-nums" style={{ color: moodColor }}>{suspicion}%</span>
+                        </div>
+                        <div className="h-1 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.07)" }}>
+                          <div className="h-full rounded-full transition-all duration-500"
+                            style={{ width: `${suspicion}%`, background: moodColor }} />
                         </div>
                       </div>
+                      {/* Patience pips */}
+                      <div className="mt-2 flex items-center gap-1">
+                        <span className="text-[10px] text-[#333] mr-1">Paciência</span>
+                        {Array.from({ length: customer.patience }).map((_, i) => (
+                          <span key={i} className="w-1.5 h-1.5 rounded-full transition-colors duration-300"
+                            style={{ background: i < customer.patience - customer.offersReceived ? "#22c55e" : "#1f1f1f" }} />
+                        ))}
+                      </div>
                     </div>
-
-                    {(player?.level ?? 1) >= 3 && !inspectorRevealed && (
-                      <p className="text-[10px] text-[#2a2a2a] italic border-t border-[#111] pt-2">
-                        Espera até <span style={{ color: "#444" }}>${customer.requestedPriceExpectation}/g</span>
-                      </p>
-                    )}
-                  </div>
+                  )}
                 </div>
               ) : (
-                <div className="flex-1 rounded-3xl border border-dashed border-[#1a1a1a] flex flex-col items-center justify-center text-center gap-3 min-h-[280px]"
-                  style={{ background: "rgba(0,0,0,0.3)" }}>
-                  <p className="text-6xl opacity-[0.06]">👤</p>
-                  <p className="text-[#2a2a2a] text-xs tracking-widest uppercase font-bold">Sem cliente</p>
+                /* No customer */
+                <div className="absolute inset-0 flex flex-col items-center justify-center gap-4"
+                  style={{ background: "linear-gradient(180deg, #0c0c0e 0%, #0a0a0b 100%)" }}>
+                  <div className="w-20 h-20 rounded-full flex items-center justify-center"
+                    style={{ background: "#111", border: "1px solid #1a1a1a" }}>
+                    <span className="text-3xl opacity-20">👤</span>
+                  </div>
+                  <p className="text-[#252528] text-xs tracking-widest uppercase font-bold">Aguardando cliente</p>
+                  {phase === "idle" && (
+                    <button onClick={callNextCustomer} disabled={noDrugs || !!inJail}
+                      className="mt-1 px-5 py-2 rounded-xl font-black text-xs text-white transition-all hover:scale-105 active:scale-95 disabled:opacity-30"
+                      style={{ background: "linear-gradient(135deg,#166534,#15803d)" }}>
+                      + Chamar Cliente
+                    </button>
+                  )}
                 </div>
               )}
-
-              {/* Session stats */}
-              <div className="rounded-2xl border border-[#141414] p-3 flex items-center justify-between"
-                style={{ background: "rgba(0,0,0,0.6)" }}>
-                <span className="text-[#333] text-xs">{sessionDeals} negócios</span>
-                <span className="text-green-400 font-black text-sm">${sessionEarned.toLocaleString()}</span>
-              </div>
             </div>
 
-            {/* ── CENTER — DIALOGUE + ACTIONS ───────────────────────────── */}
-            <div className="flex-1 flex flex-col p-4 gap-4 overflow-y-auto min-w-0">
+            {/* ── CENTER — MAIN INTERACTION ──────────────────────────────── */}
+            <div className="flex-1 flex flex-col overflow-y-auto min-w-0" style={{ background: "#0a0a0b" }}>
 
-              {/* ── DIALOGUE BOX ── */}
-              <div className="relative rounded-2xl overflow-hidden"
-                style={{
-                  background: "rgba(6,6,10,0.95)",
-                  border: `1px solid ${customer ? moodColor + "28" : "#151515"}`,
-                  boxShadow: customer ? `0 0 30px ${moodColor}0d` : "none",
-                  transition: "border-color 0.5s, box-shadow 0.5s",
-                  minHeight: "110px",
-                }}>
-                <div className="absolute inset-0 pointer-events-none opacity-[0.015]"
-                  style={{ backgroundImage: "repeating-linear-gradient(0deg,transparent,transparent 2px,#fff 2px,#fff 3px)" }} />
-                <div className="relative z-10 p-5">
-                  {typedDialogue ? (
-                    <>
-                      <p className="text-[9px] font-black uppercase tracking-[0.2em] mb-3" style={{ color: moodColor + "99" }}>
-                        {customer ? customer.name.toUpperCase() : "SISTEMA"}
-                      </p>
-                      <p className="text-white text-[15px] leading-relaxed font-medium italic">
+              {/* Dialogue box */}
+              <div className="p-4 border-b border-[#141416] shrink-0">
+                <div className="rounded-xl overflow-hidden" style={{ background: "#0d0d0f", border: "1px solid #1c1c1e", minHeight: "110px" }}>
+                  <div className="px-4 py-2 border-b border-[#181818] flex items-center justify-between">
+                    <span className="text-[10px] font-black tracking-[0.18em] text-[#3a3a3a] uppercase">
+                      {customer ? `${customer.name} diz...` : "Cliente Aproxima-se..."}
+                    </span>
+                    {typedDialogue && !dialogueDone && (
+                      <span className="flex gap-1">
+                        <span className="w-1 h-1 rounded-full bg-[#333] animate-bounce" style={{ animationDelay: "0ms" }} />
+                        <span className="w-1 h-1 rounded-full bg-[#333] animate-bounce" style={{ animationDelay: "150ms" }} />
+                        <span className="w-1 h-1 rounded-full bg-[#333] animate-bounce" style={{ animationDelay: "300ms" }} />
+                      </span>
+                    )}
+                  </div>
+                  <div className="p-4">
+                    {typedDialogue ? (
+                      <p className="text-white text-[14px] leading-relaxed font-mono">
                         &ldquo;{renderDialogueWithHighlights(typedDialogue, customer)}&rdquo;
                         {!dialogueDone && <span className="inline-block w-0.5 h-4 bg-white ml-0.5 align-middle animate-pulse" />}
                       </p>
-                    </>
-                  ) : (
-                    <p className="text-[#222] text-sm italic">Chama o próximo cliente para começar...</p>
-                  )}
+                    ) : (phase === "idle" || (phase === "loading" && !customer)) ? (
+                      <p className="text-[#252528] text-sm font-mono italic">Chama o próximo cliente para começar...</p>
+                    ) : (
+                      <p className="text-[#252528] text-sm font-mono italic">A aguardar...</p>
+                    )}
+                  </div>
                 </div>
               </div>
 
-              {/* ── DECISION TIMER ── */}
-              {(phase === "customer" || phase === "counter") && (
-                <div>
-                  <div className="h-0.5 bg-[#111] rounded-full overflow-hidden">
-                    <div className={`h-full rounded-full transition-all duration-1000 ${timerSecs <= 10 ? "bg-red-600" : "bg-cyan-600"}`}
-                      style={{ width: `${(timerSecs / DECISION_SECS) * 100}%` }} />
+              {/* They Want card */}
+              {customer && (
+                <div className="px-4 py-3 border-b border-[#141416] shrink-0">
+                  <p className="text-[9px] font-black tracking-[0.2em] text-[#333] uppercase mb-2">They Want:</p>
+                  <div className="rounded-xl p-3" style={{ background: "#0d0d0f", border: "1px solid #1c1c1e" }}>
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0"
+                        style={{ background: "#161618", border: "1px solid #222" }}>
+                        {selectedDrug?.items.image_url
+                          ? <img src={selectedDrug.items.image_url} className="w-7 h-7 object-contain" alt="" />
+                          : <span className="text-xl">🌿</span>
+                        }
+                      </div>
+                      <div className="flex-1">
+                        <p className="font-black text-[14px]" style={{ color: "#4dd9ac" }}>
+                          {customer.requestedDrugName.toUpperCase()}
+                        </p>
+                        {selectedDrug && selectedDrug.items.name.toLowerCase() !== customer.requestedDrugName.toLowerCase() && (
+                          <p className="text-yellow-600 text-[10px] font-bold">⚠ produto diferente selecionado</p>
+                        )}
+                      </div>
+                      <div className="text-right shrink-0">
+                        <p className="text-[9px] text-[#444] uppercase tracking-wider font-bold">Quantidade</p>
+                        <p className="text-white font-black text-lg">{customer.requestedQty}g</p>
+                      </div>
+                    </div>
+                    <div className="mt-2.5 pt-2.5 border-t border-[#1a1a1c] flex items-center justify-between">
+                      <p className="text-[9px] text-[#444] uppercase tracking-wider font-bold">Preço esperado:</p>
+                      <p className="font-black text-sm" style={{ color: "#4ade80" }}>
+                        ${minExpected.toLocaleString()} – ${maxExpected.toLocaleString()}
+                      </p>
+                    </div>
                   </div>
-                  {timerSecs <= 10 && (
-                    <p className="text-right text-xs text-red-500 danger-text mt-1 font-black">{timerSecs}s</p>
+
+                  {/* Decision timer */}
+                  {(phase === "customer" || phase === "counter") && (
+                    <div className="mt-2">
+                      <div className="h-0.5 bg-[#111] rounded-full overflow-hidden">
+                        <div className={`h-full rounded-full transition-all duration-1000 ${timerSecs <= 10 ? "bg-red-600" : "bg-cyan-600"}`}
+                          style={{ width: `${(timerSecs / DECISION_SECS) * 100}%` }} />
+                      </div>
+                      {timerSecs <= 10 && (
+                        <p className="text-right text-[10px] text-red-500 danger-text mt-0.5 font-black">{timerSecs}s</p>
+                      )}
+                    </div>
                   )}
+
+                  {/* Tip bar */}
+                  <div className="mt-2 flex items-start gap-2 px-3 py-2 rounded-lg" style={{ background: "#0d0d0f", border: "1px solid #181818" }}>
+                    <span className="text-[#333] text-[11px] shrink-0 mt-px">ⓘ</span>
+                    <p className="text-[#3a3a3a] text-[11px] leading-relaxed">
+                      {heat > 60
+                        ? "Calor elevado — risco de detenção muito aumentado. Termina a sessão se possível."
+                        : heat > 30
+                        ? "Boa negociação constrói reputação. Más decisões aumentam o calor."
+                        : "Bons negócios constroem a tua reputação. Mantém a calma."}
+                    </p>
+                  </div>
                 </div>
               )}
 
-              {/* ── DEAL ACCEPTED RESULT ── */}
-              {phase === "result" && lastOutcome === "accept" && (
-                <div className="rounded-2xl border border-green-800/40 p-6 text-center btn-reveal"
-                  style={{ background: "linear-gradient(135deg,rgba(20,83,45,0.5),rgba(0,0,0,0.5))" }}>
-                  <p className="text-green-400 font-black text-lg mb-1">✅ NEGÓCIO FEITO</p>
-                  <p className="text-green-300 font-black text-4xl">${lastEarned.toLocaleString()}</p>
-                  <p className="text-green-800 text-xs mt-1 mb-4">dinheiro sujo</p>
-                  <button onClick={callNextCustomer}
-                    className="px-8 py-3 rounded-xl font-black text-sm text-white transition-all hover:scale-105 active:scale-95"
-                    style={{ background: "linear-gradient(135deg,#166534,#15803d)" }}>
-                    Próximo Cliente →
-                  </button>
-                </div>
-              )}
-
-              {/* ── COUNTER-OFFER ── */}
+              {/* Counter-offer */}
               {phase === "counter" && counterPrice != null && counterQty != null && (
-                <div className="rounded-2xl border border-yellow-900/40 p-5 btn-reveal"
-                  style={{ background: "linear-gradient(135deg,rgba(78,52,10,0.4),rgba(0,0,0,0.5))" }}>
-                  <p className="text-yellow-600 font-black text-xs uppercase tracking-widest mb-3">↔ Contra-proposta</p>
-                  <div className="text-center mb-4">
-                    <p className="text-yellow-300 font-black text-3xl">${(counterPrice * counterQty).toLocaleString()}</p>
-                    <p className="text-yellow-800 text-xs mt-0.5">${counterPrice}/g × {counterQty}g</p>
+                <div className="px-4 py-3 border-b border-[#141416] btn-reveal shrink-0">
+                  <div className="rounded-xl p-4" style={{ background: "linear-gradient(135deg,rgba(78,52,10,0.5),rgba(14,14,16,0.9))", border: "1px solid #3a2800" }}>
+                    <p className="text-yellow-600 font-black text-[10px] uppercase tracking-widest mb-2">↔ Contra-proposta</p>
+                    <div className="flex items-center justify-between mb-3">
+                      <p className="text-yellow-300 font-black text-2xl">${(counterPrice * counterQty).toLocaleString()}</p>
+                      <p className="text-yellow-800 text-xs">${counterPrice}/g × {counterQty}g</p>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <button onClick={acceptCounter}
+                        className="py-2.5 rounded-lg font-black text-sm text-white transition-all hover:scale-105 active:scale-95"
+                        style={{ background: "linear-gradient(135deg,#166534,#15803d)" }}>
+                        ✅ Aceitar
+                      </button>
+                      <button onClick={() => { setPhase("customer"); startTimer(); addLog("↩", "Contra-proposta rejeitada", "Recusaste a proposta do cliente."); }}
+                        className="py-2.5 rounded-lg border border-[#2a2a2a] font-bold text-sm text-[#888] hover:text-white transition-all hover:scale-105 active:scale-95"
+                        style={{ background: "#111" }}>
+                        ❌ Rejeitar
+                      </button>
+                    </div>
                   </div>
-                  <div className="grid grid-cols-2 gap-2">
-                    <button onClick={acceptCounter}
-                      className="py-3 rounded-xl font-black text-sm text-white transition-all hover:scale-105 active:scale-95"
+                </div>
+              )}
+
+              {/* Deal accepted result */}
+              {phase === "result" && lastOutcome === "accept" && (
+                <div className="px-4 py-3 border-b border-[#141416] shrink-0">
+                  <div className="rounded-xl p-5 text-center btn-reveal"
+                    style={{ background: "linear-gradient(135deg,rgba(20,83,45,0.5),rgba(13,13,15,0.9))", border: "1px solid rgba(34,197,94,0.2)" }}>
+                    <p className="text-green-400 font-black text-xs uppercase tracking-widest mb-1">✅ Negócio Fechado</p>
+                    <p className="text-green-300 font-black text-4xl mb-1">${lastEarned.toLocaleString()}</p>
+                    <p className="text-green-900 text-xs mb-4">dinheiro sujo gerado</p>
+                    <button onClick={callNextCustomer}
+                      className="px-8 py-2.5 rounded-xl font-black text-sm text-white transition-all hover:scale-105 active:scale-95"
                       style={{ background: "linear-gradient(135deg,#166534,#15803d)" }}>
-                      ✅ Aceitar
-                    </button>
-                    <button onClick={() => { setPhase("customer"); startTimer(); addLog(`↩ Rejeitaste a contra-proposta`, "text-orange-400"); }}
-                      className="py-3 rounded-xl border border-[#2a2a2a] font-black text-sm text-[#888] hover:text-white transition-all hover:scale-105 active:scale-95"
-                      style={{ background: "#111" }}>
-                      ❌ Rejeitar
+                      Próximo Cliente →
                     </button>
                   </div>
                 </div>
               )}
 
-              {/* ── NEGOTIATION BUTTONS ── */}
+              {/* ── WHAT WILL YOU DO? — action buttons ── */}
               {phase === "customer" && dialogueDone && (
-                <div className="flex flex-col gap-2 btn-reveal">
-                  <button
-                    onClick={() => {
-                      if (!customer) return;
-                      setPricePerUnit(fairPrice);
-                      setQuantity(customer.requestedQty);
-                      submitOffer("offer", fairPrice, customer.requestedQty);
-                    }}
-                    disabled={!selectedDrug}
-                    className="w-full py-4 rounded-2xl font-black text-base text-white transition-all hover:scale-[1.02] active:scale-95 disabled:opacity-30 flex items-center justify-center gap-3"
-                    style={{ background: "linear-gradient(135deg,#166534,#16a34a)", boxShadow: "0 0 20px rgba(34,197,94,0.2)" }}>
-                    <span>💰 Aceitar Pedido</span>
-                    <span className="text-green-200 text-sm font-medium opacity-80">
-                      ${fairPrice}/g × {customer?.requestedQty ?? quantity}g = ${(fairPrice * (customer?.requestedQty ?? quantity)).toLocaleString()}
-                    </span>
-                  </button>
+                <div className="px-4 py-3 btn-reveal shrink-0">
+                  <p className="text-[9px] font-black tracking-[0.2em] text-[#333] uppercase mb-3">What Will You Do?</p>
+                  <div className="grid grid-cols-5 gap-2">
 
-                  <div className="grid grid-cols-2 gap-2">
+                    {/* ACCEPT DEAL */}
+                    <button
+                      onClick={() => {
+                        if (!customer) return;
+                        setPricePerUnit(fairPrice);
+                        setQuantity(customer.requestedQty);
+                        submitOffer("offer", fairPrice, customer.requestedQty);
+                      }}
+                      disabled={!selectedDrug}
+                      className="flex flex-col items-center gap-2 py-4 px-1 rounded-xl transition-all hover:scale-105 active:scale-95 disabled:opacity-30"
+                      style={{ background: "rgba(34,197,94,0.07)", border: "1px solid rgba(34,197,94,0.18)" }}>
+                      <div className="w-9 h-9 rounded-full flex items-center justify-center"
+                        style={{ background: "rgba(34,197,94,0.14)" }}>
+                        <span className="text-lg">🤝</span>
+                      </div>
+                      <div className="text-center">
+                        <p className="text-white font-black text-[10px] leading-tight">ACCEPT DEAL</p>
+                        <p className="font-black text-[11px] mt-0.5" style={{ color: "#4ade80" }}>${fairPrice.toLocaleString()}</p>
+                      </div>
+                    </button>
+
+                    {/* RAISE PRICE */}
                     <button
                       onClick={() => submitOffer("push", highPrice, quantity)}
                       disabled={!selectedDrug}
-                      className="py-3.5 rounded-xl font-bold text-sm transition-all hover:scale-105 active:scale-95 disabled:opacity-30 flex flex-col items-center gap-0.5"
-                      style={{ background: "#120a00", border: "1px solid #3a1a00", color: "#f97316" }}>
-                      <span>💪 Pedir Mais</span>
-                      <span className="text-[10px] opacity-60">${highPrice}/g</span>
+                      className="flex flex-col items-center gap-2 py-4 px-1 rounded-xl transition-all hover:scale-105 active:scale-95 disabled:opacity-30"
+                      style={{ background: "rgba(99,102,241,0.07)", border: "1px solid rgba(99,102,241,0.18)" }}>
+                      <div className="w-9 h-9 rounded-full flex items-center justify-center"
+                        style={{ background: "rgba(99,102,241,0.14)" }}>
+                        <span className="text-lg">📈</span>
+                      </div>
+                      <div className="text-center">
+                        <p className="text-white font-black text-[10px] leading-tight">RAISE PRICE</p>
+                        <p className="text-[10px] mt-0.5" style={{ color: "#818cf8" }}>Try for more</p>
+                      </div>
                     </button>
-                    <button
-                      onClick={() => submitOffer("discount", lowPrice, quantity)}
-                      disabled={!selectedDrug}
-                      className="py-3.5 rounded-xl font-bold text-sm transition-all hover:scale-105 active:scale-95 disabled:opacity-30 flex flex-col items-center gap-0.5"
-                      style={{ background: "#000d14", border: "1px solid #001a2a", color: "#38bdf8" }}>
-                      <span>🎁 Dar Desconto</span>
-                      <span className="text-[10px] opacity-60">${lowPrice}/g</span>
-                    </button>
-                  </div>
 
-                  <div className="grid grid-cols-3 gap-2">
+                    {/* LOWER QUANTITY */}
                     <button
                       onClick={() => submitOffer("offer", pricePerUnit, lessQty)}
                       disabled={!selectedDrug || quantity <= 1}
-                      className="py-3 rounded-xl font-bold text-xs transition-all hover:scale-105 active:scale-95 disabled:opacity-30 flex flex-col items-center gap-0.5"
-                      style={{ background: "#0a0a14", border: "1px solid #1a1a2a", color: "#a78bfa" }}>
-                      <span>📦 Menos Qty</span>
-                      <span className="text-[10px] opacity-60">{lessQty}g</span>
+                      className="flex flex-col items-center gap-2 py-4 px-1 rounded-xl transition-all hover:scale-105 active:scale-95 disabled:opacity-30"
+                      style={{ background: "rgba(148,163,184,0.04)", border: "1px solid rgba(148,163,184,0.1)" }}>
+                      <div className="w-9 h-9 rounded-full flex items-center justify-center"
+                        style={{ background: "rgba(148,163,184,0.08)" }}>
+                        <span className="text-lg">🎒</span>
+                      </div>
+                      <div className="text-center">
+                        <p className="text-white font-black text-[10px] leading-tight">LOWER QTY</p>
+                        <p className="text-[10px] mt-0.5 text-[#555]">Offer less</p>
+                      </div>
                     </button>
+
+                    {/* SWAP PRODUCT */}
                     <button
                       onClick={() => {
                         if (nextDrug) {
@@ -1084,72 +1155,183 @@ export default function StreetsPage() {
                         }
                       }}
                       disabled={!nextDrug}
-                      className="py-3 rounded-xl font-bold text-xs transition-all hover:scale-105 active:scale-95 disabled:opacity-30 flex flex-col items-center gap-0.5"
-                      style={{ background: "#0a1400", border: "1px solid #1a2a00", color: "#86efac" }}>
-                      <span>🔄 Trocar</span>
-                      <span className="text-[10px] opacity-60 truncate max-w-full px-1">{nextDrug?.items.name ?? "—"}</span>
+                      className="flex flex-col items-center gap-2 py-4 px-1 rounded-xl transition-all hover:scale-105 active:scale-95 disabled:opacity-30"
+                      style={{ background: "rgba(148,163,184,0.04)", border: "1px solid rgba(148,163,184,0.1)" }}>
+                      <div className="w-9 h-9 rounded-full flex items-center justify-center"
+                        style={{ background: "rgba(148,163,184,0.08)" }}>
+                        <span className="text-lg">🔄</span>
+                      </div>
+                      <div className="text-center">
+                        <p className="text-white font-black text-[10px] leading-tight">SWAP</p>
+                        <p className="text-[10px] mt-0.5 text-[#555] truncate max-w-full px-1">{nextDrug?.items.name ?? "—"}</p>
+                      </div>
                     </button>
+
+                    {/* REJECT */}
                     <button
                       onClick={rejectCustomer}
-                      className="py-3 rounded-xl font-bold text-xs transition-all hover:scale-105 active:scale-95 flex flex-col items-center gap-0.5"
-                      style={{ background: "#0a0a0a", border: "1px solid #1f1f1f", color: "#4a4a4a" }}>
-                      <span>⏩ Ignorar</span>
-                      <span className="text-[10px] opacity-60">seguinte</span>
+                      className="flex flex-col items-center gap-2 py-4 px-1 rounded-xl transition-all hover:scale-105 active:scale-95"
+                      style={{ background: "rgba(239,68,68,0.07)", border: "1px solid rgba(239,68,68,0.18)" }}>
+                      <div className="w-9 h-9 rounded-full flex items-center justify-center"
+                        style={{ background: "rgba(239,68,68,0.12)" }}>
+                        <span className="text-lg">✖</span>
+                      </div>
+                      <div className="text-center">
+                        <p className="text-white font-black text-[10px] leading-tight">REJECT</p>
+                        <p className="text-[10px] mt-0.5" style={{ color: "#f87171" }}>Send away</p>
+                      </div>
                     </button>
                   </div>
 
                   {selectedDrug && (
-                    <p className="text-center text-[10px]" style={{ color: "#222" }}>
-                      Produto: <span style={{ color: "#333" }}>{selectedDrug.items.name}</span> · {selectedDrug.quantity}g disponível
+                    <p className="mt-3 text-[10px] text-[#252528] text-center">
+                      Produto: <span className="text-[#3a3a3a]">{selectedDrug.items.name}</span> · {selectedDrug.quantity}g disponível
                     </p>
                   )}
                 </div>
               )}
 
-              {/* ── IDLE — CALL NEXT ── */}
+              {/* ── IDLE — call next ── */}
               {phase === "idle" && (
-                <button onClick={callNextCustomer} disabled={noDrugs || !!inJail}
-                  className="w-full py-5 rounded-2xl font-black text-base text-white transition-all hover:scale-[1.02] active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed"
-                  style={{ background: "linear-gradient(135deg,#0e7490,#0891b2)", boxShadow: "0 0 24px rgba(8,145,178,0.2)" }}>
-                  👤 Chamar Próximo Cliente
-                </button>
-              )}
-
-              {/* ── SPINNERS ── */}
-              {(phase === "negotiating" || (phase === "loading" && session)) && (
-                <div className="rounded-xl border border-[#141414] bg-[#080808] p-6 text-center">
-                  <div className={`w-6 h-6 border-2 border-t-transparent rounded-full animate-spin mx-auto mb-2 ${phase === "negotiating" ? "border-cyan-500" : "border-green-500"}`} />
-                  <p className="text-[#333] text-sm">{phase === "negotiating" ? "A negociar..." : "A carregar..."}</p>
+                <div className="px-4 py-3 shrink-0">
+                  <button onClick={callNextCustomer} disabled={noDrugs || !!inJail}
+                    className="w-full py-4 rounded-xl font-black text-sm text-white transition-all hover:scale-[1.02] active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed"
+                    style={{ background: "linear-gradient(135deg,#166534,#15803d)", boxShadow: "0 0 20px rgba(22,101,52,0.25)" }}>
+                    👤 Chamar Próximo Cliente
+                  </button>
                 </div>
               )}
 
-              {/* ── END SESSION ── */}
-              {session && phase !== "negotiating" && phase !== "loading" && (
-                <button onClick={endSession}
-                  className="w-full py-2.5 rounded-xl font-semibold text-xs transition-all hover:scale-[1.01] active:scale-95"
-                  style={{ background: "rgba(127,29,29,0.12)", border: "1px solid rgba(127,29,29,0.3)", color: "#6b2020" }}>
-                  🚪 Sair da Rua
-                </button>
+              {/* ── Spinners ── */}
+              {(phase === "negotiating" || (phase === "loading" && session)) && (
+                <div className="px-4 py-3 shrink-0">
+                  <div className="rounded-xl border border-[#141416] bg-[#0d0d0f] p-6 text-center">
+                    <div className={`w-6 h-6 border-2 border-t-transparent rounded-full animate-spin mx-auto mb-2 ${phase === "negotiating" ? "border-cyan-500" : "border-green-500"}`} />
+                    <p className="text-[#333] text-sm">{phase === "negotiating" ? "A negociar..." : "A carregar..."}</p>
+                  </div>
+                </div>
               )}
             </div>
 
-            {/* ── RIGHT — STREET LOG ────────────────────────────────────── */}
-            <div className="hidden xl:flex w-56 shrink-0 border-l border-[#0f0f0f] flex-col p-4"
-              style={{ background: "rgba(0,0,0,0.6)" }}>
-              <p className="text-[9px] font-black text-[#1f1f1f] uppercase tracking-[0.25em] mb-3">Registo</p>
-              <div ref={logRef} className="flex-1 overflow-y-auto space-y-2"
-                style={{ scrollbarWidth: "none" }}>
-                {log.length === 0 && <p className="text-[#181818] text-[10px] italic">Sem actividade...</p>}
-                {log.map((entry, i) => (
-                  <div key={i} className="text-[10px] flex gap-1.5 items-start leading-snug">
-                    <span className="text-[#1e1e1e] shrink-0 tabular-nums">{entry.time}</span>
-                    <span className={entry.color}>{entry.text}</span>
+            {/* ── RIGHT — STREET LOG ───────────────────────────────────────── */}
+            <div className="w-[260px] xl:w-[290px] shrink-0 border-l border-[#161618] flex flex-col"
+              style={{ background: "#0c0c0e" }}>
+              {/* Header */}
+              <div className="px-4 py-3 border-b border-[#161618] flex items-center gap-2.5 shrink-0">
+                <span className="text-[11px] font-black tracking-[0.15em] text-white uppercase">Street Log</span>
+                <div className="w-2 h-2 rounded-full bg-red-500 ml-auto"
+                  style={{ boxShadow: "0 0 6px #ef4444", animation: "heatPulse 2s ease-in-out infinite" }} />
+              </div>
+
+              {/* Log entries */}
+              <div ref={logRef} className="flex-1 overflow-y-auto py-1" style={{ scrollbarWidth: "none" }}>
+                {log.length === 0 ? (
+                  <div className="px-4 py-8 text-center">
+                    <p className="text-[#1e1e1e] text-xs italic">Mais eventos vão aparecer aqui...</p>
                   </div>
-                ))}
+                ) : (
+                  log.map((entry, i) => (
+                    <div key={i}
+                      className="log-entry px-3 py-2 hover:bg-[#111214] transition-colors"
+                      style={{ borderBottom: "1px solid #0f0f11" }}>
+                      <div className="flex items-start gap-2">
+                        <div className="w-5 h-5 rounded-full flex items-center justify-center shrink-0 mt-0.5 text-[11px]"
+                          style={{ background: "#17171a" }}>
+                          {entry.icon}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between gap-1">
+                            <p className="text-white text-[11px] font-bold leading-tight truncate">{entry.title}</p>
+                            <span className="text-[#252528] text-[9px] shrink-0 tabular-nums">{entry.time}</span>
+                          </div>
+                          <p className="text-[#484848] text-[10px] leading-snug mt-0.5 break-words">{entry.desc}</p>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                )}
+                {log.length > 0 && log.length < 4 && (
+                  <p className="text-[#1e1e1e] text-[10px] italic text-center px-4 py-2">Mais eventos vão aparecer aqui...</p>
+                )}
               </div>
             </div>
           </div>
         )}
+
+        {/* ══ BOTTOM STATS BAR ═════════════════════════════════════════════ */}
+        {session && phase !== "zone_select" && phase !== "session_end" && phase !== "arrested" && (
+          <div className="relative z-20 shrink-0 border-t border-[#161618] px-5 py-2.5 flex items-center gap-5"
+            style={{ background: "rgba(10,10,11,0.98)", backdropFilter: "blur(12px)" }}>
+
+            {/* Cash */}
+            <div className="flex items-center gap-2 shrink-0">
+              <span>💰</span>
+              <div>
+                <p className="text-[9px] text-[#333] uppercase tracking-wider font-bold leading-none mb-0.5">Cash</p>
+                <p className="text-white font-black text-[13px] leading-none">${(player?.dirty_cash ?? 0).toLocaleString()}</p>
+              </div>
+            </div>
+
+            <div className="w-px h-5 bg-[#1a1a1a] shrink-0" />
+
+            {/* Inventory */}
+            <div className="flex items-center gap-2 shrink-0">
+              <span>📦</span>
+              <div>
+                <p className="text-[9px] text-[#333] uppercase tracking-wider font-bold leading-none mb-0.5">Inventário</p>
+                <p className="text-white font-black text-[13px] leading-none">{totalInventoryKg.toFixed(2)} kg</p>
+              </div>
+            </div>
+
+            <div className="w-px h-5 bg-[#1a1a1a] shrink-0" />
+
+            {/* Reputation */}
+            <div className="flex items-center gap-2 shrink-0">
+              <span>👑</span>
+              <div>
+                <p className="text-[9px] text-[#333] uppercase tracking-wider font-bold leading-none mb-0.5">Reputação</p>
+                <div className="flex items-center gap-2">
+                  <p className="text-white font-black text-[13px] leading-none">{repLabel}</p>
+                  <div className="w-14 h-1 bg-[#1a1a1a] rounded-full overflow-hidden">
+                    <div className="h-full rounded-full transition-all duration-700"
+                      style={{ width: `${repPct}%`, background: "linear-gradient(90deg,#22c55e,#4ade80)" }} />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="w-px h-5 bg-[#1a1a1a] shrink-0" />
+
+            {/* Sessions today */}
+            <div className="flex items-center gap-2 shrink-0">
+              <span>👥</span>
+              <div>
+                <p className="text-[9px] text-[#333] uppercase tracking-wider font-bold leading-none mb-0.5">Sessões Hoje</p>
+                <p className="text-white font-black text-[13px] leading-none">{sessionsToday}</p>
+              </div>
+            </div>
+
+            <div className="w-px h-5 bg-[#1a1a1a] shrink-0" />
+
+            {/* Escapes */}
+            <div className="flex items-center gap-2 shrink-0">
+              <span>🏃</span>
+              <div>
+                <p className="text-[9px] text-[#333] uppercase tracking-wider font-bold leading-none mb-0.5">Fugas</p>
+                <p className="text-white font-black text-[13px] leading-none">{escapesSuccess}/{escapesTotal}</p>
+              </div>
+            </div>
+
+            <div className="flex-1" />
+
+            {/* Session earnings */}
+            <div className="text-right shrink-0">
+              <p className="text-[9px] text-[#252528] uppercase tracking-wider font-bold leading-none mb-0.5">Esta sessão</p>
+              <p className="text-green-400 font-black text-[13px] leading-none">${sessionEarned.toLocaleString()}</p>
+            </div>
+          </div>
+        )}
+
       </div>
     </>
   );
@@ -1164,6 +1346,27 @@ function heatStageFor(heat: number): HeatStage {
   return "safe";
 }
 
+function reputationLabel(level: number): string {
+  if (level >= 20) return "Lenda";
+  if (level >= 15) return "Temido";
+  if (level >= 10) return "Respeitado";
+  if (level >= 5)  return "Conhecido";
+  return "Iniciante";
+}
+
+function hintQuote(customer: Customer): string {
+  const hints = [
+    "Preciso de algo bom, não me faças perder tempo.",
+    "Tens o que eu quero?",
+    "Apressa-te, não tenho o dia todo.",
+    "Faz um preço justo e fazemos negócio.",
+    "Já sei o que quero. Não me dececiones.",
+    "Sou cliente habitual. Trata-me bem.",
+  ];
+  const h = customer.id.split("").reduce((a, c) => a + c.charCodeAt(0), 0);
+  return hints[h % hints.length];
+}
+
 function renderDialogueWithHighlights(text: string, customer: Customer | null): React.ReactNode {
   if (!customer) return text;
   const drugName = customer.requestedDrugName;
@@ -1172,10 +1375,10 @@ function renderDialogueWithHighlights(text: string, customer: Customer | null): 
   const parts = text.split(new RegExp(`(${escaped}|\\d+g)`, "gi"));
   return parts.map((part, i) => {
     if (part.toLowerCase() === drugName.toLowerCase()) {
-      return <span key={i} style={{ color: "#4ade80", fontWeight: 900, textShadow: "0 0 8px #4ade8066" }}>{part}</span>;
+      return <span key={i} style={{ color: "#4dd9ac", fontWeight: 900 }}>{part}</span>;
     }
     if (/^\d+g$/i.test(part)) {
-      return <span key={i} style={{ color: "#818cf8", fontWeight: 900, textShadow: "0 0 8px #818cf866" }}>{part}</span>;
+      return <span key={i} style={{ color: "#86efac", fontWeight: 900 }}>{part}</span>;
     }
     return part;
   });
