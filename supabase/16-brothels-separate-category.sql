@@ -24,14 +24,14 @@ CREATE TABLE IF NOT EXISTS brothel_types (
 INSERT INTO brothel_types (name, type, description, purchase_price, base_income_per_hour, max_employees, required_level, uses_crypto, sort_order)
 SELECT
   name,
-  type,
+  type::TEXT,
   description,
   purchase_price,
   base_income_per_hour,
   max_employees,
   required_level,
-  (type IN ('brothel_luxury', 'brothel_exclusive', 'brothel_empire')) AS uses_crypto,
-  CASE type
+  (type::TEXT IN ('brothel_luxury', 'brothel_exclusive', 'brothel_empire')) AS uses_crypto,
+  CASE type::TEXT
     WHEN 'brothel_basic'     THEN 1
     WHEN 'brothel_upgraded'  THEN 2
     WHEN 'brothel_luxury'    THEN 3
@@ -40,10 +40,20 @@ SELECT
     ELSE 0
   END AS sort_order
 FROM businesses
-WHERE type IN ('brothel_basic', 'brothel_upgraded', 'brothel_luxury', 'brothel_exclusive', 'brothel_empire')
+WHERE type::TEXT IN ('brothel_basic', 'brothel_upgraded', 'brothel_luxury', 'brothel_exclusive', 'brothel_empire')
 ON CONFLICT (type) DO NOTHING;
 
--- 3. Player-owned brothels
+-- 2b. Direct seed (fallback if businesses table had no brothel rows)
+INSERT INTO brothel_types (name, type, description, purchase_price, base_income_per_hour, max_employees, required_level, uses_crypto, sort_order, enabled)
+VALUES
+  ('Casa de Massagens',    'brothel_basic',     'Um pequeno estabelecimento no centro da cidade.',                 50000,    500,   3,  15,  false, 1, true),
+  ('Clube Noturno',        'brothel_upgraded',  'Instalações maiores e mais discretas.',                         150000,  1200,   8,  30, false, 2, true),
+  ('Salão Privado',        'brothel_luxury',    'Clientela VIP apenas. Aceita crypto.',                          500000,  3000,  14,  50, true,  3, true),
+  ('Mansão das Sombras',   'brothel_exclusive', 'Operação de alto nível. Aceita crypto.',                       1000000,  6000,  20,  75, true,  4, true),
+  ('O Império',            'brothel_empire',    'O maior e mais lucrativo estabelecimento da cidade. Aceita crypto.', 5000000, 15000, 40, 100, true, 5, true)
+ON CONFLICT (type) DO UPDATE SET
+  name        = EXCLUDED.name,
+  description = EXCLUDED.description;
 CREATE TABLE IF NOT EXISTS player_brothels (
   id              UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
   player_id       UUID        NOT NULL REFERENCES crime_players(id) ON DELETE CASCADE,
@@ -62,8 +72,8 @@ SELECT
   pb.purchased_at
 FROM player_businesses pb
 JOIN businesses b ON b.id = pb.business_id
-JOIN brothel_types bt ON bt.type = b.type
-WHERE b.type IN ('brothel_basic', 'brothel_upgraded', 'brothel_luxury', 'brothel_exclusive', 'brothel_empire')
+JOIN brothel_types bt ON bt.type = b.type::TEXT
+WHERE b.type::TEXT IN ('brothel_basic', 'brothel_upgraded', 'brothel_luxury', 'brothel_exclusive', 'brothel_empire')
 ON CONFLICT (player_id, brothel_type_id) DO NOTHING;
 
 -- 5. RLS

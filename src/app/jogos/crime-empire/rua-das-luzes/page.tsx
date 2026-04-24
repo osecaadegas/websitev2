@@ -94,7 +94,7 @@ export default function RuaDasLuzesPage() {
       }
     } catch (error) {
       console.error("Error purchasing brothel:", error);
-      alert("Erro ao comprar bordel!");
+      alert("Erro ao comprar estabelecimento!");
     }
   };
 
@@ -204,7 +204,7 @@ export default function RuaDasLuzesPage() {
             💋 RUA DAS LUZES
           </h1>
           <p className="text-lg text-[#888888] mt-2">
-            Compra bordéis e contrata workers para gerar rendimento passivo
+            Compra estabelecimentos do prazer e contrata workers para gerar rendimento passivo
             {playerClass === "pimp" && (
               <span className="ml-2 text-pink-400 font-bold">
                 👑 PIMP: 2x Workers + 20% Rendimento
@@ -249,7 +249,7 @@ export default function RuaDasLuzesPage() {
         {/* Owned Brothels */}
         {ownedBrothels.length > 0 && (
           <div className="mb-12">
-            <h2 className="text-2xl font-bold mb-4">Os Teus Bordéis</h2>
+            <h2 className="text-2xl font-bold mb-4">Os Teus Estabelecimentos</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {ownedBrothels.filter((ob) => ob.brothel_type).map((ob) => (
                 <div
@@ -368,11 +368,11 @@ export default function RuaDasLuzesPage() {
 
         {/* Available Brothels */}
         <div>
-          <h2 className="text-2xl font-bold mb-4">Bordéis Disponíveis</h2>
+          <h2 className="text-2xl font-bold mb-4">Estabelecimentos Disponíveis</h2>
           {availableBrothels.length === 0 ? (
             <div className="p-8 rounded-xl bg-[#121212] border border-[#222222] text-center">
               <p className="text-[#888888]">
-                🎉 Já compraste todos os bordéis disponíveis!
+                🎉 Já compraste todos os estabelecimentos disponíveis!
               </p>
             </div>
           ) : (
