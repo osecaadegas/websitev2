@@ -105,36 +105,41 @@ const ZONE_GLOW: Record<string, string> = {
 const PORTRAIT_POOL: Record<CustomerType, string[]> = {
   regular:    [
     "/images/cliente/pedreiro_tier1.jpg",
-    "/images/cliente/pedreiro_tier2.jpg",
-    "/images/cliente/pedreiro_tier3.jpg",
-    "/images/cliente/trabalhador_tier1.jpg",
-    "/images/cliente/trabalhador_tier2.jpg",
-    "/images/cliente/trabalhador_tier3.jpg",
-    "/images/cliente/mulher_tier1.jpg",
-    "/images/cliente/mulher_tier2.jpg",
+    "/images/cliente/engenheiro_obras_tier2.jpg",
+    "/images/cliente/barman_tier2.jpg",
+    "/images/cliente/agricultor_tier1.jpg",
+    "/images/cliente/pescador_tier1.jpg",
+    "/images/cliente/Tio_tier2.jpg",
+    "/images/cliente/gordo_tier1.jpg",
+    "/images/cliente/camionista_tier1.jpg",
   ],
   tourist:    [
     "/images/cliente/americano_tier3.jpg",
-    "/images/cliente/americano_tier1.jpg",
-    "/images/cliente/turista_tier1.jpg",
-    "/images/cliente/turista_tier2.jpg",
+    "/images/cliente/jovem_americano_tier2.jpg",
+    "/images/cliente/italiano_tier2.jpg",
+    "/images/cliente/chines_tier1.jpg",
+    "/images/cliente/marinheiro_tier2.jpg",
+    "/images/cliente/rasta_russa_female_tier1.jpg",
   ],
   junkie:     [
     "/images/cliente/drogado_tier1.jpg",
-    "/images/cliente/drogado_tier2.jpg",
-    "/images/cliente/drogado_tier3.jpg",
+    "/images/cliente/maluco_tier1.jpg",
+    "/images/cliente/sem_abrigo_tier1.jpg",
+    "/images/cliente/sem_abrigo_mulher_tier1.jpg",
   ],
   dealer:     [
     "/images/cliente/homem_de_negocios_tier3.jpg",
-    "/images/cliente/homem_de_negocios_tier1.jpg",
-    "/images/cliente/homem_de_negocios_tier2.jpg",
-    "/images/cliente/medico_tier1.jpg",
+    "/images/cliente/lenda_tier3.jpg",
+    "/images/cliente/musculado_tier3.jpg",
+    "/images/cliente/patrao_mafia_russa_tier3.jpg",
+    "/images/cliente/advogado_tier3.jpg",
+    "/images/cliente/male_Tier3.jpg",
   ],
   undercover: [
     "/images/cliente/medico_tier2.jpg",
-    "/images/cliente/pedreiro_tier2.jpg",
-    "/images/cliente/trabalhador_tier1.jpg",
-    "/images/cliente/turista_tier1.jpg",
+    "/images/cliente/padre_tier2.jpg",
+    "/images/cliente/barman_tier2.jpg",
+    "/images/cliente/engenheiro_obras_tier2.jpg",
   ],
 };
 
@@ -259,6 +264,11 @@ export default function StreetsPage() {
 
   // --- Fetch initial data ---------------------------------------------------
 
+  // Use a ref so fetchData never re-creates when selectedDrug changes,
+  // which would cause the useEffect to re-fire and reset the phase to "idle".
+  const selectedDrugRef = useRef<DrugItem | null>(null);
+  useEffect(() => { selectedDrugRef.current = selectedDrug; }, [selectedDrug]);
+
   const fetchData = useCallback(async () => {
     try {
       const res = await fetch("/api/crime-empire/streets");
@@ -280,7 +290,7 @@ export default function StreetsPage() {
         setPhase("zone_select");
       }
 
-      if (data.drugs?.length > 0 && !selectedDrug) {
+      if (data.drugs?.length > 0 && !selectedDrugRef.current) {
         const first = data.drugs[0];
         setSelectedDrug(first);
         setPricePerUnit(Math.round(first.items.base_price * 1.2));
@@ -289,7 +299,7 @@ export default function StreetsPage() {
     } catch {
       setPhase("zone_select");
     }
-  }, [router, selectedDrug]);
+  }, [router]); // intentionally excludes selectedDrug — use selectedDrugRef instead
 
   useEffect(() => {
     if (!user) { router.push("/"); return; }
