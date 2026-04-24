@@ -63,7 +63,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   if (!admin) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { id } = await params;
-  const { action, amount, itemId, inventoryId, stats, value } = await req.json();
+  const { action, amount, itemId, inventoryId, stats, value, quantity } = await req.json();
 
   const { data: player, error: fetchErr } = await supabase
     .from("crime_players")
@@ -126,14 +126,15 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         .eq("item_id", itemId)
         .single();
 
+      const qty = Math.max(1, Math.floor(Number(quantity) || 1));
       if (existing) {
-        await supabase.from("player_inventory").update({ quantity: existing.quantity + 1 }).eq("id", existing.id);
+        await supabase.from("player_inventory").update({ quantity: existing.quantity + qty }).eq("id", existing.id);
       } else {
-        await supabase.from("player_inventory").insert({ player_id: id, item_id: itemId, quantity: 1 });
+        await supabase.from("player_inventory").insert({ player_id: id, item_id: itemId, quantity: qty });
       }
       const { data: item } = await supabase.from("items").select("name").eq("id", itemId).single();
-      await writeAuditLog(admin, "player_action", "player", id, player.username, { action, item: item?.name });
-      return NextResponse.json({ success: true, message: `Item "${item?.name}" dado ao player` });
+      await writeAuditLog(admin, "player_action", "player", id, player.username, { action, item: item?.name, quantity: qty });
+      return NextResponse.json({ success: true, message: `${qty}x "${item?.name}" dado ao player` });
     }
     case "remove_item": {
       if (!inventoryId) return NextResponse.json({ error: "inventoryId obrigatório" }, { status: 400 });

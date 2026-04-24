@@ -336,6 +336,7 @@ function TabInventory({ logs, playerId, onAction }: { logs: Logs; playerId: stri
   const [allItems, setAllItems] = useState<{ id: string; name: string; category: string; rarity: string }[]>([]);
   const [itemSearch, setItemSearch] = useState("");
   const [selectedItemId, setSelectedItemId] = useState("");
+  const [giveQty, setGiveQty] = useState(1);
   const [actionLoading, setActionLoading] = useState(false);
   const RARITY_COLOR: Record<string, string> = {
     common: "text-[#888]", rare: "text-blue-400", epic: "text-purple-400", legendary: "text-yellow-400",
@@ -354,10 +355,11 @@ function TabInventory({ logs, playerId, onAction }: { logs: Logs; playerId: stri
   const handleGive = async () => {
     if (!selectedItemId) return;
     setActionLoading(true);
-    await onAction("give_item", { itemId: selectedItemId });
+    await onAction("give_item", { itemId: selectedItemId, quantity: Math.max(1, giveQty) });
     setActionLoading(false);
     setSelectedItemId("");
     setItemSearch("");
+    setGiveQty(1);
   };
 
   const handleRemove = async (inventoryId: string) => {
@@ -391,6 +393,12 @@ function TabInventory({ logs, playerId, onAction }: { logs: Logs; playerId: stri
               </div>
             )}
           </div>
+          <input
+            type="number" min={1} value={giveQty}
+            onChange={e => setGiveQty(Math.max(1, parseInt(e.target.value) || 1))}
+            className="w-16 bg-[#0a0a0a] border border-[#333] rounded-lg px-2 py-2 text-sm text-white text-center"
+            title="Quantidade"
+          />
           <button onClick={handleGive} disabled={!selectedItemId || actionLoading}
             className="text-xs px-4 py-2 rounded-lg bg-indigo-900/40 text-indigo-400 hover:bg-indigo-900/60 disabled:opacity-50 transition-colors font-bold">
             {actionLoading ? "…" : "Dar"}
