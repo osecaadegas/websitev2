@@ -9,6 +9,7 @@ interface WorkerCarouselProps {
   ownedSlugs: string[];
   playerCash: number;
   playerCrypto: number;
+  playerLevel: number;
   onHire: (def: WorkerDef) => void;
   onClose: () => void;
   hiring: boolean;
@@ -79,6 +80,7 @@ export default function WorkerCarousel({
   ownedSlugs,
   playerCash,
   playerCrypto,
+  playerLevel,
   onHire,
   onClose,
   hiring,
@@ -93,7 +95,8 @@ export default function WorkerCarousel({
   const active = workers[activeIndex];
   const rarityConf = active ? RARITY_CONFIG[active.rarity] : null;
   const isOwned = active ? ownedSlugs.includes(active.slug) : false;
-  const canAfford = active
+  const isLocked = active ? playerLevel < active.required_level : false;
+  const canAfford = active && !isLocked
     ? active.hire_uses_crypto
       ? playerCrypto >= active.hire_price
       : playerCash >= active.hire_price
@@ -158,7 +161,7 @@ export default function WorkerCarousel({
   };
 
   const handleHire = useCallback(() => {
-    if (!active || isOwned || !canAfford || hiring) return;
+    if (!active || isOwned || !canAfford || hiring || isLocked) return;
     setHireAnim(true);
     setTimeout(() => { setHireAnim(false); onHire(active); }, 600);
   }, [active, isOwned, canAfford, hiring, onHire]);
@@ -283,6 +286,16 @@ export default function WorkerCarousel({
                           </div>
                         </div>
                       )}
+                      {/* Locked overlay */}
+                      {!owned && playerLevel < w.required_level && (
+                        <div className="absolute inset-0 bg-black/75 flex flex-col items-center justify-center gap-2 backdrop-blur-[2px]">
+                          <span className="text-3xl">🔒</span>
+                          <div className="text-center px-2">
+                            <p className="text-white font-black text-sm">Bloqueada</p>
+                            <p className="text-[#bbb] text-xs">Nível {w.required_level} necessário</p>
+                          </div>
+                        </div>
+                      )}
                     </div>
 
                     {/* Info */}
@@ -382,6 +395,11 @@ export default function WorkerCarousel({
                     {isOwned ? (
                       <div className="px-4 py-1.5 rounded-xl bg-green-900/40 border border-green-500/40 text-green-400 text-xs font-bold">
                         ✓ Contratada
+                      </div>
+                    ) : isLocked ? (
+                      <div className="px-4 py-2 rounded-xl bg-[#111] border border-[#333] text-center">
+                        <p className="text-[#888] text-xs font-bold">🔒 Requer Nível {active.required_level}</p>
+                        <p className="text-[#555] text-[10px]">Estás no nível {playerLevel} ({active.required_level - playerLevel} em falta)</p>
                       </div>
                     ) : (
                       <button

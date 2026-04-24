@@ -1,6 +1,7 @@
 ﻿import { NextRequest, NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
 import { cookies } from "next/headers";
+import { WORKER_DEFS } from "@/lib/crime-empire/worker-defs";
 
 export const dynamic = "force-dynamic";
 
@@ -11,6 +12,14 @@ const UPGRADE_COSTS: Record<string, number> = {
   lighting: 30000,
   security: 50000,
   marketing: 40000,
+};
+
+// Extra worker slots granted per upgrade
+const UPGRADE_SLOT_BONUS: Record<string, number> = {
+  vip_rooms: 1,
+  lighting:  0,
+  security:  1,
+  marketing: 1,
 };
 
 const SUPPLY_REFILL_COST = 5000; // per supply type
@@ -187,6 +196,13 @@ export async function POST(req: NextRequest) {
       const cost = Math.max(5000, Math.min(200000, hireCost ?? 10000));
       const usesCrypto = !!hireCostCrypto;
 
+      // Server-side level check: look up worker def by slug
+      if (workerSlug) {
+        const def = WORKER_DEFS.find((d) => d.slug === workerSlug);
+        if (def && player.level < def.required_level)
+          return NextResponse.json({ error: `Precisas de nível ${def.required_level} para contratar esta worker!` }, { status: 400 });
+      }
+
       if (usesCrypto && player.crypto < cost)
         return NextResponse.json({ error: `Precisas de 🪙${cost.toLocaleString()} crypto!` }, { status: 400 });
       if (!usesCrypto && player.cash < cost)
@@ -263,9 +279,13 @@ export async function POST(req: NextRequest) {
       if (player.cash < cost)
         return NextResponse.json({ error: `Precisas de $${cost.toLocaleString()}!` }, { status: 400 });
       await supabase.from("crime_players").update({ cash: player.cash - cost }).eq("id", player.id);
+      const slotBonus = UPGRADE_SLOT_BONUS[upgradeType] ?? 0;
+      const updatePayload: Record<string, unknown> = { [col]: true };
+      if (slotBonus > 0) updatePayload.max_employees = pb.max_employees + slotBonus;
       await supabase.from("player_brothels")
-        .update({ [col]: true }).eq("id", playerBrothelId);
-      return NextResponse.json({ success: true, message: "Upgrade aplicado!" });
+        .update(updatePayload).eq("id", playerBrothelId);
+      const slotMsg = slotBonus > 0 ? ` (+${slotBonus} vaga de worker)` : "";
+      return NextResponse.json({ success: true, message: `Upgrade aplicado!${slotMsg}` });
     }
 
     /* â”€â”€ COLLECT INCOME â”€â”€ */

@@ -109,6 +109,7 @@ export default function BrothelManagePage() {
   const [events, setEvents] = useState<BrothelEvent[]>([]);
   const [playerCash, setPlayerCash] = useState(0);
   const [playerCrypto, setPlayerCrypto] = useState(0);
+  const [playerLevel, setPlayerLevel] = useState(1);
   const [showCarousel, setShowCarousel] = useState(false);
   const [hiring, setHiring] = useState(false);
   const [workerDefs, setWorkerDefs] = useState<WorkerDef[]>(
@@ -141,6 +142,7 @@ export default function BrothelManagePage() {
       setEvents((data.events || []).filter((e: BrothelEvent) => e.player_brothel_id === brothelId));
       setPlayerCash(data.playerCash || 0);
       setPlayerCrypto(data.playerCrypto || 0);
+      setPlayerLevel(data.playerLevel || 1);
     } finally {
       setLoading(false);
     }
@@ -467,6 +469,7 @@ export default function BrothelManagePage() {
           ownedSlugs={workers.map((w) => w.slug).filter(Boolean) as string[]}
           playerCash={playerCash}
           playerCrypto={playerCrypto}
+          playerLevel={playerLevel}
           onHire={handleHireFromCarousel}
           onClose={() => setShowCarousel(false)}
           hiring={hiring}
