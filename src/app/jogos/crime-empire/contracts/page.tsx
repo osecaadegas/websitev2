@@ -64,7 +64,7 @@ function PlayerHUD({ player, isHitman }: { player: Player; isHitman: boolean }) 
   const hpPct = Math.max(0, Math.min(100, (player.hp / player.max_hp) * 100));
   return (
     <div
-      className="flex items-center gap-5 flex-wrap px-4 py-3 rounded-xl"
+      className="flex items-center gap-3 sm:gap-5 flex-wrap px-3 sm:px-4 py-2 sm:py-3 rounded-xl"
       style={{ background: "rgba(28,20,8,0.90)", border: "1px solid rgba(120,53,15,0.25)" }}
     >
       <div className="flex items-center gap-2">
@@ -83,7 +83,7 @@ function PlayerHUD({ player, isHitman }: { player: Player; isHitman: boolean }) 
             {player.stamina}/{player.max_stamina}
           </span>
         </div>
-        <div className="h-1 rounded-full overflow-hidden w-28" style={{ background: "rgba(15,10,3,1)", border: "1px solid rgba(80,40,10,0.30)" }}>
+        <div className="h-1 rounded-full overflow-hidden w-20 sm:w-28" style={{ background: "rgba(15,10,3,1)", border: "1px solid rgba(80,40,10,0.30)" }}>
           <div className="h-full rounded-full transition-all duration-700"
             style={{ width: `${stPct}%`, background: stPct > 50 ? "#f59e0b" : stPct > 20 ? "#f97316" : "#ef4444" }} />
         </div>
@@ -95,7 +95,7 @@ function PlayerHUD({ player, isHitman }: { player: Player; isHitman: boolean }) 
             {player.hp}/{player.max_hp}
           </span>
         </div>
-        <div className="h-1 rounded-full overflow-hidden w-24" style={{ background: "rgba(15,10,3,1)", border: "1px solid rgba(80,40,10,0.30)" }}>
+        <div className="h-1 rounded-full overflow-hidden w-20 sm:w-24" style={{ background: "rgba(15,10,3,1)", border: "1px solid rgba(80,40,10,0.30)" }}>
           <div className="h-full rounded-full transition-all duration-700"
             style={{ width: `${hpPct}%`, background: hpPct > 50 ? "#22c55e" : hpPct > 20 ? "#f97316" : "#ef4444" }} />
         </div>
@@ -312,7 +312,7 @@ function ContractBriefing({
         </div>
 
         {/* â”€â”€ CONTENT â”€â”€ */}
-        <div className="relative z-10 flex flex-col items-center px-8 py-4">
+        <div className="relative z-10 flex flex-col items-center px-4 sm:px-8 py-4">
 
           {/* HEADER */}
           <div className="text-center mb-2">
@@ -636,6 +636,14 @@ function ThreeCardFan({
   onExecute: (id: string) => void;
 }) {
   const [centerDiff, setCenterDiff] = useState<DiffKey>("medium");
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 1024);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
 
   // Sync centerDiff when selected changes from outside (e.g. sidebar click)
   useEffect(() => {
@@ -680,6 +688,53 @@ function ThreeCardFan({
     },
   };
 
+  /* ── MOBILE: single card + difficulty tab switcher ── */
+  if (isMobile) {
+    const centerContract = sorted.find((c) => c.difficulty === centerDiff) ?? sorted[0];
+    return (
+      <div className="flex flex-col items-center gap-4 w-full">
+        {sorted.length > 1 && (
+          <div className="flex gap-2">
+            {sorted.map((c) => {
+              const d = c.difficulty as DiffKey;
+              const active = d === centerDiff;
+              const cfg = DIFF[d];
+              return (
+                <button
+                  key={d}
+                  onClick={() => { setCenterDiff(d); onSelect(c.id); }}
+                  className="px-4 py-1.5 rounded-lg text-[10px] font-black tracking-[0.15em] uppercase border transition-all"
+                  style={{
+                    color: active ? cfg.color : "rgba(255,255,255,0.25)",
+                    borderColor: active ? `${cfg.color}55` : "rgba(255,255,255,0.08)",
+                    background: active ? `${cfg.color}15` : "transparent",
+                  }}
+                >
+                  {cfg.label}
+                </button>
+              );
+            })}
+          </div>
+        )}
+        {centerContract && (
+          <div className="w-full max-w-sm mx-auto">
+            <ContractBriefing
+              contract={centerContract}
+              status={getStatus(centerContract.id)}
+              player={player}
+              levelDone={levelDone}
+              levelUnlocked={levelUnlocked}
+              isHitman={isHitman}
+              processing={processing === centerContract.id}
+              onExecute={() => onExecute(centerContract.id)}
+            />
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  /* ── DESKTOP: 3D fan ── */
   return (
     <div
       className="relative w-full"
