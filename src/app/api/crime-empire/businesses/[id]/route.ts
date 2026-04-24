@@ -136,9 +136,19 @@ export async function GET(
     drugItemName = drugItem?.name ?? "";
   }
 
-  // Available workers to hire (pool minus already hired)
-  const hiredIds = activeWorkers.map((w: { worker_def_id: string }) => w.worker_def_id);
-  const availableWorkers = (def?.worker_pool ?? []).filter((w) => !hiredIds.includes(w.id));
+  // Available workers to hire.
+  // Always show full pool — workers not currently active can be hired.
+  // When all pool entries are active but capacity exists (e.g. after upgrades), all workers
+  // can be hired as a "second instance" — same person, new contract.
+  const capacityBonus = activeUpgradeDefs.reduce((s, u) => s + u.capacity_bonus, 0);
+  const maxWorkerSlots = pb.max_employees + capacityBonus;
+  const activeWorkerDefIds = new Set(activeWorkers.map((w: { worker_def_id: string }) => w.worker_def_id));
+  const openSlots = maxWorkerSlots - activeWorkers.length;
+  const nonActivePool = (def?.worker_pool ?? []).filter((w) => !activeWorkerDefIds.has(w.id));
+  // If open slots exceed distinct available workers, show full pool so every slot can be filled
+  const availableWorkers = openSlots > nonActivePool.length
+    ? (def?.worker_pool ?? [])
+    : nonActivePool;
 
   // Available upgrades
   const availableUpgrades = (def?.upgrades ?? []).filter((u) => !ownedUpgradeIds.includes(u.id));
@@ -254,10 +264,6 @@ async function handleHireWorker(pb: any, body: any, player: any, pbId: string) {
   const capacityBonus = def.upgrades.filter((u) => ownedIds.includes(u.id)).reduce((s, u) => s + u.capacity_bonus, 0);
   const maxWorkers = pb.max_employees + capacityBonus;
   if ((count ?? 0) >= maxWorkers) return NextResponse.json({ error: `Capacidade máxima (${maxWorkers}) atingida` }, { status: 403 });
-
-  // Check already hired
-  const { data: existing } = await supabase.from("player_business_workers").select("id").eq("player_business_id", pbId).eq("worker_def_id", worker_def_id).eq("is_active", true).maybeSingle();
-  if (existing) return NextResponse.json({ error: "Este trabalhador já está contratado" }, { status: 400 });
 
   // Upfront cost: 8h salary advance
   const upfrontCost = workerDef.salary * 8;
