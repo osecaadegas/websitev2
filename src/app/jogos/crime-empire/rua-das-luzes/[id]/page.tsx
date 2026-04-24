@@ -6,6 +6,8 @@ import { useAuth } from "@/lib/auth-context";
 import Link from "next/link";
 import WorkerCard, { Worker } from "@/components/crime-empire/WorkerCard";
 import BrothelEventPopup, { BrothelEvent } from "@/components/crime-empire/BrothelEventPopup";
+import WorkerCarousel from "@/components/crime-empire/WorkerCarousel";
+import { WORKER_DEFS, WorkerDef } from "@/lib/crime-empire/worker-defs";
 
 interface BrothelType {
   id: string; name: string; type: string; description: string;
@@ -107,8 +109,8 @@ export default function BrothelManagePage() {
   const [events, setEvents] = useState<BrothelEvent[]>([]);
   const [playerCash, setPlayerCash] = useState(0);
   const [playerCrypto, setPlayerCrypto] = useState(0);
-  const [workerName, setWorkerName] = useState("");
-  const [showHire, setShowHire] = useState(false);
+  const [showCarousel, setShowCarousel] = useState(false);
+  const [hiring, setHiring] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const [floatingIncome, setFloatingIncome] = useState<number | null>(null);
   const [tab, setTab] = useState<"workers" | "supplies" | "upgrades">("workers");
@@ -192,10 +194,24 @@ export default function BrothelManagePage() {
     } else showToast(data.error);
   };
 
-  const handleHire = async () => {
-    if (!workerName.trim()) { showToast("Dá um nome à worker!"); return; }
-    const data = await api({ action: "hire", playerBrothelId: brothelId, workerName });
-    if (data.success) { showToast(data.message); setWorkerName(""); setShowHire(false); fetchData(); }
+  const handleHireFromCarousel = async (def: WorkerDef) => {
+    setHiring(true);
+    const data = await api({
+      action: "hire",
+      playerBrothelId: brothelId,
+      workerName: def.name,
+      workerSlug: def.slug,
+      incomePerHour: def.earnings_per_hour,
+      attractiveness: def.stats.attractiveness,
+      stamina: def.stats.stamina,
+      mood: def.stats.mood,
+      trait1: def.traits[0] ?? null,
+      trait2: def.traits[1] ?? null,
+      hireCost: def.hire_price,
+      hireCostCrypto: def.hire_uses_crypto,
+    });
+    setHiring(false);
+    if (data.success) { showToast(data.message); fetchData(); }
     else showToast(data.error);
   };
 
@@ -327,7 +343,7 @@ export default function BrothelManagePage() {
             </button>
             {activeWorkers.length < brothel.max_employees && (
               <button
-                onClick={() => setShowHire(true)}
+                onClick={() => setShowCarousel(true)}
                 className="px-5 py-3 rounded-xl font-bold text-sm bg-[#1a1a1a] hover:bg-[#222] border border-pink-500/30 hover:border-pink-500 transition-all"
               >
                 + Contratar
@@ -361,7 +377,7 @@ export default function BrothelManagePage() {
               <div className="p-10 rounded-xl bg-[#0f0f0f] border border-[#222] text-center">
                 <p className="text-4xl mb-3">💋</p>
                 <p className="text-[#666] mb-4">Nenhuma worker contratada ainda.</p>
-                <button onClick={() => setShowHire(true)}
+                <button onClick={() => setShowCarousel(true)}
                   className="px-6 py-3 rounded-xl bg-gradient-to-r from-pink-700 to-purple-700 font-bold hover:scale-105 transition-all">
                   + Contratar Primeira Worker
                 </button>
@@ -372,11 +388,10 @@ export default function BrothelManagePage() {
                   <WorkerCard key={w.id} worker={w} onFire={handleFire} onPayBonus={handlePayBonus} />
                 ))}
                 {workers.length < brothel.max_employees && (
-                  <button onClick={() => setShowHire(true)}
+                  <button onClick={() => setShowCarousel(true)}
                     className="p-5 rounded-2xl border-2 border-dashed border-pink-500/30 hover:border-pink-500 text-pink-400 hover:text-pink-300 transition-all flex flex-col items-center justify-center gap-2 min-h-[180px]">
                     <span className="text-3xl">+</span>
                     <span className="font-bold">Contratar Worker</span>
-                    <span className="text-xs text-[#666]">{cryptoType ? "🪙 10,000 crypto" : "$10,000"}</span>
                   </button>
                 )}
               </div>
@@ -432,34 +447,17 @@ export default function BrothelManagePage() {
         </div>
       </div>
 
-      {/* ── HIRE MODAL ── */}
-      {showHire && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
-          <div className="w-full max-w-sm mx-4 p-6 rounded-2xl bg-[#111] border-2 border-pink-500/50 shadow-2xl">
-            <h3 className="text-xl font-black mb-4 text-center text-white">💋 Contratar Worker</h3>
-            <p className="text-sm text-[#777] text-center mb-5">
-              Custo: {cryptoType ? "🪙 10,000 crypto" : "$10,000 limpos"}
-            </p>
-            <input
-              type="text" value={workerName}
-              onChange={(e) => setWorkerName(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && handleHire()}
-              placeholder="Nome da worker..."
-              maxLength={30}
-              className="w-full px-4 py-3 rounded-xl bg-[#0f0f0f] border border-pink-500/30 text-white mb-4 focus:outline-none focus:border-pink-500"
-            />
-            <div className="flex gap-3">
-              <button onClick={handleHire}
-                className="flex-1 py-3 rounded-xl font-black bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 transition-all">
-                Contratar
-              </button>
-              <button onClick={() => { setShowHire(false); setWorkerName(""); }}
-                className="px-4 py-3 rounded-xl bg-[#1a1a1a] hover:bg-[#222] border border-[#333] text-[#aaa] font-bold">
-                Cancelar
-              </button>
-            </div>
-          </div>
-        </div>
+      {/* ── WORKER CAROUSEL ── */}
+      {showCarousel && (
+        <WorkerCarousel
+          workers={WORKER_DEFS}
+          ownedSlugs={workers.map((w) => w.slug).filter(Boolean) as string[]}
+          playerCash={playerCash}
+          playerCrypto={playerCrypto}
+          onHire={handleHireFromCarousel}
+          onClose={() => setShowCarousel(false)}
+          hiring={hiring}
+        />
       )}
 
       <style jsx global>{`

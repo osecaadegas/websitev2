@@ -159,46 +159,64 @@ export async function POST(req: NextRequest) {
 
     /* â”€â”€ HIRE WORKER â”€â”€ */
     if (action === "hire") {
-      const { playerBrothelId, workerName } = body;
+      const {
+        playerBrothelId,
+        workerName,
+        workerSlug,
+        incomePerHour,
+        attractiveness: defAttr,
+        stamina: defStamina,
+        mood: defMood,
+        trait1,
+        trait2,
+        hireCost,
+        hireCostCrypto,
+      } = body;
+
       const { data: pb } = await supabase
         .from("player_brothels").select("*, brothel_type:brothel_types(*)")
         .eq("id", playerBrothelId).eq("player_id", player.id).single();
-      if (!pb) return NextResponse.json({ error: "Estabelecimento nÃ£o encontrado." }, { status: 404 });
+      if (!pb) return NextResponse.json({ error: "Estabelecimento não encontrado." }, { status: 404 });
 
       const { data: currentWorkers } = await supabase
         .from("brothel_workers").select("id").eq("player_brothel_id", playerBrothelId);
       if ((currentWorkers?.length || 0) >= pb.max_employees)
-        return NextResponse.json({ error: `Capacidade mÃ¡xima! (${pb.max_employees} workers)` }, { status: 400 });
+        return NextResponse.json({ error: `Capacidade máxima! (${pb.max_employees} workers)` }, { status: 400 });
 
-      const hiringCost = 10000;
-      const hireUsesCrypto = CRYPTO_BROTHEL_TYPES.includes(pb.brothel_type?.type ?? "");
-      if (hireUsesCrypto && player.crypto < hiringCost)
-        return NextResponse.json({ error: `Precisas de ðŸª™${hiringCost.toLocaleString()} crypto!` }, { status: 400 });
-      if (!hireUsesCrypto && player.cash < hiringCost)
-        return NextResponse.json({ error: `Precisas de $${hiringCost.toLocaleString()}!` }, { status: 400 });
+      // Validate hire cost is within sane range to prevent manipulation
+      const cost = Math.max(5000, Math.min(200000, hireCost ?? 10000));
+      const usesCrypto = !!hireCostCrypto;
+
+      if (usesCrypto && player.crypto < cost)
+        return NextResponse.json({ error: `Precisas de 🪙${cost.toLocaleString()} crypto!` }, { status: 400 });
+      if (!usesCrypto && player.cash < cost)
+        return NextResponse.json({ error: `Precisas de $${cost.toLocaleString()}!` }, { status: 400 });
 
       await supabase.from("crime_players")
-        .update(hireUsesCrypto ? { crypto: player.crypto - hiringCost } : { cash: player.cash - hiringCost })
+        .update(usesCrypto ? { crypto: player.crypto - cost } : { cash: player.cash - cost })
         .eq("id", player.id);
 
-      const attractiveness = 40 + Math.floor(Math.random() * 50);
-      const stamina        = 60 + Math.floor(Math.random() * 40);
-      const mood           = 50 + Math.floor(Math.random() * 50);
-      const happiness      = 50 + Math.floor(Math.random() * 50);
-      const trait_1        = WORKER_TRAITS[Math.floor(Math.random() * WORKER_TRAITS.length)];
-      const trait_2        = WORKER_TRAITS2[Math.floor(Math.random() * WORKER_TRAITS2.length)];
-      const incomePerHour  = 100 + Math.floor(attractiveness * 2.5) + Math.floor(Math.random() * 50);
+      const finalIncome = incomePerHour ?? (100 + Math.floor((defAttr ?? 50) * 2.5));
+      const finalAttr   = defAttr   ?? (40 + Math.floor(Math.random() * 50));
+      const finalSta    = defStamina ?? (60 + Math.floor(Math.random() * 40));
+      const finalMood   = defMood   ?? (50 + Math.floor(Math.random() * 50));
 
       await supabase.from("brothel_workers").insert({
         player_id: player.id,
         player_brothel_id: playerBrothelId,
         name: workerName || `Worker #${(currentWorkers?.length || 0) + 1}`,
+        slug: workerSlug ?? null,
         status: "healthy",
-        income_per_hour: incomePerHour,
-        charisma_bonus: Math.floor(Math.random() * 3) + 1,
-        intelligence_bonus: Math.floor(Math.random() * 3) + 1,
+        income_per_hour: finalIncome,
+        charisma_bonus: 1,
+        intelligence_bonus: 1,
         respect_bonus: 1,
-        attractiveness, stamina, mood, happiness, trait_1, trait_2,
+        attractiveness: finalAttr,
+        stamina: finalSta,
+        mood: finalMood,
+        happiness: 70,
+        trait_1: trait1 ?? WORKER_TRAITS[Math.floor(Math.random() * WORKER_TRAITS.length)],
+        trait_2: trait2 ?? WORKER_TRAITS2[Math.floor(Math.random() * WORKER_TRAITS2.length)],
       });
       return NextResponse.json({ success: true, message: `Contrataste ${workerName || "nova worker"}!` });
     }
