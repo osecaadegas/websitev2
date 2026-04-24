@@ -89,8 +89,16 @@ export default function WorkerCarousel({
   const [dragStart, setDragStart] = useState<number | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [hireAnim, setHireAnim] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const trackRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 640);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
 
   const active = workers[activeIndex];
   const rarityConf = active ? RARITY_CONFIG[active.rarity] : null;
@@ -193,10 +201,10 @@ export default function WorkerCarousel({
       ref={containerRef}
     >
       {/* Header */}
-      <div className="flex items-center justify-between px-5 py-2.5 border-b border-[#1a1a1a]">
+      <div className="flex items-center justify-between px-4 py-2 sm:px-5 sm:py-2.5 border-b border-[#1a1a1a]">
         <div>
-          <h2 className="text-2xl font-black text-white">💋 Contratar Worker</h2>
-          <p className="text-sm text-[#666]">
+          <h2 className="text-lg sm:text-2xl font-black text-white">💋 Contratar Worker</h2>
+          <p className="text-xs sm:text-sm text-[#666]">
             Saldo:{" "}
             <span className="text-green-400">${playerCash.toLocaleString()}</span>
             {" · "}
@@ -205,7 +213,7 @@ export default function WorkerCarousel({
         </div>
         <button
           onClick={onClose}
-          className="w-9 h-9 flex items-center justify-center rounded-full bg-[#1a1a1a] hover:bg-[#2a2a2a] text-[#888] hover:text-white transition-all text-lg"
+          className="w-9 h-9 flex items-center justify-center rounded-full bg-[#1a1a1a] hover:bg-[#2a2a2a] text-[#888] hover:text-white transition-all text-lg flex-shrink-0"
         >
           ✕
         </button>
@@ -224,8 +232,8 @@ export default function WorkerCarousel({
         >
           <div
             ref={trackRef}
-            className="flex items-center gap-6 px-[38vw]"
-            style={{ willChange: "transform" }}
+            className="flex items-center gap-4 sm:gap-6"
+            style={{ willChange: "transform", paddingLeft: isMobile ? "calc(50vw - 130px)" : "38vw", paddingRight: isMobile ? "calc(50vw - 130px)" : "38vw" }}
           >
             {workers.map((w, i) => {
               const dist = Math.abs(i - activeIndex);
@@ -244,7 +252,7 @@ export default function WorkerCarousel({
                     pointerEvents: dist > 2 ? "none" : "auto",
                     transition: "all 0.45s cubic-bezier(0.25, 0.1, 0.25, 1)",
                     zIndex: 10 - dist,
-                    width: "300px",
+                    width: isMobile ? "260px" : "300px",
                   }}
                 >
                   {/* Card */}
@@ -262,7 +270,7 @@ export default function WorkerCarousel({
                     {w.rarity === "elite" && dist === 0 && <EliteParticles />}
 
                     {/* Image */}
-                    <div className="relative h-[460px] overflow-hidden">
+                    <div className={`relative overflow-hidden ${isMobile ? "h-[320px]" : "h-[460px]"}`}>
                       <img
                         src={w.image}
                         alt={w.name}
@@ -365,7 +373,7 @@ export default function WorkerCarousel({
                 )}
 
                 {/* Row 3: stats + price/hire */}
-                <div className="flex items-center gap-4">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-3">
                   {/* Stats mini grid */}
                   <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-xs flex-1">
                     {[
@@ -384,7 +392,7 @@ export default function WorkerCarousel({
                   </div>
 
                   {/* Earnings + price + hire */}
-                  <div className="flex flex-col items-end gap-1.5 flex-shrink-0">
+                  <div className="flex flex-row sm:flex-col items-center sm:items-end justify-between sm:justify-start gap-2 sm:gap-1.5 flex-shrink-0 pt-1 sm:pt-0 border-t border-[#1e1e1e] sm:border-0">
                     <div className="text-right">
                       <span className="text-green-400 font-black text-lg">${active.earnings_per_hour.toLocaleString()}</span>
                       <span className="text-[#555] text-xs">/h</span>
@@ -430,14 +438,14 @@ export default function WorkerCarousel({
       <button
         onClick={() => setActiveIndex((i) => Math.max(0, i - 1))}
         disabled={activeIndex === 0}
-        className="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 flex items-center justify-center rounded-full bg-[#111]/80 border border-[#333] text-white disabled:opacity-20 hover:bg-[#222] transition-all text-xl z-[10000]"
+        className="absolute left-1 sm:left-3 top-[40%] -translate-y-1/2 w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center rounded-full bg-[#111]/80 border border-[#333] text-white disabled:opacity-20 hover:bg-[#222] transition-all text-lg sm:text-xl z-[10000]"
       >
         ‹
       </button>
       <button
         onClick={() => setActiveIndex((i) => Math.min(workers.length - 1, i + 1))}
         disabled={activeIndex === workers.length - 1}
-        className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 flex items-center justify-center rounded-full bg-[#111]/80 border border-[#333] text-white disabled:opacity-20 hover:bg-[#222] transition-all text-xl z-[10000]"
+        className="absolute right-1 sm:right-3 top-[40%] -translate-y-1/2 w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center rounded-full bg-[#111]/80 border border-[#333] text-white disabled:opacity-20 hover:bg-[#222] transition-all text-lg sm:text-xl z-[10000]"
       >
         ›
       </button>
