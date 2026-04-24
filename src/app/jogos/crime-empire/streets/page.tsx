@@ -8,7 +8,7 @@ import { CEToast } from "@/components/CEToast";
 import RaidEscape from "@/components/crime-empire/raid/RaidEscape";
 import { HEAT_STAGE_STYLE, CUSTOMER_TYPE_META, type HeatStage, type CustomerType } from "@/lib/street-defs";
 
-// --- Types --------------------------------------------------------------------
+// ─── Types ────────────────────────────────────────────────────────────────────
 
 interface DrugItem {
   id: string;
@@ -76,9 +76,25 @@ interface LogEntry {
   color: string;
 }
 
-// --- Decision Timer -----------------------------------------------------------
+interface FloatEntry { id: number; amount: number; left: number; }
+
+// ─── Constants ────────────────────────────────────────────────────────────────
 
 const DECISION_SECS = 30;
+
+const ZONE_ACCENT: Record<string, string> = {
+  bairro_antigo: "#d97706",
+  mercado_negro: "#a855f7",
+  porto:         "#0ea5e9",
+  aeroporto:     "#6366f1",
+};
+
+const ZONE_GLOW: Record<string, string> = {
+  bairro_antigo: "rgba(217,119,6,0.06)",
+  mercado_negro: "rgba(168,85,247,0.06)",
+  porto:         "rgba(14,165,233,0.06)",
+  aeroporto:     "rgba(99,102,241,0.06)",
+};
 
 // -----------------------------------------------------------------------------
 export default function StreetsPage() {
@@ -130,6 +146,19 @@ export default function StreetsPage() {
     setToast({ msg, ok });
     setTimeout(() => setToast(null), 3500);
   };
+
+  // -- Floating money
+  const [floaters, setFloaters] = useState<FloatEntry[]>([]);
+  const floaterIdRef = useRef(0);
+  const showFloat = useCallback((amount: number) => {
+    const id = floaterIdRef.current++;
+    const left = 40 + Math.random() * 20;
+    setFloaters((p) => [...p, { id, amount, left }]);
+    setTimeout(() => setFloaters((p) => p.filter((f) => f.id !== id)), 1800);
+  }, []);
+
+  // -- Customer entrance animation
+  const [customerAnim, setCustomerAnim] = useState(false);
 
   // --- Helpers -------------------------------------------------------------
 
@@ -255,8 +284,9 @@ export default function StreetsPage() {
     setHeat(data.session.heat);
     setHeatStage(heatStageFor(data.session.heat));
     setPhase("customer");
+    setCustomerAnim(true); setTimeout(() => setCustomerAnim(false), 600);
     startTimer();
-    addLog(`?? ${data.customer.name} (${CUSTOMER_TYPE_META[data.customer.type as CustomerType]?.label ?? data.customer.type}) aproximou-se`, "text-yellow-300");
+    addLog(`👤 ${data.customer.name} (${CUSTOMER_TYPE_META[data.customer.type as CustomerType]?.label ?? data.customer.type}) aproximou-se`, "text-yellow-300");
   }
 
   async function submitOffer(action: Action = "offer") {
@@ -333,9 +363,9 @@ export default function StreetsPage() {
     const data = await res.json();
     setHeat(data.heat ?? heat);
     setHeatStage(heatStageFor(data.heat ?? heat));
-    addLog(`? Ignoraste ${customer?.name}`, "text-gray-500");
+    addLog(`⏩ Ignoraste ${customer?.name}`, "text-gray-500");
     setCustomer(null);
-    setDialogue("👤");
+    setDialogue("");
     setPhase("idle");
     await fetchDrugs();
   }
@@ -369,6 +399,7 @@ export default function StreetsPage() {
       setLastEarned(earned);
       setSessionEarned((s) => s + earned);
       setSessionDeals((s) => s + 1);
+      showFloat(earned);
       addLog(`✅ ${customer?.name} aceitou — +$${earned.toLocaleString()} sujos`, "text-green-400");
       setCustomer(null);
       setPhase("result");
@@ -424,30 +455,46 @@ export default function StreetsPage() {
     }
   }
 
-  // -------------------------------------------------------------------------
-  // Render helpers
-  // -------------------------------------------------------------------------
+  // ─── Render helpers ──────────────────────────────────────────────────────
 
-  const currentZone = session ? zones.find((z) => z.id === session.zone) : null;
-  const heatStyle = HEAT_STAGE_STYLE[heatStage];
+  const currentZone  = session ? zones.find((z) => z.id === session.zone) : null;
+  const heatStyle    = HEAT_STAGE_STYLE[heatStage];
   const customerMeta = customer ? CUSTOMER_TYPE_META[customer.type] : null;
+  const inJail       = player?.in_jail;
+  const noDrugs      = drugs.length === 0;
+  const zoneAccent   = currentZone ? (ZONE_ACCENT[currentZone.id] ?? "#22c55e") : "#22c55e";
 
-  const inJail = player?.in_jail;
-  const noDrugs = drugs.length === 0;
+  // Mood / suspicion colour
+  const moodColor = suspicion >= 70 ? "#ef4444" : suspicion >= 40 ? "#eab308" : "#22c55e";
+  const moodLabel = suspicion >= 70 ? "Muito suspeito" : suspicion >= 40 ? "Desconfiado" : "Calmo";
 
-  // --- Loading --------------------------------------------------------------
+  // Deal price temperature
+  const basePrice  = selectedDrug?.items.base_price ?? 100;
+  const dealRatio  = pricePerUnit / basePrice;
+  const dealColor  = dealRatio <= 0.9 ? "#22c55e" : dealRatio <= 1.15 ? "#06b6d4" : dealRatio <= 1.5 ? "#eab308" : "#ef4444";
+  const dealLabel  = dealRatio <= 0.9 ? "Barato 🤑" : dealRatio <= 1.15 ? "Justo" : dealRatio <= 1.5 ? "Caro" : "Muito Caro 🚨";
+
+  // Slider percentage for CSS track fill
+  const sliderMin = Math.round(basePrice * 0.5);
+  const sliderMax = Math.round(basePrice * 2.5);
+  const sliderPct = Math.round(((pricePerUnit - sliderMin) / (sliderMax - sliderMin)) * 100);
+
+  // Heat vignette
+  const vignetteAlpha = Math.max(0, (heat - 25) / 75) * 0.65;
+
+  // ─── Loading ──────────────────────────────────────────────────────────────
   if (phase === "loading" && !session && !player) {
     return (
-      <div className="flex-1 flex items-center justify-center text-white">
+      <div className="flex-1 flex items-center justify-center bg-[#070707] text-white">
         <div className="text-center">
-          <div className="w-10 h-10 border-4 border-green-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-[#888]">A carregar...</p>
+          <div className="w-8 h-8 border-2 border-green-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-[#444] text-sm">A carregar...</p>
         </div>
       </div>
     );
   }
 
-  // --- Arrest escape --------------------------------------------------------
+  // ─── Arrest escape ────────────────────────────────────────────────────────
   if (phase === "arrested" && arrestEscape) {
     return (
       <div className="flex-1 text-white py-8 px-4">
@@ -456,24 +503,13 @@ export default function StreetsPage() {
           difficulty="high"
           cashAtRisk={0}
           onEscape={async () => {
-            const token = arrestEscape.token;
-            setArrestEscape(null);
-            await fetch("/api/crime-empire/escape-attempt", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ token, escaped: true }),
-            });
-            setPhase("zone_select");
-            showToast("Escapaste!", true);
+            const token = arrestEscape.token; setArrestEscape(null);
+            await fetch("/api/crime-empire/escape-attempt", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ token, escaped: true }) });
+            setPhase("zone_select"); showToast("Escapaste!", true);
           }}
           onArrested={async () => {
-            const token = arrestEscape.token;
-            setArrestEscape(null);
-            await fetch("/api/crime-empire/escape-attempt", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ token, escaped: false }),
-            });
+            const token = arrestEscape.token; setArrestEscape(null);
+            await fetch("/api/crime-empire/escape-attempt", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ token, escaped: false }) });
             router.push("/jogos/crime-empire/jail");
           }}
         />
@@ -481,438 +517,498 @@ export default function StreetsPage() {
     );
   }
 
-  // -------------------------------------------------------------------------
-  // Main layout
-  // -------------------------------------------------------------------------
-
+  // ─── Main render ──────────────────────────────────────────────────────────
   return (
-    <div className="flex-1 text-white flex flex-col gap-0 min-h-screen bg-[#0a0a0a]">
-      {toast && <CEToast msg={toast.msg} ok={toast.ok} />}
+    <>
+      {/* ── Custom keyframes ── */}
+      <style>{`
+        @keyframes floatUp {
+          0%   { opacity: 1; transform: translateY(0) scale(1); }
+          60%  { opacity: 1; transform: translateY(-48px) scale(1.15); }
+          100% { opacity: 0; transform: translateY(-90px) scale(0.9); }
+        }
+        @keyframes customerEnter {
+          from { opacity: 0; transform: translateX(-24px) scale(0.96); }
+          to   { opacity: 1; transform: translateX(0) scale(1); }
+        }
+        @keyframes heatPulse {
+          0%, 100% { opacity: 0.45; }
+          50%       { opacity: 0.75; }
+        }
+        @keyframes dangerFlicker {
+          0%, 100% { opacity: 1; }
+          50%       { opacity: 0.55; }
+        }
+        .float-money   { animation: floatUp 1.8s ease-out forwards; }
+        .customer-in   { animation: customerEnter 0.45s ease-out; }
+        .heat-vignette { animation: heatPulse 1.8s ease-in-out infinite; }
+        .danger-text   { animation: dangerFlicker 1s ease-in-out infinite; }
+        input[type=range].street-range {
+          -webkit-appearance: none;
+          width: 100%; height: 4px; border-radius: 2px; outline: none; cursor: pointer;
+        }
+        input[type=range].street-range::-webkit-slider-runnable-track {
+          height: 4px; border-radius: 2px; background: #1f1f1f;
+        }
+        input[type=range].street-range::-webkit-slider-thumb {
+          -webkit-appearance: none;
+          width: 16px; height: 16px; border-radius: 50%;
+          background: #22c55e; cursor: pointer;
+          border: 2px solid #080808; margin-top: -6px;
+        }
+        input[type=range].street-range:disabled::-webkit-slider-thumb { background: #333; cursor: not-allowed; }
+      `}</style>
 
-      {/* -- TOP BAR ------------------------------------------------- */}
-      <div className="flex items-center justify-between px-4 md:px-6 py-3 border-b border-[#1a1a1a] bg-[#0d0d0d]">
-        <Link href="/jogos/crime-empire/dashboard" className="text-[#ff6a00] hover:text-[#ff8533] text-sm transition-colors">
-          ← Voltar
-        </Link>
-        <div className="flex items-center gap-4">
-          <span className="text-xs text-[#666]">Nv.{player?.level}</span>
-          <span className="text-xs text-green-400 font-semibold">${player?.dirty_cash?.toLocaleString() ?? 0} sujos</span>
-          {currentZone && (
-            <span className="text-xs text-cyan-400">{currentZone.icon} {currentZone.name}</span>
-          )}
+      <div className="flex-1 text-white flex flex-col min-h-screen relative" style={{ background: "#070707" }}>
+
+        {/* ── Zone ambient background glow ── */}
+        {session && currentZone && (
+          <div className="pointer-events-none fixed inset-0 z-0"
+            style={{ background: `radial-gradient(ellipse at 50% 100%, ${ZONE_GLOW[currentZone.id] ?? "rgba(34,197,94,0.04)"} 0%, transparent 65%)` }} />
+        )}
+
+        {/* ── Heat vignette overlay ── */}
+        {heat > 25 && (
+          <div className="pointer-events-none fixed inset-0 z-10 heat-vignette"
+            style={{ background: `radial-gradient(ellipse at center, transparent 25%, rgba(185,28,28,${vignetteAlpha}) 100%)` }} />
+        )}
+
+        {/* ── Floating money notifications ── */}
+        <div className="pointer-events-none fixed inset-0 z-50">
+          {floaters.map((f) => (
+            <div key={f.id} className="float-money absolute font-black text-2xl text-green-400 drop-shadow-lg select-none"
+              style={{ top: "38%", left: `${f.left}%` }}>
+              +${f.amount.toLocaleString()}
+            </div>
+          ))}
         </div>
-      </div>
 
-      {/* -- HEAT BAR ------------------------------------------------ */}
-      {session && (
-        <div className="px-4 md:px-6 pt-3 pb-1">
-          <div className="flex items-center justify-between mb-1">
-            <span className={`text-xs font-bold ${heatStyle.color}`}>
-              🌡️ CALOR: {heat}/100 — {heatStyle.label}
-            </span>
+        {toast && <CEToast msg={toast.msg} ok={toast.ok} />}
+
+        {/* ══ TOP BAR ══════════════════════════════════════════════════════ */}
+        <div className="relative z-20 flex items-center justify-between px-4 md:px-6 py-3 border-b border-[#141414]"
+          style={{ background: "rgba(0,0,0,0.7)", backdropFilter: "blur(8px)" }}>
+          <Link href="/jogos/crime-empire/dashboard"
+            className="text-[#ff6a00] hover:text-[#ff9940] text-sm font-semibold transition-colors">
+            ← Voltar
+          </Link>
+          <div className="flex items-center gap-4">
+            <span className="text-xs text-[#444] font-mono">Nv.{player?.level ?? "–"}</span>
+            <span className="text-xs text-green-400 font-mono font-bold">${player?.dirty_cash?.toLocaleString() ?? 0}</span>
             {currentZone && (
-              <span className="text-xs text-[#555]">+{currentZone.heatPerDeal} por negócio</span>
+              <span className="text-xs px-2.5 py-1 rounded-full font-bold border"
+                style={{ color: zoneAccent, borderColor: `${zoneAccent}44`, background: `${zoneAccent}14` }}>
+                {currentZone.icon} {currentZone.name}
+              </span>
             )}
           </div>
-          <div className="h-3 bg-[#1a1a1a] rounded-full overflow-hidden border border-[#2a2a2a]">
-            <div
-              className={`h-full transition-all duration-700 rounded-full ${heatStyle.bg}`}
-              style={{ width: `${heat}%` }}
-            />
-          </div>
         </div>
-      )}
 
-      {/* -- JAIL BANNER --------------------------------------------- */}
-      {inJail && player?.jail_release_at && (
-        <div className="mx-4 md:mx-6 mt-3 p-3 rounded-xl bg-red-900/40 border border-red-600 text-red-300 text-sm">
-          🚔 Estás preso! Saída: {new Date(player.jail_release_at).toLocaleTimeString("pt-PT")}
-          <Link href="/jogos/crime-empire/jail" className="ml-3 underline text-red-400 hover:text-red-300">Ir à cela</Link>
-        </div>
-      )}
-
-      {/* -- ZONE SELECT --------------------------------------------- */}
-      {(phase === "zone_select" || phase === "session_end") && (
-        <div className="flex-1 px-4 md:px-8 py-8">
-          {phase === "session_end" && (
-            <div className="mb-6 p-5 rounded-2xl bg-green-900/30 border border-green-700 text-center">
-              <p className="text-green-400 font-black text-2xl mb-1">Sessão Terminada</p>
-              <p className="text-green-300">
-                {sessionDeals} negócios • <span className="font-black">${sessionEarned.toLocaleString()}</span> ganhos
-              </p>
-            </div>
-          )}
-
-          <h1 className="text-3xl font-black bg-gradient-to-r from-green-400 to-emerald-500 bg-clip-text text-transparent mb-2">
-            🌿 Ruas
-          </h1>
-          <p className="text-[#888] mb-6 text-sm">Escolhe uma zona para vender. Cada zona tem riscos e recompensas diferentes.</p>
-
-          {inJail ? (
-            <p className="text-red-400">NNão podes iniciar uma sessão enquanto Estás preso.</p>
-          ) : noDrugs ? (
-            <div className="p-8 rounded-2xl bg-[#111] border border-[#222] text-center">
-              <p className="text-4xl mb-3">??</p>
-              <p className="text-[#888]">Não tens drogas no inventário.</p>
-              <Link href="/jogos/crime-empire/black-market" className="inline-block mt-4 px-5 py-2 rounded-lg bg-green-700 hover:bg-green-600 text-sm font-semibold transition-colors">
-                Ir ao Black Market
-              </Link>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-2xl">
-              {zones.map((zone) => {
-                const locked = (player?.level ?? 1) < zone.unlockLevel;
-                return (
-                  <button
-                    key={zone.id}
-                    onClick={() => !locked && startSession(zone.id)}
-                    disabled={locked || !!inJail}
-                    className={`p-5 rounded-2xl border text-left transition-all ${
-                      locked
-                        ? "border-[#222] bg-[#0e0e0e] opacity-50 cursor-not-allowed"
-                        : "border-[#2a2a2a] bg-[#111] hover:border-green-600 hover:bg-[#151515] active:scale-95"
-                    }`}
-                  >
-                    <div className="flex items-center gap-2 mb-2">
-                      <span className="text-2xl">{zone.icon}</span>
-                      <span className="font-black text-white">{zone.name}</span>
-                      {locked && <span className="ml-auto text-xs text-[#555]">Nv.{zone.unlockLevel}</span>}
-                    </div>
-                    <p className="text-xs text-[#777] mb-3">{zone.description}</p>
-                    <div className="flex gap-3 text-xs">
-                      <span className="text-green-400">+{Math.round((zone.rewardMult - 1) * 100)}% lucro</span>
-                      <span className="text-yellow-400">+{zone.heatPerDeal} calor/deal</span>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* -- ACTIVE SESSION ------------------------------------------ */}
-      {session && phase !== "zone_select" && phase !== "session_end" && phase !== "arrested" && (
-        <div className="flex-1 flex flex-col lg:flex-row gap-0 overflow-hidden">
-
-          {/* LEFT — Customer card */}
-          <div className="w-full lg:w-72 flex-shrink-0 border-b lg:border-b-0 lg:border-r border-[#1a1a1a] bg-[#0d0d0d] p-4 flex flex-col gap-3">
-            <h2 className="text-xs font-bold text-[#555] uppercase tracking-widest">Cliente Atual</h2>
-
-            {customer ? (
-              <div className="rounded-2xl border border-[#222] bg-[#111] p-4 flex-1">
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="w-12 h-12 rounded-xl bg-[#1a1a1a] border border-[#333] flex items-center justify-center text-2xl">
-                    {customerMeta?.icon ?? "??"}
-                  </div>
-                  <div>
-                    <p className="font-black text-white">{customer.name}</p>
-                    <p className={`text-xs font-semibold ${customerMeta?.color ?? "text-gray-400"}`}>
-                      {customerMeta?.label ?? customer.type}
-                    </p>
-                  </div>
-                </div>
-
-                {/* Suspicion bar */}
-                <div className="mb-2">
-                  <div className="flex justify-between text-xs mb-1">
-                    <span className="text-[#666]">Suspeita</span>
-                    <span className={suspicion >= 70 ? "text-red-400" : suspicion >= 40 ? "text-yellow-400" : "text-green-400"}>
-                      {suspicion}%
-                    </span>
-                  </div>
-                  <div className="h-2 bg-[#1a1a1a] rounded-full overflow-hidden">
-                    <div
-                      className={`h-full transition-all duration-500 rounded-full ${
-                        suspicion >= 70 ? "bg-red-500" : suspicion >= 40 ? "bg-yellow-500" : "bg-green-500"
-                      }`}
-                      style={{ width: `${suspicion}%` }}
-                    />
-                  </div>
-                </div>
-
-                {/* Patience */}
-                <div className="flex justify-between text-xs text-[#666]">
-                  <span>Paciência</span>
-                  <span className="text-white">
-                    {"■".repeat(Math.max(0, customer.patience - customer.offersReceived))}
-                    {"□".repeat(Math.min(customer.offersReceived, customer.patience))}
-                  </span>
-                </div>
-
-                {/* Hint for high-level players */}
-                {(player?.level ?? 1) >= 3 && (
-                  <p className="mt-3 text-xs text-[#555] italic">{customerMeta?.hint}</p>
-                )}
+        {/* ══ HEAT BAR ═════════════════════════════════════════════════════ */}
+        {session && (
+          <div className="relative z-20 px-4 md:px-6 py-2.5 border-b border-[#141414]"
+            style={{ background: heatStage === "danger" || heatStage === "busted" ? "rgba(127,29,29,0.25)" : "rgba(0,0,0,0.5)" }}>
+            <div className="flex items-center gap-3">
+              <span className={`text-xs font-black w-24 shrink-0 ${heatStyle.color} ${heatStage === "danger" ? "danger-text" : ""}`}>
+                🌡️ {heat}/100
+              </span>
+              <div className="flex-1 h-2 bg-[#181818] rounded-full overflow-hidden border border-[#222]">
+                <div className={`h-full rounded-full transition-all duration-700 ${heatStyle.bg}`} style={{ width: `${heat}%` }} />
               </div>
-            ) : (
-              <div className="flex-1 rounded-2xl border border-dashed border-[#222] bg-[#0d0d0d] flex items-center justify-center p-6 text-center">
-                <div>
-                  <p className="text-3xl mb-2 opacity-30">👤</p>
-                  <p className="text-[#444] text-sm">Nenhum cliente no momento</p>
-                </div>
-              </div>
-            )}
-
-            {/* Session summary */}
-            <div className="rounded-xl bg-[#111] border border-[#1a1a1a] p-3 text-xs">
-              <p className="text-[#555] mb-1">Sessão atual</p>
-              <p className="text-white">{sessionDeals} negócios • <span className="text-green-400 font-bold">${sessionEarned.toLocaleString()}</span></p>
+              <span className={`text-xs font-black w-20 text-right shrink-0 ${heatStyle.color}`}>{heatStyle.label}</span>
+              {currentZone && <span className="text-xs text-[#333] hidden lg:inline">+{currentZone.heatPerDeal}/deal</span>}
             </div>
           </div>
+        )}
 
-          {/* CENTER — Dialogue + Controls */}
-          <div className="flex-1 flex flex-col p-4 gap-4 overflow-y-auto">
+        {/* ── Jail banner ── */}
+        {inJail && player?.jail_release_at && (
+          <div className="relative z-20 mx-4 md:mx-6 mt-3 p-3 rounded-xl bg-red-950/50 border border-red-800/60 text-red-300 text-sm flex items-center gap-2">
+            <span>🚔</span>
+            <span>Estás preso! Saída: <strong>{new Date(player.jail_release_at).toLocaleTimeString("pt-PT")}</strong></span>
+            <Link href="/jogos/crime-empire/jail" className="ml-auto text-xs text-red-400 hover:text-red-200 underline">Ir à cela →</Link>
+          </div>
+        )}
 
-            {/* Dialogue box */}
-            <div className="rounded-2xl border border-[#222] bg-[#0f0f0f] p-5 min-h-[80px] relative">
-              {dialogue ? (
-                <>
-                  <p className="text-xs text-[#555] mb-1 font-semibold uppercase tracking-widest">
-                    {customer ? customer.name : "Sistema"}
-                  </p>
-                  <p className="text-white text-base leading-relaxed italic">"{dialogue}"</p>
-                </>
-              ) : (
-                <p className="text-[#444] text-sm italic">Chama o próximo cliente para começar a negociar...</p>
-              )}
-            </div>
+        {/* ══ ZONE SELECT ══════════════════════════════════════════════════ */}
+        {(phase === "zone_select" || phase === "session_end") && (
+          <div className="relative z-20 flex-1 px-4 md:px-10 py-10">
 
-            {/* Last outcome badge */}
-            {phase === "result" && lastOutcome === "accept" && (
-              <div className="rounded-xl bg-green-900/30 border border-green-700 p-4 text-center animate-pulse">
-                <p className="text-green-400 font-black text-xl">✅ NEGÓCIO FEITO!</p>
-                <p className="text-green-300 text-lg font-bold">+${lastEarned.toLocaleString()} sujos</p>
-                <button
-                  onClick={callNextCustomer}
-                  className="mt-3 px-6 py-2 rounded-xl bg-green-700 hover:bg-green-600 text-white font-bold text-sm transition-all hover:scale-105"
-                >
-                  Próximo Cliente →
-                </button>
-              </div>
-            )}
-
-            {/* Decision timer */}
-            {(phase === "customer" || phase === "counter") && (
-              <div>
-                <div className="flex justify-between text-xs mb-1">
-                  <span className="text-[#666]">Tempo de decisão</span>
-                  <span className={timerSecs <= 10 ? "text-red-400 font-bold animate-pulse" : "text-[#888]"}>
-                    {timerSecs}s
-                  </span>
-                </div>
-                <div className="h-1 bg-[#1a1a1a] rounded-full overflow-hidden">
-                  <div
-                    className={`h-full transition-all duration-1000 rounded-full ${timerSecs <= 10 ? "bg-red-500" : "bg-cyan-500"}`}
-                    style={{ width: `${(timerSecs / DECISION_SECS) * 100}%` }}
-                  />
-                </div>
-              </div>
-            )}
-
-            {/* COUNTER-OFFER panel */}
-            {phase === "counter" && counterPrice != null && counterQty != null && (
-              <div className="rounded-2xl border border-yellow-600/40 bg-yellow-900/20 p-5">
-                <p className="text-yellow-400 font-black mb-2">↔️ Contra-Proposta</p>
-                <p className="text-white mb-4">
-                  {customer?.name} propõe{" "}
-                  <span className="font-black text-yellow-300">${counterPrice}/g × {counterQty}g</span>
-                  {" "}= <span className="font-black text-yellow-400">${(counterPrice * counterQty).toLocaleString()}</span>
+            {/* Session-end summary */}
+            {phase === "session_end" && (
+              <div className="mb-8 p-6 rounded-2xl border border-green-800/40 text-center max-w-sm mx-auto"
+                style={{ background: "linear-gradient(135deg, rgba(20,83,45,0.4), rgba(0,0,0,0.4))" }}>
+                <p className="text-4xl mb-2">💰</p>
+                <p className="text-green-400 font-black text-xl mb-1">Sessão Concluída</p>
+                <p className="text-[#888] text-sm">
+                  <span className="text-white font-black text-lg">{sessionDeals}</span> negócios ·{" "}
+                  <span className="text-green-400 font-black text-lg">${sessionEarned.toLocaleString()}</span> ganhos
                 </p>
-                <div className="flex gap-3">
-                  <button
-                    onClick={acceptCounter}
-                    className="flex-1 py-2 rounded-xl bg-green-700 hover:bg-green-600 text-white font-bold text-sm transition-all hover:scale-105"
-                  >
-                    ✅ Aceitar
-                  </button>
-                  <button
-                    onClick={() => { setPhase("customer"); startTimer(); addLog(`↩ Rejeitaste a contra-proposta de ${customer?.name}`, "text-orange-400"); }}
-                    className="flex-1 py-2 rounded-xl bg-[#1e1e1e] hover:bg-[#2a2a2a] text-white font-bold text-sm border border-[#333] transition-all hover:scale-105"
-                  >
-                    ❌ Rejeitar
-                  </button>
+              </div>
+            )}
+
+            <div className="max-w-2xl">
+              <h1 className="text-4xl font-black mb-1">
+                <span className="text-green-400">🌿</span>{" "}
+                <span style={{ background: "linear-gradient(90deg,#4ade80,#16a34a)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
+                  Ruas
+                </span>
+              </h1>
+              <p className="text-[#555] mb-8 text-sm">Escolhe onde vais operar. Cada zona tem riscos e recompensas diferentes.</p>
+
+              {inJail ? (
+                <div className="p-5 rounded-2xl bg-red-950/40 border border-red-800/40 text-red-400 text-sm">
+                  🚔 Não podes iniciar uma sessão enquanto estás preso.
                 </div>
-              </div>
-            )}
-
-            {/* CONTROLS */}
-            {(phase === "customer" || phase === "idle") && (
-              <div className="rounded-2xl border border-[#222] bg-[#0f0f0f] p-5 space-y-4">
-                <h3 className="text-xs text-[#555] font-bold uppercase tracking-widest">Oferta</h3>
-
-                {/* Drug selector */}
-                <div>
-                  <label className="text-xs text-[#666] block mb-1">Produto</label>
-                  <select
-                    value={selectedDrug?.id ?? ""}
-                    onChange={(e) => {
-                      const d = drugs.find((x) => x.id === e.target.value);
-                      if (d) setSelectedDrug(d);
-                    }}
-                    className="w-full px-3 py-2 rounded-xl bg-[#1a1a1a] border border-[#333] text-white text-sm focus:outline-none focus:border-green-500"
-                    disabled={phase !== "customer"}
-                  >
-                    {drugs.map((d) => (
-                      <option key={d.id} value={d.id}>
-                        {d.items.name} — {d.quantity}g disponível
-                      </option>
-                    ))}
-                    {drugs.length === 0 && <option value="">Sem stock</option>}
-                  </select>
+              ) : noDrugs ? (
+                <div className="p-8 rounded-2xl bg-[#0d0d0d] border border-[#1a1a1a] text-center">
+                  <p className="text-4xl mb-3 opacity-30">🌿</p>
+                  <p className="text-[#666] mb-1">Sem stock para vender.</p>
+                  <p className="text-[#444] text-xs mb-4">Vai ao Black Market comprar drogas primeiro.</p>
+                  <Link href="/jogos/crime-empire/black-market"
+                    className="inline-block px-5 py-2 rounded-xl bg-green-700 hover:bg-green-600 text-sm font-semibold transition-all hover:scale-105">
+                    Ir ao Black Market →
+                  </Link>
                 </div>
-
-                {/* Price + Quantity */}
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="text-xs text-[#666] block mb-1">
-                      Preço/g
-                      {selectedDrug && (
-                        <span className="text-[#444] ml-1">(base: ${selectedDrug.items.base_price})</span>
-                      )}
-                    </label>
-                    <input
-                      type="number"
-                      min={1}
-                      value={pricePerUnit}
-                      onChange={(e) => setPricePerUnit(Math.max(1, Number(e.target.value)))}
-                      className="w-full px-3 py-2 rounded-xl bg-[#1a1a1a] border border-[#333] text-white text-sm focus:outline-none focus:border-green-500"
-                      disabled={phase !== "customer"}
-                    />
-                  </div>
-                  <div>
-                    <label className="text-xs text-[#666] block mb-1">
-                      Quantidade (g)
-                      {selectedDrug && <span className="text-[#444] ml-1">max {selectedDrug.quantity}</span>}
-                    </label>
-                    <input
-                      type="number"
-                      min={1}
-                      max={selectedDrug?.quantity ?? 1}
-                      value={quantity}
-                      onChange={(e) => setQuantity(Math.max(1, Math.min(selectedDrug?.quantity ?? 1, Number(e.target.value))))}
-                      className="w-full px-3 py-2 rounded-xl bg-[#1a1a1a] border border-[#333] text-white text-sm focus:outline-none focus:border-green-500"
-                      disabled={phase !== "customer"}
-                    />
-                  </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {zones.map((zone) => {
+                    const locked    = (player?.level ?? 1) < zone.unlockLevel;
+                    const accent    = ZONE_ACCENT[zone.id] ?? "#22c55e";
+                    const profitPct = Math.round((zone.rewardMult - 1) * 100);
+                    return (
+                      <button key={zone.id}
+                        onClick={() => !locked && startSession(zone.id)}
+                        disabled={locked || !!inJail}
+                        className={`group relative p-6 rounded-2xl border text-left overflow-hidden transition-all ${
+                          locked ? "border-[#1a1a1a] opacity-40 cursor-not-allowed" : "border-[#222] hover:border-[#333] active:scale-95 cursor-pointer"
+                        }`}
+                        style={locked ? { background: "#0a0a0a" } : { background: `linear-gradient(135deg, ${accent}0a, #0a0a0a 60%)` }}>
+                        {/* Hover accent glow */}
+                        {!locked && (
+                          <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none rounded-2xl"
+                            style={{ background: `radial-gradient(ellipse at top left, ${accent}1a 0%, transparent 55%)` }} />
+                        )}
+                        <div className="relative z-10">
+                          <div className="flex items-start justify-between mb-3">
+                            <span className="text-3xl">{zone.icon}</span>
+                            {locked && (
+                              <span className="text-[#444] text-xs bg-[#111] px-2 py-0.5 rounded-full border border-[#1f1f1f]">Nv.{zone.unlockLevel}</span>
+                            )}
+                          </div>
+                          <p className="font-black text-white text-base mb-1">{zone.name}</p>
+                          <p className="text-xs text-[#555] mb-4 leading-relaxed">{zone.description}</p>
+                          <div className="flex items-center gap-3 text-xs">
+                            <span className="font-bold" style={{ color: accent }}>{profitPct >= 0 ? "+" : ""}{profitPct}% lucro</span>
+                            <span className="text-yellow-600">🌡️ +{zone.heatPerDeal} calor/deal</span>
+                          </div>
+                        </div>
+                      </button>
+                    );
+                  })}
                 </div>
-
-                {/* Total preview */}
-                {selectedDrug && (
-                  <div className="flex justify-between text-sm">
-                    <span className="text-[#666]">Total ofertado:</span>
-                    <span className="text-white font-bold">${(pricePerUnit * quantity).toLocaleString()}</span>
-                  </div>
-                )}
-
-                {/* Action buttons */}
-                {phase === "customer" && (
-                  <div className="grid grid-cols-2 gap-2">
-                    <button
-                      onClick={() => submitOffer("offer")}
-                      disabled={!selectedDrug || drugs.length === 0}
-                      className="col-span-2 py-3 rounded-xl bg-green-700 hover:bg-green-600 text-white font-black text-base transition-all hover:scale-105 disabled:opacity-40 disabled:cursor-not-allowed"
-                    >
-                      💰 Fazer Oferta
-                    </button>
-                    <button
-                      onClick={() => submitOffer("push")}
-                      disabled={!selectedDrug || drugs.length === 0}
-                      title="Aumenta o risco mas pode intimidar o cliente a aceitar"
-                      className="py-2 rounded-xl bg-orange-700 hover:bg-orange-600 text-white font-bold text-sm transition-all hover:scale-105 disabled:opacity-40"
-                    >
-                      💪 Push
-                    </button>
-                    <button
-                      onClick={() => submitOffer("discount")}
-                      disabled={!selectedDrug || drugs.length === 0}
-                      title="Reduz suspeita, aumenta chance de aceitação"
-                      className="py-2 rounded-xl bg-blue-700 hover:bg-blue-600 text-white font-bold text-sm transition-all hover:scale-105 disabled:opacity-40"
-                    >
-                      🎁 Desconto
-                    </button>
-                    <button
-                      onClick={() => submitOffer("rush")}
-                      disabled={!selectedDrug || drugs.length === 0}
-                      title="Apressa o cliente — reduz Paciência dele"
-                      className="py-2 rounded-xl bg-purple-700 hover:bg-purple-600 text-white font-bold text-sm transition-all hover:scale-105 disabled:opacity-40"
-                    >
-                      ⚡ Rush
-                    </button>
-                    <button
-                      onClick={rejectCustomer}
-                      className="py-2 rounded-xl bg-[#1a1a1a] hover:bg-[#2a2a2a] border border-[#333] text-[#888] font-semibold text-sm transition-all hover:scale-105"
-                    >
-                      ⏩ Ignorar
-                    </button>
-                  </div>
-                )}
-
-                {/* Call next / idle state */}
-                {phase === "idle" && (
-                  <button
-                    onClick={callNextCustomer}
-                    disabled={noDrugs || !!inJail}
-                    className="w-full py-3 rounded-xl bg-cyan-700 hover:bg-cyan-600 text-white font-black text-base transition-all hover:scale-105 disabled:opacity-40 disabled:cursor-not-allowed"
-                  >
-                    👤 Chamar Próximo Cliente
-                  </button>
-                )}
-              </div>
-            )}
-
-            {phase === "negotiating" && (
-              <div className="rounded-xl border border-[#222] bg-[#0f0f0f] p-4 text-center">
-                <div className="w-8 h-8 border-4 border-cyan-500 border-t-transparent rounded-full animate-spin mx-auto mb-2" />
-                <p className="text-[#888] text-sm">A negociar...</p>
-              </div>
-            )}
-
-            {phase === "loading" && session && (
-              <div className="rounded-xl border border-[#222] bg-[#0f0f0f] p-4 text-center">
-                <div className="w-8 h-8 border-4 border-green-500 border-t-transparent rounded-full animate-spin mx-auto mb-2" />
-                <p className="text-[#888] text-sm">A carregar...</p>
-              </div>
-            )}
-
-            {/* End session button */}
-            {session && phase !== "negotiating" && phase !== "loading" && (
-              <button
-                onClick={endSession}
-                className="w-full py-2 rounded-xl border border-red-800 bg-red-900/20 hover:bg-red-900/40 text-red-400 font-semibold text-sm transition-all"
-              >
-                🚪 Sair da Rua
-              </button>
-            )}
-          </div>
-
-          {/* RIGHT — Action log */}
-          <div className="w-full lg:w-72 flex-shrink-0 border-t lg:border-t-0 lg:border-l border-[#1a1a1a] bg-[#0d0d0d] p-4 flex flex-col">
-            <h2 className="text-xs font-bold text-[#555] uppercase tracking-widest mb-3">Registo</h2>
-            <div
-              ref={logRef}
-              className="flex-1 overflow-y-auto space-y-1 max-h-[400px] lg:max-h-full pr-1"
-              style={{ scrollbarWidth: "none" }}
-            >
-              {log.length === 0 && (
-                <p className="text-[#333] text-xs italic">Sem actividade ainda...</p>
               )}
-              {log.map((entry, i) => (
-                <div key={i} className="text-xs">
-                  <span className="text-[#444] mr-1">{entry.time}</span>
-                  <span className={entry.color}>{entry.text}</span>
-                </div>
-              ))}
             </div>
           </div>
+        )}
 
-        </div>
-      )}
-    </div>
+        {/* ══ ACTIVE SESSION ═══════════════════════════════════════════════ */}
+        {session && phase !== "zone_select" && phase !== "session_end" && phase !== "arrested" && (
+          <div className="relative z-20 flex-1 flex flex-col lg:flex-row overflow-hidden">
+
+            {/* ── LEFT — Customer ───────────────────────────────────────── */}
+            <div className="w-full lg:w-64 xl:w-72 shrink-0 flex flex-col gap-3 p-4 border-b lg:border-b-0 lg:border-r border-[#141414]"
+              style={{ background: "rgba(0,0,0,0.45)" }}>
+
+              {customer ? (
+                <div className={`rounded-2xl border flex flex-col gap-4 p-4 flex-1 transition-all ${customerAnim ? "customer-in" : ""}`}
+                  style={{
+                    borderColor: `${moodColor}33`,
+                    background: `linear-gradient(160deg, ${moodColor}0a, #0a0a0a)`,
+                    boxShadow: `0 0 28px ${moodColor}22`,
+                  }}>
+                  {/* Avatar + identity */}
+                  <div className="flex items-center gap-3">
+                    <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-3xl shrink-0 border transition-all"
+                      style={{ borderColor: `${moodColor}44`, background: `${moodColor}14`, boxShadow: `0 0 16px ${moodColor}33` }}>
+                      {customerMeta?.icon ?? "👤"}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="font-black text-white text-base leading-tight truncate">{customer.name}</p>
+                      <p className="text-xs font-semibold mt-0.5" style={{ color: moodColor }}>{customerMeta?.label ?? customer.type}</p>
+                      <p className="text-[10px] text-[#555] mt-0.5">{moodLabel}</p>
+                    </div>
+                  </div>
+
+                  {/* Suspicion */}
+                  <div>
+                    <div className="flex justify-between text-xs mb-1.5">
+                      <span className="text-[#555]">Suspeita</span>
+                      <span className="font-bold tabular-nums" style={{ color: moodColor }}>{suspicion}%</span>
+                    </div>
+                    <div className="h-1.5 bg-[#141414] rounded-full overflow-hidden">
+                      <div className="h-full rounded-full transition-all duration-500" style={{ width: `${suspicion}%`, background: moodColor }} />
+                    </div>
+                  </div>
+
+                  {/* Patience */}
+                  <div>
+                    <div className="flex justify-between text-xs mb-1.5">
+                      <span className="text-[#555]">Paciência</span>
+                      <span className="font-mono text-xs tracking-widest">
+                        {Array.from({ length: customer.patience }).map((_, i) => (
+                          <span key={i} style={{ color: i < customer.patience - customer.offersReceived ? "#22c55e" : "#222" }}>■</span>
+                        ))}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Hint for high-level players */}
+                  {(player?.level ?? 1) >= 3 && (
+                    <p className="text-[11px] text-[#444] italic border-t border-[#181818] pt-3">{customerMeta?.hint}</p>
+                  )}
+                </div>
+              ) : (
+                <div className="flex-1 rounded-2xl border border-dashed border-[#1f1f1f] flex flex-col items-center justify-center p-8 text-center gap-2">
+                  <p className="text-5xl opacity-10">👤</p>
+                  <p className="text-[#333] text-xs">Sem cliente no momento</p>
+                </div>
+              )}
+
+              {/* Session stats */}
+              <div className="rounded-xl bg-[#0d0d0d] border border-[#181818] p-3">
+                <p className="text-[#333] text-[10px] uppercase tracking-widest font-bold mb-2">Sessão</p>
+                <div className="flex justify-between items-baseline">
+                  <span className="text-[#555] text-sm">{sessionDeals} negócios</span>
+                  <span className="text-green-400 font-black">${sessionEarned.toLocaleString()}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* ── CENTER — Dialogue + Controls ──────────────────────────── */}
+            <div className="flex-1 flex flex-col p-4 gap-3 overflow-y-auto">
+
+              {/* Dialogue bubble */}
+              <div className="rounded-2xl border border-[#1a1a1a] p-5 min-h-[72px]" style={{ background: "rgba(10,10,10,0.8)" }}>
+                {dialogue ? (
+                  <>
+                    <p className="text-[10px] text-[#444] font-black uppercase tracking-widest mb-2">
+                      {customer ? customer.name : "Sistema"}
+                    </p>
+                    <p className="text-white text-sm leading-relaxed italic">"{dialogue}"</p>
+                  </>
+                ) : (
+                  <p className="text-[#333] text-sm italic">Chama o próximo cliente para começar a negociar...</p>
+                )}
+              </div>
+
+              {/* Result badge */}
+              {phase === "result" && lastOutcome === "accept" && (
+                <div className="rounded-2xl border border-green-800/50 p-6 text-center"
+                  style={{ background: "linear-gradient(135deg, rgba(20,83,45,0.5), rgba(0,0,0,0.4))" }}>
+                  <p className="text-green-400 font-black text-xl mb-2">✅ NEGÓCIO FEITO!</p>
+                  <p className="text-green-300 font-black text-3xl">+${lastEarned.toLocaleString()}</p>
+                  <p className="text-green-700 text-xs mt-1">dinheiro sujo</p>
+                  <button onClick={callNextCustomer}
+                    className="mt-4 px-6 py-2.5 rounded-xl bg-green-700 hover:bg-green-600 text-white font-bold text-sm transition-all hover:scale-105 active:scale-95">
+                    Próximo Cliente →
+                  </button>
+                </div>
+              )}
+
+              {/* Decision timer */}
+              {(phase === "customer" || phase === "counter") && (
+                <div>
+                  <div className="flex justify-between text-xs mb-1.5">
+                    <span className="text-[#444]">Tempo de decisão</span>
+                    <span className={`font-black tabular-nums ${timerSecs <= 10 ? "text-red-400 danger-text" : "text-[#666]"}`}>{timerSecs}s</span>
+                  </div>
+                  <div className="h-0.5 bg-[#181818] rounded-full overflow-hidden">
+                    <div className={`h-full transition-all duration-1000 rounded-full ${timerSecs <= 10 ? "bg-red-500" : "bg-cyan-500"}`}
+                      style={{ width: `${(timerSecs / DECISION_SECS) * 100}%` }} />
+                  </div>
+                </div>
+              )}
+
+              {/* Counter-offer panel */}
+              {phase === "counter" && counterPrice != null && counterQty != null && (
+                <div className="rounded-2xl border border-yellow-800/40 p-5"
+                  style={{ background: "linear-gradient(135deg, rgba(78,52,10,0.35), rgba(0,0,0,0.4))" }}>
+                  <p className="text-yellow-500 font-black mb-3 text-sm">↔️ Contra-Proposta</p>
+                  <div className="bg-[#0a0a0a] rounded-xl p-4 mb-4 text-center border border-yellow-900/30">
+                    <p className="text-yellow-300 font-black text-3xl">${(counterPrice * counterQty).toLocaleString()}</p>
+                    <p className="text-yellow-700 text-xs mt-1">${counterPrice}/g × {counterQty}g</p>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button onClick={acceptCounter}
+                      className="py-3 rounded-xl bg-green-700 hover:bg-green-600 text-white font-bold text-sm transition-all hover:scale-105 active:scale-95">
+                      ✅ Aceitar
+                    </button>
+                    <button onClick={() => { setPhase("customer"); startTimer(); addLog(`↩ Rejeitaste a contra-proposta de ${customer?.name}`, "text-orange-400"); }}
+                      className="py-3 rounded-xl border border-[#333] bg-[#111] hover:bg-[#1a1a1a] text-white font-bold text-sm transition-all hover:scale-105 active:scale-95">
+                      ❌ Rejeitar
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Main controls */}
+              {(phase === "customer" || phase === "idle") && (
+                <div className="rounded-2xl border border-[#1a1a1a] p-5 space-y-5" style={{ background: "rgba(8,8,8,0.85)" }}>
+                  <h3 className="text-[10px] text-[#333] font-black uppercase tracking-widest">Oferta</h3>
+
+                  {/* Drug selector */}
+                  <div>
+                    <label className="text-xs text-[#555] block mb-1.5">Produto</label>
+                    <select value={selectedDrug?.id ?? ""}
+                      onChange={(e) => { const d = drugs.find((x) => x.id === e.target.value); if (d) setSelectedDrug(d); }}
+                      className="w-full px-3 py-2.5 rounded-xl bg-[#111] border border-[#222] text-white text-sm focus:outline-none focus:border-green-600 transition-colors"
+                      disabled={phase !== "customer"}>
+                      {drugs.map((d) => (
+                        <option key={d.id} value={d.id}>{d.items.name} — {d.quantity}g disponível</option>
+                      ))}
+                      {drugs.length === 0 && <option value="">Sem stock</option>}
+                    </select>
+                  </div>
+
+                  {/* Price — slider + number input */}
+                  <div>
+                    <div className="flex justify-between items-center mb-2">
+                      <label className="text-xs text-[#555]">
+                        Preço/g{selectedDrug && <span className="text-[#333] ml-1">(base ${selectedDrug.items.base_price})</span>}
+                      </label>
+                      <span className="text-xs font-bold" style={{ color: dealColor }}>{dealLabel}</span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <div className="flex-1 relative">
+                        <div className="absolute inset-y-0 left-0 rounded-l-full pointer-events-none"
+                          style={{ width: `${sliderPct}%`, background: dealColor, opacity: 0.3, top: "50%", transform: "translateY(-50%)", height: "4px" }} />
+                        <input type="range" className="street-range relative z-10"
+                          min={sliderMin} max={sliderMax} value={pricePerUnit}
+                          onChange={(e) => setPricePerUnit(Number(e.target.value))}
+                          disabled={phase !== "customer"} />
+                      </div>
+                      <input type="number" min={1} value={pricePerUnit}
+                        onChange={(e) => setPricePerUnit(Math.max(1, Number(e.target.value)))}
+                        className="w-20 px-2 py-1.5 rounded-lg bg-[#111] border border-[#222] text-white text-sm text-center focus:outline-none focus:border-green-600"
+                        disabled={phase !== "customer"} />
+                    </div>
+                  </div>
+
+                  {/* Quantity — slider */}
+                  <div>
+                    <div className="flex justify-between items-center mb-2">
+                      <label className="text-xs text-[#555]">
+                        Quantidade{selectedDrug && <span className="text-[#333] ml-1">max {selectedDrug.quantity}g</span>}
+                      </label>
+                      <span className="text-white font-black text-sm">{quantity}g</span>
+                    </div>
+                    <input type="range" className="street-range w-full"
+                      min={1} max={selectedDrug?.quantity ?? 1} value={quantity}
+                      onChange={(e) => setQuantity(Number(e.target.value))}
+                      disabled={phase !== "customer"} />
+                  </div>
+
+                  {/* Total */}
+                  {selectedDrug && (
+                    <div className="flex justify-between items-center py-2 border-t border-[#151515]">
+                      <span className="text-[#444] text-xs">Total ofertado</span>
+                      <span className="text-white font-black text-lg">${(pricePerUnit * quantity).toLocaleString()}</span>
+                    </div>
+                  )}
+
+                  {/* Action buttons — customer phase */}
+                  {phase === "customer" && (
+                    <div className="grid grid-cols-2 gap-2">
+                      <button onClick={() => submitOffer("offer")}
+                        disabled={!selectedDrug || drugs.length === 0}
+                        className="col-span-2 py-3 rounded-xl font-black text-sm text-white transition-all hover:scale-[1.02] active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed"
+                        style={{ background: "linear-gradient(135deg,#166534,#15803d)" }}>
+                        💰 Fazer Oferta
+                      </button>
+                      <button onClick={() => submitOffer("push")} disabled={!selectedDrug || drugs.length === 0}
+                        title="Intimida o cliente — alto risco, pode aceitar ou ficar hostil"
+                        className="py-2.5 rounded-xl border border-orange-900/40 bg-orange-950/40 hover:bg-orange-900/50 text-orange-300 font-bold text-xs transition-all hover:scale-105 active:scale-95 disabled:opacity-30">
+                        💪 Push
+                      </button>
+                      <button onClick={() => submitOffer("discount")} disabled={!selectedDrug || drugs.length === 0}
+                        title="Desconto — reduz suspeita, aumenta aceitação"
+                        className="py-2.5 rounded-xl border border-blue-900/40 bg-blue-950/40 hover:bg-blue-900/50 text-blue-300 font-bold text-xs transition-all hover:scale-105 active:scale-95 disabled:opacity-30">
+                        🎁 Desconto
+                      </button>
+                      <button onClick={() => submitOffer("rush")} disabled={!selectedDrug || drugs.length === 0}
+                        title="Rush — apressa, reduz paciência do cliente"
+                        className="py-2.5 rounded-xl border border-purple-900/40 bg-purple-950/40 hover:bg-purple-900/50 text-purple-300 font-bold text-xs transition-all hover:scale-105 active:scale-95 disabled:opacity-30">
+                        ⚡ Rush
+                      </button>
+                      <button onClick={rejectCustomer}
+                        className="py-2.5 rounded-xl border border-[#1f1f1f] bg-[#0d0d0d] hover:bg-[#141414] text-[#444] hover:text-[#888] font-semibold text-xs transition-all hover:scale-105 active:scale-95">
+                        ⏩ Ignorar
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Call next — idle phase */}
+                  {phase === "idle" && (
+                    <button onClick={callNextCustomer} disabled={noDrugs || !!inJail}
+                      className="w-full py-3.5 rounded-xl font-black text-sm text-white transition-all hover:scale-[1.02] active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed"
+                      style={{ background: "linear-gradient(135deg,#0e7490,#0891b2)" }}>
+                      👤 Chamar Próximo Cliente
+                    </button>
+                  )}
+                </div>
+              )}
+
+              {/* Negotiating spinner */}
+              {phase === "negotiating" && (
+                <div className="rounded-xl border border-[#1a1a1a] bg-[#0a0a0a] p-6 text-center">
+                  <div className="w-6 h-6 border-2 border-cyan-500 border-t-transparent rounded-full animate-spin mx-auto mb-2" />
+                  <p className="text-[#444] text-sm">A negociar...</p>
+                </div>
+              )}
+
+              {/* Loading spinner (active session) */}
+              {phase === "loading" && session && (
+                <div className="rounded-xl border border-[#1a1a1a] bg-[#0a0a0a] p-6 text-center">
+                  <div className="w-6 h-6 border-2 border-green-500 border-t-transparent rounded-full animate-spin mx-auto mb-2" />
+                  <p className="text-[#444] text-sm">A carregar...</p>
+                </div>
+              )}
+
+              {/* End session */}
+              {session && phase !== "negotiating" && phase !== "loading" && (
+                <button onClick={endSession}
+                  className="w-full py-2.5 rounded-xl border border-red-950/60 bg-red-950/20 hover:bg-red-950/40 text-red-600 hover:text-red-500 font-semibold text-xs transition-all">
+                  🚪 Sair da Rua
+                </button>
+              )}
+            </div>
+
+            {/* ── RIGHT — Action log ─────────────────────────────────────── */}
+            <div className="w-full lg:w-60 xl:w-64 shrink-0 border-t lg:border-t-0 lg:border-l border-[#141414] flex flex-col p-4"
+              style={{ background: "rgba(0,0,0,0.55)" }}>
+              <p className="text-[10px] font-black text-[#2a2a2a] uppercase tracking-widest mb-3">Registo</p>
+              <div ref={logRef} className="flex-1 overflow-y-auto space-y-1.5 max-h-[400px] lg:max-h-full"
+                style={{ scrollbarWidth: "none" }}>
+                {log.length === 0 && (
+                  <p className="text-[#222] text-xs italic">Sem actividade ainda...</p>
+                )}
+                {log.map((entry, i) => (
+                  <div key={i} className="text-xs flex gap-1.5 items-start">
+                    <span className="text-[#2a2a2a] shrink-0 tabular-nums pt-px">{entry.time}</span>
+                    <span className={`${entry.color} leading-snug`}>{entry.text}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </>
   );
 }
 
-// --- Util ---------------------------------------------------------------------
+// ─── Util ─────────────────────────────────────────────────────────────────────
 
 function heatStageFor(heat: number): HeatStage {
   if (heat >= 100) return "busted";
@@ -920,4 +1016,5 @@ function heatStageFor(heat: number): HeatStage {
   if (heat >= 40)  return "warning";
   return "safe";
 }
+
 
