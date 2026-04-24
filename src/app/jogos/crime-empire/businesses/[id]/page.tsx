@@ -559,9 +559,14 @@ export default function BusinessManagementPage({ params }: { params: Promise<{ i
                   <p className="text-gray-500 uppercase tracking-wide" style={{ fontSize: "9px" }}>Dinheiro Sujo</p>
                   <p className="font-black text-white">${player.dirty_cash.toLocaleString()}</p>
                 </div>
-                <div className="px-3 py-1.5 rounded-lg" style={{ background: "#0a0a0a", border: "1px solid rgba(255,255,255,0.06)" }}>
+                <div className="px-3 py-1.5 rounded-lg" style={{ background: "#0a0a0a", border: "1px solid rgba(59,130,246,0.25)" }}>
                   <p className="text-gray-500 uppercase tracking-wide" style={{ fontSize: "9px" }}>Cap/Hora</p>
-                  <p className="font-black text-blue-400">${pb.launder_effective_cap.toLocaleString()}</p>
+                  <div className="flex items-center gap-1.5">
+                    <p className="font-black text-blue-400">${pb.launder_effective_cap.toLocaleString()}</p>
+                    <span className={`text-[9px] font-black px-1.5 py-0.5 rounded-full ${PRODUCTION_META[production].color} bg-white/5`}>
+                      ×{PRODUCTION_META[production].income}
+                    </span>
+                  </div>
                 </div>
                 <div className="px-3 py-1.5 rounded-lg" style={{ background: "#0a0a0a", border: "1px solid rgba(255,106,0,0.15)" }}>
                   <p className="text-gray-500 uppercase tracking-wide" style={{ fontSize: "9px" }}>Taxa da Casa</p>
@@ -589,6 +594,12 @@ export default function BusinessManagementPage({ params }: { params: Promise<{ i
                   </div>
                 )}
               </div>
+              <p className={`text-xs ${PRODUCTION_META[production].color}`}>
+                Modo <span className="font-bold">{PRODUCTION_META[production].label}</span>
+                {" — "}cap de lavagem ×{PRODUCTION_META[production].income}
+                {production === "overdrive" && <span className="text-red-400 font-bold"> · calor ×{PRODUCTION_META[production].heat}</span>}
+                {production === "low" && <span className="text-gray-500"> · calor ×{PRODUCTION_META[production].heat}</span>}
+              </p>
               <div className="flex items-center gap-2">
                 <input
                   type="number"
