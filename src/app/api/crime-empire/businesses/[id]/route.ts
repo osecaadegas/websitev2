@@ -138,6 +138,12 @@ export async function GET(
     drugItemName = drugItem?.name ?? "";
   }
 
+  // Crypto farm
+  const isCryptoFarm = def?.income_type === "crypto_farm";
+  const accumulatedFarmValue = isCryptoFarm ? Math.max(0, Math.floor(hoursElapsed * incomeRate)) : 0;
+  const cryptoCoinId = isCryptoFarm ? (def?.crypto_coin_id ?? null) : null;
+  const cryptoCoinDisplay = isCryptoFarm ? (def?.crypto_coin_display ?? null) : null;
+
   // Available workers to hire.
   // Always show full pool — workers not currently active can be hired.
   // When all pool entries are active but capacity exists (e.g. after upgrades), all workers
@@ -159,9 +165,13 @@ export async function GET(
     player_business: {
       ...pb,
       heat: currentHeat,
-      income_per_hour: isDrugBusiness ? 0 : incomeRate,
+      income_per_hour: (isDrugBusiness || isCryptoFarm) ? 0 : incomeRate,
+      farm_rate_per_hour: isCryptoFarm ? incomeRate : 0,
       heat_rate_per_hour: heatRate,
-      accumulated_income: isDrugBusiness ? 0 : accumulatedIncome,
+      accumulated_income: (isDrugBusiness || isCryptoFarm) ? 0 : accumulatedIncome,
+      accumulated_farm_value: accumulatedFarmValue,
+      crypto_coin_id: cryptoCoinId,
+      crypto_coin_display: cryptoCoinDisplay,
       hours_elapsed: hoursElapsed,
       drug_output_per_hour: drugOutputRate,
       accumulated_drug_qty: accumulatedDrugQty,
@@ -367,6 +377,62 @@ async function handleCollect(pb: any, player: any, pbId: string) {
     let newEvent = null;
     if (def) newEvent = await maybeSpawnEvent(pb, def, player.id, pbId, newHeat);
     return NextResponse.json({ success: true, drug_qty: drugQty, heat: newHeat, raided: false, new_event: newEvent });
+  }
+
+  // ── CRYPTO FARM BUSINESSES ────────────────────────────────────────────────
+  if (def?.income_type === "crypto_farm") {
+    const FARM_COINS: Record<string, { realId: string; displayName: string; symbol: string; fallbackPrice: number }> = {
+      "nether-coin":   { realId: "bitcoin",   displayName: "NetherCoin",   symbol: "NTC", fallbackPrice: 65000 },
+      "phantom-chain": { realId: "ripple",     displayName: "PhantomChain", symbol: "PHC", fallbackPrice: 0.55  },
+      "iron-ledger":   { realId: "cardano",    displayName: "IronLedger",   symbol: "ILD", fallbackPrice: 0.45  },
+      "ghost-token":   { realId: "ethereum",   displayName: "GhostToken",   symbol: "GTK", fallbackPrice: 3200  },
+    };
+    const coinId = def.crypto_coin_id ?? "";
+    const coinInfo = FARM_COINS[coinId];
+    if (!coinInfo) return NextResponse.json({ error: "Moeda de farm inválida" }, { status: 400 });
+
+    const farmIncomeRate = computeIncomeRate({ base_income_per_hour: pb.business.base_income_per_hour, production_level: pb.production_level as ProductionLevel, workers: workers ?? [], upgrades: activeDefs });
+    let farmedValue = Math.floor(hoursElapsed * farmIncomeRate);
+    if (farmedValue <= 0) {
+      await supabase.from("player_businesses").update({ last_collection: now.toISOString(), heat: newHeat, last_heat_update: now.toISOString() }).eq("id", pbId);
+      return NextResponse.json({ success: true, farmed_value: 0, quantity: 0, coin_name: coinInfo.displayName, coin_symbol: coinInfo.symbol, heat: newHeat, raided: false, message: "Nada acumulado ainda." });
+    }
+
+    // Fetch live coin price
+    let currentPrice = coinInfo.fallbackPrice;
+    try {
+      const priceRes = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${coinInfo.realId}&vs_currencies=usd`, { cache: "no-store" });
+      if (priceRes.ok) {
+        const priceData = await priceRes.json();
+        currentPrice = priceData[coinInfo.realId]?.usd ?? coinInfo.fallbackPrice;
+      }
+    } catch { /* use fallback */ }
+
+    if (newHeat >= 90) {
+      const keptValue = Math.floor(farmedValue * 0.30);
+      const keptQty = currentPrice > 0 ? keptValue / currentPrice : 0;
+      newHeat = 30;
+      await supabase.from("player_businesses").update({ status: "raided", heat: newHeat, last_heat_update: now.toISOString(), last_collection: now.toISOString() }).eq("id", pbId);
+      await spawnEvent(pbId, player.id, "police_raid_aftermath", {});
+      if (keptValue > 0 && keptQty > 0) {
+        await supabase.from("stock_positions").insert({
+          player_id: player.id, display_name: coinInfo.displayName, display_symbol: coinInfo.symbol,
+          real_coin_id: coinInfo.realId, bought_price: currentPrice, quantity: keptQty, dirty_cash_invested: keptValue, source: "farmed",
+        });
+      }
+      return NextResponse.json({ success: true, farmed_value: keptValue, quantity: keptQty, coin_name: coinInfo.displayName, coin_symbol: coinInfo.symbol, current_price: currentPrice, raided: true, message: `Foste invadido! A polícia confiscou 70% dos teus ${coinInfo.displayName}. Recuperaste ~$${keptValue.toLocaleString()} em coins.`, heat: newHeat });
+    }
+
+    const quantity = currentPrice > 0 ? farmedValue / currentPrice : 0;
+    await supabase.from("stock_positions").insert({
+      player_id: player.id, display_name: coinInfo.displayName, display_symbol: coinInfo.symbol,
+      real_coin_id: coinInfo.realId, bought_price: currentPrice, quantity, dirty_cash_invested: farmedValue, source: "farmed",
+    });
+    await supabase.from("player_businesses").update({ last_collection: now.toISOString(), heat: newHeat, last_heat_update: now.toISOString() }).eq("id", pbId);
+    await grantXP(player.id, Math.max(5, Math.floor(farmedValue / 100)));
+    let newEvent = null;
+    if (def) newEvent = await maybeSpawnEvent(pb, def, player.id, pbId, newHeat);
+    return NextResponse.json({ success: true, farmed_value: farmedValue, quantity, coin_name: coinInfo.displayName, coin_symbol: coinInfo.symbol, current_price: currentPrice, heat: newHeat, raided: false, new_event: newEvent });
   }
 
   // ── CASH BUSINESSES ───────────────────────────────────────────────────────

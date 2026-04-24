@@ -77,8 +77,11 @@ export interface BusinessTypeDef {
   description_short: string;
   risk_level: RiskLevel;
   heat_per_hour: number; // at normal production
-  income_type: "dirty_cash" | "launder" | "drugs"; // drugs = produces drug items
+  income_type: "dirty_cash" | "launder" | "drugs" | "crypto_farm"; // crypto_farm = produces coin units
   drug_output_item_slug?: string; // display name of the drug item produced (reference only)
+  crypto_coin_id?: string;      // fake coin ID (e.g. "nether-coin") for crypto_farm businesses
+  crypto_real_coin_id?: string; // CoinGecko real coin ID (server-only, for price fetching)
+  crypto_coin_display?: { name: string; symbol: string; color: string };
   unique_mechanic: string; // one-liner description
   launder_cap_per_worker?: number; // extra $/hr of launder throughput per hired worker
   production_multipliers: { low: number; normal: number; overdrive: number };
@@ -274,14 +277,17 @@ const PILL_FACTORY: BusinessTypeDef = {
 
 const CRYPTO_MINING: BusinessTypeDef = {
   type: "crypto_mining",
-  label: "Mining de Crypto",
+  label: "Rig Farm",
   icon: "⛏️",
-  tagline: "Minera criptomoedas com rigs ilegais",
-  description_short: "Lucros flutuantes conforme o mercado. Pouco calor mas electricidade cara. Gere a eficiência.",
+  tagline: "Minera NetherCoin com rigs ilegais de alta potência",
+  description_short: "Os teus rigs minam NetherCoin dia e noite. Recolhe os coins e vende no mercado de crypto. Pouco calor, lucro dependente do mercado.",
   risk_level: "low",
   heat_per_hour: 3,
-  income_type: "dirty_cash",
-  unique_mechanic: "Lucros flutuantes — o mercado sobe e desce aleatoriamente a cada coleta",
+  income_type: "crypto_farm",
+  crypto_coin_id: "nether-coin",
+  crypto_real_coin_id: "bitcoin",
+  crypto_coin_display: { name: "NetherCoin", symbol: "NTC", color: "#f7931a" },
+  unique_mechanic: "Crypto farm — acumula NetherCoin para vender no mercado de stocks",
   production_multipliers: { low: 0.35, normal: 1.0, overdrive: 1.75 },
   heat_multipliers:       { low: 0.30, normal: 1.0, overdrive: 2.50 },
   worker_pool: [
@@ -336,14 +342,17 @@ const CRYPTO_MINING: BusinessTypeDef = {
 
 const SCAM_OFFICE: BusinessTypeDef = {
   type: "scam_office",
-  label: "Escritório de Scams",
-  icon: "🎭",
-  tagline: "Operações de fraude digital em grande escala",
-  description_short: "Cada operação tem chance de falhar. Trabalhadores com alta inteligência aumentam a taxa de sucesso.",
+  label: "Pump & Dump HQ",
+  icon: "📈",
+  tagline: "Orquestra esquemas de pump & dump que geram PhantomChain",
+  description_short: "Coordenas campanhas de manipulação de mercado. Cada ciclo de hype gera PhantomChain para vender no mercado de crypto.",
   risk_level: "medium",
   heat_per_hour: 7,
-  income_type: "dirty_cash",
-  unique_mechanic: "Taxa de sucesso — cada operação pode falhar baseado nos teus trabalhadores",
+  income_type: "crypto_farm",
+  crypto_coin_id: "phantom-chain",
+  crypto_real_coin_id: "ripple",
+  crypto_coin_display: { name: "PhantomChain", symbol: "PHC", color: "#00aae4" },
+  unique_mechanic: "Pump & dump — cada ciclo de manipulação gera PhantomChain para vender",
   production_multipliers: { low: 0.35, normal: 1.0, overdrive: 1.75 },
   heat_multipliers:       { low: 0.30, normal: 1.0, overdrive: 2.50 },
   worker_pool: [
@@ -463,14 +472,17 @@ const CHOP_SHOP: BusinessTypeDef = {
 
 const COUNTERFEIT_LAB: BusinessTypeDef = {
   type: "counterfeit_lab",
-  label: "Lab. de Contrafação",
-  icon: "🖨️",
-  tagline: "Produz dinheiro e documentos falsos",
-  description_short: "Alto risco, alto retorno. Trabalhadores com stealth são críticos. Um erro e a operação cai.",
+  label: "Token Forge",
+  icon: "🔐",
+  tagline: "Forja tokens IronLedger no mercado negro digital",
+  description_short: "Mint de tokens fraudulentos em escala industrial. Alto risco, alto retorno. Trabalhadores de stealth são críticos para evitar detecção.",
   risk_level: "high",
   heat_per_hour: 14,
-  income_type: "dirty_cash",
-  unique_mechanic: "Qualidade do produto — trabalhadores de stealth reduzem detecção de notas falsas",
+  income_type: "crypto_farm",
+  crypto_coin_id: "iron-ledger",
+  crypto_real_coin_id: "cardano",
+  crypto_coin_display: { name: "IronLedger", symbol: "ILD", color: "#0033ad" },
+  unique_mechanic: "Token forging — mint de IronLedger com qualidade ditada pelo stealth dos trabalhadores",
   production_multipliers: { low: 0.35, normal: 1.0, overdrive: 1.75 },
   heat_multipliers:       { low: 0.30, normal: 1.0, overdrive: 2.50 },
   worker_pool: [
@@ -525,14 +537,17 @@ const COUNTERFEIT_LAB: BusinessTypeDef = {
 
 const NIGHTCLUB: BusinessTypeDef = {
   type: "nightclub",
-  label: "Nightclub",
-  icon: "🎵",
-  tagline: "A fachada perfeita para lavar dinheiro",
-  description_short: "Negócio legítimo na fachada. Popularidade atrai mais clientes e aumenta o dinheiro lavado.",
+  label: "Câmbio Negro",
+  icon: "🌑",
+  tagline: "Câmbio clandestino de GhostToken na economia sombria",
+  description_short: "Trocas de GhostToken no mercado subterrâneo. Baixo calor, fluxo constante de coins. O negócio mais discreto que existe.",
   risk_level: "low",
   heat_per_hour: 2,
-  income_type: "dirty_cash",
-  unique_mechanic: "Sistema de popularidade — eventos e promoções aumentam o fluxo de dinheiro",
+  income_type: "crypto_farm",
+  crypto_coin_id: "ghost-token",
+  crypto_real_coin_id: "ethereum",
+  crypto_coin_display: { name: "GhostToken", symbol: "GTK", color: "#627eea" },
+  unique_mechanic: "Dark exchange — acumula GhostToken através de trocas clandestinas de confiança",
   production_multipliers: { low: 0.35, normal: 1.0, overdrive: 1.75 },
   heat_multipliers:       { low: 0.30, normal: 1.0, overdrive: 2.50 },
   worker_pool: [

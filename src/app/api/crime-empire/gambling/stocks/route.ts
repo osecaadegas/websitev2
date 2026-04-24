@@ -129,7 +129,7 @@ export async function GET() {
 
   const { data: positions } = await supabase
     .from("stock_positions")
-    .select("id, display_name, display_symbol, real_coin_id, bought_price, dirty_cash_invested, created_at")
+    .select("id, display_name, display_symbol, real_coin_id, bought_price, dirty_cash_invested, source, created_at")
     .eq("player_id", player.id)
     .order("created_at", { ascending: false });
 
@@ -153,6 +153,7 @@ export async function GET() {
       pnl: currentValue - pos.dirty_cash_invested,
       pnlPercent: Math.round(pctChange * 10000) / 100,
       boughtAt: pos.created_at,
+      source: pos.source ?? "bought",
     };
   });
 
@@ -210,6 +211,7 @@ export async function POST(req: NextRequest) {
       bought_price: currentPrice,
       quantity,
       dirty_cash_invested: amount,
+      source: "bought",
     });
 
     return NextResponse.json({ success: true, quantity, price: currentPrice, symbol: coin.symbol, fee: buyFee, totalCost });
@@ -223,11 +225,13 @@ export async function POST(req: NextRequest) {
       .select("*").eq("id", positionId).eq("player_id", player.id).maybeSingle();
     if (!position) return NextResponse.json({ error: "Posição não encontrada" }, { status: 404 });
 
-    // Enforce 24-hour minimum hold to prevent instant money-laundering
+    // Enforce minimum hold — farmed coins: 2h, bought coins: 24h
     const holdMs = Date.now() - new Date(position.created_at).getTime();
-    if (holdMs < MIN_HOLD_MS) {
-      const hoursLeft = Math.ceil((MIN_HOLD_MS - holdMs) / 3600000);
-      return NextResponse.json({ error: `Tens de segurar este ativo por pelo menos 24h. Podes vender em ${hoursLeft}h.` }, { status: 400 });
+    const holdLimitMs = position.source === "farmed" ? 2 * 60 * 60 * 1000 : MIN_HOLD_MS;
+    if (holdMs < holdLimitMs) {
+      const hoursLeft = Math.ceil((holdLimitMs - holdMs) / 3600000);
+      const holdDesc = position.source === "farmed" ? "2h" : "24h";
+      return NextResponse.json({ error: `Tens de segurar este ativo por pelo menos ${holdDesc}. Podes vender em ${hoursLeft}h.` }, { status: 400 });
     }
 
     const prices = await fetchMarketData();

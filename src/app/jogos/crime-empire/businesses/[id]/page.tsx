@@ -28,6 +28,9 @@ interface ManagementData {
     upgrade_level: number;
     launder_effective_cap: number; launder_remaining: number; launder_window_reset_at: string;
     drug_output_per_hour: number; accumulated_drug_qty: number; drug_item_name: string;
+    farm_rate_per_hour: number; accumulated_farm_value: number;
+    crypto_coin_id: string | null;
+    crypto_coin_display: { name: string; symbol: string; color: string } | null;
   };
   business: { id: string; name: string; type: string; base_income_per_hour: number; max_employees: number; launder_fee_percent?: number | null; };
   def: BusinessTypeDef | null;
@@ -243,6 +246,7 @@ export default function BusinessManagementPage({ params }: { params: Promise<{ i
   const [showHirePanel, setShowHirePanel] = useState(false);
   const [pendingIncome, setPendingIncome] = useState(0);
   const [pendingDrugQty, setPendingDrugQty] = useState(0);
+  const [pendingFarmValue, setPendingFarmValue] = useState(0);
   const [currentHeat, setCurrentHeat] = useState(0);
   const [launderAmount, setLaunderAmount] = useState("");
   const [collectCooldownSecs, setCollectCooldownSecs] = useState(0);
@@ -267,6 +271,7 @@ export default function BusinessManagementPage({ params }: { params: Promise<{ i
       setData(json);
       setPendingIncome(json.player_business.accumulated_income);
       setPendingDrugQty(json.player_business.accumulated_drug_qty ?? 0);
+      setPendingFarmValue(json.player_business.accumulated_farm_value ?? 0);
       setCurrentHeat(json.player_business.heat);
     } catch {
       showToast("Erro de rede", "error");
@@ -280,9 +285,9 @@ export default function BusinessManagementPage({ params }: { params: Promise<{ i
     loadData();
   }, [user, loadData, router]);
 
-  // Live income ticker
+  // Live income ticker (dirty_cash businesses only)
   useEffect(() => {
-    if (!data || data.def?.income_type === "drugs") return;
+    if (!data || data.def?.income_type === "drugs" || data.def?.income_type === "crypto_farm") return;
     const rate = data.player_business.income_per_hour / 3600;
     incomeIntervalRef.current = setInterval(() => {
       setPendingIncome((prev) => Math.floor(prev + rate));
@@ -299,6 +304,16 @@ export default function BusinessManagementPage({ params }: { params: Promise<{ i
     }, 1000);
     return () => { if (drugIntervalRef.current) clearInterval(drugIntervalRef.current); };
   }, [data?.player_business.drug_output_per_hour, data?.player_business.accumulated_drug_qty, data?.def?.income_type]);
+
+  // Live crypto farm value ticker
+  useEffect(() => {
+    if (!data || data.def?.income_type !== "crypto_farm") return;
+    const rate = (data.player_business.farm_rate_per_hour ?? 0) / 3600;
+    const farmInterval = setInterval(() => {
+      setPendingFarmValue((prev) => Math.floor(prev + rate));
+    }, 1000);
+    return () => clearInterval(farmInterval);
+  }, [data?.player_business.farm_rate_per_hour, data?.player_business.accumulated_farm_value, data?.def?.income_type]);
 
   // Live heat ticker
   useEffect(() => {
@@ -371,6 +386,8 @@ export default function BusinessManagementPage({ params }: { params: Promise<{ i
       else if (result.drug_qty !== undefined) {
         const itemName = data?.player_business.drug_item_name || "unidades";
         showToast(`📦 +${result.drug_qty} ${itemName} coletados!`);
+      } else if (result.farmed_value !== undefined) {
+        showToast(`⛏️ +$${result.farmed_value?.toLocaleString()} em ${result.coin_name} adicionados ao portfolio!`);
       } else {
         showToast(`💰 +$${result.earned?.toLocaleString()} dinheiro sujo coletado!`);
       }
@@ -451,6 +468,8 @@ export default function BusinessManagementPage({ params }: { params: Promise<{ i
   const production = pb.production_level as ProductionLevel;
   const isLaunder = def?.income_type === "launder";
   const isDrug = def?.income_type === "drugs";
+  const isCryptoFarm = def?.income_type === "crypto_farm";
+  const cryptoCoin = pb.crypto_coin_display;
   const drugItemName = pb.drug_item_name || "droga";
   const maxLaunderThisAction = Math.min(pb.launder_remaining ?? 0, player.dirty_cash);
 
@@ -509,16 +528,24 @@ export default function BusinessManagementPage({ params }: { params: Promise<{ i
 
           {/* right: income + heat */}
           <div className="md:ml-auto flex flex-col md:items-end gap-3">
-            {/* Income / Drug output */}
+            {/* Income / Drug output / Farm rate */}
             <div className="text-right">
               <p className="text-xs text-gray-500 uppercase tracking-wide">
-                {isDrug ? "Produção/hora" : "Rendimento/hora"}
+                {isDrug ? "Produção/hora" : isCryptoFarm ? "Farm/hora" : "Rendimento/hora"}
               </p>
-              <p className="text-2xl font-black" style={{ color: isDrug ? "#a78bfa" : "#ff6a00" }}>
-                {isDrug ? `${(pb.drug_output_per_hour ?? 0).toFixed(1)} ud.` : `$${pb.income_per_hour.toLocaleString()}`}
+              <p className="text-2xl font-black" style={{ color: isDrug ? "#a78bfa" : isCryptoFarm ? (cryptoCoin?.color ?? "#22d3ee") : "#ff6a00" }}>
+                {isDrug
+                  ? `${(pb.drug_output_per_hour ?? 0).toFixed(1)} ud.`
+                  : isCryptoFarm
+                  ? `~$${(pb.farm_rate_per_hour ?? 0).toLocaleString()}`
+                  : `$${pb.income_per_hour.toLocaleString()}`}
               </p>
               {isDrug ? (
                 <p className="text-xs text-gray-500">{drugItemName}</p>
+              ) : isCryptoFarm ? (
+                <p className="text-xs" style={{ color: cryptoCoin?.color ?? "#22d3ee" }}>
+                  {cryptoCoin?.name ?? "Crypto"} ({cryptoCoin?.symbol ?? "???"})
+                </p>
               ) : (
                 <p className="text-xs text-gray-500">Salários: -${salaryCostPerHour.toLocaleString()}/hr</p>
               )}
@@ -636,6 +663,31 @@ export default function BusinessManagementPage({ params }: { params: Promise<{ i
                   ⏳ Disponível em {Math.floor(collectCooldownSecs / 60)}m {collectCooldownSecs % 60}s
                 </p>
               )}
+            </div>
+          ) : isCryptoFarm ? (
+            <div className="flex flex-col items-start gap-1">
+              <button
+                onClick={handleCollect}
+                disabled={processing || status === "raided" || collectCooldownSecs > 0}
+                className="px-6 py-3 rounded-xl font-black text-base disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-lg"
+                style={{
+                  background: `linear-gradient(135deg, ${cryptoCoin?.color ?? "#22d3ee"}aa, ${cryptoCoin?.color ?? "#22d3ee"}66)`,
+                  border: `1px solid ${cryptoCoin?.color ?? "#22d3ee"}55`,
+                  boxShadow: `0 8px 24px ${cryptoCoin?.color ?? "#22d3ee"}22`,
+                  color: "#fff",
+                }}
+              >
+                ⛏️ Coletar {cryptoCoin?.symbol ?? "Crypto"}{pendingFarmValue > 0 ? ` ~$${pendingFarmValue.toLocaleString()}` : ""}
+              </button>
+              {collectCooldownSecs > 0 && (
+                <p className="text-xs text-gray-500 pl-1">
+                  ⏳ Disponível em {Math.floor(collectCooldownSecs / 60)}m {collectCooldownSecs % 60}s
+                </p>
+              )}
+              <p className="text-xs text-gray-600 pl-1">
+                Coins vão para o teu portfolio · Vende em{" "}
+                <a href="/jogos/crime-empire/gambling/stocks" className="underline" style={{ color: cryptoCoin?.color ?? "#22d3ee" }}>Stocks</a>
+              </p>
             </div>
           ) : (
             <div className="flex flex-col items-start gap-1">

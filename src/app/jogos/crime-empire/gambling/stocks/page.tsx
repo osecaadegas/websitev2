@@ -28,6 +28,7 @@ type Position = {
   pnl: number;
   pnlPercent: number;
   boughtAt: string;
+  source: string;
 };
 
 function MiniSparkline({ prices, h = 24 }: { prices: number[]; h?: number }) {
@@ -98,13 +99,16 @@ function holdDuration(boughtAt: string) {
 }
 
 const HOLD_MS = 24 * 60 * 60 * 1000;
+const FARM_HOLD_MS = 2 * 60 * 60 * 1000;
 
-function canSellNow(boughtAt: string) {
-  return Date.now() - new Date(boughtAt).getTime() >= HOLD_MS;
+function canSellNow(boughtAt: string, source?: string) {
+  const holdLimit = source === "farmed" ? FARM_HOLD_MS : HOLD_MS;
+  return Date.now() - new Date(boughtAt).getTime() >= holdLimit;
 }
 
-function sellCountdown(boughtAt: string) {
-  const ms = HOLD_MS - (Date.now() - new Date(boughtAt).getTime());
+function sellCountdown(boughtAt: string, source?: string) {
+  const holdLimit = source === "farmed" ? FARM_HOLD_MS : HOLD_MS;
+  const ms = holdLimit - (Date.now() - new Date(boughtAt).getTime());
   if (ms <= 0) return null;
   const h = Math.floor(ms / 3600000);
   const m = Math.floor((ms % 3600000) / 60000);
@@ -224,6 +228,9 @@ export default function StocksPage() {
                         <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: pos.color }} />
                         <span className="font-bold text-sm truncate">{pos.displayName}</span>
                         <span className="text-[#555] text-xs flex-shrink-0">{pos.symbol}</span>
+                        {pos.source === "farmed" && (
+                          <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-cyan-900/40 border border-cyan-700/40 text-cyan-400 flex-shrink-0">⛏️ Farm</span>
+                        )}
                       </div>
                       <span className={`text-sm font-black flex-shrink-0 ${pos.pnl >= 0 ? "text-green-400" : "text-red-400"}`}>
                         {pos.pnlPercent >= 0 ? "+" : ""}{pos.pnlPercent.toFixed(1)}%
@@ -241,8 +248,8 @@ export default function StocksPage() {
                       <div><span className="text-[#555]">Hold </span><span className="font-bold text-yellow-500">{holdDuration(pos.boughtAt)}</span></div>
                     </div>
                     {(() => {
-                      const ok = canSellNow(pos.boughtAt);
-                      const countdown = sellCountdown(pos.boughtAt);
+                      const ok = canSellNow(pos.boughtAt, pos.source);
+                      const countdown = sellCountdown(pos.boughtAt, pos.source);
                       return (
                         <button
                           onClick={() => sell(pos.id)}
