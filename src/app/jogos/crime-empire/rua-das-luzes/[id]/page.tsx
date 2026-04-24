@@ -450,7 +450,7 @@ export default function BrothelManagePage() {
       {/* ── WORKER CAROUSEL ── */}
       {showCarousel && (
         <WorkerCarousel
-          workers={WORKER_DEFS}
+          workers={[...WORKER_DEFS].sort((a, b) => a.hire_price - b.hire_price)}
           ownedSlugs={workers.map((w) => w.slug).filter(Boolean) as string[]}
           playerCash={playerCash}
           playerCrypto={playerCrypto}
