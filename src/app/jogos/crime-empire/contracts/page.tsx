@@ -401,7 +401,7 @@ function ContractBriefing({
                 }`}
                 style={serif}
               >
-                {isCompleted ? "âœ“ MISSAO CUMPRIDA" : "âœ— MISSAO FALHADA"}
+                {isCompleted ? "âœ“ MISSAO CUMPRIDA" : "✗ MISSAO FALHADA"}
               </span>
             </div>
           )}
@@ -454,10 +454,10 @@ function ContractBriefing({
           {/* STATS â€” 3 cols */}
           <div className="w-full grid grid-cols-3 gap-2 mb-3">
             <div className="flex flex-col items-center gap-1 rounded-sm py-2 px-1 border border-amber-900/10" style={{ background: "rgba(139,90,43,0.10)" }}>
-              <span className="text-base">ðŸŽ¯</span>
+              <span className="text-base">🎯</span>
               <span className="text-[9px] font-bold tracking-[0.15em] uppercase" style={{ ...serif, color: "rgba(120,53,15,0.50)" }}>Sucesso</span>
               <span className="text-sm font-black tracking-wide" style={{ ...serif, color: displayRate >= 60 ? "rgba(22,101,52,0.85)" : displayRate >= 40 ? "rgba(146,64,14,0.85)" : "rgba(127,29,29,0.85)" }}>
-                {displayRate}%{isHitman ? " âœ¦" : ""}
+                {displayRate}%{isHitman ? " ✦" : ""}
               </span>
             </div>
             <div className="flex flex-col items-center gap-1 rounded-sm py-2 px-1 border border-amber-900/10" style={{ background: "rgba(139,90,43,0.10)" }}>
@@ -466,7 +466,7 @@ function ContractBriefing({
               <span className="text-sm font-black tracking-wide" style={{ ...serif, color: "rgba(127,29,29,0.75)" }}>{riskDisplay}%</span>
             </div>
             <div className="flex flex-col items-center gap-1 rounded-sm py-2 px-1 border border-amber-900/10" style={{ background: "rgba(139,90,43,0.10)" }}>
-              <span className="text-base">âš¡</span>
+              <span className="text-base">⚡</span>
               <span className="text-[9px] font-bold tracking-[0.15em] uppercase" style={{ ...serif, color: "rgba(120,53,15,0.50)" }}>Stamina</span>
               <span className="text-sm font-black tracking-wide" style={{ ...serif, color: hasStamina ? "rgba(120,53,15,0.80)" : "rgba(127,29,29,0.85)" }}>
                 -{contract.stamina_cost}
@@ -485,14 +485,14 @@ function ContractBriefing({
             <div className="flex items-start gap-2">
               <div className="w-1 h-1 rounded-full mt-1.5 flex-shrink-0" style={{ background: "rgba(153,27,27,0.50)" }} />
               <p className="text-[10px]" style={{ ...serif, color: "rgba(101,63,15,0.65)" }}>
-                <span className="font-bold" style={{ color: "rgba(153,27,27,0.75)" }}>{arrestDisplay}% chance</span> de prisÃ£o (30â€“90 min).
+                <span className="font-bold" style={{ color: "rgba(153,27,27,0.75)" }}>{arrestDisplay}% chance</span> de prisão (30â€“90 min).
               </p>
             </div>
             {!meetsLevel && (
               <div className="flex items-start gap-2">
                 <div className="w-1 h-1 rounded-full mt-1.5 flex-shrink-0" style={{ background: "rgba(153,27,27,0.65)" }} />
                 <p className="text-[10px] font-bold" style={{ ...serif, color: "rgba(127,29,29,0.80)" }}>
-                  Requer nÃ­vel {contract.required_level} â€” nÃ­vel insuficiente.
+                  Requer nível {contract.required_level} â€” nível insuficiente.
                 </p>
               </div>
             )}
@@ -793,7 +793,7 @@ export default function ContractsPage() {
           setArrestEscape({ token: data.escape_token, jailMinutes: data.jail_time_minutes ?? 30, roadmapLevel: data.roadmap_level ?? 1 });
         }
         const details = ok
-          ? `+ðŸ’µ $${data.cash_earned?.toLocaleString()} | +â­ ${data.respect_earned} Respeito`
+          ? `+ðŸ’µ $${data.cash_earned?.toLocaleString()} | +⭐ ${data.respect_earned} Respeito`
           : data.arrested ? "ðŸš” Preso!" : "";
         showToast(data.message, ok, details);
         await fetchData();
@@ -835,7 +835,7 @@ export default function ContractsPage() {
           <div className="relative w-14 h-14 mx-auto mb-4">
             <div className="absolute inset-0 rounded-full border border-amber-900/20 animate-ping" />
             <div className="absolute inset-2 rounded-full border border-amber-800/30 animate-pulse" />
-            <div className="absolute inset-0 flex items-center justify-center text-xl">ðŸŽ¯</div>
+            <div className="absolute inset-0 flex items-center justify-center text-xl">🎯</div>
           </div>
           <p className="text-[8px] uppercase tracking-[0.4em]" style={{ color: "rgba(180,110,40,0.50)" }}>A CARREGAR BRIEFING</p>
         </div>
@@ -913,7 +913,7 @@ export default function ContractsPage() {
           >
             <span className="flex-shrink-0">ðŸ”ª</span>
             <span style={{ color: "rgba(248,113,113,0.90)" }}>
-              <strong style={{ color: "rgba(252,165,165,1)" }}>BONUS HITMAN:</strong> +15% taxa de sucesso Â· -50% chance de ser preso
+              <strong style={{ color: "rgba(252,165,165,1)" }}>BONUS HITMAN:</strong> +15% taxa de sucesso · -50% chance de ser preso
             </span>
           </div>
         )}
@@ -924,7 +924,7 @@ export default function ContractsPage() {
           >
             <span className="flex-shrink-0">ðŸš”</span>
             <span style={{ color: "rgba(251,191,36,0.80)" }}>
-              <strong style={{ color: "rgba(253,224,71,1)" }}>DETIDO:</strong> NÃ£o podes aceitar contratos enquanto estiveres preso.
+              <strong style={{ color: "rgba(253,224,71,1)" }}>DETIDO:</strong> Não podes aceitar contratos enquanto estiveres preso.
             </span>
           </div>
         )}
@@ -932,7 +932,7 @@ export default function ContractsPage() {
         {/* â”€â”€ MAIN SPLIT LAYOUT â”€â”€ */}
         {contracts.length === 0 ? (
           <div className="text-center py-24">
-            <p className="text-2xl opacity-10 mb-3">ðŸŽ¯</p>
+            <p className="text-2xl opacity-10 mb-3">🎯</p>
             <p className="text-[9px] uppercase tracking-[0.4em]" style={{ color: "rgba(180,110,40,0.40)" }}>Sem contratos disponiveis</p>
           </div>
         ) : (
