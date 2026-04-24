@@ -109,7 +109,7 @@ export function CrimeEmpireSidebar({ open, onClose }: Props) {
           open ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
         }`}
       >
-        <div className="p-4 space-y-6">
+        <div className="p-3 space-y-4">
           {/* ── Player Profile ── */}
           {player && (() => {
             const glow = CLASS_GLOW[player.class] ?? "#ff6a00";
@@ -118,7 +118,7 @@ export function CrimeEmpireSidebar({ open, onClose }: Props) {
               <Link
                 href="/jogos/crime-empire/profile"
                 onClick={onClose}
-                className="block rounded-xl p-3 border transition-all hover:opacity-90"
+                className="block rounded-xl p-2.5 border transition-all hover:opacity-90"
                 style={{ background: `${glow}12`, borderColor: `${glow}35` }}
               >
                 <div className="flex items-center gap-2.5">
@@ -190,10 +190,10 @@ export function CrimeEmpireSidebar({ open, onClose }: Props) {
                         key={link.href}
                         href={link.href}
                         onClick={() => onClose()}
-                        className={`block px-3 py-2 text-sm rounded-lg font-medium transition-all ${
+                        className={`block px-2.5 py-1.5 text-sm rounded-lg font-medium transition-all ${
                           isActive
                             ? "bg-[#ff6a00] text-white shadow-lg shadow-[#ff6a00]/20"
-                            : "text-[#888888] hover:text-white hover:bg-[#1a1a1a]"
+                            : "text-[#b0b0b0] hover:text-white hover:bg-[#1a1a1a]"
                         }`}
                       >
                         <span className="mr-2">{link.icon}</span>
@@ -207,10 +207,10 @@ export function CrimeEmpireSidebar({ open, onClose }: Props) {
                 <div>
                   <button
                     onClick={() => setGamblingOpen((v) => !v)}
-                    className={`w-full flex items-center justify-between px-3 py-2 text-sm rounded-lg font-medium transition-all ${
+                    className={`w-full flex items-center justify-between px-2.5 py-1.5 text-sm rounded-lg font-medium transition-all ${
                       isGamblingActive
                         ? "bg-[#ff6a00]/20 text-[#ff6a00]"
-                        : "text-[#888888] hover:text-white hover:bg-[#1a1a1a]"
+                        : "text-[#b0b0b0] hover:text-white hover:bg-[#1a1a1a]"
                     }`}
                   >
                     <span><span className="mr-2">🎰</span>Gambling</span>
@@ -233,10 +233,10 @@ export function CrimeEmpireSidebar({ open, onClose }: Props) {
                                 key={link.href}
                                 href={link.href}
                                 onClick={() => onClose()}
-                                className={`block pl-6 pr-3 py-1.5 text-xs rounded-lg font-medium transition-all ${
+                                className={`block pl-5 pr-3 py-1 text-xs rounded-lg font-medium transition-all ${
                                   isActive
                                     ? "bg-[#ff6a00] text-white shadow-lg shadow-[#ff6a00]/20"
-                                    : "text-[#666] hover:text-[#aaa] hover:bg-[#1a1a1a]"
+                                    : "text-[#999] hover:text-[#ccc] hover:bg-[#1a1a1a]"
                                 }`}
                               >
                                 <span className="mr-2">{link.icon}</span>
@@ -256,11 +256,11 @@ export function CrimeEmpireSidebar({ open, onClose }: Props) {
 
           {/* Admin Link */}
           {isAdmin && (
-            <div className="pt-2">
+            <div className="pt-1">
               <Link
                 href="/jogos/crime-empire/admin"
                 onClick={onClose}
-                className={`block px-3 py-2 rounded-lg text-sm font-bold transition-all border ${
+                className={`block px-2.5 py-1.5 rounded-lg text-sm font-bold transition-all border ${
                   pathname.startsWith("/jogos/crime-empire/admin")
                     ? "bg-red-600/20 border-red-500/50 text-red-400"
                     : "border-red-900/40 text-red-500/70 hover:bg-red-900/20 hover:text-red-400"
@@ -272,10 +272,10 @@ export function CrimeEmpireSidebar({ open, onClose }: Props) {
           )}
 
           {/* Return to Website */}
-          <div className="pt-4 border-t border-[#ff6a00]/30">
+          <div className="pt-3 border-t border-[#ff6a00]/30">
             <Link
               href="/jogos"
-              className="block px-3 py-2 rounded-lg text-sm font-medium text-[#ff6a00] hover:bg-[#ff6a00]/10 transition-all"
+              className="block px-2.5 py-1.5 rounded-lg text-sm font-medium text-[#ff6a00] hover:bg-[#ff6a00]/10 transition-all"
             >
               ← Voltar ao Site
             </Link>
