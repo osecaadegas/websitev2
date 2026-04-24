@@ -214,7 +214,7 @@ export default function WorkerCarousel({
         >
           <div
             ref={trackRef}
-            className="flex items-center gap-5 px-[40vw]"
+            className="flex items-center gap-6 px-[38vw]"
             style={{ willChange: "transform" }}
           >
             {workers.map((w, i) => {
@@ -234,7 +234,7 @@ export default function WorkerCarousel({
                     pointerEvents: dist > 2 ? "none" : "auto",
                     transition: "all 0.45s cubic-bezier(0.25, 0.1, 0.25, 1)",
                     zIndex: 10 - dist,
-                    width: "260px",
+                    width: "300px",
                   }}
                 >
                   {/* Card */}
@@ -252,7 +252,7 @@ export default function WorkerCarousel({
                     {w.rarity === "elite" && dist === 0 && <EliteParticles />}
 
                     {/* Image */}
-                    <div className="relative h-[390px] overflow-hidden">
+                    <div className="relative h-[460px] overflow-hidden">
                       <img
                         src={w.image}
                         alt={w.name}
@@ -279,12 +279,12 @@ export default function WorkerCarousel({
                     </div>
 
                     {/* Info */}
-                    <div className="px-3 pb-3 pt-1">
-                      <h3 className={`font-black text-base truncate ${rc.color}`}>{w.name}</h3>
+                    <div className="px-3 pb-3 pt-1.5">
+                      <h3 className={`font-black text-lg truncate ${rc.color}`}>{w.name}</h3>
                       <p className="text-green-400 text-sm font-bold">${w.earnings_per_hour.toLocaleString()}/h</p>
                       <div className="flex flex-wrap gap-1 mt-1.5">
                         {w.traits.slice(0, 2).map((t) => (
-                          <span key={t} className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${rc.badge}`}>
+                          <span key={t} className={`text-xs px-2 py-0.5 rounded-full font-semibold ${rc.badge}`}>
                             {t}
                           </span>
                         ))}
@@ -328,18 +328,18 @@ export default function WorkerCarousel({
               <div className="px-4 py-3 flex flex-col gap-2">
                 {/* Row 1: name + rarity + traits */}
                 <div className="flex items-center gap-2 flex-wrap">
-                  <h3 className={`text-base font-black ${rarityConf.color}`}>{active.name}</h3>
-                  <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold flex-shrink-0 ${rarityConf.badge}`}>
+                  <h3 className={`text-lg font-black ${rarityConf.color}`}>{active.name}</h3>
+                  <span className={`text-xs px-2 py-0.5 rounded-full font-bold flex-shrink-0 ${rarityConf.badge}`}>
                     {rarityConf.star} {rarityConf.label}
                   </span>
                   {active.traits.slice(0, 3).map((t) => (
-                    <span key={t} className={`text-[10px] px-1.5 py-0.5 rounded-full ${rarityConf.badge}`}>{t}</span>
+                    <span key={t} className={`text-xs px-2 py-0.5 rounded-full font-semibold ${rarityConf.badge}`}>{t}</span>
                   ))}
                 </div>
 
                 {/* Row 2: description */}
                 {active.description && (
-                  <p className="text-[11px] text-[#888] leading-relaxed line-clamp-2">
+                  <p className="text-xs text-[#aaa] leading-relaxed line-clamp-2">
                     {active.description}
                   </p>
                 )}
@@ -347,7 +347,7 @@ export default function WorkerCarousel({
                 {/* Row 3: stats + price/hire */}
                 <div className="flex items-center gap-4">
                   {/* Stats mini grid */}
-                  <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-[10px] flex-1">
+                  <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-xs flex-1">
                     {[
                       { label: "Atrat.", val: active.stats.attractiveness, color: "bg-pink-500", text: "text-pink-300" },
                       { label: "Stamina", val: active.stats.stamina, color: "bg-blue-500", text: "text-blue-300" },
@@ -355,8 +355,8 @@ export default function WorkerCarousel({
                       { label: "Carisma", val: active.stats.charisma, color: "bg-purple-500", text: "text-purple-300" },
                     ].map(({ label, val, color, text }) => (
                       <div key={label}>
-                        <div className="flex justify-between text-[#666] mb-0.5">
-                          <span>{label}</span><span className={text}>{val}</span>
+                        <div className="flex justify-between text-[#999] mb-0.5 font-medium">
+                          <span>{label}</span><span className={`font-bold ${text}`}>{val}</span>
                         </div>
                         <StatBar value={val} color={color} />
                       </div>
