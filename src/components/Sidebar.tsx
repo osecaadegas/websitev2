@@ -175,39 +175,11 @@ interface SidebarProps {
   onClose: () => void;
 }
 
-const COMING_SOON_ITEMS = [
-  {
-    label: "Conquistas",
-    icon: (
-      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.6}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
-      </svg>
-    ),
-  },
-  {
-    label: "Gang",
-    icon: (
-      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.6}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-      </svg>
-    ),
-  },
-  {
-    label: "Battlepass",
-    icon: (
-      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.6}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-      </svg>
-    ),
-  },
-];
-
 export function Sidebar({ open, onClose }: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
   const { user } = useAuth();
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
-  const [comingSoonToast, setComingSoonToast] = useState<string | null>(null);
 
   // Filter secondary links by user role
   const visibleSecondary = useMemo(
@@ -431,65 +403,6 @@ export function Sidebar({ open, onClose }: SidebarProps) {
         </Link>
 
         {MAIN_LINKS.slice(MAIN_LINKS.findIndex(l => l.href === "/loja") + 1).map(renderNavItem)}
-
-        {/* ── Coming Soon items ── */}
-        <div className="!mt-4 !mb-1 mx-1 h-px bg-gradient-to-r from-transparent via-arena-steel/30 to-transparent" />
-        <div className="space-y-1">
-          {COMING_SOON_ITEMS.map((item) => (
-            <button
-              key={item.label}
-              onClick={() => {
-                setComingSoonToast(item.label);
-                setTimeout(() => setComingSoonToast(null), 2000);
-              }}
-              className="group relative w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-[15px] overflow-hidden
-                font-[family-name:var(--font-display)] tracking-wide uppercase text-left
-                border border-yellow-500/30 hover:border-yellow-400/60 transition-colors duration-200"
-              style={{
-                backgroundImage: "repeating-linear-gradient(135deg, #1a1400 0px, #1a1400 10px, #2a1f00 10px, #2a1f00 20px)",
-              }}
-            >
-              {/* Animated stripe overlay on hover */}
-              <span className="pointer-events-none absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
-                style={{
-                  backgroundImage: "repeating-linear-gradient(135deg, rgba(234,179,8,0.08) 0px, rgba(234,179,8,0.08) 10px, transparent 10px, transparent 20px)",
-                }}
-              />
-              <span className="relative shrink-0 text-yellow-500/70 group-hover:text-yellow-400 transition-colors duration-200">
-                {item.icon}
-              </span>
-              <span className="relative flex-1 text-yellow-500/80 group-hover:text-yellow-300 transition-colors duration-200">
-                {item.label}
-              </span>
-              <span className="relative text-[8px] font-black tracking-[0.2em] uppercase px-1.5 py-0.5 rounded"
-                style={{ background: "rgba(234,179,8,0.15)", color: "rgba(234,179,8,0.70)", border: "1px solid rgba(234,179,8,0.25)" }}
-              >
-                EM BREVE
-              </span>
-            </button>
-          ))}
-        </div>
-
-        {/* Coming soon toast */}
-        <AnimatePresence>
-          {comingSoonToast && (
-            <motion.div
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 8 }}
-              transition={{ duration: 0.2 }}
-              className="mx-2 mt-2 flex items-center gap-2 px-3 py-2.5 rounded-lg text-[11px] font-bold tracking-widest uppercase"
-              style={{
-                background: "rgba(26,20,0,0.97)",
-                border: "1px solid rgba(234,179,8,0.40)",
-                color: "#fbbf24",
-              }}
-            >
-              <span>🚧</span>
-              <span>{comingSoonToast} — Em Breve!</span>
-            </motion.div>
-          )}
-        </AnimatePresence>
 
         {/* Secondary links (role-gated) */}
         {visibleSecondary.length > 0 && (
