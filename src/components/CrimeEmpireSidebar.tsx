@@ -68,6 +68,12 @@ const GAME_SECTIONS = [
   },
 ];
 
+const COMING_SOON_ITEMS = [
+  { label: "Conquistas", icon: "🏆" },
+  { label: "Gang",       icon: "👥" },
+  { label: "Battlepass", icon: "🛡️" },
+];
+
 export function CrimeEmpireSidebar({ open, onClose }: Props) {
   const pathname = usePathname();
   const { user } = useAuth();
@@ -75,6 +81,7 @@ export function CrimeEmpireSidebar({ open, onClose }: Props) {
   const isGamblingActive = pathname.startsWith("/jogos/crime-empire/gambling");
   const [gamblingOpen, setGamblingOpen] = useState(isGamblingActive);
   const [player, setPlayer] = useState<SidebarPlayer | null>(null);
+  const [comingSoonToast, setComingSoonToast] = useState<string | null>(null);
 
   const fetchPlayer = useCallback(async () => {
     try {
@@ -253,6 +260,53 @@ export function CrimeEmpireSidebar({ open, onClose }: Props) {
               </React.Fragment>
             ))}
           </nav>
+
+          {/* Coming Soon */}
+          <div className="pt-1 border-t border-[#ff6a00]/20 space-y-1">
+            {COMING_SOON_ITEMS.map((item) => (
+              <button
+                key={item.label}
+                onClick={() => {
+                  setComingSoonToast(item.label);
+                  setTimeout(() => setComingSoonToast(null), 2000);
+                }}
+                className="group relative w-full flex items-center justify-between px-2.5 py-1.5 text-sm rounded-lg font-medium overflow-hidden border border-yellow-500/25 hover:border-yellow-400/50 transition-colors duration-200"
+                style={{
+                  backgroundImage: "repeating-linear-gradient(135deg, #1a1400 0px, #1a1400 10px, #2a1f00 10px, #2a1f00 20px)",
+                }}
+              >
+                <span
+                  className="pointer-events-none absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                  style={{ backgroundImage: "repeating-linear-gradient(135deg, rgba(234,179,8,0.08) 0px, rgba(234,179,8,0.08) 10px, transparent 10px, transparent 20px)" }}
+                />
+                <span className="relative flex items-center gap-2 text-yellow-500/75 group-hover:text-yellow-300 transition-colors duration-200">
+                  <span>{item.icon}</span>
+                  <span>{item.label}</span>
+                </span>
+                <span
+                  className="relative text-[8px] font-black tracking-[0.15em] uppercase px-1.5 py-px rounded"
+                  style={{ background: "rgba(234,179,8,0.12)", color: "rgba(234,179,8,0.65)", border: "1px solid rgba(234,179,8,0.22)" }}
+                >
+                  EM BREVE
+                </span>
+              </button>
+            ))}
+            <AnimatePresence>
+              {comingSoonToast && (
+                <motion.div
+                  initial={{ opacity: 0, y: 6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 6 }}
+                  transition={{ duration: 0.18 }}
+                  className="flex items-center gap-2 px-2.5 py-2 rounded-lg text-[10px] font-bold tracking-widest uppercase"
+                  style={{ background: "rgba(26,20,0,0.97)", border: "1px solid rgba(234,179,8,0.35)", color: "#fbbf24" }}
+                >
+                  <span>🚧</span>
+                  <span>{comingSoonToast} — Em Breve!</span>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
 
           {/* Admin Link */}
           {isAdmin && (
