@@ -914,6 +914,25 @@ const CARTEL_EMPIRE: BusinessTypeDef = {
   ],
 };
 
+// ── Shared events spawned by the system (not random) ─────────────────────────
+export const SHARED_BUSINESS_EVENTS: EventDef[] = [
+  {
+    id: "police_investigation",
+    title: "Investigação Policial",
+    description: "O teu negócio está sob investigação após a rusga. Tens de resolver a situação para retomar as operações.",
+    icon: "🔍",
+    severity: "danger",
+    min_heat: 0,
+    base_chance: 0,
+    expires_hours: 72,
+    choices: [
+      { id: "bribe",  label: "Subornar investigador ($15.000)", cash_cost: 15000, heat_change: 0, outcome: "Subornaste o investigador. O caso foi arquivado e o negócio reabriu." },
+      { id: "lawyer", label: "Contratar advogado ($8.000)",     cash_cost:  8000, heat_change: 0, outcome: "O advogado arquivou o processo. O negócio está de volta.", success_chance: 0.70, fail_outcome: "O advogado não conseguiu ajudar desta vez. Tenta novamente.", fail_heat_change: 0 },
+      { id: "wait",   label: "Aguardar investigação (grátis)",  cash_cost:     0, heat_change: 0, outcome: "A investigação encerrou por falta de provas. Operações retomadas com calor adicional.", dirty_cost: 500 },
+    ],
+  },
+];
+
 export const BUSINESS_DEFS: Record<string, BusinessTypeDef> = {
   weed_farm:           WEED_FARM,
   pill_factory:        PILL_FACTORY,

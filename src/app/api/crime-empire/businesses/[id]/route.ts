@@ -3,6 +3,7 @@ import { supabase } from "@/lib/supabase";
 import { cookies } from "next/headers";
 import {
   BUSINESS_DEFS,
+  SHARED_BUSINESS_EVENTS,
   computeIncomeRate,
   computeDrugOutputRate,
   computeHeatRate,
@@ -498,8 +499,43 @@ async function handleResolveEvent(pb: any, body: any, player: any, _pbId: string
   const { data: event } = await supabase.from("player_business_events").select("*").eq("id", event_id).eq("player_id", player.id).eq("is_resolved", false).single();
   if (!event) return NextResponse.json({ error: "Event not found" }, { status: 404 });
 
+  // ── Police investigation (spawned by raid arrest, not random) ──
+  if (event.event_def_id === "police_investigation") {
+    const investigationChoices: Record<string, { cash_cost: number; dirty_cost?: number; outcome: string; success_chance?: number; fail_outcome?: string }> = {
+      bribe:  { cash_cost: 15000,                   outcome: "Subornaste o investigador. O caso foi arquivado e o negócio reabriu." },
+      lawyer: { cash_cost:  8000, success_chance: 0.70, outcome: "O advogado arquivou o processo. O negócio está de volta.", fail_outcome: "O advogado não conseguiu ajudar. O processo continua — tenta outro método." },
+      wait:   { cash_cost:     0, dirty_cost: 500,  outcome: "A investigação encerrou por falta de provas. Operações retomadas." },
+    };
+    const inv = investigationChoices[choice_id];
+    if (!inv) return NextResponse.json({ error: "Opção inválida" }, { status: 400 });
+
+    const { data: fp } = await supabase.from("crime_players").select("cash, dirty_cash").eq("id", player.id).single();
+    const curCash = fp?.cash ?? player.cash;
+    const curDirty = fp?.dirty_cash ?? 0;
+    if (inv.cash_cost > curCash) return NextResponse.json({ error: `Precisas de $${inv.cash_cost.toLocaleString()} de dinheiro limpo` }, { status: 403 });
+    if ((inv.dirty_cost ?? 0) > curDirty) return NextResponse.json({ error: `Precisas de $${(inv.dirty_cost ?? 0).toLocaleString()} de dinheiro sujo` }, { status: 403 });
+
+    const success = inv.success_chance === undefined || Math.random() < inv.success_chance;
+    const outcomeMsg = success ? inv.outcome : (inv.fail_outcome ?? "Algo correu mal.");
+
+    if (success) {
+      if (inv.cash_cost > 0) await supabase.from("crime_players").update({ cash: curCash - inv.cash_cost }).eq("id", player.id);
+      if ((inv.dirty_cost ?? 0) > 0) await deductDirtyMoney(player.id, inv.dirty_cost!);
+      // Reopen business
+      await supabase.from("player_businesses").update({ status: "running" }).eq("id", pb.id);
+      // Mark resolved
+      await supabase.from("player_business_events").update({ is_resolved: true, choice_made: choice_id, outcome_data: { success: true, message: outcomeMsg }, resolved_at: new Date().toISOString() }).eq("id", event_id);
+    } else {
+      // Failed — deduct cost but leave event open for another try
+      if (inv.cash_cost > 0) await supabase.from("crime_players").update({ cash: curCash - inv.cash_cost }).eq("id", player.id);
+    }
+
+    return NextResponse.json({ success: true, outcome: outcomeMsg, event_success: success });
+  }
+
   const def = BUSINESS_DEFS[pb.business.type];
-  const eventDef = def?.events.find((e) => e.id === event.event_def_id);
+  const eventDef = def?.events.find((e) => e.id === event.event_def_id)
+    ?? SHARED_BUSINESS_EVENTS.find((e) => e.id === event.event_def_id);
   if (!eventDef) return NextResponse.json({ error: "Event definition not found" }, { status: 400 });
 
   const choice = eventDef.choices.find((c) => c.id === choice_id);
@@ -574,7 +610,26 @@ async function handleRaidResult(pb: any, body: any, player: any) {
     await supabase.from("player_businesses")
       .update({ heat: 0, last_heat_update: new Date().toISOString(), status: "raided", accumulated_income: 0 })
       .eq("id", pb.id);
-    return NextResponse.json({ success: true, message: `Foste preso! Perdeste $${cashLost.toLocaleString()} e o negócio está sob investigação.` });
+
+    // Send player to jail (30–60 min)
+    const jailMinutes = 30 + Math.floor(Math.random() * 31);
+    const jailReleaseAt = new Date(Date.now() + jailMinutes * 60_000).toISOString();
+    await supabase.from("crime_players").update({ in_jail: true, jail_release_at: jailReleaseAt }).eq("id", player.id);
+
+    // Spawn police investigation event so player can reopen the business
+    await supabase.from("player_business_events").insert({
+      player_id: player.id,
+      player_business_id: pb.id,
+      event_def_id: "police_investigation",
+      event_data: {},
+    });
+
+    return NextResponse.json({
+      success: true,
+      jailed: true,
+      jail_minutes: jailMinutes,
+      message: `Foste preso por ${jailMinutes} min! Perdeste $${cashLost.toLocaleString()}. O negócio está sob investigação — resolve o evento para reabrir.`,
+    });
   }
 }
 

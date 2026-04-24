@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import RaidEscape from "@/components/crime-empire/raid/RaidEscape";
 import {
-  TRAIT_META, SKILL_META, PRODUCTION_META, STATUS_META,
+  TRAIT_META, SKILL_META, PRODUCTION_META, STATUS_META, SHARED_BUSINESS_EVENTS,
   type ProductionLevel, type BusinessStatus, type BusinessTypeDef,
   type WorkerDef, type UpgradeDef, type EventDef,
 } from "@/lib/business-defs";
@@ -463,9 +463,9 @@ export default function BusinessManagementPage({ params }: { params: Promise<{ i
     return m > 0 ? `${m}m ${s.toString().padStart(2, "0")}s` : `${s}s`;
   };
 
-  // Build event + def pairs
+  // Build event + def pairs (check shared events as fallback for system-spawned events)
   const eventPairs = active_events
-    .map((e) => ({ event: e, def: def?.events.find((d) => d.id === e.event_def_id) }))
+    .map((e) => ({ event: e, def: def?.events.find((d) => d.id === e.event_def_id) ?? SHARED_BUSINESS_EVENTS.find((d) => d.id === e.event_def_id) }))
     .filter((p) => p.def) as { event: ActiveEvent; def: EventDef }[];
 
   // Workers count with capacity

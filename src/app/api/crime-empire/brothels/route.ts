@@ -494,7 +494,7 @@ export async function POST(req: NextRequest) {
           message: `Fugiste! +${xpGain} XP. Calor: ${pb.heat_level}% → ${newHeat}%`,
         });
       } else {
-        // Arrested: lose pending cash, reset heat, tank satisfaction
+        // Arrested: lose pending cash, reset heat, tank satisfaction, send to jail
         const cashLost = Math.min(Math.max(0, cashAtRisk), player.cash);
         await supabase.from("crime_players")
           .update({ cash: player.cash - cashLost }).eq("id", player.id);
@@ -502,10 +502,18 @@ export async function POST(req: NextRequest) {
           heat_level: 0,
           client_satisfaction: Math.max(10, pb.client_satisfaction - 30),
         }).eq("id", playerBrothelId);
+
+        // Send to jail (30–60 min)
+        const jailMinutes = 30 + Math.floor(Math.random() * 31);
+        const jailReleaseAt = new Date(Date.now() + jailMinutes * 60_000).toISOString();
+        await supabase.from("crime_players").update({ in_jail: true, jail_release_at: jailReleaseAt }).eq("id", player.id);
+
         return NextResponse.json({
           success: true,
           cashLost,
-          message: `Foste preso! -$${cashLost.toLocaleString()} confiscado. Estabelecimento penalizado.`,
+          jailed: true,
+          jail_minutes: jailMinutes,
+          message: `Foste preso por ${jailMinutes} min! -$${cashLost.toLocaleString()} confiscado. Estabelecimento penalizado.`,
         });
       }
     }
