@@ -111,6 +111,9 @@ export default function BrothelManagePage() {
   const [playerCrypto, setPlayerCrypto] = useState(0);
   const [showCarousel, setShowCarousel] = useState(false);
   const [hiring, setHiring] = useState(false);
+  const [workerDefs, setWorkerDefs] = useState<WorkerDef[]>(
+    [...WORKER_DEFS].sort((a, b) => a.hire_price - b.hire_price)
+  );
   const [toast, setToast] = useState<string | null>(null);
   const [floatingIncome, setFloatingIncome] = useState<number | null>(null);
   const [tab, setTab] = useState<"workers" | "supplies" | "upgrades">("workers");
@@ -144,6 +147,14 @@ export default function BrothelManagePage() {
   }, [brothelId, router]);
 
   useEffect(() => { if (!user) { router.push("/"); return; } fetchData(); }, [user, fetchData]);
+
+  // Fetch worker defs from DB (falls back to static if unavailable)
+  useEffect(() => {
+    fetch("/api/crime-empire/brothel-defs")
+      .then(r => r.json())
+      .then(d => { if (d.defs && d.defs.length > 0) setWorkerDefs(d.defs); })
+      .catch(() => {});
+  }, []);
 
   // Compute live income per second
   useEffect(() => {
@@ -450,7 +461,7 @@ export default function BrothelManagePage() {
       {/* ── WORKER CAROUSEL ── */}
       {showCarousel && (
         <WorkerCarousel
-          workers={[...WORKER_DEFS].sort((a, b) => a.hire_price - b.hire_price)}
+          workers={workerDefs}
           ownedSlugs={workers.map((w) => w.slug).filter(Boolean) as string[]}
           playerCash={playerCash}
           playerCrypto={playerCrypto}

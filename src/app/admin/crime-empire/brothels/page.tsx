@@ -1,0 +1,2 @@
+import { redirect } from "next/navigation";
+export default function Page() { redirect("/jogos/crime-empire/admin/brothels"); }

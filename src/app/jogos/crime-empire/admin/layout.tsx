@@ -17,6 +17,7 @@ const NAV = [
   { href: `${BASE}/system`,     label: "Controlo",    icon: "🎛️" },
   { href: `${BASE}/logs`,       label: "Logs",        icon: "📋" },
   { href: `${BASE}/pvp`,        label: "PvP",         icon: "⚔️" },
+  { href: `${BASE}/brothels`,   label: "Bordéis",     icon: "💋" },
 ];
 
 export default function CEAdminLayout({ children }: { children: React.ReactNode }) {
