@@ -725,14 +725,14 @@ export default function StreetsPage() {
           <div className="flex items-center gap-3 shrink-0">
             <Link href="/jogos/crime-empire/dashboard"
               className="text-[#444] hover:text-white text-base transition-colors leading-none">&#8592;</Link>
-            <h1 className="text-xs font-black tracking-[0.18em] text-white uppercase">Street Dealings</h1>
+            <h1 className="text-xs font-black tracking-[0.18em] text-white uppercase">Negócios na Rua</h1>
           </div>
 
           {/* Center — heat bar */}
           {session ? (
             <div className="flex-1 flex flex-col items-center justify-center gap-1 px-6 max-w-xl mx-auto">
               <div className="flex items-center gap-3 w-full">
-                <span className="text-[10px] font-bold text-[#3a3a3a] tracking-widest uppercase shrink-0">Heat Level</span>
+                <span className="text-[10px] font-bold text-[#3a3a3a] tracking-widest uppercase shrink-0">Nível de Calor</span>
                 <span className="text-[9px] text-[#2a2a2a] shrink-0">ⓘ</span>
                 <div className="flex-1 relative h-2 bg-[#181818] rounded-full overflow-hidden">
                   <div className="absolute inset-0 heat-bar-gradient opacity-20 rounded-full" />
@@ -758,7 +758,7 @@ export default function StreetsPage() {
           {session ? (
             <button onClick={endSession}
               className="shrink-0 flex items-center gap-2 px-4 py-1.5 rounded-lg border border-[#252528] text-[#555] hover:text-white hover:border-[#3a3a3a] transition-all text-[11px] font-bold tracking-wide">
-              ⬡ LEAVE STREET
+              ⬡ SAIR DA RUA
             </button>
           ) : (
             <Link href="/jogos/crime-empire/dashboard"
@@ -938,12 +938,12 @@ export default function StreetsPage() {
                     style={{ background: "#111", border: "1px solid #1a1a1a" }}>
                     <span className="text-3xl opacity-20">👤</span>
                   </div>
-                  <p className="text-[#252528] text-xs tracking-widest uppercase font-bold">Aguardando cliente</p>
+                  <p className="text-[#252528] text-xs tracking-widest uppercase font-bold">À espera de cliente</p>
                   {phase === "idle" && (
                     <button onClick={callNextCustomer} disabled={noDrugs || !!inJail}
                       className="mt-1 px-5 py-2 rounded-xl font-black text-xs text-white transition-all hover:scale-105 active:scale-95 disabled:opacity-30"
                       style={{ background: "linear-gradient(135deg,#166534,#15803d)" }}>
-                      + Chamar Cliente
+                      👤 Chamar Cliente
                     </button>
                   )}
                 </div>
@@ -958,7 +958,7 @@ export default function StreetsPage() {
                 <div className="rounded-xl overflow-hidden" style={{ background: "#0d0d0f", border: "1px solid #1c1c1e", minHeight: "110px" }}>
                   <div className="px-4 py-2 border-b border-[#181818] flex items-center justify-between">
                     <span className="text-[10px] font-black tracking-[0.18em] text-[#3a3a3a] uppercase">
-                      {customer ? `${customer.name} diz...` : "Cliente Aproxima-se..."}
+                      {customer ? `${customer.name} diz...` : "À espera de cliente..."}
                     </span>
                     {typedDialogue && !dialogueDone && (
                       <span className="flex gap-1">
@@ -975,7 +975,7 @@ export default function StreetsPage() {
                         {!dialogueDone && <span className="inline-block w-0.5 h-4 bg-white ml-0.5 align-middle animate-pulse" />}
                       </p>
                     ) : (phase === "idle" || (phase === "loading" && !customer)) ? (
-                      <p className="text-[#252528] text-sm font-mono italic">Chama o próximo cliente para começar...</p>
+                      <p className="text-[#252528] text-sm font-mono italic">Chama um cliente para começar a negociar...</p>
                     ) : (
                       <p className="text-[#252528] text-sm font-mono italic">A aguardar...</p>
                     )}
@@ -986,7 +986,7 @@ export default function StreetsPage() {
               {/* They Want card */}
               {customer && (
                 <div className="px-4 py-3 border-b border-[#141416] shrink-0">
-                  <p className="text-[9px] font-black tracking-[0.2em] text-[#333] uppercase mb-2">They Want:</p>
+                  <p className="text-[9px] font-black tracking-[0.2em] text-[#333] uppercase mb-2">Pedido do Cliente:</p>
                   <div className="rounded-xl p-3" style={{ background: "#0d0d0f", border: "1px solid #1c1c1e" }}>
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0"
@@ -1010,7 +1010,7 @@ export default function StreetsPage() {
                       </div>
                     </div>
                     <div className="mt-2.5 pt-2.5 border-t border-[#1a1a1c] flex items-center justify-between">
-                      <p className="text-[9px] text-[#444] uppercase tracking-wider font-bold">Preço esperado:</p>
+                      <p className="text-[9px] text-[#444] uppercase tracking-wider font-bold">Gama de preço:</p>
                       <p className="font-black text-sm" style={{ color: "#4ade80" }}>
                         ${minExpected.toLocaleString()} – ${maxExpected.toLocaleString()}
                       </p>
@@ -1089,7 +1089,7 @@ export default function StreetsPage() {
               {/* ── WHAT WILL YOU DO? — action buttons ── */}
               {phase === "customer" && dialogueDone && (
                 <div className="px-4 py-3 btn-reveal shrink-0">
-                  <p className="text-[9px] font-black tracking-[0.2em] text-[#333] uppercase mb-3">What Will You Do?</p>
+                  <p className="text-[9px] font-black tracking-[0.2em] text-[#333] uppercase mb-3">O Que Fazes?</p>
                   <div className="grid grid-cols-5 gap-2">
 
                     {/* ACCEPT DEAL */}
@@ -1108,7 +1108,7 @@ export default function StreetsPage() {
                         <span className="text-lg">🤝</span>
                       </div>
                       <div className="text-center">
-                        <p className="text-white font-black text-[10px] leading-tight">ACCEPT DEAL</p>
+                        <p className="text-white font-black text-[10px] leading-tight">ACEITAR</p>
                         <p className="font-black text-[11px] mt-0.5" style={{ color: "#4ade80" }}>${fairPrice.toLocaleString()}</p>
                       </div>
                     </button>
@@ -1124,8 +1124,8 @@ export default function StreetsPage() {
                         <span className="text-lg">📈</span>
                       </div>
                       <div className="text-center">
-                        <p className="text-white font-black text-[10px] leading-tight">RAISE PRICE</p>
-                        <p className="text-[10px] mt-0.5" style={{ color: "#818cf8" }}>Try for more</p>
+                        <p className="text-white font-black text-[10px] leading-tight">SUBIR PREÇO</p>
+                        <p className="text-[10px] mt-0.5" style={{ color: "#818cf8" }}>Pedir mais</p>
                       </div>
                     </button>
 
@@ -1140,8 +1140,8 @@ export default function StreetsPage() {
                         <span className="text-lg">🎒</span>
                       </div>
                       <div className="text-center">
-                        <p className="text-white font-black text-[10px] leading-tight">LOWER QTY</p>
-                        <p className="text-[10px] mt-0.5 text-[#555]">Offer less</p>
+                        <p className="text-white font-black text-[10px] leading-tight">MENOS QTD</p>
+                        <p className="text-[10px] mt-0.5 text-[#555]">Oferecer menos</p>
                       </div>
                     </button>
 
@@ -1162,7 +1162,7 @@ export default function StreetsPage() {
                         <span className="text-lg">🔄</span>
                       </div>
                       <div className="text-center">
-                        <p className="text-white font-black text-[10px] leading-tight">SWAP</p>
+                        <p className="text-white font-black text-[10px] leading-tight">TROCAR</p>
                         <p className="text-[10px] mt-0.5 text-[#555] truncate max-w-full px-1">{nextDrug?.items.name ?? "—"}</p>
                       </div>
                     </button>
@@ -1177,8 +1177,8 @@ export default function StreetsPage() {
                         <span className="text-lg">✖</span>
                       </div>
                       <div className="text-center">
-                        <p className="text-white font-black text-[10px] leading-tight">REJECT</p>
-                        <p className="text-[10px] mt-0.5" style={{ color: "#f87171" }}>Send away</p>
+                        <p className="text-white font-black text-[10px] leading-tight">REJEITAR</p>
+                        <p className="text-[10px] mt-0.5" style={{ color: "#f87171" }}>Mandar embora</p>
                       </div>
                     </button>
                   </div>
@@ -1218,7 +1218,7 @@ export default function StreetsPage() {
               style={{ background: "#0c0c0e" }}>
               {/* Header */}
               <div className="px-4 py-3 border-b border-[#161618] flex items-center gap-2.5 shrink-0">
-                <span className="text-[11px] font-black tracking-[0.15em] text-white uppercase">Street Log</span>
+                <span className="text-[11px] font-black tracking-[0.15em] text-white uppercase">Registo da Rua</span>
                 <div className="w-2 h-2 rounded-full bg-red-500 ml-auto"
                   style={{ boxShadow: "0 0 6px #ef4444", animation: "heatPulse 2s ease-in-out infinite" }} />
               </div>
@@ -1267,7 +1267,7 @@ export default function StreetsPage() {
             <div className="flex items-center gap-2 shrink-0">
               <span>💰</span>
               <div>
-                <p className="text-[9px] text-[#333] uppercase tracking-wider font-bold leading-none mb-0.5">Cash</p>
+                <p className="text-[9px] text-[#333] uppercase tracking-wider font-bold leading-none mb-0.5">Dinheiro Sujo</p>
                 <p className="text-white font-black text-[13px] leading-none">${(player?.dirty_cash ?? 0).toLocaleString()}</p>
               </div>
             </div>
@@ -1278,7 +1278,7 @@ export default function StreetsPage() {
             <div className="flex items-center gap-2 shrink-0">
               <span>📦</span>
               <div>
-                <p className="text-[9px] text-[#333] uppercase tracking-wider font-bold leading-none mb-0.5">Inventário</p>
+                <p className="text-[9px] text-[#333] uppercase tracking-wider font-bold leading-none mb-0.5">Stock</p>
                 <p className="text-white font-black text-[13px] leading-none">{totalInventoryKg.toFixed(2)} kg</p>
               </div>
             </div>
@@ -1317,7 +1317,7 @@ export default function StreetsPage() {
             <div className="flex items-center gap-2 shrink-0">
               <span>🏃</span>
               <div>
-                <p className="text-[9px] text-[#333] uppercase tracking-wider font-bold leading-none mb-0.5">Fugas</p>
+                <p className="text-[9px] text-[#333] uppercase tracking-wider font-bold leading-none mb-0.5">Fugas Bem-suc.</p>
                 <p className="text-white font-black text-[13px] leading-none">{escapesSuccess}/{escapesTotal}</p>
               </div>
             </div>
@@ -1326,7 +1326,7 @@ export default function StreetsPage() {
 
             {/* Session earnings */}
             <div className="text-right shrink-0">
-              <p className="text-[9px] text-[#252528] uppercase tracking-wider font-bold leading-none mb-0.5">Esta sessão</p>
+              <p className="text-[9px] text-[#252528] uppercase tracking-wider font-bold leading-none mb-0.5">Ganho na Sessão</p>
               <p className="text-green-400 font-black text-[13px] leading-none">${sessionEarned.toLocaleString()}</p>
             </div>
           </div>
