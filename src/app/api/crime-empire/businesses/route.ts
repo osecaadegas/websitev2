@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
 import { cookies } from "next/headers";
 import { grantDirtyMoney, deductDirtyMoney } from "@/lib/dirty-money";
+import { BUSINESS_DEFS } from "@/lib/business-defs";
 
 export const dynamic = "force-dynamic";
 
@@ -73,24 +74,44 @@ export async function GET() {
 
   // Count actual active workers per business (employees column is not kept in sync)
   let workerCountMap: Record<string, number> = {};
+  // Fetch owned upgrade IDs per business (to compute real max_employees with bonuses)
+  let upgradeMap: Record<string, string[]> = {};
   if (pbIds.length > 0) {
-    const { data: workerRows } = await supabase
-      .from("player_business_workers")
-      .select("player_business_id")
-      .in("player_business_id", pbIds)
-      .eq("is_active", true);
-    for (const row of workerRows ?? []) {
+    const [workerRes, upgradeRes] = await Promise.all([
+      supabase
+        .from("player_business_workers")
+        .select("player_business_id")
+        .in("player_business_id", pbIds)
+        .eq("is_active", true),
+      supabase
+        .from("player_business_upgrades")
+        .select("player_business_id, upgrade_def_id")
+        .in("player_business_id", pbIds),
+    ]);
+    for (const row of workerRes.data ?? []) {
       workerCountMap[row.player_business_id] = (workerCountMap[row.player_business_id] ?? 0) + 1;
+    }
+    for (const row of upgradeRes.data ?? []) {
+      upgradeMap[row.player_business_id] = upgradeMap[row.player_business_id] ?? [];
+      upgradeMap[row.player_business_id].push(row.upgrade_def_id);
     }
   }
 
-  // Normalise owned businesses: expose the player_business UUID as `pb_id`
-  // and inject real worker count as `employees`
-  const normalisedOwned = (ownedBusinesses ?? []).map((pb: any) => ({
-    ...pb,
-    pb_id: pb.id, // the player_business UUID used for management route
-    employees: workerCountMap[pb.id] ?? 0,
-  }));
+  // Normalise owned businesses: expose the player_business UUID as `pb_id`,
+  // inject real worker count as `employees`, and add upgrade capacity to max_employees
+  const normalisedOwned = (ownedBusinesses ?? []).map((pb: any) => {
+    const ownedUpgradeIds = upgradeMap[pb.id] ?? [];
+    const def = BUSINESS_DEFS[pb.business?.type];
+    const capacityBonus = (def?.upgrades ?? [])
+      .filter((u) => ownedUpgradeIds.includes(u.id))
+      .reduce((s, u) => s + u.capacity_bonus, 0);
+    return {
+      ...pb,
+      pb_id: pb.id,
+      employees: workerCountMap[pb.id] ?? 0,
+      max_employees: (pb.max_employees ?? 0) + capacityBonus,
+    };
+  });
 
   return NextResponse.json({
     businesses: businesses || [],

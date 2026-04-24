@@ -168,14 +168,14 @@ export async function GET() {
       .in("id", ownedBusinesses.map((b) => b.id));
   }
 
-  // Push significant worker events to player_notifications
-  const criticalEvents = firedEvents.filter((e) => e.eventType === "left" || e.eventType === "died");
-  if (criticalEvents.length > 0) {
+  // Push worker events to player_notifications (sick + left + died)
+  const notifiableEvents = firedEvents.filter((e) => e.eventType === "left" || e.eventType === "died" || e.eventType === "sick");
+  if (notifiableEvents.length > 0) {
     await supabase.from("player_notifications").insert(
-      criticalEvents.map((e) => ({
+      notifiableEvents.map((e) => ({
         player_id: player.id,
         type: "worker_event",
-        title: e.eventType === "died" ? "💀 Trabalhador Morreu!" : "🚪 Trabalhador Abandonou!",
+        title: e.eventType === "died" ? "💀 Trabalhador Morreu!" : e.eventType === "left" ? "🚪 Trabalhador Abandonou!" : "🤒 Trabalhador Doente!",
         message: e.message,
       }))
     );

@@ -1,10 +1,29 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
+import Image from "next/image";
 import { useAuth } from "@/lib/auth-context";
+
+const CLASS_NAMES: Record<string, string> = {
+  thief: "Ladrão", hooligan: "Hooligan", businessman: "Empresário",
+  hitman: "Assassino", scammer: "Burlão", brute: "Bruto",
+  dealer: "Traficante", pimp: "Chulo",
+};
+const CLASS_GLOW: Record<string, string> = {
+  thief: "#9333ea", hooligan: "#dc2626", businessman: "#2563eb",
+  hitman: "#475569", scammer: "#d97706", brute: "#ea580c",
+  dealer: "#16a34a", pimp: "#db2777",
+};
+
+interface SidebarPlayer {
+  username: string; display_name: string; class: string;
+  level: number; hp: number; max_hp: number;
+  cash: number; dirty_cash: number; in_jail: boolean;
+  prestige_level: number; avatar_url?: string;
+}
 
 interface Props {
   open: boolean;
@@ -55,6 +74,19 @@ export function CrimeEmpireSidebar({ open, onClose }: Props) {
   const isAdmin = user?.role === "admin" || user?.role === "configurador";
   const isGamblingActive = pathname.startsWith("/jogos/crime-empire/gambling");
   const [gamblingOpen, setGamblingOpen] = useState(isGamblingActive);
+  const [player, setPlayer] = useState<SidebarPlayer | null>(null);
+
+  const fetchPlayer = useCallback(async () => {
+    try {
+      const res = await fetch("/api/crime-empire/player");
+      const data = await res.json();
+      if (data.player) setPlayer(data.player);
+    } catch { /* silent */ }
+  }, []);
+
+  useEffect(() => {
+    if (user) fetchPlayer();
+  }, [user, fetchPlayer]);
 
   return (
     <>
@@ -78,6 +110,70 @@ export function CrimeEmpireSidebar({ open, onClose }: Props) {
         }`}
       >
         <div className="p-4 space-y-6">
+          {/* ── Player Profile ── */}
+          {player && (() => {
+            const glow = CLASS_GLOW[player.class] ?? "#ff6a00";
+            const hpPct = Math.min(100, Math.round((player.hp / player.max_hp) * 100));
+            return (
+              <Link
+                href="/jogos/crime-empire/profile"
+                onClick={onClose}
+                className="block rounded-xl p-3 border transition-all hover:opacity-90"
+                style={{ background: `${glow}12`, borderColor: `${glow}35` }}
+              >
+                <div className="flex items-center gap-2.5">
+                  <div className="relative flex-shrink-0">
+                    <div className="w-10 h-10 rounded-full overflow-hidden border-2" style={{ borderColor: glow }}>
+                      <Image
+                        src={`/images/crime_empire/characters/${player.class}.png`}
+                        alt={player.class}
+                        width={40} height={40}
+                        className="w-full h-full object-contain bg-[#0a0a0a]"
+                      />
+                    </div>
+                    {player.in_jail && (
+                      <span className="absolute -bottom-1 -right-1 text-[9px] bg-red-600 rounded-full px-1">🚔</span>
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-1.5">
+                      <p className="font-black text-white text-xs truncate">{player.display_name || player.username}</p>
+                      {player.prestige_level > 0 && <span className="text-yellow-400 text-[9px] font-bold">⭐{player.prestige_level}</span>}
+                    </div>
+                    <div className="flex items-center gap-1.5 mt-0.5">
+                      <span className="text-[9px] font-bold px-1.5 py-px rounded-full" style={{ background: `${glow}25`, color: glow }}>
+                        Nv.{player.level} {CLASS_NAMES[player.class] ?? player.class}
+                      </span>
+                    </div>
+                    {/* HP bar */}
+                    <div className="mt-1.5">
+                      <div className="flex justify-between text-[8px] text-gray-500 mb-0.5">
+                        <span>❤️ HP</span><span>{player.hp}/{player.max_hp}</span>
+                      </div>
+                      <div className="h-1 rounded-full overflow-hidden bg-[#1a1a1a]">
+                        <div
+                          className="h-full rounded-full transition-all"
+                          style={{ width: `${hpPct}%`, background: hpPct > 50 ? "#22c55e" : hpPct > 25 ? "#eab308" : "#ef4444" }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                {/* Cash row */}
+                <div className="mt-2 grid grid-cols-2 gap-1.5 text-center">
+                  <div className="rounded-lg py-1 px-2" style={{ background: "rgba(0,0,0,0.3)" }}>
+                    <p className="text-[8px] text-gray-500">Limpo</p>
+                    <p className="text-[10px] font-bold text-green-400">${player.cash.toLocaleString()}</p>
+                  </div>
+                  <div className="rounded-lg py-1 px-2" style={{ background: "rgba(0,0,0,0.3)" }}>
+                    <p className="text-[8px] text-gray-500">Sujo</p>
+                    <p className="text-[10px] font-bold text-yellow-400">${player.dirty_cash.toLocaleString()}</p>
+                  </div>
+                </div>
+              </Link>
+            );
+          })()}
+
           {/* Game Navigation */}
           <nav className="space-y-1">
             {GAME_SECTIONS.map((group, i) => (
