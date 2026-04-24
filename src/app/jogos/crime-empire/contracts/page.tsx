@@ -506,18 +506,27 @@ function ContractBriefing({
             ⚠ Aborda com cautela. Falha tem consequencias.
           </p>
 
-          {/* CONFIDENTIAL STAMP */}
+          {/* CONFIDENTIAL / COMPLETED STAMP */}
           <div className="mb-3 transform -rotate-6">
-            <span
-              className="text-[13px] font-black tracking-[0.3em] uppercase border-2 rounded-full px-5 py-1.5"
-              style={{ ...serif, color: "rgba(153,27,27,0.52)", borderColor: "rgba(153,27,27,0.42)" }}
-            >
-              CONFIDENCIAL
-            </span>
+            {isCompleted ? (
+              <span
+                className="text-[13px] font-black tracking-[0.3em] uppercase border-2 rounded-full px-5 py-1.5"
+                style={{ ...serif, color: "rgba(22,101,52,0.80)", borderColor: "rgba(22,101,52,0.55)", background: "rgba(22,101,52,0.08)" }}
+              >
+                ✓ CONCLUÍDO
+              </span>
+            ) : (
+              <span
+                className="text-[13px] font-black tracking-[0.3em] uppercase border-2 rounded-full px-5 py-1.5"
+                style={{ ...serif, color: "rgba(153,27,27,0.52)", borderColor: "rgba(153,27,27,0.42)" }}
+              >
+                CONFIDENCIAL
+              </span>
+            )}
           </div>
 
           {/* EXECUTE BUTTON */}
-          {disabledReason ? (
+          {!isCompleted && (disabledReason ? (
             <div
               className="w-full py-3 rounded-sm text-center text-[8px] font-black tracking-[0.35em] uppercase border"
               style={{ ...serif, color: "rgba(120,53,15,0.50)", background: "rgba(245,230,200,0.35)", borderColor: "rgba(120,53,15,0.20)" }}
@@ -560,7 +569,7 @@ function ContractBriefing({
                 Esta acao nao pode ser revertida
               </p>
             </>
-          )}
+          ))}
         </div>
       </div>
     </div>
