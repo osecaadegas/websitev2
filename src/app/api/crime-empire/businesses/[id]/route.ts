@@ -12,6 +12,7 @@ import {
   type BusinessStatus,
 } from "@/lib/business-defs";
 import { grantDirtyMoney, deductDirtyMoney, getDirtyMoneyBalance } from "@/lib/dirty-money";
+import { getPoliceMultiplier } from "@/lib/crime-empire/system-settings";
 
 export const dynamic = "force-dynamic";
 
@@ -342,9 +343,10 @@ async function handleCollect(pb: any, player: any, pbId: string) {
 
   const heatRate = def ? computeHeatRate({ base_heat_per_hour: def.heat_per_hour, production_level: pb.production_level as ProductionLevel, workers: workers ?? [], upgrades: activeDefs }) : 0;
 
-  // Update heat
+  // Update heat — scale by police intensity so higher police = faster heat buildup
+  const policeMult = await getPoliceMultiplier();
   const hours = (now.getTime() - new Date(pb.last_heat_update ?? pb.purchased_at).getTime()) / 3_600_000;
-  let newHeat = Math.min(100, (pb.heat ?? 0) + hours * heatRate);
+  let newHeat = Math.min(100, (pb.heat ?? 0) + hours * heatRate * policeMult);
 
   // ── DRUG BUSINESSES ───────────────────────────────────────────────────────
   if (def?.income_type === "drugs") {

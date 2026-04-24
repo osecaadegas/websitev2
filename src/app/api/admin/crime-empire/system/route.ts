@@ -46,5 +46,5 @@ export async function PUT(req: NextRequest) {
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
   await writeAuditLog(admin, "system", "system", null, key, { key, value });
-  return NextResponse.json({ setting: data });
+  return NextResponse.json({ success: true, setting: data });
 }

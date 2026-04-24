@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import { supabase } from "@/lib/supabase";
 import { grantDirtyMoney } from "@/lib/dirty-money";
 import { generateEscapeToken } from "@/lib/crime-empire/arrest-helpers";
+import { getPoliceMultiplier } from "@/lib/crime-empire/system-settings";
 
 export const dynamic = "force-dynamic";
 
@@ -177,7 +178,9 @@ export async function POST(request: Request) {
   let jailTimeMinutes = 0;
   let jailReleaseAt = null;
 
-  if (!success && Math.random() <= crime.jail_risk) {
+  const policeMult = await getPoliceMultiplier();
+  const effectiveJailRisk = Math.min(0.99, crime.jail_risk * policeMult);
+  if (!success && Math.random() <= effectiveJailRisk) {
     wentToJail = true;
     jailTimeMinutes = 15 + Math.floor(Math.random() * 30); // 15-45 minutes
     const releaseDate = new Date(now.getTime() + jailTimeMinutes * 60000);

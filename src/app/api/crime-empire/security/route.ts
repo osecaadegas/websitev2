@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
 import { cookies } from "next/headers";
+import { getPoliceMultiplier } from "@/lib/crime-empire/system-settings";
 
 export const dynamic = "force-dynamic";
 
@@ -61,6 +62,7 @@ export async function GET() {
 
   // Mutable copy so we can reflect changes within the loop
   const workers = [...(brothelWorkers || [])];
+  const policeMult = await getPoliceMultiplier();
 
   for (const pb of ownedBusinesses || []) {
     const business = pb.business;
@@ -80,7 +82,7 @@ export async function GET() {
 
     // Roll one event per absent day (grace: first 24h free, cap at 7 days)
     const rollDays = Math.min(Math.max(0, daysAbsent - 1), 7);
-    const baseChance = 0.15;
+    const baseChance = 0.15 * policeMult;
 
     for (let d = 0; d < rollDays; d++) {
       if (Math.random() >= baseChance * mult) continue;
