@@ -69,10 +69,27 @@ export async function GET() {
     .eq("player_id", player.id)
     .not("businesses.type", "in", `(${brothelTypes.join(",")})`);
 
+  const pbIds = (ownedBusinesses ?? []).map((pb: any) => pb.id);
+
+  // Count actual active workers per business (employees column is not kept in sync)
+  let workerCountMap: Record<string, number> = {};
+  if (pbIds.length > 0) {
+    const { data: workerRows } = await supabase
+      .from("player_business_workers")
+      .select("player_business_id")
+      .in("player_business_id", pbIds)
+      .eq("is_active", true);
+    for (const row of workerRows ?? []) {
+      workerCountMap[row.player_business_id] = (workerCountMap[row.player_business_id] ?? 0) + 1;
+    }
+  }
+
   // Normalise owned businesses: expose the player_business UUID as `pb_id`
+  // and inject real worker count as `employees`
   const normalisedOwned = (ownedBusinesses ?? []).map((pb: any) => ({
     ...pb,
     pb_id: pb.id, // the player_business UUID used for management route
+    employees: workerCountMap[pb.id] ?? 0,
   }));
 
   return NextResponse.json({
