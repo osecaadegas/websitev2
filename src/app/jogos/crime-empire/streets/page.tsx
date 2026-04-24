@@ -100,6 +100,50 @@ const ZONE_GLOW: Record<string, string> = {
   aeroporto:     "rgba(99,102,241,0.06)",
 };
 
+// ─── Portrait pool ────────────────────────────────────────────────────────────
+
+const PORTRAIT_POOL: Record<CustomerType, string[]> = {
+  regular:    [
+    "/images/cliente/pedreiro_tier1.jpg",
+    "/images/cliente/pedreiro_tier2.jpg",
+    "/images/cliente/pedreiro_tier3.jpg",
+    "/images/cliente/trabalhador_tier1.jpg",
+    "/images/cliente/trabalhador_tier2.jpg",
+    "/images/cliente/trabalhador_tier3.jpg",
+    "/images/cliente/mulher_tier1.jpg",
+    "/images/cliente/mulher_tier2.jpg",
+  ],
+  tourist:    [
+    "/images/cliente/americano_tier3.jpg",
+    "/images/cliente/americano_tier1.jpg",
+    "/images/cliente/turista_tier1.jpg",
+    "/images/cliente/turista_tier2.jpg",
+  ],
+  junkie:     [
+    "/images/cliente/drogado_tier1.jpg",
+    "/images/cliente/drogado_tier2.jpg",
+    "/images/cliente/drogado_tier3.jpg",
+  ],
+  dealer:     [
+    "/images/cliente/homem_de_negocios_tier3.jpg",
+    "/images/cliente/homem_de_negocios_tier1.jpg",
+    "/images/cliente/homem_de_negocios_tier2.jpg",
+    "/images/cliente/medico_tier1.jpg",
+  ],
+  undercover: [
+    "/images/cliente/medico_tier2.jpg",
+    "/images/cliente/pedreiro_tier2.jpg",
+    "/images/cliente/trabalhador_tier1.jpg",
+    "/images/cliente/turista_tier1.jpg",
+  ],
+};
+
+function pickPortrait(type: CustomerType, id: string): string {
+  const pool = PORTRAIT_POOL[type] ?? PORTRAIT_POOL.regular;
+  const hash = id.split("").reduce((a, c) => a + c.charCodeAt(0), 0);
+  return pool[hash % pool.length];
+}
+
 // -----------------------------------------------------------------------------
 export default function StreetsPage() {
   const { user } = useAuth();
@@ -163,20 +207,26 @@ export default function StreetsPage() {
 
   // -- Typewriter dialogue
   const [typedDialogue, setTypedDialogue] = useState("");
+  const [dialogueDone, setDialogueDone] = useState(false);
   const typewriterRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const typeDialogue = useCallback((text: string) => {
     if (typewriterRef.current) clearInterval(typewriterRef.current);
     setTypedDialogue("");
+    setDialogueDone(false);
     let i = 0;
     typewriterRef.current = setInterval(() => {
       i++;
       setTypedDialogue(text.slice(0, i));
       if (i >= text.length) {
         if (typewriterRef.current) clearInterval(typewriterRef.current);
+        setDialogueDone(true);
       }
     }, 28);
   }, []);
   useEffect(() => () => { if (typewriterRef.current) clearInterval(typewriterRef.current); }, []);
+
+  // -- Inspector reveal
+  const [inspectorRevealed, setInspectorRevealed] = useState(false);
 
   // -- Customer entrance animation
   const [customerAnim, setCustomerAnim] = useState(false);
@@ -302,6 +352,8 @@ export default function StreetsPage() {
     setGreeting(data.greeting);
     setDialogue(data.greeting);
     typeDialogue(data.greeting);
+    setInspectorRevealed(false);
+    setDialogueDone(false);
     setSession((s) => s ? { ...s, heat: data.session.heat } : s);
     setHeat(data.session.heat);
     setHeatStage(heatStageFor(data.session.heat));
@@ -322,10 +374,12 @@ export default function StreetsPage() {
     }
   }
 
-  async function submitOffer(action: Action = "offer") {
+  async function submitOffer(action: Action = "offer", overridePrice?: number, overrideQty?: number) {
     if (!session || !customer || !selectedDrug) return;
     stopTimer();
     setPhase("negotiating");
+    const usedPrice = overridePrice ?? pricePerUnit;
+    const usedQty   = overrideQty   ?? quantity;
 
     const res = await fetch("/api/crime-empire/streets", {
       method: "POST",
@@ -335,8 +389,8 @@ export default function StreetsPage() {
         sessionId: session.id,
         customerId: customer.id,
         inventoryId: selectedDrug.id,
-        pricePerUnit,
-        quantity,
+        pricePerUnit: usedPrice,
+        quantity: usedQty,
         negotiationAction: action,
         customerState: {
           budget: customer.budget,
@@ -470,6 +524,11 @@ export default function StreetsPage() {
       }
       await fetchDrugs();
     } else if (outcome === "arrested" || outcome === "busted") {
+      if (customer?.type === "undercover") {
+        setInspectorRevealed(true);
+        if (data.dialogue) typeDialogue(data.dialogue);
+        await new Promise((r) => setTimeout(r, 2200));
+      }
       addLog("🚔 APANHADO! A polícia está aqui!", "text-red-600");
       setArrestEscape({ token: data.escape_token, jailMinutes: data.jail_minutes });
       setSession(null);
@@ -496,39 +555,34 @@ export default function StreetsPage() {
 
   // ─── Render helpers ──────────────────────────────────────────────────────
 
-  const currentZone  = session ? zones.find((z) => z.id === session.zone) : null;
-  const heatStyle    = HEAT_STAGE_STYLE[heatStage];
-  const customerMeta = customer ? CUSTOMER_TYPE_META[customer.type] : null;
-  const inJail       = player?.in_jail;
-  const noDrugs      = drugs.length === 0;
-  const zoneAccent   = currentZone ? (ZONE_ACCENT[currentZone.id] ?? "#22c55e") : "#22c55e";
+  const currentZone   = session ? zones.find((z) => z.id === session.zone) : null;
+  const heatStyle     = HEAT_STAGE_STYLE[heatStage];
+  const customerMeta  = customer ? CUSTOMER_TYPE_META[customer.type] : null;
+  const inJail        = player?.in_jail;
+  const noDrugs       = drugs.length === 0;
+  const zoneAccent    = currentZone ? (ZONE_ACCENT[currentZone.id] ?? "#22c55e") : "#22c55e";
 
-  // Mood / suspicion colour
   const moodColor = suspicion >= 70 ? "#ef4444" : suspicion >= 40 ? "#eab308" : "#22c55e";
   const moodLabel = suspicion >= 70 ? "Muito suspeito" : suspicion >= 40 ? "Desconfiado" : "Calmo";
 
-  // Deal price temperature
   const basePrice  = selectedDrug?.items.base_price ?? 100;
-  const dealRatio  = pricePerUnit / basePrice;
-  const dealColor  = dealRatio <= 0.9 ? "#22c55e" : dealRatio <= 1.15 ? "#06b6d4" : dealRatio <= 1.5 ? "#eab308" : "#ef4444";
-  const dealLabel  = dealRatio <= 0.9 ? "Barato 🤑" : dealRatio <= 1.15 ? "Justo" : dealRatio <= 1.5 ? "Caro" : "Muito Caro 🚨";
+  const vignetteAlpha = Math.max(0, (heat - 20) / 80) * 0.65;
 
-  // Does client's requested drug match selected drug?
   const drugMatchesRequest = customer && selectedDrug
     && selectedDrug.items.name.toLowerCase() === customer.requestedDrugName.toLowerCase();
 
-  // Slider percentage for CSS track fill
-  const sliderMin = Math.round(basePrice * 0.5);
-  const sliderMax = Math.round(basePrice * 2.5);
-  const sliderPct = Math.round(((pricePerUnit - sliderMin) / (sliderMax - sliderMin)) * 100);
-
-  // Heat vignette
-  const vignetteAlpha = Math.max(0, (heat - 25) / 75) * 0.65;
+  // Cinematic button values (no sliders)
+  const fairPrice = customer ? Math.round(customer.requestedPriceExpectation) : Math.round(basePrice * 1.0);
+  const highPrice = Math.round(pricePerUnit * 1.2);
+  const lowPrice  = Math.round(pricePerUnit * 0.85);
+  const lessQty   = Math.max(1, quantity - 2);
+  const nextDrug  = drugs.length > 1 ? drugs[(drugs.indexOf(selectedDrug!) + 1) % drugs.length] ?? drugs[0] : null;
+  const portrait  = customer ? pickPortrait(customer.type, customer.id) : null;
 
   // ─── Loading ──────────────────────────────────────────────────────────────
   if (phase === "loading" && !session && !player) {
     return (
-      <div className="flex-1 flex items-center justify-center bg-[#070707] text-white">
+      <div className="flex-1 flex items-center justify-center bg-[#060608] text-white">
         <div className="text-center">
           <div className="w-8 h-8 border-2 border-green-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
           <p className="text-[#444] text-sm">A carregar...</p>
@@ -563,60 +617,63 @@ export default function StreetsPage() {
   // ─── Main render ──────────────────────────────────────────────────────────
   return (
     <>
-      {/* ── Custom keyframes ── */}
       <style>{`
         @keyframes floatUp {
           0%   { opacity: 1; transform: translateY(0) scale(1); }
           60%  { opacity: 1; transform: translateY(-48px) scale(1.15); }
           100% { opacity: 0; transform: translateY(-90px) scale(0.9); }
         }
-        @keyframes customerEnter {
-          from { opacity: 0; transform: translateX(-24px) scale(0.96); }
-          to   { opacity: 1; transform: translateX(0) scale(1); }
+        @keyframes clientSlideIn {
+          from { opacity: 0; transform: translateX(-40px) scale(0.94); filter: blur(4px); }
+          to   { opacity: 1; transform: translateX(0) scale(1);   filter: blur(0);   }
         }
         @keyframes heatPulse {
           0%, 100% { opacity: 0.45; }
-          50%       { opacity: 0.75; }
+          50%      { opacity: 0.8; }
         }
         @keyframes dangerFlicker {
           0%, 100% { opacity: 1; }
-          50%       { opacity: 0.55; }
+          50%      { opacity: 0.5; }
         }
-        .float-money   { animation: floatUp 1.8s ease-out forwards; }
-        .customer-in   { animation: customerEnter 0.45s ease-out; }
-        .heat-vignette { animation: heatPulse 1.8s ease-in-out infinite; }
-        .danger-text   { animation: dangerFlicker 1s ease-in-out infinite; }
-        input[type=range].street-range {
-          -webkit-appearance: none;
-          width: 100%; height: 4px; border-radius: 2px; outline: none; cursor: pointer;
+        @keyframes inspectorFlash {
+          0%, 100% { background: rgba(185,28,28,0.25); box-shadow: 0 0 0 rgba(239,68,68,0); }
+          25%      { background: rgba(185,28,28,0.7);  box-shadow: 0 0 60px rgba(239,68,68,0.7); }
+          50%      { background: rgba(185,28,28,0.15); box-shadow: 0 0 10px rgba(239,68,68,0.2); }
+          75%      { background: rgba(185,28,28,0.6);  box-shadow: 0 0 50px rgba(239,68,68,0.6); }
         }
-        input[type=range].street-range::-webkit-slider-runnable-track {
-          height: 4px; border-radius: 2px; background: #1f1f1f;
+        @keyframes btnReveal {
+          from { opacity: 0; transform: translateY(8px); }
+          to   { opacity: 1; transform: translateY(0); }
         }
-        input[type=range].street-range::-webkit-slider-thumb {
-          -webkit-appearance: none;
-          width: 16px; height: 16px; border-radius: 50%;
-          background: #22c55e; cursor: pointer;
-          border: 2px solid #080808; margin-top: -6px;
+        @keyframes suspicionShake {
+          0%, 100% { transform: translateX(0); }
+          25%      { transform: translateX(-3px); }
+          75%      { transform: translateX(3px); }
         }
-        input[type=range].street-range:disabled::-webkit-slider-thumb { background: #333; cursor: not-allowed; }
+        .float-money      { animation: floatUp 1.8s ease-out forwards; }
+        .client-enter     { animation: clientSlideIn 0.5s cubic-bezier(.22,.68,0,1.2) forwards; }
+        .heat-vignette    { animation: heatPulse 2s ease-in-out infinite; }
+        .danger-text      { animation: dangerFlicker 0.9s ease-in-out infinite; }
+        .inspector-reveal { animation: inspectorFlash 0.5s ease-in-out 3; }
+        .btn-reveal       { animation: btnReveal 0.3s ease-out forwards; }
+        .suspicion-shake  { animation: suspicionShake 0.35s ease-in-out; }
       `}</style>
 
-      <div className="flex-1 text-white flex flex-col min-h-screen relative" style={{ background: "#070707" }}>
+      <div className="flex-1 text-white flex flex-col min-h-screen relative overflow-hidden" style={{ background: "#060608" }}>
 
-        {/* ── Zone ambient background glow ── */}
+        {/* ── Zone ambient glow ── */}
         {session && currentZone && (
-          <div className="pointer-events-none fixed inset-0 z-0"
-            style={{ background: `radial-gradient(ellipse at 50% 100%, ${ZONE_GLOW[currentZone.id] ?? "rgba(34,197,94,0.04)"} 0%, transparent 65%)` }} />
+          <div className="pointer-events-none fixed inset-0 z-0 transition-all duration-1000"
+            style={{ background: `radial-gradient(ellipse at 30% 80%, ${ZONE_GLOW[currentZone.id] ?? "rgba(34,197,94,0.04)"} 0%, transparent 70%)` }} />
         )}
 
-        {/* ── Heat vignette overlay ── */}
-        {heat > 25 && (
+        {/* ── Heat vignette ── */}
+        {heat > 20 && (
           <div className="pointer-events-none fixed inset-0 z-10 heat-vignette"
-            style={{ background: `radial-gradient(ellipse at center, transparent 25%, rgba(185,28,28,${vignetteAlpha}) 100%)` }} />
+            style={{ background: `radial-gradient(ellipse at center, transparent 20%, rgba(185,28,28,${vignetteAlpha}) 100%)` }} />
         )}
 
-        {/* ── Floating money notifications ── */}
+        {/* ── Floating money ── */}
         <div className="pointer-events-none fixed inset-0 z-50">
           {floaters.map((f) => (
             <div key={f.id} className="float-money absolute font-black text-2xl text-green-400 drop-shadow-lg select-none"
@@ -629,121 +686,113 @@ export default function StreetsPage() {
         {toast && <CEToast msg={toast.msg} ok={toast.ok} />}
 
         {/* ══ TOP BAR ══════════════════════════════════════════════════════ */}
-        <div className="relative z-20 flex items-center justify-between px-4 md:px-6 py-3 border-b border-[#141414]"
-          style={{ background: "rgba(0,0,0,0.7)", backdropFilter: "blur(8px)" }}>
+        <div className="relative z-20 flex items-center gap-3 px-4 md:px-6 py-3 border-b border-[#111]"
+          style={{ background: "rgba(0,0,0,0.85)", backdropFilter: "blur(12px)" }}>
           <Link href="/jogos/crime-empire/dashboard"
-            className="text-[#ff6a00] hover:text-[#ff9940] text-sm font-semibold transition-colors">
-            ← Voltar
+            className="text-[#ff6a00] hover:text-[#ffaa50] text-sm font-bold transition-colors shrink-0">
+            ←
           </Link>
-          <div className="flex items-center gap-4">
+
+          {session ? (
+            <div className="flex-1 flex items-center gap-3">
+              {currentZone && (
+                <span className="text-xs px-2.5 py-1 rounded-full font-bold border shrink-0 hidden sm:inline"
+                  style={{ color: zoneAccent, borderColor: `${zoneAccent}44`, background: `${zoneAccent}11` }}>
+                  {currentZone.icon} {currentZone.name}
+                </span>
+              )}
+              <div className="flex-1 flex items-center gap-2">
+                <span className={`text-xs font-black shrink-0 w-6 text-right ${heatStyle.color} ${heatStage === "danger" ? "danger-text" : ""}`}>
+                  {heat}
+                </span>
+                <div className="flex-1 h-2.5 bg-[#111] rounded-full overflow-hidden border border-[#1a1a1a] relative">
+                  <div className={`h-full rounded-full transition-all duration-700 ${heatStyle.bg}`}
+                    style={{ width: `${heat}%`, boxShadow: heat > 60 ? `0 0 8px ${heatStage === "danger" ? "#ef4444" : "#eab308"}` : "none" }} />
+                </div>
+                <span className={`text-[10px] font-black shrink-0 w-20 text-right ${heatStyle.color} ${heatStage === "danger" ? "danger-text" : ""}`}>
+                  {heatStyle.label}
+                </span>
+              </div>
+            </div>
+          ) : (
+            <div className="flex-1" />
+          )}
+
+          <div className="flex items-center gap-3 shrink-0">
             <span className="text-xs text-[#444] font-mono">Nv.{player?.level ?? "–"}</span>
             <span className="text-xs text-green-400 font-mono font-bold">${player?.dirty_cash?.toLocaleString() ?? 0}</span>
-            {currentZone && (
-              <span className="text-xs px-2.5 py-1 rounded-full font-bold border"
-                style={{ color: zoneAccent, borderColor: `${zoneAccent}44`, background: `${zoneAccent}14` }}>
-                {currentZone.icon} {currentZone.name}
-              </span>
-            )}
           </div>
         </div>
 
-        {/* ══ HEAT BAR ═════════════════════════════════════════════════════ */}
-        {session && (
-          <div className="relative z-20 px-4 md:px-6 py-2.5 border-b border-[#141414]"
-            style={{ background: heatStage === "danger" || heatStage === "busted" ? "rgba(127,29,29,0.25)" : "rgba(0,0,0,0.5)" }}>
-            <div className="flex items-center gap-3">
-              <span className={`text-xs font-black w-24 shrink-0 ${heatStyle.color} ${heatStage === "danger" ? "danger-text" : ""}`}>
-                🌡️ {heat}/100
-              </span>
-              <div className="flex-1 h-2 bg-[#181818] rounded-full overflow-hidden border border-[#222]">
-                <div className={`h-full rounded-full transition-all duration-700 ${heatStyle.bg}`} style={{ width: `${heat}%` }} />
-              </div>
-              <span className={`text-xs font-black w-20 text-right shrink-0 ${heatStyle.color}`}>{heatStyle.label}</span>
-              {currentZone && <span className="text-xs text-[#333] hidden lg:inline">+{currentZone.heatPerDeal}/deal</span>}
-            </div>
-          </div>
-        )}
-
-        {/* ── Jail banner ── */}
+        {/* Jail banner */}
         {inJail && player?.jail_release_at && (
-          <div className="relative z-20 mx-4 md:mx-6 mt-3 p-3 rounded-xl bg-red-950/50 border border-red-800/60 text-red-300 text-sm flex items-center gap-2">
+          <div className="relative z-20 mx-4 mt-2 p-3 rounded-xl bg-red-950/50 border border-red-800/40 text-red-300 text-sm flex items-center gap-2">
             <span>🚔</span>
-            <span>Estás preso! Saída: <strong>{new Date(player.jail_release_at).toLocaleTimeString("pt-PT")}</strong></span>
-            <Link href="/jogos/crime-empire/jail" className="ml-auto text-xs text-red-400 hover:text-red-200 underline">Ir à cela →</Link>
+            <span>Estás preso até <strong>{new Date(player.jail_release_at).toLocaleTimeString("pt-PT")}</strong></span>
+            <Link href="/jogos/crime-empire/jail" className="ml-auto text-xs underline">Ir à cela →</Link>
           </div>
         )}
 
-        {/* ══ ZONE SELECT ══════════════════════════════════════════════════ */}
+        {/* ══ ZONE SELECT / SESSION END ═══════════════════════════════════ */}
         {(phase === "zone_select" || phase === "session_end") && (
           <div className="relative z-20 flex-1 px-4 md:px-10 py-10">
-
-            {/* Session-end summary */}
             {phase === "session_end" && (
-              <div className="mb-8 p-6 rounded-2xl border border-green-800/40 text-center max-w-sm mx-auto"
-                style={{ background: "linear-gradient(135deg, rgba(20,83,45,0.4), rgba(0,0,0,0.4))" }}>
-                <p className="text-4xl mb-2">💰</p>
-                <p className="text-green-400 font-black text-xl mb-1">Sessão Concluída</p>
+              <div className="mb-10 p-8 rounded-2xl border border-green-800/30 text-center max-w-sm mx-auto"
+                style={{ background: "linear-gradient(135deg, rgba(20,83,45,0.35), rgba(0,0,0,0.5))" }}>
+                <p className="text-5xl mb-3">💰</p>
+                <p className="text-green-400 font-black text-2xl mb-2">Sessão Encerrada</p>
                 <p className="text-[#888] text-sm">
-                  <span className="text-white font-black text-lg">{sessionDeals}</span> negócios ·{" "}
-                  <span className="text-green-400 font-black text-lg">${sessionEarned.toLocaleString()}</span> ganhos
+                  <span className="text-white font-black text-xl">{sessionDeals}</span> negócios ·{" "}
+                  <span className="text-green-400 font-black text-xl">${sessionEarned.toLocaleString()}</span>
                 </p>
               </div>
             )}
-
             <div className="max-w-2xl">
-              <h1 className="text-4xl font-black mb-1">
-                <span className="text-green-400">🌿</span>{" "}
-                <span style={{ background: "linear-gradient(90deg,#4ade80,#16a34a)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
+              <h1 className="text-5xl font-black mb-2 tracking-tight">
+                <span style={{ background: "linear-gradient(90deg,#4ade80,#166534)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
                   Ruas
                 </span>
               </h1>
-              <p className="text-[#555] mb-8 text-sm">Escolhe onde vais operar. Cada zona tem riscos e recompensas diferentes.</p>
-
+              <p className="text-[#444] mb-8 text-sm">Escolhe a zona. Cada rua tem os seus riscos.</p>
               {inJail ? (
-                <div className="p-5 rounded-2xl bg-red-950/40 border border-red-800/40 text-red-400 text-sm">
-                  🚔 Não podes iniciar uma sessão enquanto estás preso.
-                </div>
+                <div className="p-5 rounded-2xl bg-red-950/30 border border-red-900/40 text-red-400 text-sm">🚔 Não podes sair enquanto estás preso.</div>
               ) : noDrugs ? (
-                <div className="p-8 rounded-2xl bg-[#0d0d0d] border border-[#1a1a1a] text-center">
-                  <p className="text-4xl mb-3 opacity-30">🌿</p>
-                  <p className="text-[#666] mb-1">Sem stock para vender.</p>
-                  <p className="text-[#444] text-xs mb-4">Vai ao Black Market comprar drogas primeiro.</p>
+                <div className="p-8 rounded-2xl bg-[#0c0c0c] border border-[#181818] text-center">
+                  <p className="text-4xl mb-3 opacity-20">🌿</p>
+                  <p className="text-[#555] mb-1">Sem stock para vender.</p>
+                  <p className="text-[#333] text-xs mb-5">Vai ao Black Market primeiro.</p>
                   <Link href="/jogos/crime-empire/black-market"
-                    className="inline-block px-5 py-2 rounded-xl bg-green-700 hover:bg-green-600 text-sm font-semibold transition-all hover:scale-105">
-                    Ir ao Black Market →
+                    className="inline-block px-5 py-2.5 rounded-xl bg-green-800 hover:bg-green-700 text-sm font-bold transition-all hover:scale-105">
+                    Black Market →
                   </Link>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {zones.map((zone) => {
-                    const locked    = (player?.level ?? 1) < zone.unlockLevel;
-                    const accent    = ZONE_ACCENT[zone.id] ?? "#22c55e";
-                    const profitPct = Math.round((zone.rewardMult - 1) * 100);
+                    const locked = (player?.level ?? 1) < zone.unlockLevel;
+                    const accent = ZONE_ACCENT[zone.id] ?? "#22c55e";
                     return (
                       <button key={zone.id}
                         onClick={() => !locked && startSession(zone.id)}
                         disabled={locked || !!inJail}
                         className={`group relative p-6 rounded-2xl border text-left overflow-hidden transition-all ${
-                          locked ? "border-[#1a1a1a] opacity-40 cursor-not-allowed" : "border-[#222] hover:border-[#333] active:scale-95 cursor-pointer"
+                          locked ? "border-[#181818] opacity-30 cursor-not-allowed" : "border-[#1f1f1f] hover:border-[#2a2a2a] active:scale-95 cursor-pointer"
                         }`}
-                        style={locked ? { background: "#0a0a0a" } : { background: `linear-gradient(135deg, ${accent}0a, #0a0a0a 60%)` }}>
-                        {/* Hover accent glow */}
+                        style={locked ? { background: "#0a0a0a" } : { background: `linear-gradient(135deg, ${accent}0d, #0a0a0a 60%)` }}>
                         {!locked && (
                           <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none rounded-2xl"
-                            style={{ background: `radial-gradient(ellipse at top left, ${accent}1a 0%, transparent 55%)` }} />
+                            style={{ background: `radial-gradient(ellipse at top left, ${accent}18 0%, transparent 55%)` }} />
                         )}
                         <div className="relative z-10">
                           <div className="flex items-start justify-between mb-3">
                             <span className="text-3xl">{zone.icon}</span>
-                            {locked && (
-                              <span className="text-[#444] text-xs bg-[#111] px-2 py-0.5 rounded-full border border-[#1f1f1f]">Nv.{zone.unlockLevel}</span>
-                            )}
+                            {locked && <span className="text-[#333] text-xs">Nv.{zone.unlockLevel}</span>}
                           </div>
                           <p className="font-black text-white text-base mb-1">{zone.name}</p>
-                          <p className="text-xs text-[#555] mb-4 leading-relaxed">{zone.description}</p>
+                          <p className="text-xs text-[#444] mb-4 leading-relaxed">{zone.description}</p>
                           <div className="flex items-center gap-3 text-xs">
-                            <span className="font-bold" style={{ color: accent }}>{profitPct >= 0 ? "+" : ""}{profitPct}% lucro</span>
-                            <span className="text-yellow-600">🌡️ +{zone.heatPerDeal} calor/deal</span>
+                            <span className="font-bold" style={{ color: accent }}>+{Math.round((zone.rewardMult - 1) * 100)}% lucro</span>
+                            <span className="text-yellow-700">🌡️ +{zone.heatPerDeal}/deal</span>
                           </div>
                         </div>
                       </button>
@@ -755,321 +804,336 @@ export default function StreetsPage() {
           </div>
         )}
 
-        {/* ══ ACTIVE SESSION ═══════════════════════════════════════════════ */}
+        {/* ══ ACTIVE SESSION — CINEMATIC ENCOUNTER ═══════════════════════ */}
         {session && phase !== "zone_select" && phase !== "session_end" && phase !== "arrested" && (
-          <div className="relative z-20 flex-1 flex flex-col lg:flex-row overflow-hidden">
+          <div className="relative z-20 flex-1 flex flex-col lg:flex-row min-h-0">
 
-            {/* ── LEFT — Customer ───────────────────────────────────────── */}
-            <div className="w-full lg:w-64 xl:w-72 shrink-0 flex flex-col gap-3 p-4 border-b lg:border-b-0 lg:border-r border-[#141414]"
-              style={{ background: "rgba(0,0,0,0.45)" }}>
+            {/* ── LEFT — CLIENT PORTRAIT ────────────────────────────────── */}
+            <div className="w-full lg:w-72 xl:w-80 shrink-0 flex flex-col p-4 gap-3 lg:border-r border-[#101010]"
+              style={{ background: "rgba(0,0,0,0.5)" }}>
 
               {customer ? (
-                <div className={`rounded-2xl border flex flex-col gap-4 p-4 flex-1 transition-all ${customerAnim ? "customer-in" : ""}`}
+                <div
+                  className={`relative rounded-3xl overflow-hidden flex-1 flex flex-col min-h-[320px] lg:min-h-0 ${customerAnim ? "client-enter" : ""} ${inspectorRevealed ? "inspector-reveal" : ""}`}
                   style={{
-                    borderColor: `${moodColor}33`,
-                    background: `linear-gradient(160deg, ${moodColor}0a, #0a0a0a)`,
-                    boxShadow: `0 0 28px ${moodColor}22`,
+                    border: `1.5px solid ${moodColor}55`,
+                    boxShadow: `0 0 40px ${moodColor}33, inset 0 0 20px ${moodColor}0a`,
+                    background: inspectorRevealed
+                      ? "linear-gradient(160deg,#1a0000,#0a0a0a)"
+                      : `linear-gradient(160deg,${moodColor}12,#0a0a0a)`,
+                    transition: "border-color 0.6s, box-shadow 0.6s, background 0.6s",
                   }}>
-                  {/* Avatar + identity */}
-                  <div className="flex items-center gap-3">
-                    <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-3xl shrink-0 border transition-all"
-                      style={{ borderColor: `${moodColor}44`, background: `${moodColor}14`, boxShadow: `0 0 16px ${moodColor}33` }}>
-                      {customerMeta?.icon ?? "👤"}
-                    </div>
-                    <div className="min-w-0">
-                      <p className="font-black text-white text-base leading-tight truncate">{customer.name}</p>
-                      <p className="text-xs font-semibold mt-0.5" style={{ color: moodColor }}>{customerMeta?.label ?? customer.type}</p>
-                      <p className="text-[10px] text-[#555] mt-0.5">{moodLabel}</p>
-                    </div>
-                  </div>
 
-                  {/* ── CLIENT REQUEST ── */}
-                  <div className="rounded-xl border border-[#1f1f1f] p-3 space-y-2" style={{ background: "rgba(5,5,5,0.7)" }}>
-                    <p className="text-[10px] font-black text-[#333] uppercase tracking-widest">Pedido</p>
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="px-2.5 py-1 rounded-lg text-xs font-black border"
-                        style={{ background: "#0d1a0d", borderColor: "#1a3a1a", color: "#4ade80" }}>
-                        🌿 {customer.requestedDrugName}
-                      </span>
-                      <span className="px-2.5 py-1 rounded-lg text-xs font-black border"
-                        style={{ background: "#0d0d1a", borderColor: "#1a1a3a", color: "#818cf8" }}>
-                        ⚖️ {customer.requestedQty}g
-                      </span>
-                      {!drugMatchesRequest && selectedDrug && (
-                        <span className="px-2 py-1 rounded-lg text-[10px] font-bold border border-yellow-900/40 text-yellow-600 bg-yellow-950/20">
-                          ⚠️ produto diferente
-                        </span>
+                  {/* Portrait image — full bleed */}
+                  {portrait && (
+                    <div className="relative w-full" style={{ paddingBottom: "100%" }}>
+                      <img
+                        src={portrait}
+                        alt={customer.name}
+                        className="absolute inset-0 w-full h-full object-cover object-top"
+                        onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+                      />
+                      <div className="absolute inset-0"
+                        style={{ background: "linear-gradient(to bottom, transparent 40%, rgba(0,0,0,0.92) 100%)" }} />
+
+                      {/* Inspector badge on reveal */}
+                      {inspectorRevealed && (
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <div className="text-center btn-reveal">
+                            <p className="text-6xl mb-2">🚔</p>
+                            <p className="text-red-400 font-black text-2xl tracking-widest">POLÍCIA</p>
+                            <p className="text-red-600 text-xs mt-1">Estás detido</p>
+                          </div>
+                        </div>
                       )}
-                    </div>
-                    <p className="text-[10px] text-[#444]">
-                      Espera pagar até <span className="text-[#666] font-bold">${customer.requestedPriceExpectation}/g</span>
-                      <span className="text-[#333] ml-1">· flex {Math.round(customer.flexibility * 100)}%</span>
-                    </p>
-                  </div>
 
-                  {/* Suspicion */}
-                  <div>
-                    <div className="flex justify-between text-xs mb-1.5">
-                      <span className="text-[#555]">Suspeita</span>
-                      <span className="font-bold tabular-nums" style={{ color: moodColor }}>{suspicion}%</span>
+                      {/* Name + type over image */}
+                      <div className="absolute bottom-0 left-0 right-0 p-4">
+                        <p className="font-black text-white text-xl leading-tight drop-shadow-lg">{customer.name}</p>
+                        <div className="flex items-center gap-2 mt-1">
+                          <span className="text-xs font-bold px-2 py-0.5 rounded-full"
+                            style={{ background: `${moodColor}22`, color: moodColor, border: `1px solid ${moodColor}44` }}>
+                            {inspectorRevealed ? "🚔 Polícia" : (customer.type === "undercover" ? "🧑 Regular" : `${customerMeta?.icon} ${customerMeta?.label}`)}
+                          </span>
+                          <span className={`text-xs font-bold ${inspectorRevealed ? "danger-text" : suspicion >= 40 ? "danger-text" : ""}`}
+                            style={{ color: moodColor }}>
+                            {moodLabel}
+                          </span>
+                        </div>
+                      </div>
                     </div>
-                    <div className="h-1.5 bg-[#141414] rounded-full overflow-hidden">
-                      <div className="h-full rounded-full transition-all duration-500" style={{ width: `${suspicion}%`, background: moodColor }} />
-                    </div>
-                  </div>
-
-                  {/* Patience */}
-                  <div>
-                    <div className="flex justify-between text-xs mb-1.5">
-                      <span className="text-[#555]">Paciência</span>
-                      <span className="font-mono text-xs tracking-widest">
-                        {Array.from({ length: customer.patience }).map((_, i) => (
-                          <span key={i} style={{ color: i < customer.patience - customer.offersReceived ? "#22c55e" : "#222" }}>■</span>
-                        ))}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Hint for high-level players */}
-                  {(player?.level ?? 1) >= 3 && (
-                    <p className="text-[11px] text-[#444] italic border-t border-[#181818] pt-3">{customerMeta?.hint}</p>
                   )}
+
+                  {/* Bottom section — stats */}
+                  <div className="p-4 flex flex-col gap-3">
+                    {!inspectorRevealed && (
+                      <div className="flex flex-wrap gap-2">
+                        <span className="px-3 py-1.5 rounded-xl text-xs font-black"
+                          style={{ background: "#0b1a0b", border: "1px solid #1a3a1a", color: "#4ade80" }}>
+                          🌿 {customer.requestedDrugName}
+                        </span>
+                        <span className="px-3 py-1.5 rounded-xl text-xs font-black"
+                          style={{ background: "#0b0b1a", border: "1px solid #1a1a3a", color: "#818cf8" }}>
+                          ⚖️ {customer.requestedQty}g
+                        </span>
+                        {!drugMatchesRequest && selectedDrug && (
+                          <span className="px-2 py-1 rounded-lg text-[10px] font-bold"
+                            style={{ background: "#1a1200", border: "1px solid #3a2800", color: "#d97706" }}>
+                            ⚠️ produto diferente
+                          </span>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Suspicion bar */}
+                    <div className={suspicion > 60 ? "suspicion-shake" : ""}>
+                      <div className="flex justify-between text-[11px] mb-1.5">
+                        <span style={{ color: "#333" }}>Suspeita</span>
+                        <span className="font-black tabular-nums" style={{ color: moodColor }}>{suspicion}%</span>
+                      </div>
+                      <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "#111" }}>
+                        <div className="h-full rounded-full transition-all duration-500"
+                          style={{ width: `${suspicion}%`, background: moodColor, boxShadow: suspicion > 60 ? `0 0 6px ${moodColor}` : "none" }} />
+                      </div>
+                    </div>
+
+                    {/* Patience pips */}
+                    <div>
+                      <div className="flex justify-between text-[11px] mb-1.5">
+                        <span style={{ color: "#333" }}>Paciência</span>
+                        <div className="flex gap-0.5">
+                          {Array.from({ length: customer.patience }).map((_, i) => (
+                            <span key={i} className="text-[9px] transition-colors duration-300"
+                              style={{ color: i < customer.patience - customer.offersReceived ? "#22c55e" : "#1f1f1f" }}>
+                              ●
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+
+                    {(player?.level ?? 1) >= 3 && !inspectorRevealed && (
+                      <p className="text-[10px] text-[#2a2a2a] italic border-t border-[#111] pt-2">
+                        Espera até <span style={{ color: "#444" }}>${customer.requestedPriceExpectation}/g</span>
+                      </p>
+                    )}
+                  </div>
                 </div>
               ) : (
-                <div className="flex-1 rounded-2xl border border-dashed border-[#1f1f1f] flex flex-col items-center justify-center p-8 text-center gap-2">
-                  <p className="text-5xl opacity-10">👤</p>
-                  <p className="text-[#333] text-xs">Sem cliente no momento</p>
+                <div className="flex-1 rounded-3xl border border-dashed border-[#1a1a1a] flex flex-col items-center justify-center text-center gap-3 min-h-[280px]"
+                  style={{ background: "rgba(0,0,0,0.3)" }}>
+                  <p className="text-6xl opacity-[0.06]">👤</p>
+                  <p className="text-[#2a2a2a] text-xs tracking-widest uppercase font-bold">Sem cliente</p>
                 </div>
               )}
 
               {/* Session stats */}
-              <div className="rounded-xl bg-[#0d0d0d] border border-[#181818] p-3">
-                <p className="text-[#333] text-[10px] uppercase tracking-widest font-bold mb-2">Sessão</p>
-                <div className="flex justify-between items-baseline">
-                  <span className="text-[#555] text-sm">{sessionDeals} negócios</span>
-                  <span className="text-green-400 font-black">${sessionEarned.toLocaleString()}</span>
-                </div>
+              <div className="rounded-2xl border border-[#141414] p-3 flex items-center justify-between"
+                style={{ background: "rgba(0,0,0,0.6)" }}>
+                <span className="text-[#333] text-xs">{sessionDeals} negócios</span>
+                <span className="text-green-400 font-black text-sm">${sessionEarned.toLocaleString()}</span>
               </div>
             </div>
 
-            {/* ── CENTER — Dialogue + Controls ──────────────────────────── */}
-            <div className="flex-1 flex flex-col p-4 gap-3 overflow-y-auto">
+            {/* ── CENTER — DIALOGUE + ACTIONS ───────────────────────────── */}
+            <div className="flex-1 flex flex-col p-4 gap-4 overflow-y-auto min-w-0">
 
-              {/* Dialogue bubble */}
-              <div className="rounded-2xl border border-[#1a1a1a] p-5 min-h-[80px] relative overflow-hidden" style={{ background: "rgba(10,10,10,0.8)" }}>
-                {/* subtle scan-line texture */}
-                <div className="absolute inset-0 pointer-events-none opacity-[0.02]"
+              {/* ── DIALOGUE BOX ── */}
+              <div className="relative rounded-2xl overflow-hidden"
+                style={{
+                  background: "rgba(6,6,10,0.95)",
+                  border: `1px solid ${customer ? moodColor + "28" : "#151515"}`,
+                  boxShadow: customer ? `0 0 30px ${moodColor}0d` : "none",
+                  transition: "border-color 0.5s, box-shadow 0.5s",
+                  minHeight: "110px",
+                }}>
+                <div className="absolute inset-0 pointer-events-none opacity-[0.015]"
                   style={{ backgroundImage: "repeating-linear-gradient(0deg,transparent,transparent 2px,#fff 2px,#fff 3px)" }} />
-                {typedDialogue ? (
-                  <>
-                    <p className="text-[10px] text-[#444] font-black uppercase tracking-widest mb-2 relative z-10">
-                      {customer ? customer.name : "Sistema"}
-                    </p>
-                    <p className="text-white text-sm leading-relaxed italic relative z-10">
-                      "{renderDialogueWithHighlights(typedDialogue, customer)}"
-                      <span className="inline-block w-0.5 h-4 bg-white ml-0.5 align-middle animate-pulse" />
-                    </p>
-                  </>
-                ) : (
-                  <p className="text-[#333] text-sm italic relative z-10">Chama o próximo cliente para começar a negociar...</p>
-                )}
+                <div className="relative z-10 p-5">
+                  {typedDialogue ? (
+                    <>
+                      <p className="text-[9px] font-black uppercase tracking-[0.2em] mb-3" style={{ color: moodColor + "99" }}>
+                        {customer ? customer.name.toUpperCase() : "SISTEMA"}
+                      </p>
+                      <p className="text-white text-[15px] leading-relaxed font-medium italic">
+                        &ldquo;{renderDialogueWithHighlights(typedDialogue, customer)}&rdquo;
+                        {!dialogueDone && <span className="inline-block w-0.5 h-4 bg-white ml-0.5 align-middle animate-pulse" />}
+                      </p>
+                    </>
+                  ) : (
+                    <p className="text-[#222] text-sm italic">Chama o próximo cliente para começar...</p>
+                  )}
+                </div>
               </div>
 
-              {/* Result badge */}
+              {/* ── DECISION TIMER ── */}
+              {(phase === "customer" || phase === "counter") && (
+                <div>
+                  <div className="h-0.5 bg-[#111] rounded-full overflow-hidden">
+                    <div className={`h-full rounded-full transition-all duration-1000 ${timerSecs <= 10 ? "bg-red-600" : "bg-cyan-600"}`}
+                      style={{ width: `${(timerSecs / DECISION_SECS) * 100}%` }} />
+                  </div>
+                  {timerSecs <= 10 && (
+                    <p className="text-right text-xs text-red-500 danger-text mt-1 font-black">{timerSecs}s</p>
+                  )}
+                </div>
+              )}
+
+              {/* ── DEAL ACCEPTED RESULT ── */}
               {phase === "result" && lastOutcome === "accept" && (
-                <div className="rounded-2xl border border-green-800/50 p-6 text-center"
-                  style={{ background: "linear-gradient(135deg, rgba(20,83,45,0.5), rgba(0,0,0,0.4))" }}>
-                  <p className="text-green-400 font-black text-xl mb-2">✅ NEGÓCIO FEITO!</p>
-                  <p className="text-green-300 font-black text-3xl">+${lastEarned.toLocaleString()}</p>
-                  <p className="text-green-700 text-xs mt-1">dinheiro sujo</p>
+                <div className="rounded-2xl border border-green-800/40 p-6 text-center btn-reveal"
+                  style={{ background: "linear-gradient(135deg,rgba(20,83,45,0.5),rgba(0,0,0,0.5))" }}>
+                  <p className="text-green-400 font-black text-lg mb-1">✅ NEGÓCIO FEITO</p>
+                  <p className="text-green-300 font-black text-4xl">${lastEarned.toLocaleString()}</p>
+                  <p className="text-green-800 text-xs mt-1 mb-4">dinheiro sujo</p>
                   <button onClick={callNextCustomer}
-                    className="mt-4 px-6 py-2.5 rounded-xl bg-green-700 hover:bg-green-600 text-white font-bold text-sm transition-all hover:scale-105 active:scale-95">
+                    className="px-8 py-3 rounded-xl font-black text-sm text-white transition-all hover:scale-105 active:scale-95"
+                    style={{ background: "linear-gradient(135deg,#166534,#15803d)" }}>
                     Próximo Cliente →
                   </button>
                 </div>
               )}
 
-              {/* Decision timer */}
-              {(phase === "customer" || phase === "counter") && (
-                <div>
-                  <div className="flex justify-between text-xs mb-1.5">
-                    <span className="text-[#444]">Tempo de decisão</span>
-                    <span className={`font-black tabular-nums ${timerSecs <= 10 ? "text-red-400 danger-text" : "text-[#666]"}`}>{timerSecs}s</span>
-                  </div>
-                  <div className="h-0.5 bg-[#181818] rounded-full overflow-hidden">
-                    <div className={`h-full transition-all duration-1000 rounded-full ${timerSecs <= 10 ? "bg-red-500" : "bg-cyan-500"}`}
-                      style={{ width: `${(timerSecs / DECISION_SECS) * 100}%` }} />
-                  </div>
-                </div>
-              )}
-
-              {/* Counter-offer panel */}
+              {/* ── COUNTER-OFFER ── */}
               {phase === "counter" && counterPrice != null && counterQty != null && (
-                <div className="rounded-2xl border border-yellow-800/40 p-5"
-                  style={{ background: "linear-gradient(135deg, rgba(78,52,10,0.35), rgba(0,0,0,0.4))" }}>
-                  <p className="text-yellow-500 font-black mb-3 text-sm">↔️ Contra-Proposta</p>
-                  <div className="bg-[#0a0a0a] rounded-xl p-4 mb-4 text-center border border-yellow-900/30">
+                <div className="rounded-2xl border border-yellow-900/40 p-5 btn-reveal"
+                  style={{ background: "linear-gradient(135deg,rgba(78,52,10,0.4),rgba(0,0,0,0.5))" }}>
+                  <p className="text-yellow-600 font-black text-xs uppercase tracking-widest mb-3">↔ Contra-proposta</p>
+                  <div className="text-center mb-4">
                     <p className="text-yellow-300 font-black text-3xl">${(counterPrice * counterQty).toLocaleString()}</p>
-                    <p className="text-yellow-700 text-xs mt-1">${counterPrice}/g × {counterQty}g</p>
+                    <p className="text-yellow-800 text-xs mt-0.5">${counterPrice}/g × {counterQty}g</p>
                   </div>
                   <div className="grid grid-cols-2 gap-2">
                     <button onClick={acceptCounter}
-                      className="py-3 rounded-xl bg-green-700 hover:bg-green-600 text-white font-bold text-sm transition-all hover:scale-105 active:scale-95">
+                      className="py-3 rounded-xl font-black text-sm text-white transition-all hover:scale-105 active:scale-95"
+                      style={{ background: "linear-gradient(135deg,#166534,#15803d)" }}>
                       ✅ Aceitar
                     </button>
-                    <button onClick={() => { setPhase("customer"); startTimer(); addLog(`↩ Rejeitaste a contra-proposta de ${customer?.name}`, "text-orange-400"); }}
-                      className="py-3 rounded-xl border border-[#333] bg-[#111] hover:bg-[#1a1a1a] text-white font-bold text-sm transition-all hover:scale-105 active:scale-95">
+                    <button onClick={() => { setPhase("customer"); startTimer(); addLog(`↩ Rejeitaste a contra-proposta`, "text-orange-400"); }}
+                      className="py-3 rounded-xl border border-[#2a2a2a] font-black text-sm text-[#888] hover:text-white transition-all hover:scale-105 active:scale-95"
+                      style={{ background: "#111" }}>
                       ❌ Rejeitar
                     </button>
                   </div>
                 </div>
               )}
 
-              {/* Main controls */}
-              {(phase === "customer" || phase === "idle") && (
-                <div className="rounded-2xl border border-[#1a1a1a] p-5 space-y-5" style={{ background: "rgba(8,8,8,0.85)" }}>
-                  <h3 className="text-[10px] text-[#333] font-black uppercase tracking-widest">Oferta</h3>
+              {/* ── NEGOTIATION BUTTONS ── */}
+              {phase === "customer" && dialogueDone && (
+                <div className="flex flex-col gap-2 btn-reveal">
+                  <button
+                    onClick={() => {
+                      if (!customer) return;
+                      setPricePerUnit(fairPrice);
+                      setQuantity(customer.requestedQty);
+                      submitOffer("offer", fairPrice, customer.requestedQty);
+                    }}
+                    disabled={!selectedDrug}
+                    className="w-full py-4 rounded-2xl font-black text-base text-white transition-all hover:scale-[1.02] active:scale-95 disabled:opacity-30 flex items-center justify-center gap-3"
+                    style={{ background: "linear-gradient(135deg,#166534,#16a34a)", boxShadow: "0 0 20px rgba(34,197,94,0.2)" }}>
+                    <span>💰 Aceitar Pedido</span>
+                    <span className="text-green-200 text-sm font-medium opacity-80">
+                      ${fairPrice}/g × {customer?.requestedQty ?? quantity}g = ${(fairPrice * (customer?.requestedQty ?? quantity)).toLocaleString()}
+                    </span>
+                  </button>
 
-                  {/* Drug selector */}
-                  <div>
-                    <label className="text-xs text-[#555] block mb-1.5">Produto</label>
-                    <select value={selectedDrug?.id ?? ""}
-                      onChange={(e) => { const d = drugs.find((x) => x.id === e.target.value); if (d) setSelectedDrug(d); }}
-                      className="w-full px-3 py-2.5 rounded-xl bg-[#111] border border-[#222] text-white text-sm focus:outline-none focus:border-green-600 transition-colors"
-                      disabled={phase !== "customer"}>
-                      {drugs.map((d) => (
-                        <option key={d.id} value={d.id}>{d.items.name} — {d.quantity}g disponível</option>
-                      ))}
-                      {drugs.length === 0 && <option value="">Sem stock</option>}
-                    </select>
-                  </div>
-
-                  {/* Price — slider + number input */}
-                  <div>
-                    <div className="flex justify-between items-center mb-2">
-                      <label className="text-xs text-[#555]">
-                        Preço/g{selectedDrug && <span className="text-[#333] ml-1">(base ${selectedDrug.items.base_price})</span>}
-                      </label>
-                      <span className="text-xs font-bold" style={{ color: dealColor }}>{dealLabel}</span>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <div className="flex-1 relative">
-                        <div className="absolute inset-y-0 left-0 rounded-l-full pointer-events-none"
-                          style={{ width: `${sliderPct}%`, background: dealColor, opacity: 0.3, top: "50%", transform: "translateY(-50%)", height: "4px" }} />
-                        <input type="range" className="street-range relative z-10"
-                          min={sliderMin} max={sliderMax} value={pricePerUnit}
-                          onChange={(e) => setPricePerUnit(Number(e.target.value))}
-                          disabled={phase !== "customer"} />
-                      </div>
-                      <input type="number" min={1} value={pricePerUnit}
-                        onChange={(e) => setPricePerUnit(Math.max(1, Number(e.target.value)))}
-                        className="w-20 px-2 py-1.5 rounded-lg bg-[#111] border border-[#222] text-white text-sm text-center focus:outline-none focus:border-green-600"
-                        disabled={phase !== "customer"} />
-                    </div>
-                  </div>
-
-                  {/* Quantity — slider */}
-                  <div>
-                    <div className="flex justify-between items-center mb-2">
-                      <label className="text-xs text-[#555]">
-                        Quantidade{selectedDrug && <span className="text-[#333] ml-1">max {selectedDrug.quantity}g</span>}
-                      </label>
-                      <span className="text-white font-black text-sm">{quantity}g</span>
-                    </div>
-                    <input type="range" className="street-range w-full"
-                      min={1} max={selectedDrug?.quantity ?? 1} value={quantity}
-                      onChange={(e) => setQuantity(Number(e.target.value))}
-                      disabled={phase !== "customer"} />
-                  </div>
-
-                  {/* Total */}
-                  {selectedDrug && (
-                    <div className="flex justify-between items-center py-2 border-t border-[#151515]">
-                      <span className="text-[#444] text-xs">Total ofertado</span>
-                      <span className="text-white font-black text-lg">${(pricePerUnit * quantity).toLocaleString()}</span>
-                    </div>
-                  )}
-
-                  {/* Action buttons — customer phase */}
-                  {phase === "customer" && (
-                    <div className="grid grid-cols-2 gap-2">
-                      <button onClick={() => submitOffer("offer")}
-                        disabled={!selectedDrug || drugs.length === 0}
-                        className="col-span-2 py-3 rounded-xl font-black text-sm text-white transition-all hover:scale-[1.02] active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed"
-                        style={{ background: "linear-gradient(135deg,#166534,#15803d)" }}>
-                        💰 Fazer Oferta
-                      </button>
-                      <button onClick={() => submitOffer("push")} disabled={!selectedDrug || drugs.length === 0}
-                        title="Intimida o cliente — alto risco, pode aceitar ou ficar hostil"
-                        className="py-2.5 rounded-xl border border-orange-900/40 bg-orange-950/40 hover:bg-orange-900/50 text-orange-300 font-bold text-xs transition-all hover:scale-105 active:scale-95 disabled:opacity-30">
-                        💪 Push
-                      </button>
-                      <button onClick={() => submitOffer("discount")} disabled={!selectedDrug || drugs.length === 0}
-                        title="Desconto — reduz suspeita, aumenta aceitação"
-                        className="py-2.5 rounded-xl border border-blue-900/40 bg-blue-950/40 hover:bg-blue-900/50 text-blue-300 font-bold text-xs transition-all hover:scale-105 active:scale-95 disabled:opacity-30">
-                        🎁 Desconto
-                      </button>
-                      <button onClick={() => submitOffer("rush")} disabled={!selectedDrug || drugs.length === 0}
-                        title="Rush — apressa, reduz paciência do cliente"
-                        className="py-2.5 rounded-xl border border-purple-900/40 bg-purple-950/40 hover:bg-purple-900/50 text-purple-300 font-bold text-xs transition-all hover:scale-105 active:scale-95 disabled:opacity-30">
-                        ⚡ Rush
-                      </button>
-                      <button onClick={rejectCustomer}
-                        className="py-2.5 rounded-xl border border-[#1f1f1f] bg-[#0d0d0d] hover:bg-[#141414] text-[#444] hover:text-[#888] font-semibold text-xs transition-all hover:scale-105 active:scale-95">
-                        ⏩ Ignorar
-                      </button>
-                    </div>
-                  )}
-
-                  {/* Call next — idle phase */}
-                  {phase === "idle" && (
-                    <button onClick={callNextCustomer} disabled={noDrugs || !!inJail}
-                      className="w-full py-3.5 rounded-xl font-black text-sm text-white transition-all hover:scale-[1.02] active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed"
-                      style={{ background: "linear-gradient(135deg,#0e7490,#0891b2)" }}>
-                      👤 Chamar Próximo Cliente
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      onClick={() => submitOffer("push", highPrice, quantity)}
+                      disabled={!selectedDrug}
+                      className="py-3.5 rounded-xl font-bold text-sm transition-all hover:scale-105 active:scale-95 disabled:opacity-30 flex flex-col items-center gap-0.5"
+                      style={{ background: "#120a00", border: "1px solid #3a1a00", color: "#f97316" }}>
+                      <span>💪 Pedir Mais</span>
+                      <span className="text-[10px] opacity-60">${highPrice}/g</span>
                     </button>
+                    <button
+                      onClick={() => submitOffer("discount", lowPrice, quantity)}
+                      disabled={!selectedDrug}
+                      className="py-3.5 rounded-xl font-bold text-sm transition-all hover:scale-105 active:scale-95 disabled:opacity-30 flex flex-col items-center gap-0.5"
+                      style={{ background: "#000d14", border: "1px solid #001a2a", color: "#38bdf8" }}>
+                      <span>🎁 Dar Desconto</span>
+                      <span className="text-[10px] opacity-60">${lowPrice}/g</span>
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-2">
+                    <button
+                      onClick={() => submitOffer("offer", pricePerUnit, lessQty)}
+                      disabled={!selectedDrug || quantity <= 1}
+                      className="py-3 rounded-xl font-bold text-xs transition-all hover:scale-105 active:scale-95 disabled:opacity-30 flex flex-col items-center gap-0.5"
+                      style={{ background: "#0a0a14", border: "1px solid #1a1a2a", color: "#a78bfa" }}>
+                      <span>📦 Menos Qty</span>
+                      <span className="text-[10px] opacity-60">{lessQty}g</span>
+                    </button>
+                    <button
+                      onClick={() => {
+                        if (nextDrug) {
+                          setSelectedDrug(nextDrug);
+                          setPricePerUnit(Math.round(nextDrug.items.base_price * 1.2));
+                          setQuantity(Math.min(customer?.requestedQty ?? 5, nextDrug.quantity));
+                        }
+                      }}
+                      disabled={!nextDrug}
+                      className="py-3 rounded-xl font-bold text-xs transition-all hover:scale-105 active:scale-95 disabled:opacity-30 flex flex-col items-center gap-0.5"
+                      style={{ background: "#0a1400", border: "1px solid #1a2a00", color: "#86efac" }}>
+                      <span>🔄 Trocar</span>
+                      <span className="text-[10px] opacity-60 truncate max-w-full px-1">{nextDrug?.items.name ?? "—"}</span>
+                    </button>
+                    <button
+                      onClick={rejectCustomer}
+                      className="py-3 rounded-xl font-bold text-xs transition-all hover:scale-105 active:scale-95 flex flex-col items-center gap-0.5"
+                      style={{ background: "#0a0a0a", border: "1px solid #1f1f1f", color: "#4a4a4a" }}>
+                      <span>⏩ Ignorar</span>
+                      <span className="text-[10px] opacity-60">seguinte</span>
+                    </button>
+                  </div>
+
+                  {selectedDrug && (
+                    <p className="text-center text-[10px]" style={{ color: "#222" }}>
+                      Produto: <span style={{ color: "#333" }}>{selectedDrug.items.name}</span> · {selectedDrug.quantity}g disponível
+                    </p>
                   )}
                 </div>
               )}
 
-              {/* Negotiating spinner */}
-              {phase === "negotiating" && (
-                <div className="rounded-xl border border-[#1a1a1a] bg-[#0a0a0a] p-6 text-center">
-                  <div className="w-6 h-6 border-2 border-cyan-500 border-t-transparent rounded-full animate-spin mx-auto mb-2" />
-                  <p className="text-[#444] text-sm">A negociar...</p>
+              {/* ── IDLE — CALL NEXT ── */}
+              {phase === "idle" && (
+                <button onClick={callNextCustomer} disabled={noDrugs || !!inJail}
+                  className="w-full py-5 rounded-2xl font-black text-base text-white transition-all hover:scale-[1.02] active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed"
+                  style={{ background: "linear-gradient(135deg,#0e7490,#0891b2)", boxShadow: "0 0 24px rgba(8,145,178,0.2)" }}>
+                  👤 Chamar Próximo Cliente
+                </button>
+              )}
+
+              {/* ── SPINNERS ── */}
+              {(phase === "negotiating" || (phase === "loading" && session)) && (
+                <div className="rounded-xl border border-[#141414] bg-[#080808] p-6 text-center">
+                  <div className={`w-6 h-6 border-2 border-t-transparent rounded-full animate-spin mx-auto mb-2 ${phase === "negotiating" ? "border-cyan-500" : "border-green-500"}`} />
+                  <p className="text-[#333] text-sm">{phase === "negotiating" ? "A negociar..." : "A carregar..."}</p>
                 </div>
               )}
 
-              {/* Loading spinner (active session) */}
-              {phase === "loading" && session && (
-                <div className="rounded-xl border border-[#1a1a1a] bg-[#0a0a0a] p-6 text-center">
-                  <div className="w-6 h-6 border-2 border-green-500 border-t-transparent rounded-full animate-spin mx-auto mb-2" />
-                  <p className="text-[#444] text-sm">A carregar...</p>
-                </div>
-              )}
-
-              {/* End session */}
+              {/* ── END SESSION ── */}
               {session && phase !== "negotiating" && phase !== "loading" && (
                 <button onClick={endSession}
-                  className="w-full py-2.5 rounded-xl border border-red-950/60 bg-red-950/20 hover:bg-red-950/40 text-red-600 hover:text-red-500 font-semibold text-xs transition-all">
+                  className="w-full py-2.5 rounded-xl font-semibold text-xs transition-all hover:scale-[1.01] active:scale-95"
+                  style={{ background: "rgba(127,29,29,0.12)", border: "1px solid rgba(127,29,29,0.3)", color: "#6b2020" }}>
                   🚪 Sair da Rua
                 </button>
               )}
             </div>
 
-            {/* ── RIGHT — Action log ─────────────────────────────────────── */}
-            <div className="w-full lg:w-60 xl:w-64 shrink-0 border-t lg:border-t-0 lg:border-l border-[#141414] flex flex-col p-4"
-              style={{ background: "rgba(0,0,0,0.55)" }}>
-              <p className="text-[10px] font-black text-[#2a2a2a] uppercase tracking-widest mb-3">Registo</p>
-              <div ref={logRef} className="flex-1 overflow-y-auto space-y-1.5 max-h-[400px] lg:max-h-full"
+            {/* ── RIGHT — STREET LOG ────────────────────────────────────── */}
+            <div className="hidden xl:flex w-56 shrink-0 border-l border-[#0f0f0f] flex-col p-4"
+              style={{ background: "rgba(0,0,0,0.6)" }}>
+              <p className="text-[9px] font-black text-[#1f1f1f] uppercase tracking-[0.25em] mb-3">Registo</p>
+              <div ref={logRef} className="flex-1 overflow-y-auto space-y-2"
                 style={{ scrollbarWidth: "none" }}>
-                {log.length === 0 && (
-                  <p className="text-[#222] text-xs italic">Sem actividade ainda...</p>
-                )}
+                {log.length === 0 && <p className="text-[#181818] text-[10px] italic">Sem actividade...</p>}
                 {log.map((entry, i) => (
-                  <div key={i} className="text-xs flex gap-1.5 items-start">
-                    <span className="text-[#2a2a2a] shrink-0 tabular-nums pt-px">{entry.time}</span>
-                    <span className={`${entry.color} leading-snug`}>{entry.text}</span>
+                  <div key={i} className="text-[10px] flex gap-1.5 items-start leading-snug">
+                    <span className="text-[#1e1e1e] shrink-0 tabular-nums">{entry.time}</span>
+                    <span className={entry.color}>{entry.text}</span>
                   </div>
                 ))}
               </div>
@@ -1081,7 +1145,7 @@ export default function StreetsPage() {
   );
 }
 
-// ─── Util ─────────────────────────────────────────────────────────────────────
+// ─── Utils ────────────────────────────────────────────────────────────────────
 
 function heatStageFor(heat: number): HeatStage {
   if (heat >= 100) return "busted";
@@ -1090,24 +1154,20 @@ function heatStageFor(heat: number): HeatStage {
   return "safe";
 }
 
-/**
- * Highlight drug names (green) and quantity numbers with "g" (indigo) in dialogue text.
- * Returns a React node array.
- */
 function renderDialogueWithHighlights(text: string, customer: Customer | null): React.ReactNode {
   if (!customer) return text;
-  // Split on the drug name and Xg patterns
   const drugName = customer.requestedDrugName;
-  const parts = text.split(new RegExp(`(${drugName}|\\d+g)`, "gi"));
+  if (!drugName) return text;
+  const escaped = drugName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const parts = text.split(new RegExp(`(${escaped}|\\d+g)`, "gi"));
   return parts.map((part, i) => {
     if (part.toLowerCase() === drugName.toLowerCase()) {
-      return <span key={i} style={{ color: "#4ade80", fontWeight: 900 }}>{part}</span>;
+      return <span key={i} style={{ color: "#4ade80", fontWeight: 900, textShadow: "0 0 8px #4ade8066" }}>{part}</span>;
     }
     if (/^\d+g$/i.test(part)) {
-      return <span key={i} style={{ color: "#818cf8", fontWeight: 900 }}>{part}</span>;
+      return <span key={i} style={{ color: "#818cf8", fontWeight: 900, textShadow: "0 0 8px #818cf866" }}>{part}</span>;
     }
     return part;
   });
 }
-
 
