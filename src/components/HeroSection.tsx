@@ -20,7 +20,7 @@ export function HeroSection() {
   const imageRef = useRef<HTMLImageElement | null>(null);
   const glowRef = useRef<HTMLDivElement | null>(null);
   const reduceMotion = useReducedMotion();
-  const [heroImage, setHeroImage] = useState("/images/arena-gladiator.jpg");
+  const [heroImage, setHeroImage] = useState("");
   const [heroFilter, setHeroFilter] = useState("brightness(0.35) saturate(0.7) contrast(0.95)");
   const [heroPosition, setHeroPosition] = useState("50% 50%");
   const homeIdRef = useRef<string | null>(null);
@@ -96,19 +96,21 @@ export function HeroSection() {
     <section ref={heroRef} className="relative min-h-[100svh] overflow-hidden border-b border-white/[0.08]">
       {/* Background image layer */}
       <div className="absolute inset-0">
-        <motion.img
-          ref={imageRef}
-          src={heroImage}
-          alt="Gladiator standing in a stormy colosseum"
-          className="h-full w-full object-cover"
-          style={{ filter: heroFilter, objectPosition: heroPosition }}
-          initial={reduceMotion ? false : { scale: 1.03, opacity: 0.84 }}
-          animate={reduceMotion ? { opacity: 0.96 } : { opacity: 0.96 }}
-          transition={{ duration: 1.2, ease: "easeOut" }}
-          fetchPriority="high"
-          loading="eager"
-          decoding="async"
-        />
+        {heroImage && (
+          <motion.img
+            ref={imageRef}
+            src={heroImage}
+            alt="Gladiator standing in a stormy colosseum"
+            className="h-full w-full object-cover"
+            style={{ filter: heroFilter, objectPosition: heroPosition }}
+            initial={reduceMotion ? false : { scale: 1.03, opacity: 0.84 }}
+            animate={reduceMotion ? { opacity: 0.96 } : { opacity: 0.96 }}
+            transition={{ duration: 1.2, ease: "easeOut" }}
+            fetchPriority="high"
+            loading="eager"
+            decoding="async"
+          />
+        )}
 
         {/* Gradient overlays */}
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_32%,rgba(201,164,76,0.14),transparent_26%),radial-gradient(circle_at_78%_20%,rgba(139,0,0,0.35),transparent_26%),linear-gradient(90deg,rgba(11,11,13,0.94)_0%,rgba(11,11,13,0.72)_34%,rgba(11,11,13,0.22)_62%,rgba(11,11,13,0.9)_100%)]" />

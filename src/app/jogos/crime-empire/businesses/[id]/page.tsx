@@ -245,6 +245,7 @@ export default function BusinessManagementPage({ params }: { params: Promise<{ i
   const [currentHeat, setCurrentHeat] = useState(0);
   const [launderAmount, setLaunderAmount] = useState("");
   const [collectCooldownSecs, setCollectCooldownSecs] = useState(0);
+  const [launderSecsLeft, setLaunderSecsLeft] = useState(0);
   const incomeIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const drugIntervalRef   = useRef<ReturnType<typeof setInterval> | null>(null);
   const heatIntervalRef   = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -324,6 +325,22 @@ export default function BusinessManagementPage({ params }: { params: Promise<{ i
     }
     return () => { if (collectTimerRef.current) clearInterval(collectTimerRef.current); };
   }, [data?.player_business.last_collection]);
+
+  // Live launder window countdown — must be before early returns
+  useEffect(() => {
+    if (!data) return;
+    const pb = data.player_business;
+    const windowActive = pb.launder_remaining < pb.launder_effective_cap && pb.launder_effective_cap > 0;
+    if (!windowActive) return;
+    setLaunderSecsLeft(Math.max(0, Math.ceil((new Date(pb.launder_window_reset_at).getTime() - Date.now()) / 1000)));
+    const t = setInterval(() => {
+      setLaunderSecsLeft((s) => {
+        if (s <= 1) { clearInterval(t); return 0; }
+        return s - 1;
+      });
+    }, 1000);
+    return () => clearInterval(t);
+  }, [data?.player_business.launder_window_reset_at, data?.player_business.launder_remaining, data?.player_business.launder_effective_cap]);
 
   const doAction = useCallback(async (body: object, refreshAfter = true) => {
     setProcessing(true);
@@ -416,22 +433,7 @@ export default function BusinessManagementPage({ params }: { params: Promise<{ i
   const drugItemName = pb.drug_item_name || "droga";
   const maxLaunderThisAction = Math.min(pb.launder_remaining ?? 0, player.dirty_cash);
 
-  // Live countdown for launder window reset
-  const [launderSecsLeft, setLaunderSecsLeft] = useState(() =>
-    Math.max(0, Math.ceil((new Date(pb.launder_window_reset_at ?? Date.now()).getTime() - Date.now()) / 1000))
-  );
   const launderWindowActive = pb.launder_remaining < pb.launder_effective_cap && pb.launder_effective_cap > 0;
-  useEffect(() => {
-    if (!launderWindowActive) return;
-    setLaunderSecsLeft(Math.max(0, Math.ceil((new Date(pb.launder_window_reset_at).getTime() - Date.now()) / 1000)));
-    const t = setInterval(() => {
-      setLaunderSecsLeft((s) => {
-        if (s <= 1) { clearInterval(t); return 0; }
-        return s - 1;
-      });
-    }, 1000);
-    return () => clearInterval(t);
-  }, [pb.launder_window_reset_at, launderWindowActive]);
 
   const fmtLaunderCountdown = (secs: number) => {
     if (secs <= 0) return "A recarregar…";
