@@ -9,6 +9,7 @@ import { Footer } from "@/components/Footer";
 import { AgeGate } from "@/components/AgeGate";
 import { CookieConsent } from "@/components/CookieConsent";
 import { AuthProvider } from "@/lib/auth-context";
+import { RaidEscapeProvider } from "@/lib/crime-empire/raid-context";
 import PageViewTracker from "@/components/PageViewTracker";
 import { DynamicPageBackground } from "@/components/DynamicPageBackground";
 import { CEFloatingMenu } from "@/components/CEFloatingMenu";
@@ -22,6 +23,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <AuthProvider>
+      <RaidEscapeProvider>
       <div className="min-h-screen flex flex-col">
         <PageViewTracker />
         <DynamicPageBackground />
@@ -47,6 +49,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <AgeGate />
         <CookieConsent />
       </div>
+      </RaidEscapeProvider>
     </AuthProvider>
   );
 }
