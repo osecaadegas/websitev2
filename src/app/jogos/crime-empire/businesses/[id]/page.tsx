@@ -415,7 +415,30 @@ export default function BusinessManagementPage({ params }: { params: Promise<{ i
   const isDrug = def?.income_type === "drugs";
   const drugItemName = pb.drug_item_name || "droga";
   const maxLaunderThisAction = Math.min(pb.launder_remaining ?? 0, player.dirty_cash);
-  const launderResetMins = Math.max(0, Math.ceil((new Date(pb.launder_window_reset_at ?? Date.now()).getTime() - Date.now()) / 60_000));
+
+  // Live countdown for launder window reset
+  const [launderSecsLeft, setLaunderSecsLeft] = useState(() =>
+    Math.max(0, Math.ceil((new Date(pb.launder_window_reset_at ?? Date.now()).getTime() - Date.now()) / 1000))
+  );
+  const launderWindowActive = pb.launder_remaining < pb.launder_effective_cap && pb.launder_effective_cap > 0;
+  useEffect(() => {
+    if (!launderWindowActive) return;
+    setLaunderSecsLeft(Math.max(0, Math.ceil((new Date(pb.launder_window_reset_at).getTime() - Date.now()) / 1000)));
+    const t = setInterval(() => {
+      setLaunderSecsLeft((s) => {
+        if (s <= 1) { clearInterval(t); return 0; }
+        return s - 1;
+      });
+    }, 1000);
+    return () => clearInterval(t);
+  }, [pb.launder_window_reset_at, launderWindowActive]);
+
+  const fmtLaunderCountdown = (secs: number) => {
+    if (secs <= 0) return "A recarregar…";
+    const m = Math.floor(secs / 60);
+    const s = secs % 60;
+    return m > 0 ? `${m}m ${s.toString().padStart(2, "0")}s` : `${s}s`;
+  };
 
   // Build event + def pairs
   const eventPairs = active_events
@@ -518,10 +541,19 @@ export default function BusinessManagementPage({ params }: { params: Promise<{ i
                     ${pb.launder_remaining.toLocaleString()}
                   </p>
                 </div>
-                {pb.launder_remaining <= 0 && (
-                  <div className="px-3 py-1.5 rounded-lg" style={{ background: "#0a0a0a", border: "1px solid rgba(255,106,0,0.2)" }}>
-                    <p className="text-gray-500 uppercase tracking-wide" style={{ fontSize: "9px" }}>Recarrega em</p>
-                    <p className="font-black text-orange-400">{launderResetMins}min</p>
+                {launderWindowActive && (
+                  <div className="px-3 py-1.5 rounded-lg" style={{
+                    background: "#0a0a0a",
+                    border: pb.launder_remaining <= 0
+                      ? "1px solid rgba(239,68,68,0.35)"
+                      : "1px solid rgba(255,255,255,0.06)",
+                  }}>
+                    <p className="text-gray-500 uppercase tracking-wide" style={{ fontSize: "9px" }}>
+                      {pb.launder_remaining <= 0 ? "Recarrega em" : "Janela repõe em"}
+                    </p>
+                    <p className={`font-black tabular-nums ${pb.launder_remaining <= 0 ? "text-red-400" : "text-gray-300"}`}>
+                      {fmtLaunderCountdown(launderSecsLeft)}
+                    </p>
                   </div>
                 )}
               </div>
