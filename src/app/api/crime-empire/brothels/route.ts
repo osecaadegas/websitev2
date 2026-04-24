@@ -450,7 +450,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: true, message: message || "Evento resolvido." });
     }
 
-    /* â”€â”€ PAY WORKER BONUS â”€â”€ */
+    /* ── PAY WORKER BONUS ── */
     if (action === "pay_worker_bonus") {
       const { workerId } = body;
       const bonus = 2000;
@@ -460,6 +460,54 @@ export async function POST(req: NextRequest) {
         .update({ happiness: 100, mood: Math.min(100, 80) })
         .eq("id", workerId).eq("player_id", player.id);
       return NextResponse.json({ success: true, message: "Worker feliz novamente!" });
+    }
+
+    /* ── RAID RESULT ── */
+    if (action === "raid_result") {
+      const { playerBrothelId, escaped, cashAtRisk } = body as {
+        playerBrothelId: string; escaped: boolean; cashAtRisk: number;
+      };
+      const { data: pb } = await supabase
+        .from("player_brothels").select("*").eq("id", playerBrothelId).eq("player_id", player.id).single();
+      if (!pb) return NextResponse.json({ error: "Estabelecimento não encontrado." }, { status: 404 });
+
+      if (escaped) {
+        // Heat drops, player earns bonus XP for escaping
+        const newHeat = Math.max(0, pb.heat_level - 35);
+        await supabase.from("player_brothels")
+          .update({ heat_level: newHeat }).eq("id", playerBrothelId);
+
+        const xpGain = 50;
+        const { data: xpPlayer } = await supabase
+          .from("crime_players").select("xp, level, xp_to_next_level").eq("id", player.id).single();
+        if (xpPlayer) {
+          let newXP = xpPlayer.xp + xpGain;
+          let newLevel = xpPlayer.level;
+          while (newXP >= xpPlayer.xp_to_next_level) { newXP -= xpPlayer.xp_to_next_level; newLevel++; }
+          await supabase.from("crime_players").update({
+            xp: newXP, level: newLevel,
+            xp_to_next_level: Math.floor(100 * Math.pow(1.25, newLevel - 1)),
+          }).eq("id", player.id);
+        }
+        return NextResponse.json({
+          success: true,
+          message: `Fugiste! +${xpGain} XP. Calor: ${pb.heat_level}% → ${newHeat}%`,
+        });
+      } else {
+        // Arrested: lose pending cash, reset heat, tank satisfaction
+        const cashLost = Math.min(Math.max(0, cashAtRisk), player.cash);
+        await supabase.from("crime_players")
+          .update({ cash: player.cash - cashLost }).eq("id", player.id);
+        await supabase.from("player_brothels").update({
+          heat_level: 0,
+          client_satisfaction: Math.max(10, pb.client_satisfaction - 30),
+        }).eq("id", playerBrothelId);
+        return NextResponse.json({
+          success: true,
+          cashLost,
+          message: `Foste preso! -$${cashLost.toLocaleString()} confiscado. Estabelecimento penalizado.`,
+        });
+      }
     }
 
     return NextResponse.json({ error: "Invalid action" }, { status: 400 });

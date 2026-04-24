@@ -7,6 +7,7 @@ import Link from "next/link";
 import WorkerCard, { Worker } from "@/components/crime-empire/WorkerCard";
 import BrothelEventPopup, { BrothelEvent } from "@/components/crime-empire/BrothelEventPopup";
 import WorkerCarousel from "@/components/crime-empire/WorkerCarousel";
+import RaidEscape from "@/components/crime-empire/raid/RaidEscape";
 import { WORKER_DEFS, WorkerDef } from "@/lib/crime-empire/worker-defs";
 
 interface BrothelType {
@@ -84,6 +85,10 @@ export default function BrothelManagePage() {
   const [toast, setToast] = useState<string | null>(null);
   const [floatingIncome, setFloatingIncome] = useState<number | null>(null);
   const [tab, setTab] = useState<"workers" | "supplies" | "upgrades">("workers");
+
+  // Raid escape state
+  const [raidActive, setRaidActive]       = useState(false);
+  const [raidCashAtRisk, setRaidCashAtRisk] = useState(0);
 
   // Live income tick
   const [liveIncome, setLiveIncome] = useState(0);
@@ -221,6 +226,26 @@ export default function BrothelManagePage() {
     else showToast(data.error);
   };
 
+  const triggerRaid = () => {
+    const atRisk = Math.max(0, Math.floor(tickedSinceCollect));
+    setRaidCashAtRisk(atRisk);
+    setRaidActive(true);
+  };
+
+  const handleRaidEscape = async (cashSaved: number) => {
+    setRaidActive(false);
+    const data = await api({ action: "raid_result", playerBrothelId: brothelId, escaped: true, cashAtRisk: cashSaved });
+    showToast(data.message || "Escapaste!");
+    fetchData();
+  };
+
+  const handleRaidArrested = async () => {
+    setRaidActive(false);
+    const data = await api({ action: "raid_result", playerBrothelId: brothelId, escaped: false, cashAtRisk: raidCashAtRisk });
+    showToast(data.message || "Foste preso!");
+    fetchData();
+  };
+
   const handleResolveEvent = async (eventId: string, choice: string) => {
     const data = await api({ action: "resolve_event", eventId, choice });
     if (data.success) { showToast(data.message); fetchData(); }
@@ -311,6 +336,14 @@ export default function BrothelManagePage() {
               <p className={`text-2xl font-black ${brothel.heat_level < 40 ? "text-[#aaa]" : brothel.heat_level < 70 ? "text-yellow-400" : "text-red-400 animate-pulse"}`}>
                 {brothel.heat_level}%
               </p>
+              {brothel.heat_level >= 50 && (
+                <button
+                  onClick={triggerRaid}
+                  className="mt-1 px-2 py-1 rounded text-[10px] font-black bg-red-900/60 border border-red-500/60 text-red-300 hover:bg-red-800/70 transition-all animate-pulse"
+                >
+                  🚔 RAID!
+                </button>
+              )}
             </div>
           </div>
 
@@ -465,6 +498,16 @@ export default function BrothelManagePage() {
           Total ganho neste estabelecimento: <span className="text-[#666]">${brothel.total_earned.toLocaleString()}</span>
         </div>
       </div>
+
+      {/* ── RAID ESCAPE OVERLAY ── */}
+      {raidActive && (
+        <RaidEscape
+          businessValue={brothel.brothel_type?.base_income_per_hour ?? 3000}
+          cashAtRisk={raidCashAtRisk}
+          onEscape={handleRaidEscape}
+          onArrested={handleRaidArrested}
+        />
+      )}
 
       {/* ── WORKER CAROUSEL ── */}
       {showCarousel && (
