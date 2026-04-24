@@ -63,19 +63,19 @@ export const ZONES: ZoneDef[] = [
     rewardMult: 1.25,
     riskMod: 0.08,
     allowedTypes: ["regular", "tourist", "dealer", "undercover"],
-    undercoverMod: 1.4,
+    undercoverMod: 1.0,
     unlockLevel: 2,
     icon: "⚓",
   },
   {
     id: "aeroporto",
     name: "Aeroporto",
-    description: "Terminal internacional. Turistas ricos e ingénuos. Lucro máximo mas policias à paisana em todo o lado.",
+    description: "Terminal internacional. Turistas ricos e ingénuos. Lucro máximo mas alguma vigilância policial.",
     heatPerDeal: 12,
     rewardMult: 1.6,
-    riskMod: 0.15,
-    allowedTypes: ["tourist", "undercover"],
-    undercoverMod: 2.0,
+    riskMod: 0.12,
+    allowedTypes: ["tourist", "dealer", "undercover"],
+    undercoverMod: 1.3,
     unlockLevel: 4,
     icon: "✈️",
   },
@@ -235,22 +235,22 @@ export function resolveNegotiation(opts: {
 
   // ── Snitch check (based on snitch_chance * suspicion factor)
   const snitchRoll = Math.random();
-  const snitchThreshold = customer.snitchChance * (newSuspicion / 60);
-  if (snitchRoll < snitchThreshold && newSuspicion >= 40) {
+  const snitchThreshold = customer.snitchChance * (newSuspicion / 80);
+  if (snitchRoll < snitchThreshold && newSuspicion >= 55) {
     return {
       outcome: "snitch",
       suspicionDelta,
-      heatDelta: 30 + Math.floor(Math.random() * 20), // snitch = big heat spike
+      heatDelta: 20 + Math.floor(Math.random() * 15), // snitch = heat spike
       dialogueKey: "snitch",
     };
   }
 
-  // ── Undercover: always snitch above suspicion 60
-  if (customer.type === "undercover" && newSuspicion >= 60) {
+  // ── Undercover: always snitch above suspicion 75
+  if (customer.type === "undercover" && newSuspicion >= 75) {
     return {
       outcome: "snitch",
       suspicionDelta,
-      heatDelta: 40,
+      heatDelta: 30,
       dialogueKey: "undercover_bust",
     };
   }

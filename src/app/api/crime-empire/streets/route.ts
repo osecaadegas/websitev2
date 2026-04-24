@@ -327,7 +327,7 @@ async function handleNegotiate(body: any, user: any) {
     playerLevel: player.level,
   });
 
-  const baseArrestRisk = player.class === "dealer" ? 0.08 : 0.15;
+  const baseArrestRisk = player.class === "dealer" ? 0.05 : 0.10;
   const arrestRisk = baseArrestRisk + zone.riskMod;
   const newHeat = Math.min(100, session.heat + result.heatDelta);
   await supabase.from("street_sessions").update({ heat: newHeat }).eq("id", sessionId);
@@ -428,7 +428,7 @@ async function handleAcceptDeal(body: any, user: any) {
   }
   const item = (entry as any).items;
 
-  const baseArrestRisk = player.class === "dealer" ? 0.08 : 0.15;
+  const baseArrestRisk = player.class === "dealer" ? 0.05 : 0.10;
   const caught = Math.random() < (baseArrestRisk + zone.riskMod);
   if (caught) return await triggerArrest(sessionId, player.id, quantity, entry, item, zone, session.heat);
 
@@ -618,7 +618,7 @@ async function triggerArrest(
     status: "busted", heat: 100, ended_at: new Date().toISOString(),
   }).eq("id", sessionId);
 
-  const jailMinutes = 20 + Math.floor(Math.random() * 21) + Math.floor(zone.riskMod * 30);
+  const jailMinutes = 10 + Math.floor(Math.random() * 15) + Math.floor(zone.riskMod * 20);
   const releaseAt = new Date(Date.now() + jailMinutes * 60000).toISOString();
   const et = generateEscapeToken();
 
@@ -642,7 +642,7 @@ async function triggerBust(sessionId: string, playerId: string) {
     status: "busted", heat: 100, ended_at: new Date().toISOString(),
   }).eq("id", sessionId);
 
-  const jailMinutes = 30 + Math.floor(Math.random() * 31);
+  const jailMinutes = 15 + Math.floor(Math.random() * 21);
   const releaseAt = new Date(Date.now() + jailMinutes * 60000).toISOString();
   const et = generateEscapeToken();
 
