@@ -97,6 +97,12 @@ export async function GET() {
     .limit(1)
     .maybeSingle();
 
+  // Debug: verify street_customers is readable
+  const { data: custCheck, error: custErr } = await supabase
+    .from("street_customers")
+    .select("id", { count: "exact", head: true });
+  const customerCount = (custCheck as any)?.length ?? 0;
+
   return NextResponse.json({
     player: {
       id: player.id,
@@ -111,6 +117,7 @@ export async function GET() {
     drugs,
     activeSession,
     zones: ZONES,
+    _debug: { customerCount, custErr: custErr?.message },
   });
 }
 
@@ -213,7 +220,9 @@ async function handleNextCustomer(body: any, user: any) {
   const customer = await spawnCustomer(type, player.level);
 
   if (!customer) {
-    return NextResponse.json({ error: "Sem clientes disponíveis para o teu nível" }, { status: 400 });
+    const { count } = await supabase.from("street_customers").select("*", { count: "exact", head: true }).eq("type", type);
+    console.error("[streets] spawnCustomer null. type:", type, "level:", player.level, "count for type:", count);
+    return NextResponse.json({ error: `Sem clientes (${type}, nível ${player.level}). Verifica a tabela street_customers.` }, { status: 400 });
   }
 
   const greeting = getDialogue(type, "greeting");

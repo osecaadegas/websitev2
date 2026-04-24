@@ -229,7 +229,7 @@ export default function StreetsPage() {
     setSessionEarned(0);
     setSessionDeals(0);
     setLog([]);
-    addLog(`??? sessão iniciada em ${zones.find(z => z.id === zoneId)?.name ?? zoneId}`, "text-cyan-400");
+    addLog(`🌿 sessão iniciada em ${zones.find(z => z.id === zoneId)?.name ?? zoneId}`, "text-cyan-400");
     setPhase("idle");
   }
 
@@ -246,7 +246,7 @@ export default function StreetsPage() {
       body: JSON.stringify({ action: "next_customer", sessionId: session.id }),
     });
     const data = await res.json();
-    if (!res.ok) { showToast(data.error || "Erro", false); setPhase("idle"); return; }
+    if (!res.ok) { showToast(data.error || "Erro ao chamar cliente", false); addLog(`❌ ${data.error}`, "text-red-400"); setPhase("idle"); return; }
 
     setCustomer({ ...data.customer, offersReceived: 0, suspicion: 0 });
     setGreeting(data.greeting);
