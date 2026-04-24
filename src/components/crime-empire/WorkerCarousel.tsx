@@ -314,79 +314,87 @@ export default function WorkerCarousel({
 
         {/* Details panel — compact bottom strip */}
         {active && rarityConf && (
-          <div
-            className="flex-shrink-0 mx-3 mb-3 rounded-2xl border overflow-hidden"
-            style={{
-              background: "linear-gradient(135deg, #111 0%, #0d0d0d 100%)",
-              borderColor:
-                active.rarity === "elite" ? "rgba(245,158,11,0.4)"
-                : active.rarity === "rare" ? "rgba(59,130,246,0.35)"
-                : "rgba(50,50,50,0.6)",
-            }}
-          >
-            <div className="px-4 py-2.5 flex items-center gap-4">
-              {/* Name + traits */}
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-1">
-                  <h3 className={`text-base font-black truncate ${rarityConf.color}`}>{active.name}</h3>
+          <div className="flex-shrink-0 flex justify-center pb-3 px-3">
+            <div
+              className="rounded-2xl border overflow-hidden w-full max-w-xl"
+              style={{
+                background: "linear-gradient(135deg, #111 0%, #0d0d0d 100%)",
+                borderColor:
+                  active.rarity === "elite" ? "rgba(245,158,11,0.4)"
+                  : active.rarity === "rare" ? "rgba(59,130,246,0.35)"
+                  : "rgba(50,50,50,0.6)",
+              }}
+            >
+              <div className="px-4 py-3 flex flex-col gap-2">
+                {/* Row 1: name + rarity + traits */}
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h3 className={`text-base font-black ${rarityConf.color}`}>{active.name}</h3>
                   <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold flex-shrink-0 ${rarityConf.badge}`}>
                     {rarityConf.star} {rarityConf.label}
                   </span>
-                </div>
-                <div className="flex flex-wrap gap-1">
                   {active.traits.slice(0, 3).map((t) => (
                     <span key={t} className={`text-[10px] px-1.5 py-0.5 rounded-full ${rarityConf.badge}`}>{t}</span>
                   ))}
                 </div>
-              </div>
 
-              {/* Stats mini grid */}
-              <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-[10px] w-40 flex-shrink-0">
-                {[
-                  { label: "Atrat.", val: active.stats.attractiveness, color: "bg-pink-500", text: "text-pink-300" },
-                  { label: "Stamina", val: active.stats.stamina, color: "bg-blue-500", text: "text-blue-300" },
-                  { label: "Mood", val: active.stats.mood, color: "bg-yellow-500", text: "text-yellow-300" },
-                  { label: "Carisma", val: active.stats.charisma, color: "bg-purple-500", text: "text-purple-300" },
-                ].map(({ label, val, color, text }) => (
-                  <div key={label}>
-                    <div className="flex justify-between text-[#666] mb-0.5">
-                      <span>{label}</span><span className={text}>{val}</span>
-                    </div>
-                    <StatBar value={val} color={color} />
-                  </div>
-                ))}
-              </div>
-
-              {/* Earnings + price + hire */}
-              <div className="flex flex-col items-end gap-1.5 flex-shrink-0">
-                <div className="text-right">
-                  <span className="text-green-400 font-black text-lg">${active.earnings_per_hour.toLocaleString()}</span>
-                  <span className="text-[#555] text-xs">/h</span>
-                </div>
-                <div className={`text-sm font-bold ${active.hire_uses_crypto ? "text-yellow-400" : "text-white"}`}>
-                  {active.hire_uses_crypto ? "🪙" : "$"}{active.hire_price.toLocaleString()}
-                </div>
-                {isOwned ? (
-                  <div className="px-4 py-1.5 rounded-xl bg-green-900/40 border border-green-500/40 text-green-400 text-xs font-bold">
-                    ✓ Contratada
-                  </div>
-                ) : (
-                  <button
-                    onClick={handleHire}
-                    disabled={!canAfford || hiring}
-                    className={`px-4 py-1.5 rounded-xl text-xs font-black transition-all ${
-                      canAfford && !hiring
-                        ? active.rarity === "elite"
-                          ? "bg-gradient-to-br from-amber-600 to-orange-700 hover:from-amber-500 hover:to-orange-600 hover:scale-105 active:scale-95 shadow-[0_0_16px_rgba(245,158,11,0.3)]"
-                          : active.rarity === "rare"
-                          ? "bg-gradient-to-br from-blue-700 to-indigo-700 hover:from-blue-600 hover:to-indigo-600 hover:scale-105 active:scale-95"
-                          : "bg-gradient-to-br from-pink-700 to-purple-700 hover:from-pink-600 hover:to-purple-600 hover:scale-105 active:scale-95"
-                        : "bg-[#1a1a1a] text-[#444] cursor-not-allowed border border-[#222]"
-                    }`}
-                  >
-                    {hiring ? "A contratar..." : !canAfford ? "Sem saldo" : "💋 Contratar"}
-                  </button>
+                {/* Row 2: description */}
+                {active.description && (
+                  <p className="text-[11px] text-[#888] leading-relaxed line-clamp-2">
+                    {active.description}
+                  </p>
                 )}
+
+                {/* Row 3: stats + price/hire */}
+                <div className="flex items-center gap-4">
+                  {/* Stats mini grid */}
+                  <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-[10px] flex-1">
+                    {[
+                      { label: "Atrat.", val: active.stats.attractiveness, color: "bg-pink-500", text: "text-pink-300" },
+                      { label: "Stamina", val: active.stats.stamina, color: "bg-blue-500", text: "text-blue-300" },
+                      { label: "Mood", val: active.stats.mood, color: "bg-yellow-500", text: "text-yellow-300" },
+                      { label: "Carisma", val: active.stats.charisma, color: "bg-purple-500", text: "text-purple-300" },
+                    ].map(({ label, val, color, text }) => (
+                      <div key={label}>
+                        <div className="flex justify-between text-[#666] mb-0.5">
+                          <span>{label}</span><span className={text}>{val}</span>
+                        </div>
+                        <StatBar value={val} color={color} />
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Earnings + price + hire */}
+                  <div className="flex flex-col items-end gap-1.5 flex-shrink-0">
+                    <div className="text-right">
+                      <span className="text-green-400 font-black text-lg">${active.earnings_per_hour.toLocaleString()}</span>
+                      <span className="text-[#555] text-xs">/h</span>
+                    </div>
+                    <div className={`text-sm font-bold ${active.hire_uses_crypto ? "text-yellow-400" : "text-white"}`}>
+                      {active.hire_uses_crypto ? "🪙" : "$"}{active.hire_price.toLocaleString()}
+                    </div>
+                    {isOwned ? (
+                      <div className="px-4 py-1.5 rounded-xl bg-green-900/40 border border-green-500/40 text-green-400 text-xs font-bold">
+                        ✓ Contratada
+                      </div>
+                    ) : (
+                      <button
+                        onClick={handleHire}
+                        disabled={!canAfford || hiring}
+                        className={`px-4 py-1.5 rounded-xl text-xs font-black transition-all ${
+                          canAfford && !hiring
+                            ? active.rarity === "elite"
+                              ? "bg-gradient-to-br from-amber-600 to-orange-700 hover:from-amber-500 hover:to-orange-600 hover:scale-105 active:scale-95 shadow-[0_0_16px_rgba(245,158,11,0.3)]"
+                              : active.rarity === "rare"
+                              ? "bg-gradient-to-br from-blue-700 to-indigo-700 hover:from-blue-600 hover:to-indigo-600 hover:scale-105 active:scale-95"
+                              : "bg-gradient-to-br from-pink-700 to-purple-700 hover:from-pink-600 hover:to-purple-600 hover:scale-105 active:scale-95"
+                            : "bg-[#1a1a1a] text-[#444] cursor-not-allowed border border-[#222]"
+                        }`}
+                      >
+                        {hiring ? "A contratar..." : !canAfford ? "Sem saldo" : "💋 Contratar"}
+                      </button>
+                    )}
+                  </div>
+                </div>
               </div>
             </div>
           </div>
