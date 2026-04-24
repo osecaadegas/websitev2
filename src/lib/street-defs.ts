@@ -594,16 +594,21 @@ export const HEAT_STAGE_STYLE: Record<HeatStage, { color: string; label: string;
  * Randomly pick a customer type for the given zone, weighted by zone's allowedTypes
  * and undercover frequency.
  */
-export function pickCustomerType(zoneDef: ZoneDef, heatPct: number): CustomerType {
+export function pickCustomerType(zoneDef: ZoneDef, heatPct: number, policeMult = 1.0): CustomerType {
   // Higher heat → higher undercover chance
   const undercoverBoost = heatPct > 0.7 ? 2.0 : 1.0;
   const pool: CustomerType[] = [];
 
   for (const t of zoneDef.allowedTypes) {
     const weight = t === "undercover"
-      ? Math.ceil(zoneDef.undercoverMod * undercoverBoost * 2)
+      ? Math.ceil(zoneDef.undercoverMod * undercoverBoost * 2 * policeMult)
       : 3;
     for (let i = 0; i < weight; i++) pool.push(t);
+  }
+
+  // Guard: if policeMult=0 removed all undercover entries (or zone is undercover-only)
+  if (pool.length === 0) {
+    return zoneDef.allowedTypes.find(t => t !== "undercover") ?? zoneDef.allowedTypes[0];
   }
 
   return pool[Math.floor(Math.random() * pool.length)];

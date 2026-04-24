@@ -224,7 +224,8 @@ async function handleNextCustomer(body: any, user: any) {
   const drugs = (inventory || []).filter((r: any) => r.items?.category === "drug");
 
   const heatPct = session.heat / 100;
-  const type = pickCustomerType(zone, heatPct);
+  const policeMult = await getPoliceMultiplier();
+  const type = pickCustomerType(zone, heatPct, policeMult);
   const customer = await spawnCustomer(type, player.level, drugs);
 
   if (!customer) {
@@ -317,6 +318,10 @@ async function handleNegotiate(body: any, user: any) {
     flexibility: customerState?.flexibility ?? 0.4,
   };
 
+  // Scale snitch chance by police intensity before negotiation engine sees it
+  const policeMult = await getPoliceMultiplier();
+  customer.snitchChance = Math.min(1, customer.snitchChance * policeMult);
+
   const result = resolveNegotiation({
     customer,
     pricePerUnit,
@@ -327,7 +332,7 @@ async function handleNegotiate(body: any, user: any) {
     playerLevel: player.level,
   });
 
-  const baseArrestRisk = player.class === "dealer" ? 0.05 : 0.10;
+  const baseArrestRisk = (player.class === "dealer" ? 0.05 : 0.10) * policeMult;
   const arrestRisk = baseArrestRisk + zone.riskMod;
   const newHeat = Math.min(100, session.heat + result.heatDelta);
   await supabase.from("street_sessions").update({ heat: newHeat }).eq("id", sessionId);
@@ -340,7 +345,7 @@ async function handleNegotiate(body: any, user: any) {
   if (result.outcome === "accept" && result.earned != null) {
     const caught = Math.random() < arrestRisk;
     if (caught) {
-      return await triggerArrest(sessionId, player.id, quantity, entry, item, zone, newHeat);
+      return await triggerArrest(sessionId, player.id, quantity, entry, item, zone, newHeat, policeMult);
     }
     await deductInventory(inventoryId, (entry as any).quantity, quantity);
     await grantDirtyMoney(player.id, result.earned);
@@ -358,14 +363,15 @@ async function handleNegotiate(body: any, user: any) {
   }
 
   if (result.outcome === "snitch") {
-    const snitchHeat = Math.min(100, session.heat + result.heatDelta);
+    const scaledHeatDelta = Math.round(result.heatDelta * policeMult);
+    const snitchHeat = Math.min(100, session.heat + scaledHeatDelta);
     await supabase.from("street_sessions").update({ heat: snitchHeat }).eq("id", sessionId);
     await supabase.from("street_deals").insert({
       session_id: sessionId, customer_id: customerId, item_id: item.id,
       offered_price: pricePerUnit, agreed_price: null, quantity,
-      success: false, snitched: true, heat_added: result.heatDelta,
+      success: false, snitched: true, heat_added: scaledHeatDelta,
     });
-    if (snitchHeat >= 100) return await triggerBust(sessionId, player.id);
+    if (snitchHeat >= 100) return await triggerBust(sessionId, player.id, policeMult);
     return NextResponse.json({
       outcome: "snitch", dialogue, heat: snitchHeat,
       heatStage: getHeatStage(snitchHeat),
@@ -428,9 +434,10 @@ async function handleAcceptDeal(body: any, user: any) {
   }
   const item = (entry as any).items;
 
-  const baseArrestRisk = player.class === "dealer" ? 0.05 : 0.10;
+  const policeMult = await getPoliceMultiplier();
+  const baseArrestRisk = (player.class === "dealer" ? 0.05 : 0.10) * policeMult;
   const caught = Math.random() < (baseArrestRisk + zone.riskMod);
-  if (caught) return await triggerArrest(sessionId, player.id, quantity, entry, item, zone, session.heat);
+  if (caught) return await triggerArrest(sessionId, player.id, quantity, entry, item, zone, session.heat, policeMult);
 
   const earned = Math.floor(agreedPrice * quantity * zone.rewardMult);
   await deductInventory(inventoryId, (entry as any).quantity, quantity);
@@ -609,16 +616,28 @@ async function spawnCustomer(
   };
 }
 
+async function getPoliceMultiplier(): Promise<number> {
+  const { data } = await supabase
+    .from("ce_system_settings")
+    .select("value")
+    .eq("key", "police_intensity")
+    .single();
+  const intensity = Number(data?.value ?? 50);
+  // intensity 50 = 1.0× (default), 0 = no police, 100 = 2×
+  return Math.min(2, Math.max(0, intensity / 50));
+}
+
 async function triggerArrest(
   sessionId: string, playerId: string, quantity: number,
-  entry: any, item: any, zone: any, currentHeat: number
+  entry: any, item: any, zone: any, currentHeat: number, policeMult = 1.0
 ) {
   await deductInventory(entry.id, entry.quantity, quantity);
   await supabase.from("street_sessions").update({
     status: "busted", heat: 100, ended_at: new Date().toISOString(),
   }).eq("id", sessionId);
 
-  const jailMinutes = 10 + Math.floor(Math.random() * 15) + Math.floor(zone.riskMod * 20);
+  const baseJail = 10 + Math.floor(Math.random() * 15) + Math.floor(zone.riskMod * 20);
+  const jailMinutes = Math.max(2, Math.round(baseJail * policeMult));
   const releaseAt = new Date(Date.now() + jailMinutes * 60000).toISOString();
   const et = generateEscapeToken();
 
@@ -637,12 +656,13 @@ async function triggerArrest(
   });
 }
 
-async function triggerBust(sessionId: string, playerId: string) {
+async function triggerBust(sessionId: string, playerId: string, policeMult = 1.0) {
   await supabase.from("street_sessions").update({
     status: "busted", heat: 100, ended_at: new Date().toISOString(),
   }).eq("id", sessionId);
 
-  const jailMinutes = 15 + Math.floor(Math.random() * 21);
+  const baseJail = 15 + Math.floor(Math.random() * 21);
+  const jailMinutes = Math.max(2, Math.round(baseJail * policeMult));
   const releaseAt = new Date(Date.now() + jailMinutes * 60000).toISOString();
   const et = generateEscapeToken();
 
