@@ -163,19 +163,26 @@ export async function POST(req: NextRequest) {
   const addictionPenalty = ((player.addiction || 0) / 100) * 0.5;
   const effectiveRate = Math.max(0.03, successRate * (1 - addictionPenalty));
 
-  const success = Math.random() <= effectiveRate;
+  // Roadmap level scaling: each phase above 1 is harder but more rewarding
+  const levelIndex = Math.max(0, (contract.roadmap_level || 1) - 1);
+  const levelSuccessPenalty = levelIndex * 0.05; // -5% success rate per phase
+  const scaledRate = Math.max(0.03, effectiveRate - levelSuccessPenalty);
+
+  const success = Math.random() <= scaledRate;
 
   // Deduct stamina regardless
   const newStamina = player.stamina - contract.stamina_cost;
 
   if (success) {
-    // Reward
-    const cash = Math.floor(Math.random() * (contract.max_cash - contract.min_cash + 1)) + contract.min_cash;
+    // Reward — higher phases pay more to compensate for increased difficulty
+    const rewardMultiplier = 1 + levelIndex * 0.30; // +30% per phase above 1
+    const cash = Math.floor((Math.random() * (contract.max_cash - contract.min_cash + 1) + contract.min_cash) * rewardMultiplier);
+    const respectEarned = Math.round(contract.respect_reward * rewardMultiplier);
 
     await supabase.from("crime_players").update({
       stamina: newStamina,
       cash: player.cash + cash,
-      respect: player.respect + contract.respect_reward,
+      respect: player.respect + respectEarned,
     }).eq("id", player.id);
 
     await supabase.from("player_contracts").insert({
@@ -183,7 +190,7 @@ export async function POST(req: NextRequest) {
       contract_id: contractId,
       status: "completed",
       cash_reward: cash,
-      respect_reward: contract.respect_reward,
+      respect_reward: respectEarned,
     });
 
     const xpEarned = Math.max(10, Math.floor(cash / 500));
@@ -193,17 +200,19 @@ export async function POST(req: NextRequest) {
       success: true,
       message: `Contrato concluído! Alvo eliminado.`,
       cash_earned: cash,
-      respect_earned: contract.respect_reward,
+      respect_earned: respectEarned,
       xp_earned: xpEarned,
       new_stamina: newStamina,
     });
   } else {
     // Failure — player goes to hospital with 0 HP
-    // Hitman has reduced arrest chance
+    // Hitman has reduced arrest chance; higher phases have increased arrest chance
     const baseArrest = contract.arrest_chance ?? 0.3;
+    const levelArrestBonus = levelIndex * 0.08; // +8% arrest chance per phase above 1
+    const scaledArrest = Math.min(0.90, baseArrest + levelArrestBonus);
     const arrestChance = player.class === "hitman"
-      ? baseArrest * (1 - (contract.hitman_arrest_reduction ?? 0.5))
-      : baseArrest;
+      ? scaledArrest * (1 - (contract.hitman_arrest_reduction ?? 0.5))
+      : scaledArrest;
 
     const arrested = Math.random() <= arrestChance;
 
@@ -215,7 +224,7 @@ export async function POST(req: NextRequest) {
     let jailMsg = "";
     let contractJailMinutes = 0;
     if (arrested) {
-      contractJailMinutes = 30 + Math.floor(Math.random() * 60); // 30-90 min
+      contractJailMinutes = (30 + Math.floor(Math.random() * 60)) + levelIndex * 15; // +15 min per phase
       const releaseAt = new Date(Date.now() + contractJailMinutes * 60000).toISOString();
       const et = generateEscapeToken();
       updates.in_jail = true;
@@ -249,6 +258,7 @@ export async function POST(req: NextRequest) {
       arrested,
       escape_token: arrested ? (updates.escape_token as string) : null,
       jail_time_minutes: contractJailMinutes,
+      roadmap_level: contract.roadmap_level,
       message: `O alvo escapou! Foste enviado para o Hospital com 0 HP.${jailMsg}`,
       new_stamina: newStamina,
     });

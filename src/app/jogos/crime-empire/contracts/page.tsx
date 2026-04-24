@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState, useCallback } from "react";
 import { useAuth } from "@/lib/auth-context";
@@ -6,7 +6,7 @@ import { CEToast } from "@/components/CEToast";
 import { useRouter } from "next/navigation";
 import RaidEscape from "@/components/crime-empire/raid/RaidEscape";
 
-/* ────────────────────────────── TYPES ─────────────────────────────── */
+/* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ TYPES â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 interface Contract {
   id: string;
   name: string;
@@ -48,7 +48,7 @@ interface Player {
   in_jail: boolean;
 }
 
-/* ────────────────────────────── CONFIG ─────────────────────────────── */
+/* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ CONFIG â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 const DIFF: Record<string, { label: string; color: string; bg: string; riskMod: number }> = {
   easy:   { label: "FACIL",   color: "#22c55e", bg: "#22c55e18", riskMod: 0.7  },
   medium: { label: "MEDIO",   color: "#f59e0b", bg: "#f59e0b18", riskMod: 1.0  },
@@ -58,7 +58,7 @@ const DIFF: Record<string, { label: string; color: string; bg: string; riskMod: 
 const serif = { fontFamily: "Georgia, 'Times New Roman', serif" } as const;
 const noiseSvg = "data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='1'/%3E%3C/svg%3E";
 
-/* ────────────────────────────── PLAYER HUD ─────────────────────────── */
+/* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ PLAYER HUD â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 function PlayerHUD({ player, isHitman }: { player: Player; isHitman: boolean }) {
   const stPct = Math.max(0, Math.min(100, (player.stamina / player.max_stamina) * 100));
   const hpPct = Math.max(0, Math.min(100, (player.hp / player.max_hp) * 100));
@@ -109,7 +109,7 @@ function PlayerHUD({ player, isHitman }: { player: Player; isHitman: boolean }) 
   );
 }
 
-/* ────────────────────────────── CONTRACT LIST ITEM ─────────────────── */
+/* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ CONTRACT LIST ITEM â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 interface ListItemProps {
   contract: Contract;
   status: "completed" | "failed" | "pending" | null;
@@ -163,7 +163,7 @@ function ContractListItem({ contract, status, selected, levelUnlocked, isHitman,
         color: isCompleted ? "rgba(134,239,172,0.80)" : isFailed ? "rgba(252,165,165,0.65)" : locked ? "rgba(255,255,255,0.18)" : selected ? "rgba(255,255,255,0.95)" : "rgba(255,255,255,0.65)",
         letterSpacing: "0.01em",
       }}>
-        {locked ? "🔒 " : ""}{contract.name}
+        {locked ? "ðŸ”’ " : ""}{contract.name}
       </span>
       <span
         className="text-[7px] font-black tracking-[0.2em] px-1.5 py-0.5 rounded flex-shrink-0"
@@ -188,7 +188,7 @@ function ContractListItem({ contract, status, selected, levelUnlocked, isHitman,
   );
 }
 
-/* ────────────────────────────── CONTRACT BRIEFING ──────────────────── */
+/* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ CONTRACT BRIEFING â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 interface BriefingProps {
   contract: Contract;
   status: "completed" | "failed" | "pending" | null;
@@ -255,7 +255,7 @@ function ContractBriefing({
       onMouseDown={() => setIsPressed(true)}
       onMouseUp={() => setIsPressed(false)}
     >
-      {/* ── Outer shadow ── */}
+      {/* â”€â”€ Outer shadow â”€â”€ */}
       <div
         className="absolute rounded-sm bg-black/60 transition-all duration-300"
         style={{
@@ -267,7 +267,7 @@ function ContractBriefing({
         }}
       />
 
-      {/* ── Main poster card ── */}
+      {/* â”€â”€ Main poster card â”€â”€ */}
       <div
         className="relative rounded-sm transition-all duration-300 ease-out"
         style={{
@@ -311,7 +311,7 @@ function ContractBriefing({
           <div className="absolute top-[40%] left-[75%] w-8 h-10 rounded-full blur-sm"   style={{ background: "rgba(120,70,30,0.08)" }} />
         </div>
 
-        {/* ── CONTENT ── */}
+        {/* â”€â”€ CONTENT â”€â”€ */}
         <div className="relative z-10 flex flex-col items-center px-8 py-4">
 
           {/* HEADER */}
@@ -331,7 +331,7 @@ function ContractBriefing({
             </div>
           </div>
 
-          {/* PORTRAIT — always rendered, silhouette fallback */}
+          {/* PORTRAIT â€” always rendered, silhouette fallback */}
           <div className="relative mb-3">
             <div
               className="relative w-32 h-32 rounded-sm overflow-hidden border-2 border-amber-900/30"
@@ -401,7 +401,7 @@ function ContractBriefing({
                 }`}
                 style={serif}
               >
-                {isCompleted ? "✓ MISSAO CUMPRIDA" : "✗ MISSAO FALHADA"}
+                {isCompleted ? "âœ“ MISSAO CUMPRIDA" : "âœ— MISSAO FALHADA"}
               </span>
             </div>
           )}
@@ -443,7 +443,7 @@ function ContractBriefing({
                 className="text-2xl font-black tracking-[0.06em] block"
                 style={{ ...serif, color: "rgba(55,26,3,0.88)", textShadow: "0.5px 0.5px 0px rgba(0,0,0,0.12)" }}
               >
-                ${contract.min_cash.toLocaleString("pt-PT")} — ${contract.max_cash.toLocaleString("pt-PT")}
+                ${contract.min_cash.toLocaleString("pt-PT")} â€” ${contract.max_cash.toLocaleString("pt-PT")}
               </span>
               <span className="text-[10px] font-bold block mt-0.5" style={{ ...serif, color: "rgba(101,63,15,0.60)" }}>
                 +{contract.respect_reward} Respeito
@@ -451,22 +451,22 @@ function ContractBriefing({
             </div>
           </div>
 
-          {/* STATS — 3 cols */}
+          {/* STATS â€” 3 cols */}
           <div className="w-full grid grid-cols-3 gap-2 mb-3">
             <div className="flex flex-col items-center gap-1 rounded-sm py-2 px-1 border border-amber-900/10" style={{ background: "rgba(139,90,43,0.10)" }}>
-              <span className="text-base">🎯</span>
+              <span className="text-base">ðŸŽ¯</span>
               <span className="text-[9px] font-bold tracking-[0.15em] uppercase" style={{ ...serif, color: "rgba(120,53,15,0.50)" }}>Sucesso</span>
               <span className="text-sm font-black tracking-wide" style={{ ...serif, color: displayRate >= 60 ? "rgba(22,101,52,0.85)" : displayRate >= 40 ? "rgba(146,64,14,0.85)" : "rgba(127,29,29,0.85)" }}>
-                {displayRate}%{isHitman ? " ✦" : ""}
+                {displayRate}%{isHitman ? " âœ¦" : ""}
               </span>
             </div>
             <div className="flex flex-col items-center gap-1 rounded-sm py-2 px-1 border border-amber-900/10" style={{ background: "rgba(139,90,43,0.10)" }}>
-              <span className="text-base">⚠️</span>
+              <span className="text-base">âš ï¸</span>
               <span className="text-[9px] font-bold tracking-[0.15em] uppercase" style={{ ...serif, color: "rgba(120,53,15,0.50)" }}>Risco</span>
               <span className="text-sm font-black tracking-wide" style={{ ...serif, color: "rgba(127,29,29,0.75)" }}>{riskDisplay}%</span>
             </div>
             <div className="flex flex-col items-center gap-1 rounded-sm py-2 px-1 border border-amber-900/10" style={{ background: "rgba(139,90,43,0.10)" }}>
-              <span className="text-base">⚡</span>
+              <span className="text-base">âš¡</span>
               <span className="text-[9px] font-bold tracking-[0.15em] uppercase" style={{ ...serif, color: "rgba(120,53,15,0.50)" }}>Stamina</span>
               <span className="text-sm font-black tracking-wide" style={{ ...serif, color: hasStamina ? "rgba(120,53,15,0.80)" : "rgba(127,29,29,0.85)" }}>
                 -{contract.stamina_cost}
@@ -479,20 +479,20 @@ function ContractBriefing({
             <div className="flex items-start gap-2">
               <div className="w-1 h-1 rounded-full mt-1.5 flex-shrink-0" style={{ background: "rgba(153,27,27,0.50)" }} />
               <p className="text-[10px]" style={{ ...serif, color: "rgba(101,63,15,0.65)" }}>
-                Em caso de falha, HP cai para 0 — enviado ao hospital.
+                Em caso de falha, HP cai para 0 â€” enviado ao hospital.
               </p>
             </div>
             <div className="flex items-start gap-2">
               <div className="w-1 h-1 rounded-full mt-1.5 flex-shrink-0" style={{ background: "rgba(153,27,27,0.50)" }} />
               <p className="text-[10px]" style={{ ...serif, color: "rgba(101,63,15,0.65)" }}>
-                <span className="font-bold" style={{ color: "rgba(153,27,27,0.75)" }}>{arrestDisplay}% chance</span> de prisão (30–90 min).
+                <span className="font-bold" style={{ color: "rgba(153,27,27,0.75)" }}>{arrestDisplay}% chance</span> de prisÃ£o (30â€“90 min).
               </p>
             </div>
             {!meetsLevel && (
               <div className="flex items-start gap-2">
                 <div className="w-1 h-1 rounded-full mt-1.5 flex-shrink-0" style={{ background: "rgba(153,27,27,0.65)" }} />
                 <p className="text-[10px] font-bold" style={{ ...serif, color: "rgba(127,29,29,0.80)" }}>
-                  Requer nível {contract.required_level} — nível insuficiente.
+                  Requer nÃ­vel {contract.required_level} â€” nÃ­vel insuficiente.
                 </p>
               </div>
             )}
@@ -503,7 +503,7 @@ function ContractBriefing({
             className="text-[11px] font-bold tracking-[0.2em] uppercase text-center mb-3"
             style={{ ...serif, color: "rgba(153,27,27,0.55)", textShadow: "0.5px 0.5px 0px rgba(255,255,255,0.10)" }}
           >
-            ⚠ Aborda com cautela. Falha tem consequencias.
+            âš  Aborda com cautela. Falha tem consequencias.
           </p>
 
           {/* CONFIDENTIAL / COMPLETED STAMP */}
@@ -513,7 +513,7 @@ function ContractBriefing({
                 className="text-[13px] font-black tracking-[0.3em] uppercase border-2 rounded-full px-5 py-1.5"
                 style={{ ...serif, color: "rgba(22,101,52,0.80)", borderColor: "rgba(22,101,52,0.55)", background: "rgba(22,101,52,0.08)" }}
               >
-                ✓ CONCLUÍDO
+                âœ“ CONCLUÃDO
               </span>
             ) : (
               <span
@@ -561,7 +561,7 @@ function ContractBriefing({
                       EXECUTANDO
                     </>
                   ) : (
-                    <>⚔ EXECUTAR CONTRATO</>
+                    <>âš” EXECUTAR CONTRATO</>
                   )}
                 </span>
               </button>
@@ -576,7 +576,7 @@ function ContractBriefing({
   );
 }
 
-/* ────────────────────────────── ROADMAP NODE ────────────────────────── */
+/* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ ROADMAP NODE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 function RoadmapNode({ level, completed, unlocked, active }: {
   level: number; completed: boolean; unlocked: boolean; active: boolean;
 }) {
@@ -598,7 +598,7 @@ function RoadmapNode({ level, completed, unlocked, active }: {
             : { background: "transparent", border: "1px solid rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.20)" }
         }
       >
-        {completed ? "✓" : unlocked || active ? level : "—"}
+        {completed ? "âœ“" : unlocked || active ? level : "â€”"}
       </div>
       <span className="text-[8px] uppercase tracking-[0.25em] font-semibold" style={{
         color: completed ? "rgba(74,222,128,0.70)" : active ? "rgba(255,255,255,0.85)" : "rgba(255,255,255,0.25)"
@@ -609,7 +609,7 @@ function RoadmapNode({ level, completed, unlocked, active }: {
   );
 }
 
-/* ─────────────────────────── THREE-CARD FAN ─────────────────────── */
+/* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ THREE-CARD FAN â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 const DIFF_ORDER = ["easy", "medium", "hard"] as const;
 type DiffKey = (typeof DIFF_ORDER)[number];
 
@@ -647,7 +647,7 @@ function ThreeCardFan({
 
   const centerIdx = DIFF_ORDER.indexOf(centerDiff);
 
-  // Circular wrapping — always exactly left / center / right regardless of which is selected
+  // Circular wrapping â€” always exactly left / center / right regardless of which is selected
   const getRole = (diff: DiffKey): "center" | "left" | "right" => {
     const rel = (DIFF_ORDER.indexOf(diff) - centerIdx + 3) % 3;
     if (rel === 0) return "center";
@@ -655,8 +655,8 @@ function ThreeCardFan({
     return "left"; // rel === 2
   };
 
-  // Role → absolute transform. left: "50%" on each card anchors to container center,
-  // then translateX(-50% ± offset) positions left/center/right purely via CSS.
+  // Role â†’ absolute transform. left: "50%" on each card anchors to container center,
+  // then translateX(-50% Â± offset) positions left/center/right purely via CSS.
   // DOM order never affects layout so the carousel rotation is always clean.
   const roleStyles: Record<"center" | "left" | "right", React.CSSProperties> = {
     center: {
@@ -718,7 +718,7 @@ function ThreeCardFan({
   );
 }
 
-/* ─────────────────────────── MAIN PAGE ───────────────────────────── */
+/* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ MAIN PAGE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 export default function ContractsPage() {
   const { user } = useAuth();
   const router   = useRouter();
@@ -731,7 +731,7 @@ export default function ContractsPage() {
   const [toast, setToast]                     = useState<{ msg: string; ok: boolean; details?: string } | null>(null);
   const [selected, setSelected]               = useState<string | null>(null);
   const [briefingKey, setBriefingKey]         = useState(0);
-  const [arrestEscape, setArrestEscape]       = useState<{ token: string; jailMinutes: number } | null>(null);
+  const [arrestEscape, setArrestEscape]       = useState<{ token: string; jailMinutes: number; roadmapLevel: number } | null>(null);
 
   const showToast = (msg: string, ok: boolean, details?: string) => {
     setToast({ msg, ok, details });
@@ -783,11 +783,11 @@ export default function ContractsPage() {
       } else {
         const ok      = data.success;
         if (data.escape_token) {
-          setArrestEscape({ token: data.escape_token, jailMinutes: data.jail_time_minutes ?? 30 });
+          setArrestEscape({ token: data.escape_token, jailMinutes: data.jail_time_minutes ?? 30, roadmapLevel: data.roadmap_level ?? 1 });
         }
         const details = ok
-          ? `+💵 $${data.cash_earned?.toLocaleString()} | +⭐ ${data.respect_earned} Respeito`
-          : data.arrested ? "🚔 Preso!" : "";
+          ? `+ðŸ’µ $${data.cash_earned?.toLocaleString()} | +â­ ${data.respect_earned} Respeito`
+          : data.arrested ? "ðŸš” Preso!" : "";
         showToast(data.message, ok, details);
         await fetchData();
       }
@@ -796,7 +796,7 @@ export default function ContractsPage() {
     }
   };
 
-  /* ── Derived helpers ── */
+  /* â”€â”€ Derived helpers â”€â”€ */
   const levels = Array.from(new Set(contracts.map((c) => c.roadmap_level))).sort((a, b) => a - b);
 
   const getStatus = (contractId: string) =>
@@ -820,7 +820,7 @@ export default function ContractsPage() {
   const selLevelUnlocked = selectedLevel !== null ? levelUnlocked(selectedLevel) : false;
   const levelContracts   = selectedLevel !== null ? contracts.filter((c) => c.roadmap_level === selectedLevel) : [];
 
-  /* ─ Loading ─ */
+  /* â”€ Loading â”€ */
   if (loading) {
     return (
       <div className="flex-1 flex items-center justify-center min-h-[60vh]" style={{ background: "#0B0B0B" }}>
@@ -828,7 +828,7 @@ export default function ContractsPage() {
           <div className="relative w-14 h-14 mx-auto mb-4">
             <div className="absolute inset-0 rounded-full border border-amber-900/20 animate-ping" />
             <div className="absolute inset-2 rounded-full border border-amber-800/30 animate-pulse" />
-            <div className="absolute inset-0 flex items-center justify-center text-xl">🎯</div>
+            <div className="absolute inset-0 flex items-center justify-center text-xl">ðŸŽ¯</div>
           </div>
           <p className="text-[8px] uppercase tracking-[0.4em]" style={{ color: "rgba(180,110,40,0.50)" }}>A CARREGAR BRIEFING</p>
         </div>
@@ -836,7 +836,7 @@ export default function ContractsPage() {
     );
   }
 
-  /* ─ Main render ─ */
+  /* â”€ Main render â”€ */
   return (
     <div className="flex-1 text-white min-h-screen" style={{ background: "#0B0B0B" }}>
       <style>{`
@@ -885,7 +885,7 @@ export default function ContractsPage() {
 
       <div className="relative z-10 py-8 pl-2 pr-4 md:pl-3 md:pr-8 flex flex-col gap-6">
 
-        {/* ── Page header ── */}
+        {/* â”€â”€ Page header â”€â”€ */}
         <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
           <div>
             <p className="text-[7px] uppercase tracking-[0.5em] mb-1" style={{ color: "rgba(180,110,40,0.45)" }}>
@@ -898,15 +898,15 @@ export default function ContractsPage() {
           {player && <PlayerHUD player={player} isHitman={isHitman} />}
         </div>
 
-        {/* ── Banners ── */}
+        {/* â”€â”€ Banners â”€â”€ */}
         {isHitman && (
           <div
             className="flex items-center gap-3 px-4 py-3 rounded-xl text-[10px]"
             style={{ background: "rgba(28,5,5,0.85)", border: "1px solid rgba(153,27,27,0.32)" }}
           >
-            <span className="flex-shrink-0">🔪</span>
+            <span className="flex-shrink-0">ðŸ”ª</span>
             <span style={{ color: "rgba(248,113,113,0.90)" }}>
-              <strong style={{ color: "rgba(252,165,165,1)" }}>BONUS HITMAN:</strong> +15% taxa de sucesso · -50% chance de ser preso
+              <strong style={{ color: "rgba(252,165,165,1)" }}>BONUS HITMAN:</strong> +15% taxa de sucesso Â· -50% chance de ser preso
             </span>
           </div>
         )}
@@ -915,23 +915,23 @@ export default function ContractsPage() {
             className="flex items-center gap-3 px-4 py-3 rounded-xl text-[10px]"
             style={{ background: "rgba(25,18,5,0.85)", border: "1px solid rgba(146,64,14,0.38)" }}
           >
-            <span className="flex-shrink-0">🚔</span>
+            <span className="flex-shrink-0">ðŸš”</span>
             <span style={{ color: "rgba(251,191,36,0.80)" }}>
-              <strong style={{ color: "rgba(253,224,71,1)" }}>DETIDO:</strong> Não podes aceitar contratos enquanto estiveres preso.
+              <strong style={{ color: "rgba(253,224,71,1)" }}>DETIDO:</strong> NÃ£o podes aceitar contratos enquanto estiveres preso.
             </span>
           </div>
         )}
 
-        {/* ── MAIN SPLIT LAYOUT ── */}
+        {/* â”€â”€ MAIN SPLIT LAYOUT â”€â”€ */}
         {contracts.length === 0 ? (
           <div className="text-center py-24">
-            <p className="text-2xl opacity-10 mb-3">🎯</p>
+            <p className="text-2xl opacity-10 mb-3">ðŸŽ¯</p>
             <p className="text-[9px] uppercase tracking-[0.4em]" style={{ color: "rgba(180,110,40,0.40)" }}>Sem contratos disponiveis</p>
           </div>
         ) : (
           <div className="flex flex-col lg:flex-row gap-8 items-start">
 
-            {/* ── LEFT: Roadmap + List ── */}
+            {/* â”€â”€ LEFT: Roadmap + List â”€â”€ */}
             <div
               className="w-full lg:w-[260px] flex-shrink-0 rounded-2xl p-4 space-y-5"
               style={{ background: "#111111", border: "1px solid rgba(255,255,255,0.07)" }}
@@ -939,7 +939,7 @@ export default function ContractsPage() {
               <div className="pb-3" style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
                 <p className="text-[9px] font-semibold tracking-[0.45em] uppercase" style={{ color: "rgba(255,255,255,0.30)" }}>Dossie de Alvos</p>
               </div>
-              {levels.map((lvl) => {
+              {levels.map((lvl, lvlIdx) => {
                 const lvlContracts = contracts.filter((c) => c.roadmap_level === lvl);
                 const unlocked     = levelUnlocked(lvl);
                 const completed    = levelCompleted(lvl);
@@ -975,12 +975,12 @@ export default function ContractsPage() {
               {/* Footer note */}
               <div className="px-1 pt-3" style={{ borderTop: "1px solid rgba(255,255,255,0.05)" }}>
                 <p className="text-[7px] uppercase tracking-[0.20em] leading-relaxed" style={{ color: "rgba(255,255,255,0.22)" }}>
-                  Falhar envia-te ao hospital com 0 HP. Possível prisão de 30–90 min.
+                  Falhar envia-te ao hospital com 0 HP. Dificuldade e recompensas aumentam com cada fase.
                 </p>
               </div>
             </div>
 
-            {/* ── RIGHT: 3-Card Fan ── */}
+            {/* â”€â”€ RIGHT: 3-Card Fan â”€â”€ */}
             <div className="flex-1 pt-2 min-w-0" style={{ minHeight: "740px" }}>
               {selectedContract ? (
                 <div key={selectedLevel ?? "none"} className="ce-fade-slide w-full">
@@ -1011,7 +1011,7 @@ export default function ContractsPage() {
       </div>
       {arrestEscape && (
         <RaidEscape
-          difficulty="high"
+          difficulty={arrestEscape.roadmapLevel <= 1 ? "medium" : "high"}
           cashAtRisk={0}
           onEscape={async () => {
             const token = arrestEscape.token;
