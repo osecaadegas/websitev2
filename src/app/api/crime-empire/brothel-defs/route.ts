@@ -19,25 +19,31 @@ export async function GET() {
 
   // If table exists and has data, return it; otherwise fall back to static defs
   if (!error && data && data.length > 0) {
-    const defs = data.map((d) => ({
-      id: d.id,
-      slug: d.slug,
-      name: d.name,
-      description: d.description,
-      image: `/images/hooker/${d.slug}.jpg`,
-      hire_price: d.hire_price,
-      hire_uses_crypto: d.hire_uses_crypto,
-      earnings_per_hour: d.earnings_per_hour,
-      traits: d.traits,
-      rarity: d.rarity,
-      stats: {
-        attractiveness: d.stat_attractiveness,
-        stamina: d.stat_stamina,
-        mood: d.stat_mood,
-        charisma: d.stat_charisma,
-      },
-      order: d.sort_order,
-    }));
+    const defs = data.map((d) => {
+      const staticDef = WORKER_DEFS.find((s) => s.slug === d.slug);
+      return {
+        id: d.id,
+        slug: d.slug,
+        name: d.name,
+        description: d.description,
+        image: `/images/hooker/${d.slug}.jpg`,
+        hire_price: d.hire_price,
+        hire_uses_crypto: d.hire_uses_crypto,
+        earnings_per_hour: d.earnings_per_hour,
+        traits: d.traits,
+        rarity: d.rarity,
+        // required_level is not stored in DB yet — always use static def as source of truth
+        // so client lock logic stays in sync with server-side enforcement
+        required_level: (d as any).required_level ?? staticDef?.required_level ?? 1,
+        stats: {
+          attractiveness: d.stat_attractiveness,
+          stamina: d.stat_stamina,
+          mood: d.stat_mood,
+          charisma: d.stat_charisma,
+        },
+        order: d.sort_order,
+      };
+    });
     return NextResponse.json({ defs });
   }
 
