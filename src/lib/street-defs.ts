@@ -44,6 +44,18 @@ export const ZONES: ZoneDef[] = [
     icon: "🏘️",
   },
   {
+    id: "escola",
+    name: "Escola",
+    description: "Campus universitário. Estudantes e funcionários à procura de escape. Polícia rara mas sempre presente.",
+    heatPerDeal: 4,
+    rewardMult: 0.90,
+    riskMod: -0.03,
+    allowedTypes: ["regular", "junkie", "worker", "undercover"],
+    undercoverMod: 0.7,
+    unlockLevel: 1,
+    icon: "🎓",
+  },
+  {
     id: "mercado_negro",
     name: "Mercado Negro",
     description: "Centro comercial subterrâneo. Mistura de clientes. Risco/recompensa equilibrados.",
@@ -54,6 +66,18 @@ export const ZONES: ZoneDef[] = [
     undercoverMod: 1.0,
     unlockLevel: 1,
     icon: "🏪",
+  },
+  {
+    id: "hospital",
+    name: "Hospital",
+    description: "Corredor dos fundos. Funcionários exaustos e pacientes em recuperação. Ninguém faz perguntas.",
+    heatPerDeal: 6,
+    rewardMult: 1.05,
+    riskMod: 0.02,
+    allowedTypes: ["regular", "junkie", "worker", "undercover"],
+    undercoverMod: 0.8,
+    unlockLevel: 2,
+    icon: "🏥",
   },
   {
     id: "porto",
@@ -68,6 +92,30 @@ export const ZONES: ZoneDef[] = [
     icon: "⚓",
   },
   {
+    id: "discoteca",
+    name: "Discoteca",
+    description: "Fila de trás da melhor discoteca da cidade. Turistas, festeiros e trabalhadoras em pausa. Negócio fácil mas olhos em todo o lado.",
+    heatPerDeal: 9,
+    rewardMult: 1.35,
+    riskMod: 0.06,
+    allowedTypes: ["regular", "tourist", "worker", "undercover"],
+    undercoverMod: 1.1,
+    unlockLevel: 3,
+    icon: "🎵",
+  },
+  {
+    id: "zona_industrial",
+    name: "Zona Industrial",
+    description: "Armazéns abandonados. Dealers sérios e compradores por grosso. Dinheiro a sério mas risco elevado.",
+    heatPerDeal: 10,
+    rewardMult: 1.45,
+    riskMod: 0.10,
+    allowedTypes: ["regular", "dealer", "worker", "undercover"],
+    undercoverMod: 1.2,
+    unlockLevel: 3,
+    icon: "🏭",
+  },
+  {
     id: "aeroporto",
     name: "Aeroporto",
     description: "Terminal internacional. Turistas ricos e ingénuos. Lucro máximo mas alguma vigilância policial.",
@@ -79,6 +127,18 @@ export const ZONES: ZoneDef[] = [
     unlockLevel: 4,
     icon: "✈️",
   },
+  {
+    id: "gueto",
+    name: "Gueto",
+    description: "O fundo da cidade. Toda a gente compra, toda a gente vende. Máximo lucro, máximo perigo — uma esquadra a dois quarteirões.",
+    heatPerDeal: 15,
+    rewardMult: 1.9,
+    riskMod: 0.18,
+    allowedTypes: ["regular", "junkie", "dealer", "worker", "undercover"],
+    undercoverMod: 1.5,
+    unlockLevel: 5,
+    icon: "💀",
+  },
 ];
 
 export function getZone(id: string): ZoneDef | undefined {
@@ -89,7 +149,7 @@ export function getZone(id: string): ZoneDef | undefined {
 // CUSTOMER TYPES
 // ─────────────────────────────────────────────────────────────
 
-export type CustomerType = "regular" | "tourist" | "junkie" | "dealer" | "undercover";
+export type CustomerType = "regular" | "tourist" | "junkie" | "dealer" | "undercover" | "worker";
 
 export interface CustomerTypeMeta {
   label: string;
@@ -129,6 +189,12 @@ export const CUSTOMER_TYPE_META: Record<CustomerType, CustomerTypeMeta> = {
     icon: "🕵️",
     color: "text-red-400",
     hint: "Identidade desconhecida. Procede com cautela.",
+  },
+  worker: {
+    label: "Trabalhadora",
+    icon: "💋",
+    color: "text-pink-400",
+    hint: "Em pausa. Precisa de relaxar. Discreta — não quer problemas com o patrão.",
   },
 };
 
@@ -645,6 +711,64 @@ export const DIALOGUE_BANK: DialogueBank = {
       "STOP! Polícia! Tens o direito de permanecer em silêncio!",
     ],
   },
+
+  worker: {
+    greeting: [
+      "Olha, tenho um intervalo. Dá-me {qty}g de {drug}? Pago bem.",
+      "O patrão não sabe que estou aqui. {qty}g de {drug}, rápido.",
+      "Preciso de algo para aguentar o resto da noite. {qty}g de {drug}?",
+      "Estou de folga. {qty}g de {drug}, quanto cobras?",
+      "Uma colega disse-me que andavas por aqui. Tens {drug}? {qty}g.",
+      "Não tenho muito tempo. {qty}g de {drug} — tens?",
+      "É para mim, nada de revenda. {qty}g de {drug}, quanto é?",
+      "Já sei o que quero — {qty}g de {drug}. Só me diz o preço.",
+      "Trabalho aqui perto. Sempre ouvi falar de ti. {qty}g de {drug}?",
+      "Tenho os clientes à espera mas preciso de {qty}g de {drug} primeiro.",
+      "Ganho bem mas gasto mal. {qty}g de {drug}, vá.",
+      "Rápido, discreto, sem drama. {qty}g de {drug}.",
+    ],
+    accept_fair: [
+      "Perfeito. Rápido e discreto, como gosto.",
+      "Trato feito. Até logo.",
+      "Ótimo. Tenho de voltar já.",
+      "Combinado. Ninguém fica a saber.",
+      "Justo. Obrigada.",
+    ],
+    accept_expensive: [
+      "Está caro, mas hoje merecia um mimo.",
+      "Pago — mas da próxima baixa o preço.",
+      "Está salgado. Mas aceito. Não digas ao patrão.",
+    ],
+    counter_normal: [
+      "Consegues baixar? Não me sobra muito esta semana.",
+      "Fazes por menos? Prometo que volto.",
+      "Anda lá, baixa um bocadinho. Sou cliente fiel.",
+    ],
+    counter_expensive: [
+      "Isso não dá. Ganho bem mas não sou louca.",
+      "Por esse preço comprava perfume. Baixa.",
+      "Estás a exagerar. Faz um número a sério.",
+    ],
+    reject_normal: [
+      "Não vai ser desta. Vou a outro lado.",
+      "Fica para a próxima. Tenho de voltar ao trabalho.",
+      "Hoje não. Boa noite.",
+    ],
+    reject_suspicious: [
+      "Não me sinto bem aqui. Vou embora.",
+      "Sinto que algo está errado. Adeus.",
+      "Não me jeita este clima. Saio.",
+    ],
+    out_of_patience: [
+      "O patrão vai notar que faltei. Tchau.",
+      "Perdi demasiado tempo aqui. Saio.",
+      "Não posso estar mais aqui. Até logo.",
+    ],
+    snitch: [
+      "Sabes que mais? Vou falar com quem sei.",
+      "Não gosto disto. Vou ligar para a linha de denúncias.",
+    ],
+  },
 };
 
 export function getDialogue(
@@ -697,9 +821,14 @@ export function pickCustomerType(zoneDef: ZoneDef, heatPct: number, policeMult =
   const pool: CustomerType[] = [];
 
   for (const t of zoneDef.allowedTypes) {
-    const weight = t === "undercover"
-      ? Math.ceil(zoneDef.undercoverMod * undercoverBoost * 2 * policeMult)
-      : 3;
+    let weight: number;
+    if (t === "undercover") {
+      weight = Math.ceil(zoneDef.undercoverMod * undercoverBoost * 2 * policeMult);
+    } else if (t === "worker") {
+      weight = 2; // workers appear ~15% in zones that allow them
+    } else {
+      weight = 3;
+    }
     for (let i = 0; i < weight; i++) pool.push(t);
   }
 

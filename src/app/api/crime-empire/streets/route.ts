@@ -561,6 +561,59 @@ async function spawnCustomer(
   drugs: any[] = [],
   qtyBounds: { min: number; max: number } = { min: 3, max: 100 }
 ): Promise<SpawnedCustomer | null> {
+  // ── Worker: pull from active brothel workers (any player) ──────────────
+  if (type === "worker") {
+    const { data: workerPool } = await supabase
+      .from("brothel_workers")
+      .select("id, name, salary, worker_def_id")
+      .eq("status", "healthy")
+      .limit(50);
+
+    if (!workerPool || workerPool.length === 0) {
+      // No workers in the system yet — fall back to regular
+      return spawnCustomer("regular", playerLevel, drugs, qtyBounds);
+    }
+
+    const raw = workerPool[Math.floor(Math.random() * workerPool.length)];
+    const hourlyEarnings = Number(raw.salary ?? 200);
+    const budget = Math.floor(hourlyEarnings * (3 + Math.random() * 5)); // 3–8h of wages
+
+    let requestedDrugName = "produto";
+    let requestedQty = 5;
+    let requestedPriceExpectation = 100;
+
+    if (drugs.length > 0) {
+      const pick = drugs[Math.floor(Math.random() * drugs.length)];
+      const item = pick.items;
+      requestedDrugName = item.name;
+      requestedPriceExpectation = Math.round(item.base_price * (0.85 + Math.random() * 0.4));
+      const rawQty = Math.max(qtyBounds.min, Math.min(
+        Math.round(5 * (0.8 + Math.random() * 0.6)),
+        qtyBounds.max,
+        pick.quantity
+      ));
+      requestedQty = Math.max(qtyBounds.min, Math.min(rawQty, 20)); // workers buy small amounts
+    }
+
+    return {
+      id: String(raw.id),
+      name: raw.name,
+      type: "worker",
+      budget,
+      patience: 5,
+      riskTolerance: 5,
+      snitchChance: 0.02, // very discreet
+      preferredQty: requestedQty,
+      offersReceived: 0,
+      suspicion: 0,
+      requestedDrugName,
+      requestedQty,
+      requestedPriceExpectation,
+      flexibility: 0.5,
+    };
+  }
+
+  // ── All other types: pull from street_customers table ──────────────────
   const { data: pool, error } = await supabase
     .from("street_customers")
     .select("*")

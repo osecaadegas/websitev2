@@ -142,6 +142,17 @@ const PORTRAIT_POOL: Record<CustomerType, string[]> = {
     "/images/cliente/barman_tier2.jpg",
     "/images/cliente/engenheiro_obras_tier2.jpg",
   ],
+  worker: [
+    "/images/hooker/instagram_model.jpg",
+    "/images/hooker/brazileira.jpg",
+    "/images/hooker/ruiva_safada.jpg",
+    "/images/hooker/asian_rabbit.jpg",
+    "/images/hooker/chinoca_striper.jpg",
+    "/images/hooker/russa_safadad.jpg",
+    "/images/hooker/acrobata_flexivel.jpg",
+    "/images/hooker/princessa.jpg",
+    "/images/hooker/gotica_tetus2.jpg",
+  ],
 };
 
 function pickPortrait(type: CustomerType, id: string): string {
