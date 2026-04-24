@@ -78,7 +78,7 @@ function UpgradeCard({ title, desc, icon, cost, owned, onBuy, canAfford }: {
                   ? "bg-gradient-to-r from-pink-700 to-purple-700 hover:from-pink-600 hover:to-purple-600 hover:scale-[1.02] active:scale-95"
                   : "bg-[#1a1a1a] text-[#555] cursor-not-allowed border border-[#222]"}`}
             >
-              ${cost.toLocaleString()}
+              {canAfford ? `$${cost.toLocaleString()}` : `$${cost.toLocaleString()} — Saldo insuficiente`}
             </button>
           )}
         </div>
@@ -405,6 +405,10 @@ export default function BrothelManagePage() {
 
         {/* ── UPGRADES TAB ── */}
         {tab === "upgrades" && (
+          <div>
+          <div className="mb-3 text-sm text-[#888]">
+            Saldo disponível: <span className="text-green-400 font-bold">${playerCash.toLocaleString()}</span>
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <UpgradeCard title="Quartos VIP" desc="+25% rendimento. Atrai clientes de alto valor." icon="👑"
               cost={75000} owned={brothel.upgrade_vip_rooms}
@@ -418,6 +422,7 @@ export default function BrothelManagePage() {
             <UpgradeCard title="Marketing Discreto" desc="+15% rendimento. Mais clientes por hora." icon="📢"
               cost={40000} owned={brothel.upgrade_marketing}
               onBuy={() => handleUpgrade("marketing")} canAfford={playerCash >= 40000} />
+          </div>
           </div>
         )}
 
