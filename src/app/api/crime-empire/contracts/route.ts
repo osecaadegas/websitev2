@@ -105,36 +105,17 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Stamina insuficiente" }, { status: 403 });
   }
 
-  // Only allow one contract per roadmap level at a time — check if there's already a completed one at this level
-  const { data: existing } = await supabase
+  // Prevent completing the same contract twice
+  const { data: alreadyDone } = await supabase
     .from("player_contracts")
-    .select("id, status, contract_id")
+    .select("id")
     .eq("player_id", player.id)
-    .in("status", ["pending", "completed"])
-    .limit(100);
+    .eq("contract_id", contractId)
+    .eq("status", "completed")
+    .limit(1);
 
-  const completedAtLevel = (existing || []).some((pc: any) => {
-    // We need to check roadmap_level — we'd need to join, but we have contracts list
-    return pc.contract_id === contractId && pc.status === "completed";
-  });
-  if (completedAtLevel) {
+  if ((alreadyDone ?? []).length > 0) {
     return NextResponse.json({ error: "Já completaste este contrato" }, { status: 400 });
-  }
-
-  // Check player hasn't already completed ANY contract at this roadmap_level
-  const { data: sameLevel } = await supabase
-    .from("player_contracts")
-    .select("id, status, contract_targets(roadmap_level)")
-    .eq("player_id", player.id)
-    .eq("status", "completed");
-
-  const alreadyDoneThisLevel = (sameLevel || []).some((pc: any) => {
-    const ct = Array.isArray(pc.contract_targets) ? pc.contract_targets[0] : pc.contract_targets;
-    return ct?.roadmap_level === contract.roadmap_level;
-  });
-
-  if (alreadyDoneThisLevel) {
-    return NextResponse.json({ error: "Já completaste um contrato neste nível da rota" }, { status: 400 });
   }
 
   // Build success rate
