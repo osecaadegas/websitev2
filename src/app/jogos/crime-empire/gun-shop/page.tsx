@@ -148,9 +148,9 @@ export default function GunShopPage() {
       {toast && <CEToast msg={toast.msg} ok={toast.ok} />}
 
       {/* ── HERO BANNER ───────────────────────────────────────── */}
-      <div className="relative overflow-hidden" style={{ minHeight: 260 }}>
-        {/* Background image */}
-        <div className="absolute inset-0">
+      <div className="relative" style={{ minHeight: 260 }}>
+        {/* Background image — own overflow-hidden so it doesn't clip the portrait */}
+        <div className="absolute inset-0 overflow-hidden">
           <Image
             src="/images/sgt_marchado/background.jpeg"
             alt="arsenal background"
@@ -175,28 +175,24 @@ export default function GunShopPage() {
           style={{ background: "repeating-linear-gradient(90deg, #4a5c1f 0px, #4a5c1f 10px, #1a2005 10px, #1a2005 18px)" }}
         />
 
+        {/* Merchant portrait — absolute, bleeds below the hero into the items section */}
+        <div
+          className="hidden md:block absolute bottom-0 right-12 z-20 pointer-events-none"
+          style={{ width: 320, height: 500, transform: "translateY(38%)" }}
+        >
+          <Image
+            src="/images/sgt_marchado/Sgt_marchado_shopkeeper.png"
+            alt="Sgt. Marchado"
+            fill
+            className="object-contain object-bottom"
+            style={{ filter: "drop-shadow(0 0 48px rgba(74,122,42,0.55))" }}
+          />
+        </div>
+
         {/* Content */}
         <div className="relative z-10 max-w-6xl mx-auto px-4 pt-8 pb-10 flex items-end gap-8">
-          {/* Merchant portrait — right side */}
-          <div
-            className="hidden md:block relative flex-shrink-0 self-end rounded-t-2xl overflow-hidden order-last"
-            style={{ width: 150, height: 220 }}
-          >
-            <Image
-              src="/images/sgt_marchado/Sgt_marchado_shopkeeper.png"
-              alt="Sgt. Marchado"
-              fill
-              className="object-cover object-top"
-              style={{ filter: "drop-shadow(0 0 24px rgba(74,122,42,0.5))" }}
-            />
-            <div
-              className="absolute inset-x-0 bottom-0 h-20"
-              style={{ background: "linear-gradient(to top, #060804 0%, transparent 100%)" }}
-            />
-          </div>
-
           {/* Title + info */}
-          <div className="flex-1 pb-2">
+          <div className="flex-1 pb-2 md:pr-[360px]">
             <div className="flex items-center gap-2 mb-2">
               <span className="text-xl">🎖️</span>
               <span
@@ -256,7 +252,7 @@ export default function GunShopPage() {
       </div>
 
       {/* ── TABS ─────────────────────────────────────────────── */}
-      <div className="max-w-6xl mx-auto px-4 pt-4">
+      <div className="max-w-6xl mx-auto px-4 pt-4 md:pr-[360px] lg:pr-[380px]">
         <div
           className="flex gap-1 p-1 rounded-xl mb-6"
           style={{ background: "#0a0f04", border: "1px solid #1e2a0a" }}
