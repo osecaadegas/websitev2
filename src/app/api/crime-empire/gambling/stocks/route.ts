@@ -23,9 +23,9 @@ async function grantXP(playerId: string, xpEarned: number) {
   await supabase.from("crime_players").update({ xp: newXP, level: newLevel, xp_to_next_level: newXPToNext }).eq("id", playerId);
 }
 
-async function rollGamblingArrest(playerId: string, playerClass: string, bet: number) {
+async function rollGamblingArrest(playerId: string, playerClass: string, bet: number, cryptoAtRisk: number) {
   const risk = playerClass === "scammer" ? 0.075 : 0.15;
-  if (Math.random() >= risk) return { arrested: false, escapeToken: undefined as string | undefined };
+  if (Math.random() >= risk) return { arrested: false, escapeToken: undefined as string | undefined, cryptoAtRisk: 0 };
   const jailMinutes = 20 + Math.floor(Math.random() * 21);
   const jailReleaseAt = new Date(Date.now() + jailMinutes * 60_000).toISOString();
   const et = generateEscapeToken();
@@ -33,14 +33,15 @@ async function rollGamblingArrest(playerId: string, playerClass: string, bet: nu
     in_jail: true, jail_release_at: jailReleaseAt,
     escape_token: et.escape_token, escape_token_expires_at: et.escape_token_expires_at,
     escape_cash_at_risk: bet,
+    escape_crypto_at_risk: cryptoAtRisk,
   }).eq("id", playerId);
   await supabase.from("player_notifications").insert({
     player_id: playerId,
     type: "jail_released",
-    title: "🚔 Operação Policial!",
-    message: `A polícia investigou as tuas transações. Ficaste preso por ${jailMinutes} minutos.`,
+    title: "🚔 Apanhado no Casino!",
+    message: `A polícia fez uma rusga. Ficaste preso por ${jailMinutes} minutos.`,
   });
-  return { arrested: true, jailMinutes, escapeToken: et.escape_token };
+  return { arrested: true, jailMinutes, escapeToken: et.escape_token, cryptoAtRisk };
 }
 
 // Server-side only — real coin IDs NEVER sent to client
@@ -250,10 +251,10 @@ export async function POST(req: NextRequest) {
       player_id: player.id, game_type: "stocks",
       bet_amount: position.dirty_cash_invested, payout, profit,
     });
-    const arrestInfo = await rollGamblingArrest(player.id, player.class, position.dirty_cash_invested);
+    const arrestInfo = await rollGamblingArrest(player.id, player.class, position.dirty_cash_invested, Math.floor((player.crypto ?? 0) * 0.15));
     await grantXP(player.id, 10);
 
-    return NextResponse.json({ success: true, payout, profit, fee: sellFee, rawPayout, arrested: arrestInfo.arrested, jailMinutes: (arrestInfo as any).jailMinutes, escape_token: (arrestInfo as any).escapeToken ?? null });
+    return NextResponse.json({ success: true, payout, profit, fee: sellFee, rawPayout, arrested: arrestInfo.arrested, jailMinutes: (arrestInfo as any).jailMinutes, escape_token: (arrestInfo as any).escapeToken ?? null, crypto_at_risk: arrestInfo.cryptoAtRisk ?? 0 });
   }
 
   return NextResponse.json({ error: "Ação inválida" }, { status: 400 });

@@ -23,7 +23,7 @@ export default function MinesPage() {
   const [loading, setLoading] = useState(true);
   const [acting, setActing] = useState(false);
   const [fee, setFee] = useState(0);
-  const [arrestEscape, setArrestEscape] = useState<{ token: string; jailMinutes: number } | null>(null);
+  const [arrestEscape, setArrestEscape] = useState<{ token: string; jailMinutes: number; cryptoAtRisk: number } | null>(null);
 
   const fetchState = useCallback(async () => {
     const res = await fetch("/api/crime-empire/gambling/mines");
@@ -79,6 +79,9 @@ export default function MinesPage() {
       setGameResult("mine");
       setCurrentPayout(0);
       setPlayer((p) => p ? { ...p } : p);
+      if (data.escape_token) {
+        setArrestEscape({ token: data.escape_token, jailMinutes: data.jailMinutes ?? 20, cryptoAtRisk: data.crypto_at_risk ?? 0 });
+      }
     } else {
       setRevealedCount(data.revealedCount);
       setCurrentMultiplier(data.currentMultiplier);
@@ -108,7 +111,7 @@ export default function MinesPage() {
     setPlayer((p) => p ? { ...p, crypto: p.crypto + data.payout } : p);
     notifyPlayerUpdate();
     if (data.escape_token) {
-      setArrestEscape({ token: data.escape_token, jailMinutes: data.jailMinutes ?? 20 });
+      setArrestEscape({ token: data.escape_token, jailMinutes: data.jailMinutes ?? 20, cryptoAtRisk: data.crypto_at_risk ?? 0 });
     }
     setActing(false);
   };
@@ -207,6 +210,7 @@ export default function MinesPage() {
         <RaidEscape
           difficulty="medium"
           cashAtRisk={bet}
+          cryptoAtRisk={arrestEscape.cryptoAtRisk}
           onEscape={async () => {
             const token = arrestEscape.token;
             setArrestEscape(null);

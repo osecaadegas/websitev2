@@ -18,8 +18,10 @@ interface Props {
   businessValue?: number;
   /** Direct difficulty override — skips businessValue calculation */
   difficulty?: Difficulty;
-  /** Pending income the player stands to lose */
+  /** Dirty cash the player stands to lose */
   cashAtRisk: number;
+  /** Crypto the player stands to lose (15% of balance) */
+  cryptoAtRisk?: number;
   onEscape: (cashSaved: number) => void;
   onArrested: () => void;
 }
@@ -42,7 +44,7 @@ const MINIGAME_NAMES: Record<MinigameType, string> = {
   escape_route:  "Rota de Fuga",
 };
 
-export default function RaidEscape({ businessValue, difficulty: difficultyProp, cashAtRisk, onEscape, onArrested }: Props) {
+export default function RaidEscape({ businessValue, difficulty: difficultyProp, cashAtRisk, cryptoAtRisk = 0, onEscape, onArrested }: Props) {
   const [mounted, setMounted]     = useState(false);
   const [phase, setPhase]         = useState<Phase>("intro");
   const [arrestPct, setArrestPct] = useState(0);
@@ -121,6 +123,14 @@ export default function RaidEscape({ businessValue, difficulty: difficultyProp, 
           <div className="text-8xl">🚔</div>
           <h2 className="text-5xl font-black text-red-400 animate-pulse tracking-wide">RAID POLICIAL!</h2>
           <p className="text-[#aaa] text-lg">O teu negócio está a ser invadido!</p>
+          {(cashAtRisk > 0 || cryptoAtRisk > 0) && (
+            <div className="mt-3 px-6 py-3 rounded-xl bg-red-900/20 border border-red-500/40 inline-block space-y-1">
+              <p className="text-red-300 font-bold text-sm">⚠️ Ativos em risco</p>
+              {cashAtRisk > 0 && <p className="text-pink-300 text-sm">💸 Dinheiro Sujo: ${cashAtRisk.toLocaleString()}</p>}
+              {cryptoAtRisk > 0 && <p className="text-purple-300 text-sm">💎 Crypto: ${cryptoAtRisk.toLocaleString()}</p>}
+              <p className="text-orange-300 text-sm">💊 Drogas: % confiscadas se apanhado</p>
+            </div>
+          )}
           <div className="mt-3 px-6 py-3 rounded-xl bg-[#1a0a0a] border border-red-500/40 inline-block">
             <p className="text-pink-300 font-bold text-sm">Minijogo: {MINIGAME_NAMES[minigame]}</p>
             <p className="text-[#444] text-xs mt-1">A preparar fuga…</p>
@@ -170,13 +180,24 @@ export default function RaidEscape({ businessValue, difficulty: difficultyProp, 
         <div className="text-center space-y-4 animate-fadeIn px-4">
           <div className="text-8xl">🏃</div>
           <h2 className="text-5xl font-black text-green-400 tracking-wide">FUGISTE!</h2>
-          {cashAtRisk > 0 ? (
+          {(cashAtRisk > 0 || cryptoAtRisk > 0) ? (
             <>
               <p className="text-[#aaa] text-lg">Escapaste, mas a polícia apanhou metade!</p>
               <div className="px-6 py-4 rounded-xl bg-yellow-900/20 border border-yellow-500/40 inline-block space-y-1">
                 <p className="text-yellow-300 font-bold text-lg">⚠️ Só conseguiste agarrar 50%</p>
-                <p className="text-green-400 font-bold">💰 ${Math.floor(cashAtRisk / 2).toLocaleString()} recuperado</p>
-                <p className="text-red-400 text-sm">💸 ${Math.floor(cashAtRisk / 2).toLocaleString()} confiscado pela polícia</p>
+                {cashAtRisk > 0 && (
+                  <>
+                    <p className="text-green-400 font-bold">💸 ${Math.floor(cashAtRisk / 2).toLocaleString()} dinheiro sujo recuperado</p>
+                    <p className="text-red-400 text-sm">💸 ${Math.floor(cashAtRisk / 2).toLocaleString()} dinheiro sujo confiscado</p>
+                  </>
+                )}
+                {cryptoAtRisk > 0 && (
+                  <>
+                    <p className="text-green-400 font-bold">💎 ${Math.floor(cryptoAtRisk / 2).toLocaleString()} crypto recuperado</p>
+                    <p className="text-red-400 text-sm">💎 ${Math.floor(cryptoAtRisk / 2).toLocaleString()} crypto confiscado</p>
+                  </>
+                )}
+                <p className="text-orange-400 text-xs mt-1">💊 10% das drogas confiscadas</p>
               </div>
             </>
           ) : (
@@ -197,8 +218,10 @@ export default function RaidEscape({ businessValue, difficulty: difficultyProp, 
           <div className="text-8xl">👮</div>
           <h2 className="text-5xl font-black text-red-400 tracking-wide">PRESO!</h2>
           <p className="text-[#aaa] text-lg">Não conseguiste escapar.</p>
-          <div className="px-6 py-3 rounded-xl bg-red-900/20 border border-red-500/40 inline-block">
-            <p className="text-red-300 font-bold">💸 ${cashAtRisk.toLocaleString()} confiscado</p>
+          <div className="px-6 py-3 rounded-xl bg-red-900/20 border border-red-500/40 inline-block space-y-1">
+            {cashAtRisk > 0 && <p className="text-red-300 font-bold">💸 ${cashAtRisk.toLocaleString()} dinheiro sujo confiscado</p>}
+            {cryptoAtRisk > 0 && <p className="text-red-300 font-bold">💎 ${cryptoAtRisk.toLocaleString()} crypto confiscado</p>}
+            <p className="text-orange-400 text-sm">💊 25% das drogas confiscadas</p>
           </div>
           <button
             onClick={onArrested}

@@ -47,7 +47,7 @@ export default function BlackjackPage() {
   const [loading, setLoading] = useState(true);
   const [acting, setActing] = useState(false);
   const [fee, setFee] = useState(0);
-  const [arrestEscape, setArrestEscape] = useState<{ token: string; jailMinutes: number } | null>(null);
+  const [arrestEscape, setArrestEscape] = useState<{ token: string; jailMinutes: number; cryptoAtRisk: number } | null>(null);
 
   const fetchState = useCallback(async () => {
     const res = await fetch("/api/crime-empire/gambling/blackjack");
@@ -109,7 +109,7 @@ export default function BlackjackPage() {
     setCanDouble(false);
     if (data.status === "finished") {
       if (data.escape_token) {
-        setArrestEscape({ token: data.escape_token, jailMinutes: data.jailMinutes ?? 20 });
+        setArrestEscape({ token: data.escape_token, jailMinutes: data.jailMinutes ?? 20, cryptoAtRisk: data.crypto_at_risk ?? 0 });
       }
       const res2 = await fetch("/api/crime-empire/gambling/blackjack");
       const d2 = await res2.json();
@@ -197,6 +197,7 @@ export default function BlackjackPage() {
         <RaidEscape
           difficulty="medium"
           cashAtRisk={bet}
+          cryptoAtRisk={arrestEscape.cryptoAtRisk}
           onEscape={async () => {
             const token = arrestEscape.token;
             setArrestEscape(null);

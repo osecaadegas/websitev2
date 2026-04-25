@@ -124,7 +124,7 @@ export default function StocksPage() {
   const [buyAmount, setBuyAmount] = useState(500);
   const [acting, setActing] = useState(false);
   const [msg, setMsg] = useState<{ text: string; ok: boolean } | null>(null);
-  const [arrestEscape, setArrestEscape] = useState<{ token: string; jailMinutes: number } | null>(null);
+  const [arrestEscape, setArrestEscape] = useState<{ token: string; jailMinutes: number; cryptoAtRisk: number } | null>(null);
 
   const fetchData = useCallback(async () => {
     const res = await fetch("/api/crime-empire/gambling/stocks");
@@ -171,7 +171,7 @@ export default function StocksPage() {
       const sign = data.profit >= 0 ? "+" : "";
       showMsg(`Vendido! 🪙 ${data.payout.toLocaleString()} crypto (taxa $${data.fee.toLocaleString()} · ${sign}${data.profit.toLocaleString()})`, true);
       if (data.escape_token) {
-        setArrestEscape({ token: data.escape_token, jailMinutes: data.jailMinutes ?? 20 });
+        setArrestEscape({ token: data.escape_token, jailMinutes: data.jailMinutes ?? 20, cryptoAtRisk: data.crypto_at_risk ?? 0 });
       }
       await fetchData();
     } else { showMsg(data.error, false); }
@@ -438,6 +438,7 @@ export default function StocksPage() {
         <RaidEscape
           difficulty="medium"
           cashAtRisk={buyAmount}
+          cryptoAtRisk={arrestEscape.cryptoAtRisk}
           onEscape={async () => {
             const token = arrestEscape.token;
             setArrestEscape(null);

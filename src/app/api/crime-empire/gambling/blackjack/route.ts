@@ -35,8 +35,8 @@ async function grantXP(playerId: string, xpEarned: number) {
 }
 
 /** Roll for police raid after a gambling session ends. Returns jail info if arrested. */
-async function rollGamblingArrest(playerId: string, playerClass: string, bet: number): Promise<{
-  arrested: boolean; jailMinutes?: number; jailReleaseAt?: string; escapeToken?: string;
+async function rollGamblingArrest(playerId: string, playerClass: string, bet: number, cryptoAtRisk: number): Promise<{
+  arrested: boolean; jailMinutes?: number; jailReleaseAt?: string; escapeToken?: string; cryptoAtRisk?: number;
 }> {
   const baseRisk = 0.15; // 15% per session
   const risk = playerClass === "scammer" ? baseRisk * 0.5 : baseRisk;
@@ -51,6 +51,7 @@ async function rollGamblingArrest(playerId: string, playerClass: string, bet: nu
     escape_token: et.escape_token,
     escape_token_expires_at: et.escape_token_expires_at,
     escape_cash_at_risk: bet,
+    escape_crypto_at_risk: cryptoAtRisk,
   }).eq("id", playerId);
   await supabase.from("player_notifications").insert({
     player_id: playerId,
@@ -58,7 +59,7 @@ async function rollGamblingArrest(playerId: string, playerClass: string, bet: nu
     title: "🚔 Apanhado no Casino!",
     message: `A polícia fez uma rusga ao casino. Ficaste preso por ${jailMinutes} minutos.`,
   });
-  return { arrested: true, jailMinutes, jailReleaseAt, escapeToken: et.escape_token };
+  return { arrested: true, jailMinutes, jailReleaseAt, escapeToken: et.escape_token, cryptoAtRisk };
 }
 
 type Card = { suit: string; value: string };
@@ -199,7 +200,7 @@ export async function POST(req: NextRequest) {
       await supabase.from("crime_players").update({ crypto: (fpBJ?.crypto ?? player.crypto) + payout, stamina: newStaminaBJ, addiction: newAddictionBJ }).eq("id", player.id);
       await supabase.from("gambling_history").insert({ player_id: player.id, game_type: "blackjack", bet_amount: bet, payout, profit: payout - bet });
       status = "finished";
-      const arrestInfo = await rollGamblingArrest(player.id, player.class, bet);
+      const arrestInfo = await rollGamblingArrest(player.id, player.class, bet, Math.floor((player.crypto ?? 0) * 0.15));
       const state2 = { deck, playerHand, dealerHand, bet, fee, result, dealerRevealed: true };
       const { data: session2 } = await supabase.from("casino_sessions").insert({
         player_id: player.id, game_type: "blackjack", bet, state: state2, status,
@@ -208,6 +209,7 @@ export async function POST(req: NextRequest) {
         success: true, sessionId: session2?.id, playerHand, dealerHand,
         playerValue: pv, dealerValue: dv, status, result, payout, fee,
         canDouble: false, arrested: arrestInfo.arrested, jailMinutes: arrestInfo.jailMinutes, escape_token: arrestInfo.escapeToken ?? null,
+        crypto_at_risk: arrestInfo.cryptoAtRisk ?? 0,
         stamina_gained: GAMBLING_STAMINA_GAIN, new_stamina: newStaminaBJ, new_addiction: newAddictionBJ,
       });
     }
@@ -268,8 +270,8 @@ export async function POST(req: NextRequest) {
     const newStaminaBust = Math.min(player.max_stamina, player.stamina + GAMBLING_STAMINA_GAIN);
     const newAddictionBust = Math.min(100, (player.addiction ?? 0) + GAMBLING_ADDICTION_GAIN);
     await supabase.from("crime_players").update({ stamina: newStaminaBust, addiction: newAddictionBust }).eq("id", player.id);
-    const arrestInfo = await rollGamblingArrest(player.id, player.class, bet);
-    return NextResponse.json({ success: true, playerHand, dealerHand, playerValue: pv, dealerValue: handValue(dealerHand), status: "finished", result: "bust", payout: 0, arrested: arrestInfo.arrested, jailMinutes: arrestInfo.jailMinutes, escape_token: arrestInfo.escapeToken ?? null, stamina_gained: GAMBLING_STAMINA_GAIN, new_stamina: newStaminaBust, new_addiction: newAddictionBust });
+    const arrestInfo = await rollGamblingArrest(player.id, player.class, bet, Math.floor((player.crypto ?? 0) * 0.15));
+    return NextResponse.json({ success: true, playerHand, dealerHand, playerValue: pv, dealerValue: handValue(dealerHand), status: "finished", result: "bust", payout: 0, arrested: arrestInfo.arrested, jailMinutes: arrestInfo.jailMinutes, escape_token: arrestInfo.escapeToken ?? null, crypto_at_risk: arrestInfo.cryptoAtRisk ?? 0, stamina_gained: GAMBLING_STAMINA_GAIN, new_stamina: newStaminaBust, new_addiction: newAddictionBust });
   }
 
   // Hit but not bust → keep playing
@@ -306,7 +308,7 @@ export async function POST(req: NextRequest) {
   await supabase.from("crime_players").update({ crypto: (fp?.crypto ?? 0) + payout, stamina: newStamina, addiction: newAddiction }).eq("id", player.id);
   await supabase.from("casino_sessions").update({ status: "finished", state: { ...state, deck, playerHand, dealerHand: dHand, bet, result, dealerRevealed: true } }).eq("id", sessionId);
   await supabase.from("gambling_history").insert({ player_id: player.id, game_type: "blackjack", bet_amount: bet, payout, profit: payout - bet });
-  const arrestInfo = await rollGamblingArrest(player.id, player.class, bet);
+  const arrestInfo = await rollGamblingArrest(player.id, player.class, bet, Math.floor((player.crypto ?? 0) * 0.15));
 
-  return NextResponse.json({ success: true, playerHand, dealerHand: dHand, playerValue: pv, dealerValue: dv, status: "finished", result, payout, arrested: arrestInfo.arrested, jailMinutes: arrestInfo.jailMinutes, escape_token: arrestInfo.escapeToken ?? null, stamina_gained: GAMBLING_STAMINA_GAIN, new_stamina: newStamina, new_addiction: newAddiction });
+  return NextResponse.json({ success: true, playerHand, dealerHand: dHand, playerValue: pv, dealerValue: dv, status: "finished", result, payout, arrested: arrestInfo.arrested, jailMinutes: arrestInfo.jailMinutes, escape_token: arrestInfo.escapeToken ?? null, crypto_at_risk: arrestInfo.cryptoAtRisk ?? 0, stamina_gained: GAMBLING_STAMINA_GAIN, new_stamina: newStamina, new_addiction: newAddiction });
 }

@@ -64,7 +64,7 @@ export default function PlinkoPage() {
   const [payout, setPayout] = useState(0);
   const [playing, setPlaying] = useState(false);
   const [hasResult, setHasResult] = useState(false);
-  const [arrestEscape, setArrestEscape] = useState<{ token: string; jailMinutes: number } | null>(null);
+  const [arrestEscape, setArrestEscape] = useState<{ token: string; jailMinutes: number; cryptoAtRisk: number } | null>(null);
 
   const loadPlayer = async () => {
     if (player) return;
@@ -101,7 +101,7 @@ export default function PlinkoPage() {
     setPlayer((p) => p ? { dirty_cash: p.dirty_cash - bet - (data.fee ?? 0), crypto: p.crypto + data.payout } : p);
     notifyPlayerUpdate();
     if (data.escape_token) {
-      setArrestEscape({ token: data.escape_token, jailMinutes: data.jail_minutes ?? 20 });
+      setArrestEscape({ token: data.escape_token, jailMinutes: data.jail_minutes ?? 20, cryptoAtRisk: data.crypto_at_risk ?? 0 });
     }
   };
 
@@ -174,6 +174,7 @@ export default function PlinkoPage() {
         <RaidEscape
           difficulty="medium"
           cashAtRisk={bet}
+          cryptoAtRisk={arrestEscape.cryptoAtRisk}
           onEscape={async () => {
             const token = arrestEscape.token;
             setArrestEscape(null);

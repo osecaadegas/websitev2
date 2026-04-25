@@ -18,7 +18,7 @@ export default function KenoPage() {
   const [playing, setPlaying] = useState(false);
   const [hasResult, setHasResult] = useState(false);
   const [revealedDrawn, setRevealedDrawn] = useState<number[]>([]);
-  const [arrestEscape, setArrestEscape] = useState<{ token: string; jailMinutes: number } | null>(null);
+  const [arrestEscape, setArrestEscape] = useState<{ token: string; jailMinutes: number; cryptoAtRisk: number } | null>(null);
 
   const loadPlayer = async () => {
     if (player) return;
@@ -64,7 +64,7 @@ export default function KenoPage() {
     setPlayer((p) => p ? { dirty_cash: p.dirty_cash - bet - (data.fee ?? 0), crypto: p.crypto + data.payout } : p);
     notifyPlayerUpdate();
     if (data.escape_token) {
-      setArrestEscape({ token: data.escape_token, jailMinutes: data.jailMinutes ?? 20 });
+      setArrestEscape({ token: data.escape_token, jailMinutes: data.jailMinutes ?? 20, cryptoAtRisk: data.crypto_at_risk ?? 0 });
     }
   };
 
@@ -151,6 +151,7 @@ export default function KenoPage() {
         <RaidEscape
           difficulty="medium"
           cashAtRisk={bet}
+          cryptoAtRisk={arrestEscape.cryptoAtRisk}
           onEscape={async () => {
             const token = arrestEscape.token;
             setArrestEscape(null);

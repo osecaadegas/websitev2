@@ -33,9 +33,9 @@ async function grantXP(playerId: string, xpEarned: number) {
   await supabase.from("crime_players").update({ xp: newXP, level: newLevel, xp_to_next_level: newXPToNext }).eq("id", playerId);
 }
 
-async function rollGamblingArrest(playerId: string, playerClass: string, bet: number) {
+async function rollGamblingArrest(playerId: string, playerClass: string, bet: number, cryptoAtRisk: number) {
   const risk = playerClass === "scammer" ? 0.075 : 0.15;
-  if (Math.random() >= risk) return { arrested: false, escapeToken: undefined as string | undefined };
+  if (Math.random() >= risk) return { arrested: false, escapeToken: undefined as string | undefined, cryptoAtRisk: 0 };
   const jailMinutes = 20 + Math.floor(Math.random() * 21);
   const jailReleaseAt = new Date(Date.now() + jailMinutes * 60_000).toISOString();
   const et = generateEscapeToken();
@@ -43,6 +43,7 @@ async function rollGamblingArrest(playerId: string, playerClass: string, bet: nu
     in_jail: true, jail_release_at: jailReleaseAt,
     escape_token: et.escape_token, escape_token_expires_at: et.escape_token_expires_at,
     escape_cash_at_risk: bet,
+    escape_crypto_at_risk: cryptoAtRisk,
   }).eq("id", playerId);
   await supabase.from("player_notifications").insert({
     player_id: playerId,
@@ -50,7 +51,7 @@ async function rollGamblingArrest(playerId: string, playerClass: string, bet: nu
     title: "🚔 Apanhado no Casino!",
     message: `A polícia fez uma rusga. Ficaste preso por ${jailMinutes} minutos.`,
   });
-  return { arrested: true, jailMinutes, escapeToken: et.escape_token };
+  return { arrested: true, jailMinutes, escapeToken: et.escape_token, cryptoAtRisk };
 }
 
 // Payout table: PAYOUTS[picks][hits] = multiplier (before /2 payout divisor)
@@ -121,9 +122,9 @@ export async function POST(req: NextRequest) {
     player_id: player.id, game_type: "keno", bet_amount: bet, payout, profit: payout - bet,
   });
 
-  const arrestInfo = await rollGamblingArrest(player.id, player.class, bet);
+  const arrestInfo = await rollGamblingArrest(player.id, player.class, bet, Math.floor((player.crypto ?? 0) * 0.15));
   // E8: XP for gambling
   await grantXP(player.id, 10);
 
-  return NextResponse.json({ success: true, drawn, hits, picks, multiplier, payout, fee, arrested: arrestInfo.arrested, jailMinutes: (arrestInfo as any).jailMinutes, escape_token: (arrestInfo as any).escapeToken ?? null, stamina_gained: GAMBLING_STAMINA_GAIN, new_stamina: newStamina, new_addiction: newAddiction });
+  return NextResponse.json({ success: true, drawn, hits, picks, multiplier, payout, fee, arrested: arrestInfo.arrested, jailMinutes: (arrestInfo as any).jailMinutes, escape_token: (arrestInfo as any).escapeToken ?? null, crypto_at_risk: arrestInfo.cryptoAtRisk ?? 0, stamina_gained: GAMBLING_STAMINA_GAIN, new_stamina: newStamina, new_addiction: newAddiction });
 }
