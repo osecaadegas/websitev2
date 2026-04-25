@@ -14,6 +14,15 @@ type Item = {
   image_url: string | null;
   crypto_price: number | null;
   required_level: number;
+  power_bonus: number;
+  intelligence_bonus: number;
+  charisma_bonus: number;
+  hp_bonus: number;
+  stamina_restore: number;
+  success_rate_bonus: number;
+  stamina_reduction: number;
+  has_durability: boolean;
+  max_durability: number | null;
 };
 
 /* ── Constants ──────────────────────────────────────────────────── */
@@ -258,6 +267,28 @@ export default function GunShopAdminPage() {
                     )}
                   </div>
 
+                  {/* Stat pills */}
+                  {(() => {
+                    const pills = [
+                      item.power_bonus        > 0 && { label: `⚔ +${item.power_bonus}`,                        color: "#ef4444" },
+                      item.intelligence_bonus > 0 && { label: `🧠 +${item.intelligence_bonus}`,                  color: "#3b82f6" },
+                      item.charisma_bonus     > 0 && { label: `✨ +${item.charisma_bonus}`,                      color: "#a855f7" },
+                      item.hp_bonus          > 0 && { label: `❤ +${item.hp_bonus} HP`,                         color: "#22c55e" },
+                      item.stamina_restore   > 0 && { label: `⚡ +${item.stamina_restore} ST`,                   color: "#34d399" },
+                      item.success_rate_bonus > 0 && { label: `🎯 +${(item.success_rate_bonus * 100).toFixed(0)}%`, color: "#06b6d4" },
+                      item.stamina_reduction > 0 && { label: `💨 -${item.stamina_reduction} ST`,                color: "#f59e0b" },
+                      item.has_durability && item.max_durability && { label: `🔧 ${item.max_durability} dur`, color: "#f97316" },
+                    ].filter(Boolean) as { label: string; color: string }[];
+                    if (!pills.length) return null;
+                    return (
+                      <div className="flex flex-wrap gap-1 mb-2">
+                        {pills.map((p, i) => (
+                          <span key={i} className="text-[10px] font-bold px-1.5 py-0.5 rounded"
+                            style={{ color: p.color, background: `${p.color}18` }}>{p.label}</span>
+                        ))}
+                      </div>
+                    );
+                  })()}
                   <div className="text-xs mb-3">
                     <span className="text-[#333]">Base </span>
                     <span className="text-[#555] font-bold">💵 {item.base_price.toLocaleString()}</span>

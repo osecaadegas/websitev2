@@ -7,6 +7,9 @@ import { CEToast } from "@/components/CEToast";
 type Item = {
   id: string; name: string; description: string; category: string; rarity: string;
   base_price: number; image_url: string | null;
+  power_bonus: number; intelligence_bonus: number; charisma_bonus: number;
+  hp_bonus: number; stamina_restore: number; success_rate_bonus: number;
+  stamina_reduction: number; has_durability: boolean; max_durability: number | null;
 };
 type ShopListing = {
   id: string; item_id: string; price_override: number | null; stock: number | null;
@@ -243,6 +246,28 @@ export default function ShopAdminPage() {
                     )}
                   </div>
 
+                  {/* Stat pills */}
+                  {(() => {
+                    const pills = [
+                      row.power_bonus        > 0 && { label: `⚔ +${row.power_bonus}`,                           color: "#ef4444" },
+                      row.intelligence_bonus > 0 && { label: `🧠 +${row.intelligence_bonus}`,                    color: "#3b82f6" },
+                      row.charisma_bonus     > 0 && { label: `✨ +${row.charisma_bonus}`,                        color: "#a855f7" },
+                      row.hp_bonus          > 0 && { label: `❤ +${row.hp_bonus} HP`,                           color: "#22c55e" },
+                      row.stamina_restore   > 0 && { label: `⚡ +${row.stamina_restore} ST`,                     color: "#34d399" },
+                      row.success_rate_bonus > 0 && { label: `🎯 +${(row.success_rate_bonus * 100).toFixed(0)}%`, color: "#06b6d4" },
+                      row.stamina_reduction > 0 && { label: `💨 -${row.stamina_reduction} ST`,                  color: "#f59e0b" },
+                      row.has_durability && row.max_durability && { label: `🔧 ${row.max_durability} dur`,        color: "#f97316" },
+                    ].filter(Boolean) as { label: string; color: string }[];
+                    if (!pills.length) return null;
+                    return (
+                      <div className="flex flex-wrap gap-1 mb-2">
+                        {pills.map((p, i) => (
+                          <span key={i} className="text-[10px] font-bold px-1.5 py-0.5 rounded"
+                            style={{ color: p.color, background: `${p.color}18` }}>{p.label}</span>
+                        ))}
+                      </div>
+                    );
+                  })()}
                   <div className="flex items-center gap-4 mb-3">
                     <div className="text-xs"><span className="text-[#333]">Base </span><span className="text-[#555] font-bold">💵{row.base_price.toLocaleString()}</span></div>
                     {row.listing?.price_override != null && (
