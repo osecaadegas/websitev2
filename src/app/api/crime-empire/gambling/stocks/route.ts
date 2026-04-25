@@ -189,7 +189,7 @@ export async function POST(req: NextRequest) {
     const { coinId, amount } = body;
     const coin = COIN_MAP[coinId];
     if (!coin) return NextResponse.json({ error: "Moeda inválida" }, { status: 400 });
-    if (!amount || amount < 100 || amount > 100000) return NextResponse.json({ error: "Aposta inválida (min $100, max $100,000)" }, { status: 400 });
+    if (!amount || amount < 100 || amount > 10000) return NextResponse.json({ error: "Aposta inválida (min $100, max $10,000)" }, { status: 400 });
 
     const buyFee   = Math.floor(amount * BUY_FEE_RATE);
     const totalCost = amount + buyFee;

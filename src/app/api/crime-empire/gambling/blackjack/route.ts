@@ -160,7 +160,7 @@ export async function POST(req: NextRequest) {
   // ── DEAL ────────────────────────────────────────────────────
   if (action === "deal") {
     const { bet } = body;
-    if (!bet || bet < 100 || bet > 100000) return NextResponse.json({ error: "Aposta inválida (min $100, max $100,000)" }, { status: 400 });
+    if (!bet || bet < 100 || bet > 10000) return NextResponse.json({ error: "Aposta inválida (min $100, max $10,000)" }, { status: 400 });
 
     const fee = getCasinoFee(player.level);
     const totalCost = bet + fee;

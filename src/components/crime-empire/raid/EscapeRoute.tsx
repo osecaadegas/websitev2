@@ -52,7 +52,6 @@ export default function EscapeRoute({ difficulty, onSuccess, onMistake }: Props)
   };
 
   if (route === null) {
-    const r = ROUTES.find((x) => x.key === route);
     return (
       <div className="space-y-4 text-center">
         <p className="text-xs text-[#666] uppercase tracking-widest">🗺️ Escolhe a Rota de Fuga</p>
@@ -78,7 +77,6 @@ export default function EscapeRoute({ difficulty, onSuccess, onMistake }: Props)
             </button>
           ))}
         </div>
-        {r && <p className="text-xs text-pink-400">Escolhido: {r.label}</p>}
       </div>
     );
   }
@@ -98,7 +96,7 @@ export default function EscapeRoute({ difficulty, onSuccess, onMistake }: Props)
 
 /* ─── Rooftop: key sequence ─────────────────────────────────────────────── */
 const ROOFTOP_KEYS = ["W", "A", "S", "D"];
-const ROOFTOP_LEN: Record<Difficulty, number> = { low: 3, medium: 4, high: 5 };
+const ROOFTOP_LEN: Record<Difficulty, number> = { low: 4, medium: 5, high: 7 };
 
 function RooftopChallenge({ difficulty, onSuccess, onMistake }: Props) {
   const [seq] = useState(() => {
@@ -175,8 +173,8 @@ function RooftopChallenge({ difficulty, onSuccess, onMistake }: Props) {
 }
 
 /* ─── Alley: button mash ─────────────────────────────────────────────────── */
-const ALLEY_TARGET: Record<Difficulty, number> = { low: 8, medium: 11, high: 14 };
-const ALLEY_TIME:   Record<Difficulty, number> = { low: 5, medium: 4,  high: 4  };
+const ALLEY_TARGET: Record<Difficulty, number> = { low: 10, medium: 14, high: 18 };
+const ALLEY_TIME:   Record<Difficulty, number> = { low: 5,  medium: 4,  high: 4  };
 
 function AlleyChallenge({ difficulty, onSuccess, onMistake }: Props) {
   const target    = ALLEY_TARGET[difficulty];
@@ -260,7 +258,7 @@ const SEWER_COLORS = [
   { id: 2, active: "bg-green-500  shadow-[0_0_16px_rgba(34,197,94,0.9)]",  idle: "bg-green-950  border-green-800",  label: "🟢" },
   { id: 3, active: "bg-yellow-400 shadow-[0_0_16px_rgba(250,204,21,0.9)]", idle: "bg-yellow-950 border-yellow-800", label: "🟡" },
 ];
-const SEWER_LEN: Record<Difficulty, number> = { low: 3, medium: 3, high: 4 };
+const SEWER_LEN: Record<Difficulty, number> = { low: 3, medium: 4, high: 5 };
 
 type SewerPhase = "showing" | "input";
 

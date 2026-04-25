@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 
 export type Difficulty = "low" | "medium" | "high";
 
-const SEQUENCE_LENGTH: Record<Difficulty, number> = { low: 4, medium: 5, high: 6 };
+const SEQUENCE_LENGTH: Record<Difficulty, number> = { low: 5, medium: 7, high: 9 };
 const ALL_KEYS = ["W", "A", "S", "D"];
 
 interface Props {
@@ -38,7 +38,7 @@ export default function LockSequence({ difficulty, onSuccess, onMistake }: Props
     } else {
       setFlash("bad");
       setTimeout(() => { setFlash(null); setProgress(0); }, 500);
-      onMistake(15);
+      onMistake(25);
     }
   }, [sequence, onSuccess, onMistake]);
 
@@ -82,11 +82,7 @@ export default function LockSequence({ difficulty, onSuccess, onMistake }: Props
             <button
               key={k}
               onPointerDown={(e) => { e.preventDefault(); handleInput(k); }}
-              className={`py-4 rounded-xl font-black text-xl transition-all active:scale-90 select-none ${
-                sequence[progress] === k
-                  ? "bg-pink-700 border-2 border-pink-400 text-white hover:bg-pink-600 shadow-[0_0_12px_rgba(236,72,153,0.3)]"
-                  : "bg-[#1a1a1a] border border-[#333] text-[#777] hover:bg-[#222]"
-              }`}
+              className={`py-4 rounded-xl font-black text-xl transition-all active:scale-90 select-none bg-[#1a1a1a] border border-[#333] text-[#999] hover:bg-[#222] hover:text-white`}
             >
               {k}
             </button>

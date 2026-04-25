@@ -3,8 +3,8 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import type { Difficulty } from "./LockSequence";
 
 const HITS_NEEDED = 5;
-const ZONE_WIDTH: Record<Difficulty, number> = { low: 24, medium: 17, high: 11 };
-const BASE_SPEED: Record<Difficulty, number>  = { low: 22, medium: 34, high: 52 };
+const ZONE_WIDTH: Record<Difficulty, number> = { low: 20, medium: 14, high: 9 };
+const BASE_SPEED: Record<Difficulty, number>  = { low: 28, medium: 42, high: 65 };
 
 interface Props {
   difficulty: Difficulty;
@@ -30,8 +30,8 @@ export default function HeatZone({ difficulty, onSuccess, onMistake }: Props) {
   missesRef.current = misses;
   flashRef.current  = flash;
 
-  // Fixed safe zone position (randomised once, stays constant)
-  const [zonePos] = useState(() => 8 + Math.random() * 55);
+  // Safe zone position — re-randomised after each successful hit
+  const [zonePos, setZonePos] = useState(() => 8 + Math.random() * 55);
   const zoneWidth = ZONE_WIDTH[difficulty];
   const baseSpeed = BASE_SPEED[difficulty];
 
@@ -61,6 +61,8 @@ export default function HeatZone({ difficulty, onSuccess, onMistake }: Props) {
       const next = hitsRef.current + 1;
       setHits(next);
       setFlash("good");
+      // Move zone to a new random position for the next hit
+      setZonePos(8 + Math.random() * 55);
       setTimeout(() => setFlash(null), 200);
       if (next >= HITS_NEEDED) { doneRef.current = true; onSuccess(); }
     } else {

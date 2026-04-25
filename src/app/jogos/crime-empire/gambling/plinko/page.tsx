@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState } from "react";
 import Link from "next/link";
@@ -172,7 +172,7 @@ export default function PlinkoPage() {
       </div>
       {arrestEscape && (
         <RaidEscape
-          difficulty="low"
+          difficulty="medium"
           cashAtRisk={0}
           onEscape={async () => {
             const token = arrestEscape.token;
