@@ -35,6 +35,7 @@ export async function GET() {
       item_id,
       quantity,
       equipped,
+      durability,
       items (
         id, name, description, category,
         power_bonus, intelligence_bonus, charisma_bonus,

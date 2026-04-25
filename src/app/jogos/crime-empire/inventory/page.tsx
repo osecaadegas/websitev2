@@ -22,6 +22,8 @@ interface ItemData {
   tradeable: boolean;
   image_url?: string | null;
   addiction_effect: number;
+  has_durability?: boolean;
+  max_durability?: number | null;
 }
 
 interface InventoryEntry {
@@ -29,6 +31,7 @@ interface InventoryEntry {
   item_id: string;
   quantity: number;
   equipped: boolean;
+  durability?: number | null;
   items: ItemData;
 }
 
@@ -295,6 +298,30 @@ export default function InventoryPage() {
                           {b.label}
                         </span>
                       ))}
+                    </div>
+                  )}
+
+                  {/* Durability bar (weapons/armor) */}
+                  {item.has_durability && item.max_durability && entry.durability !== null && entry.durability !== undefined && (
+                    <div className="mb-3">
+                      {(() => {
+                        const pct = Math.max(0, Math.min(100, (entry.durability / item.max_durability) * 100));
+                        const col = pct > 60 ? "#22c55e" : pct > 30 ? "#eab308" : "#ef4444";
+                        return (
+                          <div>
+                            <div className="flex justify-between text-[10px] mb-1">
+                              <span className="text-[#555] font-semibold">Durabilidade</span>
+                              <span className="font-bold tabular-nums" style={{ color: col }}>{entry.durability}/{item.max_durability}</span>
+                            </div>
+                            <div className="h-1.5 rounded-full bg-[#1a1a1a] overflow-hidden">
+                              <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, background: col }} />
+                            </div>
+                            {entry.durability <= 0 && (
+                              <p className="text-[10px] text-red-400 font-bold mt-1">💀 Quebrado — vai ao SGT. Machado para reparar</p>
+                            )}
+                          </div>
+                        );
+                      })()}
                     </div>
                   )}
 

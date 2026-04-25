@@ -50,6 +50,7 @@ const GAME_SECTIONS = [
   {
     section: "Personagem",
     links: [
+      { href: "/jogos/crime-empire/esconderijo", label: "O Esconderijo", icon: "🏚️" },
       { href: "/jogos/crime-empire/pvp", label: "PvP", icon: "⚔️" },
     ],
   },
