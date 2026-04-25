@@ -41,13 +41,14 @@ const ORIGIN_COUNTRIES: Record<string, string[]> = {
 // ─── Preview ship generator ────────────────────────────────────────────────────
 
 async function generatePreviewShip(afterDepartureTime: Date): Promise<void> {
-  const { data: drugs } = await supabase
+  const { data: drugs, error: drugsErr } = await supabase
     .from("items")
     .select("id, name, base_price")
     .eq("category", "drug")
     .order("base_price", { ascending: false });
 
-  if (!drugs || drugs.length === 0) return;
+  if (drugsErr) { console.error("[porto/ships] generatePreviewShip drugs query error:", drugsErr); return; }
+  if (!drugs || drugs.length === 0) { console.error("[porto/ships] generatePreviewShip: no drug items found in items table"); return; }
 
   const drug = drugs[Math.floor(Math.random() * Math.min(drugs.length, 5))];
   const roll = Math.random();
@@ -93,13 +94,14 @@ async function generatePreviewShip(afterDepartureTime: Date): Promise<void> {
 
 async function generateNextShip(): Promise<void> {
   // Get all drug items
-  const { data: drugs } = await supabase
+  const { data: drugs, error: drugsErr } = await supabase
     .from("items")
     .select("id, name, base_price")
     .eq("category", "drug")
     .order("base_price", { ascending: false });
 
-  if (!drugs || drugs.length === 0) return;
+  if (drugsErr) { console.error("[porto/ships] generateNextShip drugs query error:", drugsErr); return; }
+  if (!drugs || drugs.length === 0) { console.error("[porto/ships] generateNextShip: no drug items found — cannot create ship"); return; }
 
   // Pick a random drug (weighted toward higher-value)
   const drug = drugs[Math.floor(Math.random() * Math.min(drugs.length, 5))];
@@ -137,7 +139,7 @@ async function generateNextShip(): Promise<void> {
   const originCountry = origins[Math.floor(Math.random() * origins.length)];
   const shipName = SHIP_NAMES[Math.floor(Math.random() * SHIP_NAMES.length)];
 
-  await supabase.from("porto_ships").insert({
+  const { error: shipInsertErr } = await supabase.from("porto_ships").insert({
     name: shipName,
     drug_type: drug.name,
     drug_item_id: drug.id,
@@ -152,6 +154,11 @@ async function generateNextShip(): Promise<void> {
     max_delivery: maxDelivery,
     top_bonus_pct: topBonusPct,
   });
+
+  if (shipInsertErr) {
+    console.error("[porto/ships] generateNextShip INSERT error:", JSON.stringify(shipInsertErr));
+    return;
+  }
 
   // Log activity
   await supabase.from("porto_activity").insert({

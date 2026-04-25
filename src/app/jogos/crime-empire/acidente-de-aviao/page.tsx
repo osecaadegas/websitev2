@@ -362,6 +362,13 @@ export default function AcidenteDeAviaoPage() {
     }
   }, [activeCrash, remaining, fetchData]);
 
+  // Poll every 30s when no active crash (waiting for one to become active)
+  useEffect(() => {
+    if (activeCrash) return;
+    const id = setInterval(fetchData, 30000);
+    return () => clearInterval(id);
+  }, [activeCrash, fetchData]);
+
   // ── Start session ──────────────────────────────────────────────────────────
   const handleStartSession = async () => {
     if (!activeCrash) return;
