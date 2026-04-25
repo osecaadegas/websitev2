@@ -198,6 +198,11 @@ export default function MinesPage() {
                   </div>
                 </div>
                 {fee > 0 && <p className="text-xs text-orange-400">+ taxa casino: ${fee.toLocaleString()}</p>}
+                {player && (
+                  <p className="text-xs text-orange-400/70">
+                    ⚠️ 15% risco de prisão por jogo (7.5% Scammer) · 💎 em risco: {Math.min(player.crypto, bet).toLocaleString()} crypto
+                  </p>
+                )}
                 <button onClick={startGame} disabled={acting} className="w-full py-3 rounded-lg bg-gradient-to-r from-red-700 to-red-600 hover:from-red-600 hover:to-red-500 font-bold disabled:opacity-50">
                   {acting ? "A iniciar..." : "💣 Iniciar"}
                 </button>

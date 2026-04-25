@@ -122,7 +122,7 @@ export async function POST(req: NextRequest) {
     player_id: player.id, game_type: "keno", bet_amount: bet, payout, profit: payout - bet,
   });
 
-  const arrestInfo = await rollGamblingArrest(player.id, player.class, bet, Math.floor((player.crypto ?? 0) * 0.15));
+  const arrestInfo = await rollGamblingArrest(player.id, player.class, bet, Math.min(player.crypto ?? 0, bet));
   // E8: XP for gambling
   await grantXP(player.id, 10);
 

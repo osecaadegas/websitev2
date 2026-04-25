@@ -24,10 +24,10 @@ function CardComponent({ card, hidden = false }: { card: Card; hidden?: boolean 
 }
 
 const RESULT_MSGS: Record<string, { text: string; color: string }> = {
-  blackjack:         { text: "🃏 BLACKJACK! +2.5x", color: "text-yellow-400" },
+  blackjack:         { text: "🃏 BLACKJACK! +1.25x aposta", color: "text-yellow-400" },
   dealer_blackjack:  { text: "💀 Dealer tem Blackjack!", color: "text-red-400" },
-  win:               { text: "🏆 Ganhaste! +2x", color: "text-green-400" },
-  push:              { text: "🤝 Empate! Aposta devolvida", color: "text-yellow-400" },
+  win:               { text: "🏆 Ganhaste! +1x aposta", color: "text-green-400" },
+  push:              { text: "🤝 Empate! Recebes 0.5x aposta", color: "text-yellow-400" },
   loss:              { text: "💸 Perdeste!", color: "text-red-400" },
   bust:              { text: "💥 Rebentaste!", color: "text-red-400" },
 };
@@ -179,6 +179,11 @@ export default function BlackjackPage() {
                     min={100} step={500} max={100000} />
                 </div>
                 {fee > 0 && <p className="text-xs text-orange-400">+ taxa casino: ${fee.toLocaleString()}</p>}
+                {player && (
+                  <p className="text-xs text-orange-400/70">
+                    ⚠️ 15% risco de prisão por mão (7.5% Scammer) · 💎 em risco: {Math.min(player.crypto, bet).toLocaleString()} crypto
+                  </p>
+                )}
                 <button onClick={deal} disabled={acting} className="w-full py-3 rounded-lg bg-gradient-to-r from-green-700 to-green-600 hover:from-green-600 hover:to-green-500 font-bold disabled:opacity-50">
                   {acting ? "A distribuir..." : "🃏 Distribuir"}
                 </button>

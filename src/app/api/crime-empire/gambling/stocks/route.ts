@@ -251,7 +251,7 @@ export async function POST(req: NextRequest) {
       player_id: player.id, game_type: "stocks",
       bet_amount: position.dirty_cash_invested, payout, profit,
     });
-    const arrestInfo = await rollGamblingArrest(player.id, player.class, position.dirty_cash_invested, Math.floor((player.crypto ?? 0) * 0.15));
+    const arrestInfo = await rollGamblingArrest(player.id, player.class, position.dirty_cash_invested, Math.min(player.crypto ?? 0, position.dirty_cash_invested));
     await grantXP(player.id, 10);
 
     return NextResponse.json({ success: true, payout, profit, fee: sellFee, rawPayout, arrested: arrestInfo.arrested, jailMinutes: (arrestInfo as any).jailMinutes, escape_token: (arrestInfo as any).escapeToken ?? null, crypto_at_risk: arrestInfo.cryptoAtRisk ?? 0 });

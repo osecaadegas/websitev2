@@ -192,7 +192,7 @@ export async function POST(req: NextRequest) {
       const newStaminaMine = Math.min(player.max_stamina, player.stamina + GAMBLING_STAMINA_GAIN);
       const newAddictionMine = Math.min(100, (player.addiction ?? 0) + GAMBLING_ADDICTION_GAIN);
       await supabase.from("crime_players").update({ stamina: newStaminaMine, addiction: newAddictionMine }).eq("id", player.id);
-      const arrestInfo = await rollGamblingArrest(player.id, player.class, session.state.bet ?? 0, Math.floor((player.crypto ?? 0) * 0.15));
+      const arrestInfo = await rollGamblingArrest(player.id, player.class, session.state.bet ?? 0, Math.min(player.crypto ?? 0, session.state.bet ?? 0));
       return NextResponse.json({ success: true, hit: "mine", revealed: newRevealed, payout: 0, status: "finished", arrested: arrestInfo.arrested, jailMinutes: (arrestInfo as any).jailMinutes, escape_token: (arrestInfo as any).escapeToken ?? null, crypto_at_risk: arrestInfo.cryptoAtRisk ?? 0, stamina_gained: GAMBLING_STAMINA_GAIN, new_stamina: newStaminaMine, new_addiction: newAddictionMine });
     }
 
@@ -223,7 +223,7 @@ export async function POST(req: NextRequest) {
     await supabase.from("crime_players").update({ crypto: (fp?.crypto ?? 0) + payout, stamina: newStaminaCash, addiction: newAddictionCash }).eq("id", player.id);
     await supabase.from("casino_sessions").update({ status: "finished", state: { ...state, result: "cashout" } }).eq("id", sessionId);
     await supabase.from("gambling_history").insert({ player_id: player.id, game_type: "mines", bet_amount: session.bet, payout, profit: payout - session.bet });
-    const arrestInfo = await rollGamblingArrest(player.id, player.class, session.bet ?? 0, Math.floor((player.crypto ?? 0) * 0.15));
+    const arrestInfo = await rollGamblingArrest(player.id, player.class, session.bet ?? 0, Math.min(player.crypto ?? 0, session.bet ?? 0));
     return NextResponse.json({ success: true, payout, multiplier: mult, status: "finished", arrested: arrestInfo.arrested, jailMinutes: (arrestInfo as any).jailMinutes, escape_token: (arrestInfo as any).escapeToken ?? null, crypto_at_risk: arrestInfo.cryptoAtRisk ?? 0, stamina_gained: GAMBLING_STAMINA_GAIN, new_stamina: newStaminaCash, new_addiction: newAddictionCash });
   }
 

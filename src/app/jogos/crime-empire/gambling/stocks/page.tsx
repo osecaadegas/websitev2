@@ -430,6 +430,12 @@ export default function StocksPage() {
             {acting ? "A processar..." : "💰 Comprar"}
           </button>
 
+          {player && (
+            <p className="text-xs text-orange-400/70 text-center">
+              ⚠️ 15% risco de prisão ao vender (7.5% Scammer) · 💎 em risco = valor investido
+            </p>
+          )}
+
           <p className="text-[10px] text-[#444] text-center">Min $100 · Máx $10,000. Investimento em dinheiro sujo, retorno em 🪙 crypto.</p>
         </div>
 

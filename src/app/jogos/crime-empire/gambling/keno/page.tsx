@@ -89,6 +89,11 @@ export default function KenoPage() {
           <Link href="/jogos/crime-empire/gambling" className="text-sm text-[#888] hover:text-[#ff6a00] mb-2 inline-block">← Casino</Link>
           <h1 className="text-4xl font-black text-purple-400">🎱 KENO</h1>
           <p className="text-sm text-[#888]">Escolhe até 10 números (1–80). 20 serão sorteados.</p>
+          {player && (
+            <p className="text-xs text-orange-400/70 mt-1">
+              ⚠️ 15% risco de prisão por ronda (7.5% Scammer) · 💎 em risco: {Math.min(player.crypto, bet).toLocaleString()} crypto
+            </p>
+          )}
         </div>
 
         {player && (
