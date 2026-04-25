@@ -545,25 +545,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Inventário insuficiente" }, { status: 400 });
     }
 
-    // Inspection roll (risky ships lose cargo with no reward)
-    if (Math.random() * 100 < ship.inspection_chance) {
-      // Confiscate the drugs — deduct inventory, no reward
-      if (invRow.quantity <= actualQty) {
-        await supabaseAdmin.from("player_inventory").delete().eq("id", invRow.id);
-      } else {
-        await supabaseAdmin.from("player_inventory").update({ quantity: invRow.quantity - actualQty }).eq("id", invRow.id);
-      }
-      await supabaseAdmin.from("porto_activity").insert({
-        ship_id:    ship.id,
-        player_id:  player.id,
-        event_type: "inspection_fail",
-        message:    `Carga inspecionada e confiscada! ${actualQty.toLocaleString("pt-PT")}g de ${ship.drug_type} perdidos.`,
-        quantity:   actualQty,
-        earned:     0,
-      })
-      return NextResponse.json({ success: false, inspected: true, quantity: actualQty });
-    }
-
     const earned = actualQty * ship.price_per_unit;
 
     // Deduct inventory

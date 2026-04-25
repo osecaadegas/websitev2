@@ -259,11 +259,7 @@ function DeliveryForm({
           </button>
         </div>
       </div>
-      {ship.inspection_chance > 0 && (
-        <p className="text-xs text-[#444] text-center">
-          ⚠ {ship.inspection_chance}% de chance de inspecao e confisco
-        </p>
-      )}
+
     </div>
   );
 }
@@ -492,9 +488,6 @@ export default function PortoShipsPage() {
       const json = await res.json();
       if (!res.ok) {
         showToast(json.error || "Erro na entrega", false);
-      } else if (json.inspected) {
-        showToast(`Inspecao! ${fmt(json.quantity)}g confiscados - sem recompensa.`, false);
-        await load();
       } else {
         showToast(`${fmt(json.quantity)}g entregues · +💵 ${fmt(json.earned)}`, true);
         await load();
@@ -686,7 +679,7 @@ export default function PortoShipsPage() {
               <li>🚢 Navios chegam com uma droga especifica e capacidade partilhada</li>
               <li>💵 Recebes dinheiro sujo imediatamente por cada entrega</li>
               <li>🏆 O maior contribuidor recebe bonus de +{currentShip?.top_bonus_pct ?? 25}% no final</li>
-              <li>⚠ Navios arriscados tem chance de inspecao e confisco</li>
+
             </ul>
           </div>
         </div>
