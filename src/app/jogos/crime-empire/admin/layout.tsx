@@ -20,8 +20,9 @@ const GROUPS = [
       { href: `${BASE}/items`,      label: "Items",     icon: "⚔️" },
       { href: `${BASE}/crimes`,     label: "Crimes",    icon: "💰" },
       { href: `${BASE}/businesses`, label: "Negócios",  icon: "🏢" },
-      { href: `${BASE}/shop`,       label: "Loja",      icon: "🛒" },
-      { href: `${BASE}/contracts`,  label: "Contratos", icon: "📄" },
+      { href: `${BASE}/shop`,       label: "Loja",        icon: "🛒" },
+      { href: `${BASE}/gun-shop`,   label: "SGT Machado", icon: "🔫" },
+      { href: `${BASE}/contracts`,  label: "Contratos",   icon: "📄" },
     ],
   },
   {
