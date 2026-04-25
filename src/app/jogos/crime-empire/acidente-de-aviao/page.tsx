@@ -1,11 +1,11 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useState, useCallback, useRef } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { useRouter } from "next/navigation";
 import { CEToast } from "@/components/CEToast";
 
-// â”€â”€â”€ Types â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Types ────────────────────────────────────────────────────────────────────
 
 interface LootItem {
   item_id: string;
@@ -53,18 +53,18 @@ interface Player {
   crypto: number;
 }
 
-// â”€â”€â”€ Constants â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Constants ────────────────────────────────────────────────────────────────
 
 const RARITY: Record<string, { color: string; label: string; bg: string }> = {
   common:    { color: "#9ca3af", label: "Comum",    bg: "rgba(156,163,175,0.12)" },
   rare:      { color: "#3b82f6", label: "Raro",     bg: "rgba(59,130,246,0.12)" },
-  epic:      { color: "#a855f7", label: "Ã‰pico",    bg: "rgba(168,85,247,0.12)" },
-  legendary: { color: "#f59e0b", label: "LendÃ¡rio", bg: "rgba(245,158,11,0.12)" },
+  epic:      { color: "#a855f7", label: "Épico",    bg: "rgba(168,85,247,0.12)" },
+  legendary: { color: "#f59e0b", label: "Lendário", bg: "rgba(245,158,11,0.12)" },
 };
 
-const ROWS = ["A","B","C","D","E","F","G","H","I","J"];
+const ROWS = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J"];
 
-// â”€â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function fmt(n: number) { return n.toLocaleString("pt-PT"); }
 
@@ -73,12 +73,12 @@ function formatCountdown(ms: number) {
   const h = Math.floor(ms / 3600000);
   const m = Math.floor((ms % 3600000) / 60000);
   const s = Math.floor((ms % 60000) / 1000);
-  return `${String(h).padStart(2,"0")}:${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")}`;
+  return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
 }
 
 function formatDate(iso: string) {
   const d = new Date(iso);
-  return d.toLocaleString("pt-PT", { weekday:"short", day:"2-digit", month:"short", hour:"2-digit", minute:"2-digit" });
+  return d.toLocaleString("pt-PT", { weekday: "short", day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
 }
 
 function useCountdown(targetDate: string) {
@@ -93,7 +93,7 @@ function useCountdown(targetDate: string) {
   return remaining;
 }
 
-// â”€â”€â”€ Extract Result Modal â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Extract Result Modal ──────────────────────────────────────────────────────
 
 function ExtractModal({
   items,
@@ -113,9 +113,11 @@ function ExtractModal({
         onClick={(e) => e.stopPropagation()}
       >
         <div className="text-center mb-5">
-          <div className="text-5xl mb-3">âœˆï¸</div>
-          <h2 className="text-xl font-black text-white">Saque ExtraÃ­do!</h2>
-          <p className="text-[#888] text-sm mt-1">Cobertura dos destroÃ§os: <span className="text-orange-400 font-bold">{pct}%</span></p>
+          <div className="text-5xl mb-3">✈️</div>
+          <h2 className="text-xl font-black text-white">Saque Extraído!</h2>
+          <p className="text-[#888] text-sm mt-1">
+            Cobertura dos destroços: <span className="text-orange-400 font-bold">{pct}%</span>
+          </p>
         </div>
 
         <div className="space-y-2 mb-5 max-h-64 overflow-y-auto">
@@ -128,7 +130,7 @@ function ExtractModal({
                   <img src={item.image_url} alt={item.item_name} className="w-9 h-9 object-contain flex-shrink-0 rounded" />
                 ) : (
                   <div className="w-9 h-9 rounded bg-[#1a1a1a] flex items-center justify-center text-base flex-shrink-0">
-                    {item.category === "drug" ? "ðŸ’Š" : "â­"}
+                    {item.category === "drug" ? "💊" : "⭐"}
                   </div>
                 )}
                 <div className="flex-1 min-w-0">
@@ -136,8 +138,8 @@ function ExtractModal({
                   <p className="text-xs font-bold" style={{ color: rar.color }}>{rar.label}</p>
                 </div>
                 <div className="text-right flex-shrink-0">
-                  <p className="text-white font-black text-sm">Ã—{item.quantity}</p>
-                  <p className="text-[#555] text-xs">ðŸ’µ {fmt(item.unit_value * item.quantity)}</p>
+                  <p className="text-white font-black text-sm">×{item.quantity}</p>
+                  <p className="text-[#555] text-xs">💵 {fmt(item.unit_value * item.quantity)}</p>
                 </div>
               </div>
             );
@@ -146,7 +148,7 @@ function ExtractModal({
 
         <div className="flex items-center justify-between bg-[#0a0a0a] rounded-xl px-4 py-3 mb-4 border border-[#1e1e1e]">
           <span className="text-[#888] text-sm">Valor total</span>
-          <span className="text-green-400 font-black text-lg">ðŸ’µ {fmt(totalValue)}</span>
+          <span className="text-green-400 font-black text-lg">💵 {fmt(totalValue)}</span>
         </div>
 
         <button
@@ -160,15 +162,15 @@ function ExtractModal({
   );
 }
 
-// â”€â”€â”€ Upcoming Crash Card (simple) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Upcoming Crash Card ───────────────────────────────────────────────────────
 
 function UpcomingCrashCard({ crash }: { crash: PlaneCrash }) {
   const remaining = useCountdown(crash.scheduled_at);
   return (
     <div className="bg-[#0e0e0e] border border-[#222] rounded-2xl p-4 flex items-center gap-4">
-      <div className="text-3xl grayscale">âœˆï¸</div>
+      <div className="text-3xl grayscale">✈️</div>
       <div className="flex-1 min-w-0">
-        <p className="text-white font-bold text-sm">PrÃ³ximo Acidente</p>
+        <p className="text-white font-bold text-sm">Próximo Acidente</p>
         <p className="text-[#555] text-xs">{formatDate(crash.scheduled_at)}</p>
       </div>
       <div className="text-right flex-shrink-0">
@@ -179,7 +181,7 @@ function UpcomingCrashCard({ crash }: { crash: PlaneCrash }) {
   );
 }
 
-// â”€â”€â”€ Grid â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Battle Grid ──────────────────────────────────────────────────────────────
 
 function BattleGrid({
   revealedTiles,
@@ -215,13 +217,13 @@ function BattleGrid({
 
               if (state === "hit") {
                 bg = "bg-red-900/50 border-red-700/60";
-                inner = <span className="text-xs">ðŸ”¥</span>;
+                inner = <span className="text-xs">🔥</span>;
               } else if (state === "near") {
                 bg = "bg-orange-900/40 border-orange-700/50";
                 inner = <div className="w-2 h-2 rounded-full bg-orange-400/70" />;
               } else if (state === "miss") {
                 bg = "bg-[#111] border-[#1c1c1c]";
-                inner = <span className="text-[10px] text-[#444] font-bold">Ã—</span>;
+                inner = <span className="text-[10px] text-[#444] font-bold">×</span>;
               }
 
               return (
@@ -247,7 +249,7 @@ function BattleGrid({
   );
 }
 
-// â”€â”€â”€ Heat Bar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Heat Bar ─────────────────────────────────────────────────────────────────
 
 function HeatBar({ heat }: { heat: number }) {
   const danger = heat >= 80;
@@ -269,19 +271,19 @@ function HeatBar({ heat }: { heat: number }) {
         />
       </div>
       {danger && (
-        <p className="text-red-400 text-[10px] font-bold mt-1 animate-pulse">âš ï¸ ZONA DE RISCO â€” extrai agora</p>
+        <p className="text-red-400 text-[10px] font-bold mt-1 animate-pulse">⚠️ ZONA DE RISCO — extrai agora</p>
       )}
     </div>
   );
 }
 
-// â”€â”€â”€ Scoring Table â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Scoring Table ────────────────────────────────────────────────────────────
 
 function ScoringTable() {
   const rows = [
-    { label: "â‰¥ 90% cobertura", pct: "100%", color: "#f59e0b" },
-    { label: "â‰¥ 60% cobertura", pct: "70%",  color: "#3b82f6" },
-    { label: "â‰¥ 30% cobertura", pct: "40%",  color: "#a855f7" },
+    { label: "≥ 90% cobertura", pct: "100%", color: "#f59e0b" },
+    { label: "≥ 60% cobertura", pct: "70%",  color: "#3b82f6" },
+    { label: "≥ 30% cobertura", pct: "40%",  color: "#a855f7" },
     { label: "< 30% cobertura", pct: "15%",  color: "#6b7280" },
   ];
   return (
@@ -299,7 +301,7 @@ function ScoringTable() {
   );
 }
 
-// â”€â”€â”€ Main Page â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Main Page ────────────────────────────────────────────────────────────────
 
 export default function AcidenteDeAviaoPage() {
   const { user } = useAuth();
@@ -360,7 +362,7 @@ export default function AcidenteDeAviaoPage() {
     }
   }, [activeCrash, remaining, fetchData]);
 
-  // â”€â”€ Start session â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Start session ──────────────────────────────────────────────────────────
   const handleStartSession = async () => {
     if (!activeCrash) return;
     setProcessing(true);
@@ -375,14 +377,14 @@ export default function AcidenteDeAviaoPage() {
         showToast(data.error || "Erro", false);
       } else {
         await fetchData();
-        if (!data.alreadyStarted) showToast("ðŸ›¡ï¸ Acesso ao mapa concedido. Boa caÃ§a!", true);
+        if (!data.alreadyStarted) showToast("🛡️ Acesso ao mapa concedido. Boa caça!", true);
       }
     } finally {
       setProcessing(false);
     }
   };
 
-  // â”€â”€ Fire shot â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Fire shot ──────────────────────────────────────────────────────────────
   const handleFire = async (x: number, y: number) => {
     if (!activeCrash || !session || firing) return;
     setFiring(true);
@@ -398,7 +400,6 @@ export default function AcidenteDeAviaoPage() {
         showToast(data.error || "Erro", false);
       } else {
         setLastShotResult(data.result);
-        // Optimistic update
         setSession((prev) => {
           if (!prev) return prev;
           const tiles = { ...prev.revealed_tiles, [`${x},${y}`]: data.result };
@@ -411,18 +412,15 @@ export default function AcidenteDeAviaoPage() {
             completed: data.completed,
           };
         });
-        if (data.raidTriggered && !session.raid_triggered) {
-          showToast("ðŸš¨ Calor elevado! Extrai o saque antes que seja tarde!", false);
-        }
-        if (data.result === "hit") showToast("ðŸ’¥ ACERTO! DestroÃ§o encontrado!", true);
-        else if (data.result === "near") showToast("ðŸ”¶ Perto... algo nas proximidades", true);
+        if (data.result === "hit") showToast("💥 ACERTO! Destroço encontrado!", true);
+        else if (data.result === "near") showToast("🔶 Perto... algo nas proximidades", true);
       }
     } finally {
       setFiring(false);
     }
   };
 
-  // â”€â”€ Extract loot â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Extract loot ───────────────────────────────────────────────────────────
   const handleExtract = async () => {
     if (!activeCrash || !session) return;
     setProcessing(true);
@@ -444,7 +442,7 @@ export default function AcidenteDeAviaoPage() {
     }
   };
 
-  // â”€â”€ Derived â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Derived ────────────────────────────────────────────────────────────────
 
   const upcomingCrashes = crashes.filter((c) => c.status === "upcoming");
   const hasSession = !!session && !session.extracted;
@@ -454,20 +452,20 @@ export default function AcidenteDeAviaoPage() {
   const canAffordEntry = (player?.crypto ?? 0) >= (activeCrash?.entry_cost ?? 125000);
   const blocked = !!(player?.in_jail) || (player?.hp ?? 1) <= 0;
 
-  // â”€â”€â”€ Loading â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Loading ────────────────────────────────────────────────────────────────
 
   if (loading) {
     return (
       <div className="flex-1 flex items-center justify-center min-h-[60vh] text-white">
         <div className="text-center">
-          <div className="text-5xl mb-4 animate-pulse">âœˆï¸</div>
-          <p className="text-[#888]">A carregar relatÃ³rios de acidentes...</p>
+          <div className="text-5xl mb-4 animate-pulse">✈️</div>
+          <p className="text-[#888]">A carregar relatórios de acidentes...</p>
         </div>
       </div>
     );
   }
 
-  // â”€â”€â”€ Render â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Render ─────────────────────────────────────────────────────────────────
 
   return (
     <div className="flex-1 text-white py-6 px-3 md:px-6">
@@ -482,10 +480,10 @@ export default function AcidenteDeAviaoPage() {
 
       <div className="max-w-6xl mx-auto space-y-4">
 
-        {/* â”€â”€ Top bar â”€â”€ */}
+        {/* Top bar */}
         <div className="flex flex-wrap items-center gap-3 justify-between">
           <div className="flex items-center gap-3">
-            <h1 className="text-2xl md:text-3xl font-black text-white tracking-tight uppercase">âœˆï¸ ACIDENTE DE AVIÃƒO</h1>
+            <h1 className="text-2xl md:text-3xl font-black text-white tracking-tight uppercase">✈️ ACIDENTE DE AVIÃO</h1>
             {activeCrash && (
               <span className="text-[10px] font-bold uppercase tracking-widest bg-orange-900/40 border border-orange-700/50 text-orange-400 px-2 py-0.5 rounded-full">
                 ATIVO
@@ -506,30 +504,30 @@ export default function AcidenteDeAviaoPage() {
             {player && (
               <div className="bg-[#111] border border-[#222] rounded-lg px-3 py-1.5 text-center">
                 <p className="text-[9px] uppercase tracking-widest text-[#555] mb-0">Crypto</p>
-                <p className="font-black text-cyan-400 text-sm">ðŸ’Ž {fmt(player.crypto)}</p>
+                <p className="font-black text-cyan-400 text-sm">💎 {fmt(player.crypto)}</p>
               </div>
             )}
           </div>
         </div>
 
-        {/* â”€â”€ Blocked banners â”€â”€ */}
+        {/* Blocked banners */}
         {player?.in_jail && (
           <div className="p-3 rounded-xl bg-yellow-900/20 border border-yellow-700/60 text-yellow-400 text-sm font-semibold">
-            ðŸš” EstÃ¡s na prisÃ£o. NÃ£o podes participar em eventos.
+            🚔 Estás na prisão. Não podes participar em eventos.
           </div>
         )}
         {player && player.hp <= 0 && !player.in_jail && (
           <div className="p-3 rounded-xl bg-red-900/20 border border-red-700/60 text-red-400 text-sm font-semibold">
-            ðŸ¥ EstÃ¡s no hospital. Vai ao Hospital para te curar primeiro.
+            🏥 Estás no hospital. Vai ao Hospital para te curar primeiro.
           </div>
         )}
 
-        {/* â”€â”€ No active crash â”€â”€ */}
+        {/* No active crash */}
         {!activeCrash && (
           <div className="p-8 rounded-2xl bg-[#0e0e0e] border border-[#1e1e1e] text-center">
-            <p className="text-5xl mb-4">ðŸŒ™</p>
+            <p className="text-5xl mb-4">🌙</p>
             <p className="text-white font-black text-lg mb-1">Nenhum acidente ativo</p>
-            <p className="text-[#555] text-sm">Aguarda o prÃ³ximo acidente para jogar</p>
+            <p className="text-[#555] text-sm">Aguarda o próximo acidente para jogar</p>
             {upcomingCrashes.length > 0 && (
               <div className="mt-6 max-w-sm mx-auto space-y-2">
                 {upcomingCrashes.slice(0, 2).map((c) => <UpcomingCrashCard key={c.id} crash={c} />)}
@@ -538,11 +536,11 @@ export default function AcidenteDeAviaoPage() {
           </div>
         )}
 
-        {/* â”€â”€ Active crash â€” 3 column layout â”€â”€ */}
+        {/* Active crash — 3-column layout */}
         {activeCrash && (
           <div className="grid grid-cols-1 lg:grid-cols-[260px_1fr_260px] gap-4">
 
-            {/* â”€â”€ LEFT: Torre de Controlo â”€â”€ */}
+            {/* LEFT: Torre de Controlo */}
             <div className="space-y-3">
               <div className="bg-[#0e0e0e] border border-[#1e1e1e] rounded-2xl p-4">
                 <p className="text-[10px] uppercase tracking-widest text-[#444] font-bold mb-3">CONTROLE DA TORRE</p>
@@ -550,7 +548,7 @@ export default function AcidenteDeAviaoPage() {
                 {/* Operator avatar */}
                 <div className="flex flex-col items-center mb-4">
                   <div className="w-16 h-16 rounded-full bg-[#141414] border-2 border-[#2a2a2a] flex items-center justify-center text-3xl mb-2">
-                    ðŸ§‘â€âœˆï¸
+                    🧑‍✈️
                   </div>
                   <p className="text-white font-bold text-sm">Controlador</p>
                   <p className="text-[#555] text-xs">{activeCrash.location_name}</p>
@@ -561,7 +559,7 @@ export default function AcidenteDeAviaoPage() {
                     <div className="bg-[#111] border border-[#1a1a1a] rounded-xl px-3 py-3 mb-3 text-center">
                       <p className="text-[#666] text-xs mb-1">Pagamento exigido</p>
                       <p className={`font-black text-lg ${canAffordEntry ? "text-cyan-400" : "text-red-400"}`}>
-                        ðŸ’Ž {fmt(activeCrash.entry_cost ?? 125000)}
+                        💎 {fmt(activeCrash.entry_cost ?? 125000)}
                       </p>
                       <p className="text-[#444] text-[10px] mt-1">Crypto</p>
                     </div>
@@ -579,26 +577,26 @@ export default function AcidenteDeAviaoPage() {
                           : "bg-[#1a1a1a] text-[#444] cursor-not-allowed"
                       }`}
                     >
-                      {processing ? "A processar..." : !canAffordEntry ? "ðŸ’Ž Crypto insuficiente" : "PAGAR E OBTER INFORMAÃ‡ÃƒO"}
+                      {processing ? "A processar..." : !canAffordEntry ? "💎 Crypto insuficiente" : "PAGAR E OBTER INFORMAÇÃO"}
                     </button>
 
                     <p className="text-[#333] text-[10px] text-center mt-2">
-                      O pagamento nÃ£o Ã© reembolsÃ¡vel. 10 disparos incluÃ­dos.
+                      O pagamento não é reembolsável. 10 disparos incluídos.
                     </p>
                   </>
                 )}
 
                 {session?.extracted && (
                   <div className="bg-green-900/20 border border-green-700/40 rounded-xl p-3 text-center">
-                    <p className="text-green-400 font-bold text-sm">âœ“ Saque extraÃ­do</p>
+                    <p className="text-green-400 font-bold text-sm">✓ Saque extraído</p>
                     <p className="text-[#555] text-xs mt-1">Cobertura: {Math.round((session.final_coverage ?? 0) * 100)}%</p>
                   </div>
                 )}
 
                 {hasSession && (
                   <div className="bg-[#111] border border-[#1a1a1a] rounded-xl p-3 text-center">
-                    <p className="text-green-400 text-xs font-bold">âœ“ Acesso concedido</p>
-                    <p className="text-[#555] text-xs mt-0.5">SessÃ£o ativa</p>
+                    <p className="text-green-400 text-xs font-bold">✓ Acesso concedido</p>
+                    <p className="text-[#555] text-xs mt-0.5">Sessão ativa</p>
                   </div>
                 )}
               </div>
@@ -606,23 +604,25 @@ export default function AcidenteDeAviaoPage() {
               {/* Upcoming crashes */}
               {upcomingCrashes.length > 0 && (
                 <div className="space-y-2">
-                  <p className="text-[10px] uppercase tracking-widest text-[#444] font-bold px-1">PrÃ³ximos</p>
+                  <p className="text-[10px] uppercase tracking-widest text-[#444] font-bold px-1">Próximos</p>
                   {upcomingCrashes.slice(0, 2).map((c) => <UpcomingCrashCard key={c.id} crash={c} />)}
                 </div>
               )}
             </div>
 
-            {/* â”€â”€ CENTER: Grid â”€â”€ */}
+            {/* CENTER: Grid */}
             <div className="bg-[#0e0e0e] border border-[#1e1e1e] rounded-2xl p-4 flex flex-col gap-4">
               <div className="flex items-center justify-between">
-                <p className="text-[10px] uppercase tracking-widest text-[#444] font-bold">MAPA DE BUSCA â€” 10Ã—10</p>
+                <p className="text-[10px] uppercase tracking-widest text-[#444] font-bold">MAPA DE BUSCA — 10×10</p>
                 {lastShotResult && (
                   <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${
-                    lastShotResult === "hit" ? "bg-red-900/50 text-red-400 border border-red-700/40"
-                    : lastShotResult === "near" ? "bg-orange-900/50 text-orange-400 border border-orange-700/40"
-                    : "bg-[#111] text-[#555] border border-[#222]"
+                    lastShotResult === "hit"
+                      ? "bg-red-900/50 text-red-400 border border-red-700/40"
+                      : lastShotResult === "near"
+                      ? "bg-orange-900/50 text-orange-400 border border-orange-700/40"
+                      : "bg-[#111] text-[#555] border border-[#222]"
                   }`}>
-                    {lastShotResult === "hit" ? "ðŸ’¥ ACERTO" : lastShotResult === "near" ? "ðŸ”¶ PERTO" : "âœ• FALHOU"}
+                    {lastShotResult === "hit" ? "💥 ACERTO" : lastShotResult === "near" ? "🔶 PERTO" : "✕ FALHOU"}
                   </span>
                 )}
               </div>
@@ -630,15 +630,15 @@ export default function AcidenteDeAviaoPage() {
               {!hasSession && !session?.extracted ? (
                 <div className="flex-1 flex items-center justify-center min-h-[280px]">
                   <div className="text-center">
-                    <p className="text-4xl mb-3 grayscale">ðŸ—ºï¸</p>
+                    <p className="text-4xl mb-3 grayscale">🗺️</p>
                     <p className="text-[#444] text-sm">Paga ao controlador para aceder ao mapa</p>
                   </div>
                 </div>
               ) : session?.extracted ? (
                 <div className="flex-1 flex items-center justify-center min-h-[280px]">
                   <div className="text-center">
-                    <p className="text-4xl mb-3">âœ…</p>
-                    <p className="text-white font-bold">MissÃ£o completa</p>
+                    <p className="text-4xl mb-3">✅</p>
+                    <p className="text-white font-bold">Missão completa</p>
                     <p className="text-[#555] text-sm mt-1">Cobertura: {Math.round((session.final_coverage ?? 0) * 100)}%</p>
                   </div>
                 </div>
@@ -654,25 +654,25 @@ export default function AcidenteDeAviaoPage() {
               {/* Grid legend */}
               {hasSession && !session?.extracted && (
                 <div className="flex flex-wrap gap-3 text-[10px] text-[#555]">
-                  <span className="flex items-center gap-1"><span>ðŸ”¥</span> Acerto</span>
+                  <span className="flex items-center gap-1"><span>🔥</span> Acerto</span>
                   <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-orange-400/70 inline-block" /> Perto</span>
-                  <span className="flex items-center gap-1"><span className="font-bold text-[#444]">Ã—</span> Falhou</span>
+                  <span className="flex items-center gap-1"><span className="font-bold text-[#444]">×</span> Falhou</span>
                 </div>
               )}
 
               {/* Loot preview */}
               <div>
-                <p className="text-[10px] uppercase tracking-widest text-[#444] font-bold mb-2">SAQUE POSSÃVEL</p>
+                <p className="text-[10px] uppercase tracking-widest text-[#444] font-bold mb-2">SAQUE POSSÍVEL</p>
                 <div className="bg-[#080808] border border-[#151515] rounded-xl p-3">
                   {hasSession ? (
                     <p className="text-[#555] text-xs italic text-center">
                       {session.hits > 0
-                        ? `${session.hits} segmento(s) encontrado(s) â€” extrai para receber o saque`
-                        : "Dispara no mapa para encontrar destroÃ§os"}
+                        ? `${session.hits} segmento(s) encontrado(s) — extrai para receber o saque`
+                        : "Dispara no mapa para encontrar destroços"}
                     </p>
                   ) : (
                     <p className="text-[#444] text-xs italic text-center">
-                      Paga ao controlador para ver informaÃ§Ãµes do saque
+                      Paga ao controlador para ver informações do saque
                     </p>
                   )}
                 </div>
@@ -682,17 +682,19 @@ export default function AcidenteDeAviaoPage() {
               </div>
             </div>
 
-            {/* â”€â”€ RIGHT: Painel de Intel + disparos + heat â”€â”€ */}
+            {/* RIGHT: Intel + shots + heat */}
             <div className="space-y-3">
 
               {/* Intel */}
               <div className="bg-[#0e0e0e] border border-[#1e1e1e] rounded-2xl p-4">
-                <p className="text-[10px] uppercase tracking-widest text-[#444] font-bold mb-2">INFORMAÃ‡ÃƒO RECEBIDA</p>
+                <p className="text-[10px] uppercase tracking-widest text-[#444] font-bold mb-2">INFORMAÇÃO RECEBIDA</p>
                 <div className="bg-[#080808] border border-[#151515] rounded-xl p-3 min-h-[72px] flex items-center">
                   {session?.intel_hint ? (
                     <p className="text-green-400 text-xs italic leading-relaxed">{session.intel_hint}</p>
                   ) : (
-                    <p className="text-[#333] text-xs italic">Paga ao controlador para receber informaÃ§Ãµes sobre a localizaÃ§Ã£o dos destroÃ§os.</p>
+                    <p className="text-[#333] text-xs italic">
+                      Paga ao controlador para receber informações sobre a localização dos destroços.
+                    </p>
                   )}
                 </div>
               </div>
@@ -713,10 +715,12 @@ export default function AcidenteDeAviaoPage() {
                       <div
                         key={i}
                         className={`w-5 h-5 rounded-sm flex items-center justify-center text-[9px] font-bold ${
-                          i < shotsUsed ? "bg-red-900/60 border border-red-700/40 text-red-500" : "bg-[#141414] border border-[#222] text-[#333]"
+                          i < shotsUsed
+                            ? "bg-red-900/60 border border-red-700/40 text-red-500"
+                            : "bg-[#141414] border border-[#222] text-[#333]"
                         }`}
                       >
-                        {i < shotsUsed ? "Ã—" : "â—‹"}
+                        {i < shotsUsed ? "×" : "○"}
                       </div>
                     ))}
                   </div>
@@ -725,7 +729,7 @@ export default function AcidenteDeAviaoPage() {
 
                   {session.heat_level >= 80 && (
                     <p className="text-red-400 text-xs text-center">
-                      Zona de risco. Extrai jÃ¡ ou perdes tudo!
+                      Zona de risco. Extrai já ou perdes tudo!
                     </p>
                   )}
                 </div>
@@ -744,25 +748,31 @@ export default function AcidenteDeAviaoPage() {
                       : "bg-[#1a1a1a] text-[#444] cursor-not-allowed"
                   }`}
                 >
-                  {processing ? "A extrair..." : canExtract ? "ðŸ“¦ EXTRAIR SAQUE" : session.hits === 0 ? "Sem acertos para extrair" : "Disparos em curso..."}
+                  {processing
+                    ? "A extrair..."
+                    : canExtract
+                    ? "📦 EXTRAIR SAQUE"
+                    : session.hits === 0
+                    ? "Sem acertos para extrair"
+                    : "Disparos em curso..."}
                 </button>
               )}
 
               {!hasSession && !session && (
                 <div className="bg-[#0e0e0e] border border-[#1e1e1e] rounded-2xl p-4 text-center">
-                  <p className="text-[#333] text-xs">Acede ao mapa para comeÃ§ar a busca</p>
+                  <p className="text-[#333] text-xs">Acede ao mapa para começar a busca</p>
                 </div>
               )}
             </div>
           </div>
         )}
 
-        {/* â”€â”€ Tips bar â”€â”€ */}
+        {/* Tips bar */}
         <div className="p-3 rounded-xl bg-[#0a0a0a] border border-[#141414] text-[10px] text-[#3a3a3a] flex flex-wrap gap-x-4 gap-y-1">
-          <span>ðŸŽ¯ 10 disparos por evento Â· EstratÃ©gia Ã© tudo</span>
-          <span>ðŸ”¥ Calor sobe com cada disparo â€” extrai antes de 80%</span>
-          <span>ðŸ’Ž Pagamento em crypto Â· 125.000 por acesso</span>
-          <span>ðŸ“¦ Saque proporcional Ã  cobertura dos destroÃ§os</span>
+          <span>🎯 10 disparos por evento · Estratégia é tudo</span>
+          <span>🔥 Calor sobe com cada disparo — extrai antes de 80%</span>
+          <span>💎 Pagamento em crypto · 125.000 por acesso</span>
+          <span>📦 Saque proporcional à cobertura dos destroços</span>
         </div>
       </div>
     </div>
