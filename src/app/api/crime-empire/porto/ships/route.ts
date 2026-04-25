@@ -177,11 +177,12 @@ async function tickShips(): Promise<void> {
     .gt("departure_time", now.toISOString());
 
   // docked → departed (timer expired OR full)
+  // NOTE: PostgREST cannot do column-to-column comparisons in .or(), so we
+  // fetch all docked ships and filter in code.
   const { data: toDepart } = await supabase
     .from("porto_ships")
     .select("id, name, capacity_total, capacity_filled, departure_time, ship_class, top_bonus_pct")
-    .eq("status", "docked")
-    .or(`departure_time.lte.${now.toISOString()},capacity_filled.gte.capacity_total`);
+    .eq("status", "docked");
 
   if (toDepart) {
     for (const ship of toDepart) {
