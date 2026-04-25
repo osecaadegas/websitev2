@@ -1,9 +1,0 @@
- What's Still To Build:
-Businesses (buy, hire employees, collect passive income)
-PvP (attack players, steal dirty cash, class bonuses matter)
-Hitman Contracts (daily missions for big rewards)
-Brothel (hire workers, gain charisma/respect)
-Black Market (sell illegal items with arrest risk)
-Items/Inventory (weapons, armor, consumables)
-Jail escape (bribe system with 60% success, 25% steal money, 15% reject)
-Leaderboards (top criminals by level/cash/respect)
