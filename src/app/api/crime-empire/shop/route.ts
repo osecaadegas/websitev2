@@ -28,13 +28,16 @@ export async function GET() {
 
   if (!player) return NextResponse.json({ error: "Player not found" }, { status: 404 });
 
-  // Shop sells everything except raw materials (those are produced by businesses)
-  const { data: items } = await supabase
-    .from("items")
-    .select("*")
-    .neq("category", "material")
-    .is("crypto_price", null)
-    .order("base_price", { ascending: true });
+  // Only show items explicitly listed in ce_shop_listings with enabled=true
+  const { data: listings } = await supabase
+    .from("ce_shop_listings")
+    .select("price_override, item:items(*)")
+    .eq("enabled", true)
+    .order("created_at", { ascending: true });
+
+  const items = (listings || [])
+    .map((l: any) => l.item)
+    .filter(Boolean);
 
   // Get what the player already owns
   const { data: inventory } = await supabase
@@ -48,7 +51,7 @@ export async function GET() {
   }
 
   return NextResponse.json({
-    items: items || [],
+    items,
     ownedMap,
     player: {
       cash: player.cash,
