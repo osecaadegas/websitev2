@@ -36,6 +36,8 @@ interface Zone {
   unlockLevel: number;
   heatPerDeal: number;
   rewardMult: number;
+  allowedTypes?: string[];
+  riskMod?: number;
 }
 
 interface Session {
@@ -272,6 +274,9 @@ export default function StreetsPage() {
 
   // -- Inspector reveal
   const [inspectorRevealed, setInspectorRevealed] = useState(false);
+
+  // -- Zone hover (zone select screen)
+  const [hoveredZone, setHoveredZone] = useState<string | null>(null);
 
   // -- Customer entrance animation
   const [customerAnim, setCustomerAnim] = useState(false);
@@ -855,12 +860,19 @@ export default function StreetsPage() {
                 </p>
               </div>
             )}
-            <div className="max-w-2xl">
-              <h1 className="text-5xl font-black mb-2 tracking-tight">
-                <span style={{ background: "linear-gradient(90deg,#4ade80,#166534)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
-                  Ruas
-                </span>
-              </h1>
+            <div className="max-w-none">
+              {/* Header */}
+              <div className="flex items-end gap-3 mb-2">
+                <h1 className="text-5xl font-black tracking-tight">
+                  <span style={{ background: "linear-gradient(90deg,#4ade80,#166534)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
+                    Ruas
+                  </span>
+                </h1>
+                <div className="mb-1.5 px-2.5 py-1 rounded-full text-[10px] font-black tracking-widest uppercase"
+                  style={{ background: "#0d1f10", color: "#4ade80", border: "1px solid #1a3a1a" }}>
+                  {zones.length} zonas
+                </div>
+              </div>
               <p className="text-[#444] mb-8 text-sm">Escolhe a zona. Cada rua tem os seus riscos.</p>
               {inJail ? (
                 <div className="p-5 rounded-2xl bg-red-950/30 border border-red-900/40 text-red-400 text-sm">🚔 Não podes sair enquanto estás preso.</div>
@@ -875,30 +887,114 @@ export default function StreetsPage() {
                   </Link>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
                   {zones.map((zone) => {
                     const locked = (player?.level ?? 1) < zone.unlockLevel;
                     const accent = ZONE_ACCENT[zone.id] ?? "#22c55e";
+                    const profitPct = Math.round((zone.rewardMult - 1) * 100);
+                    const riskLabel = zone.heatPerDeal >= 12 ? "EXTREMO" : zone.heatPerDeal >= 8 ? "ALTO" : zone.heatPerDeal >= 5 ? "MÉDIO" : "BAIXO";
+                    const riskColor = zone.heatPerDeal >= 12 ? "#ef4444" : zone.heatPerDeal >= 8 ? "#f97316" : zone.heatPerDeal >= 5 ? "#eab308" : "#22c55e";
+                    const types = (zone.allowedTypes ?? []).filter((t) => t !== "undercover");
+                    const typeIcons: Record<string, string> = { regular: "🧑", tourist: "🌍", junkie: "💊", dealer: "💼", worker: "💃" };
+                    const isHovered = hoveredZone === zone.id;
                     return (
-                      <button key={zone.id}
-                        onClick={() => !locked && startSession(zone.id)}
+                      <button
+                        key={zone.id}
+                        onClick={() => !locked && !inJail && startSession(zone.id)}
                         disabled={locked || !!inJail}
-                        className={`group relative p-6 rounded-2xl border text-left overflow-hidden transition-all ${
-                          locked ? "border-[#181818] opacity-30 cursor-not-allowed" : "border-[#1f1f1f] hover:border-[#2a2a2a] active:scale-95 cursor-pointer"
-                        }`}
-                        style={locked ? { background: "#0a0a0a" } : { background: `linear-gradient(135deg, ${accent}0d, #0a0a0a 60%)` }}>
-                        <div className="relative z-10">
-                          <div className="flex items-start justify-between mb-3">
-                            <span className="text-3xl">{zone.icon}</span>
-                            {locked && <span className="text-[#333] text-xs">Nv.{zone.unlockLevel}</span>}
-                          </div>
-                          <p className="font-black text-white text-base mb-1">{zone.name}</p>
-                          <p className="text-xs text-[#444] mb-4 leading-relaxed">{zone.description}</p>
-                          <div className="flex items-center gap-3 text-xs">
-                            <span className="font-bold" style={{ color: accent }}>+{Math.round((zone.rewardMult - 1) * 100)}% lucro</span>
-                            <span className="text-yellow-700">🌡️ +{zone.heatPerDeal}/deal</span>
-                          </div>
+                        onMouseEnter={() => { if (!locked) setHoveredZone(zone.id); }}
+                        onMouseLeave={() => setHoveredZone(null)}
+                        className="group relative text-left overflow-hidden rounded-2xl transition-all duration-200 active:scale-95"
+                        style={{
+                          background: locked ? "#0a0a0c" : `linear-gradient(160deg, ${accent}12 0%, #0c0c0e 55%)`,
+                          border: `1px solid ${locked ? "#161618" : isHovered ? accent + "50" : "#1e1e20"}`,
+                          boxShadow: isHovered && !locked ? `0 0 30px ${accent}25, 0 0 0 1px ${accent}20` : "none",
+                          cursor: locked ? "not-allowed" : "pointer",
+                        }}
+                      >
+                        {/* Top accent bar */}
+                        <div className="h-0.5" style={{ background: locked ? "#1a1a1a" : `linear-gradient(90deg, ${accent}cc, ${accent}20, transparent)` }} />
+
+                        {/* Icon + risk badge row */}
+                        <div
+                          className="flex items-center justify-between px-3 pt-4 pb-3"
+                          style={{ background: isHovered && !locked ? `radial-gradient(ellipse at 30% 50%, ${accent}14, transparent 70%)` : "transparent" }}
+                        >
+                          <span
+                            className="text-4xl transition-all duration-300"
+                            style={{
+                              filter: locked ? "grayscale(1) opacity(0.2)" : isHovered ? `drop-shadow(0 0 10px ${accent}90)` : `drop-shadow(0 0 4px ${accent}40)`,
+                              transform: isHovered && !locked ? "scale(1.15)" : "scale(1)",
+                              display: "inline-block",
+                            }}
+                          >
+                            {zone.icon}
+                          </span>
+                          <span
+                            className="text-[9px] font-black px-1.5 py-0.5 rounded tracking-widest uppercase"
+                            style={{
+                              background: locked ? "#111" : `${riskColor}18`,
+                              color: locked ? "#2a2a2a" : riskColor,
+                              border: `1px solid ${locked ? "#1e1e1e" : riskColor + "35"}`,
+                            }}
+                          >
+                            {locked ? `NV.${zone.unlockLevel}` : riskLabel}
+                          </span>
                         </div>
+
+                        {/* Content */}
+                        <div className="px-3 pb-4">
+                          <p className="font-black text-[15px] leading-tight mb-1" style={{ color: locked ? "#2a2a2a" : "#fff" }}>
+                            {zone.name}
+                          </p>
+                          <p className="text-[11px] leading-relaxed mb-3 line-clamp-2" style={{ color: locked ? "#1e1e1e" : "#3a3a3a" }}>
+                            {zone.description}
+                          </p>
+
+                          {/* Stats row */}
+                          <div className="flex gap-1.5 mb-3">
+                            <div className="flex items-center gap-1 px-2 py-1.5 rounded-lg flex-1 justify-center" style={{ background: "#111113" }}>
+                              <span className="text-[10px]">💰</span>
+                              <span
+                                className="text-[12px] font-black tabular-nums"
+                                style={{ color: locked ? "#222" : profitPct >= 0 ? accent : "#ef4444" }}
+                              >
+                                {profitPct >= 0 ? "+" : ""}{profitPct}%
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-1 px-2 py-1.5 rounded-lg flex-1 justify-center" style={{ background: "#111113" }}>
+                              <span className="text-[10px]">🌡️</span>
+                              <span
+                                className="text-[12px] font-black tabular-nums"
+                                style={{ color: locked ? "#222" : riskColor }}
+                              >
+                                +{zone.heatPerDeal}
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* Customer types */}
+                          {types.length > 0 && !locked && (
+                            <div className="flex gap-1 flex-wrap">
+                              {types.map((t) => (
+                                <span key={t} className="text-sm opacity-60 hover:opacity-100 transition-opacity" title={t}>{typeIcons[t] ?? "👤"}</span>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Lock overlay */}
+                        {locked && (
+                          <div className="absolute inset-0 flex flex-col items-center justify-center gap-1.5">
+                            <span className="text-2xl opacity-30">🔒</span>
+                            <span className="text-[10px] font-black uppercase tracking-widest" style={{ color: "#7a6010" }}>
+                              Nível {zone.unlockLevel}
+                            </span>
+                            <span className="text-[9px]" style={{ color: "#2a2a2a" }}>
+                              falta {zone.unlockLevel - (player?.level ?? 1)} {zone.unlockLevel - (player?.level ?? 1) === 1 ? "nível" : "níveis"}
+                            </span>
+                          </div>
+                        )}
                       </button>
                     );
                   })}
