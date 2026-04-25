@@ -256,131 +256,100 @@ export interface SpawnedCustomer {
 
 /**
  * Core negotiation resolution.
+ *
+ * NEW FLOW — customer-led pricing:
+ *   "offer"   = player accepts the customer's offer immediately → always succeeds, heat +1
+ *   "counter" = player pushes for pricePerUnit (already +5% from frontend) → customer evaluates
+ *
  * Called by the API with the current encounter state.
  */
 export function resolveNegotiation(opts: {
   customer: SpawnedCustomer;
-  pricePerUnit: number;    // player's offered price
+  /** For "offer": customer's original price. For "counter": new price (+5% from previous). */
+  pricePerUnit: number;
   quantity: number;
-  itemBasePrice: number;   // reference fair price
-  action: "offer" | "push" | "discount" | "rush";
+  itemBasePrice: number;
+  action: "offer" | "counter";
   zoneDef: ZoneDef;
   playerLevel: number;
 }): NegotiationResult {
-  const { customer, pricePerUnit, quantity, itemBasePrice, action, zoneDef } = opts;
+  const { customer, pricePerUnit, quantity, action, zoneDef } = opts;
 
-  const fairness = pricePerUnit / itemBasePrice; // 1.0 = fair, >1 = overpriced
-  let suspicionDelta = 0;
-  let heatDelta = 0;
-
-  // ── Action modifiers
-  if (action === "push") {
-    suspicionDelta += 12;
-    heatDelta += 4;
-  } else if (action === "discount") {
-    suspicionDelta -= 8;
-  } else if (action === "rush") {
-    suspicionDelta += 6;
-    // Reduces effective patience by 2 for this exchange
-    customer.patience = Math.max(1, customer.patience - 2);
-  }
-
-  // ── Fairness suspicion
-  if (fairness > 2.0) suspicionDelta += 20;
-  else if (fairness > 1.5) suspicionDelta += 12;
-  else if (fairness > 1.2) suspicionDelta += 5;
-  else if (fairness < 0.9) suspicionDelta -= 5; // undercut
-  else if (fairness <= 1.05) suspicionDelta -= 3; // near-fair
-
-  // ── Offers received penalty (impatience grows)
-  suspicionDelta += customer.offersReceived * 5;
-
-  // ── Accumulate suspicion
-  const newSuspicion = Math.min(100, Math.max(0, customer.suspicion + suspicionDelta));
-  customer.suspicion = newSuspicion;
-
-  // ── Snitch check (based on snitch_chance * suspicion factor)
-  const snitchRoll = Math.random();
-  const snitchThreshold = customer.snitchChance * (newSuspicion / 80);
-  if (snitchRoll < snitchThreshold && newSuspicion >= 55) {
+  // ── OFFER (instant accept at customer's price) ────────────────────────────
+  if (action === "offer") {
+    const earned = Math.floor(pricePerUnit * quantity * zoneDef.rewardMult);
     return {
-      outcome: "snitch",
-      suspicionDelta,
-      heatDelta: 20 + Math.floor(Math.random() * 15), // snitch = heat spike
-      dialogueKey: "snitch",
+      outcome: "accept",
+      suspicionDelta: 0,
+      heatDelta: 1,
+      earned,
+      dialogueKey: "accept_fair",
     };
   }
 
-  // ── Undercover: always snitch above suspicion 75
-  if (customer.type === "undercover" && newSuspicion >= 75) {
+  // ── COUNTER (player pushes for +5% more) ─────────────────────────────────
+  let suspicionDelta = 8 + customer.offersReceived * 5;
+  const newSuspicion = Math.min(100, customer.suspicion + suspicionDelta);
+  customer.suspicion = newSuspicion;
+
+  // ── Snitch check (only on counters)
+  if (customer.snitchChance > 0 && newSuspicion >= 40) {
+    const snitchThreshold = customer.snitchChance * (newSuspicion / 100) * 1.5;
+    if (Math.random() < snitchThreshold) {
+      return {
+        outcome: "snitch",
+        suspicionDelta,
+        heatDelta: 20 + Math.floor(Math.random() * 15),
+        dialogueKey: "snitch",
+      };
+    }
+  }
+
+  // ── Undercover: busts at elevated suspicion
+  if (customer.type === "undercover" && newSuspicion >= 60) {
     return {
       outcome: "snitch",
       suspicionDelta,
-      heatDelta: 30,
+      heatDelta: 35,
       dialogueKey: "undercover_bust",
     };
   }
 
-  // ── Patience exhausted → hostile / leave
+  // ── Patience exhausted → hostile
   if (customer.offersReceived >= customer.patience) {
-    heatDelta += 5;
     return {
       outcome: "hostile",
       suspicionDelta,
-      heatDelta,
+      heatDelta: 5 + customer.offersReceived,
       dialogueKey: "out_of_patience",
     };
   }
 
-  // ── Acceptance check
-  // Customer accepts if: total cost ≤ budget AND price ≤ their expectation AND suspicion < threshold
+  // ── Price / budget check
+  const maxAcceptablePrice = customer.requestedPriceExpectation * (1 + customer.flexibility);
   const totalCost = pricePerUnit * quantity;
-  const acceptSuspicionCap = 30 + customer.riskTolerance * 5; // 35–80
-  // Price expectation check — with flexibility as tolerance
-  const priceOK = pricePerUnit <= customer.requestedPriceExpectation * (1 + customer.flexibility);
+  const priceOK = pricePerUnit <= maxAcceptablePrice;
+  const budgetOK = totalCost <= customer.budget;
 
-  if (totalCost <= customer.budget && priceOK && newSuspicion < acceptSuspicionCap) {
-    const earned = totalCost * zoneDef.rewardMult;
-    // Smooth first-offer accept = minimal heat (clean, quick deal)
-    if (customer.offersReceived === 0 && action === "offer") {
-      heatDelta += 1;
-    } else {
-      heatDelta += zoneDef.heatPerDeal;
-    }
-    return {
-      outcome: "accept",
-      suspicionDelta,
-      heatDelta,
-      earned: Math.floor(earned),
-      dialogueKey: fairness > 1.3 ? "accept_expensive" : "accept_fair",
-    };
-  }
-
-  // ── Counter-offer
-  if (totalCost > customer.budget && customer.offersReceived < customer.patience - 1) {
-    // Customer proposes what they can afford
-    const counterPrice = Math.floor(customer.budget / quantity * 0.85);
-    const counterQty = quantity > customer.preferredQty
-      ? customer.preferredQty
-      : quantity;
-    heatDelta += 1;
+  if (priceOK && budgetOK) {
+    // Customer accepts player's counter price — player may still push further
+    const heatDelta = Math.ceil(zoneDef.heatPerDeal * 0.5) + customer.offersReceived * 2;
     return {
       outcome: "counter",
-      counterPrice: Math.max(1, counterPrice),
-      counterQty,
+      counterPrice: pricePerUnit,
+      counterQty: quantity,
       suspicionDelta,
       heatDelta,
-      dialogueKey: fairness > 1.5 ? "counter_expensive" : "counter_normal",
+      dialogueKey: "accept_fair",
     };
   }
 
-  // ── Reject
-  heatDelta += 2;
+  // ── Reject (price too high or budget exceeded) — customer leaves
   return {
     outcome: "reject",
     suspicionDelta,
-    heatDelta,
-    dialogueKey: newSuspicion >= 50 ? "reject_suspicious" : "reject_normal",
+    heatDelta: Math.ceil(zoneDef.heatPerDeal * 0.3) + customer.offersReceived * 2,
+    dialogueKey: customer.offersReceived > 1 ? "counter_expensive" : "counter_normal",
   };
 }
 

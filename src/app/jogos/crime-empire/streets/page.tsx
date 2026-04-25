@@ -72,7 +72,7 @@ type Phase =
   | "arrested"        // police event
   | "loading";
 
-type Action = "offer" | "push" | "discount" | "rush";
+type Action = "offer" | "counter";
 
 interface LogEntry {
   icon: string;
@@ -88,17 +88,27 @@ interface FloatEntry { id: number; amount: number; left: number; }
 const DECISION_SECS = 30;
 
 const ZONE_ACCENT: Record<string, string> = {
-  bairro_antigo: "#d97706",
-  mercado_negro: "#a855f7",
-  porto:         "#0ea5e9",
-  aeroporto:     "#6366f1",
+  bairro_antigo:  "#d97706",
+  escola:         "#22c55e",
+  mercado_negro:  "#a855f7",
+  hospital:       "#ec4899",
+  porto:          "#0ea5e9",
+  discoteca:      "#8b5cf6",
+  zona_industrial:"#f97316",
+  aeroporto:      "#6366f1",
+  gueto:          "#dc2626",
 };
 
 const ZONE_GLOW: Record<string, string> = {
-  bairro_antigo: "rgba(217,119,6,0.06)",
-  mercado_negro: "rgba(168,85,247,0.06)",
-  porto:         "rgba(14,165,233,0.06)",
-  aeroporto:     "rgba(99,102,241,0.06)",
+  bairro_antigo:  "rgba(217,119,6,0.06)",
+  escola:         "rgba(34,197,94,0.06)",
+  mercado_negro:  "rgba(168,85,247,0.06)",
+  hospital:       "rgba(236,72,153,0.06)",
+  porto:          "rgba(14,165,233,0.06)",
+  discoteca:      "rgba(139,92,246,0.06)",
+  zona_industrial:"rgba(249,115,22,0.06)",
+  aeroporto:      "rgba(99,102,241,0.06)",
+  gueto:          "rgba(220,38,38,0.06)",
 };
 
 // ─── Portrait pool ────────────────────────────────────────────────────────────
@@ -431,14 +441,14 @@ export default function StreetsPage() {
       addLog("❓", "Quem está a observar?", "Difícil dizer por agora...");
     }
 
-    // Auto-select drug matching client's request
+    // Auto-select drug matching client's request, price = client's offer
     if (data.customer.requestedDrugName && drugs.length > 0) {
       const match = drugs.find((d: DrugItem) =>
         d.items.name.toLowerCase() === data.customer.requestedDrugName.toLowerCase()
       );
       const target = match ?? drugs[0];
       setSelectedDrug(target);
-      setPricePerUnit(Math.round(target.items.base_price * 1.2));
+      setPricePerUnit(Math.round(data.customer.requestedPriceExpectation));
       setQuantity(Math.min(data.customer.requestedQty ?? 10, target.quantity));
     }
   }
@@ -514,6 +524,12 @@ export default function StreetsPage() {
     await handleOutcome(data);
   }
 
+  async function pushMoreCounter() {
+    if (!session || !customer || !selectedDrug || counterPrice == null || counterQty == null) return;
+    const newPrice = Math.round(counterPrice * 1.05);
+    await submitOffer("counter", newPrice, counterQty);
+  }
+
   async function rejectCustomer() {
     if (!session) return;
     stopTimer();
@@ -570,13 +586,14 @@ export default function StreetsPage() {
     } else if (outcome === "counter") {
       setCounterPrice(data.counterPrice ?? null);
       setCounterQty(data.counterQty ?? null);
-      addLog("↔️", "Contra-proposta", `${customer?.name} propõe $${data.counterPrice}/u × ${data.counterQty}g`);
+      addLog("💰", "Cliente Aceita!", `${customer?.name} aceita $${data.counterPrice}/g — podes fechar ou subir mais.`);
       setPhase("counter");
       startTimer();
     } else if (outcome === "reject") {
-      addLog("❌", "Recusa", `${customer?.name} recusou a tua oferta.`);
-      setPhase("customer");
-      startTimer();
+      addLog("❌", "Recusa", `${customer?.name} recusou o teu preço e foi embora.`);
+      setCustomer(null);
+      setPhase("idle");
+      await fetchDrugs();
     } else if (outcome === "hostile") {
       addLog("⚡", "Cliente Hostil", `${customer?.name} ficou hostil e foi embora.`);
       setCustomer(null);
@@ -639,9 +656,10 @@ export default function StreetsPage() {
   const basePrice  = selectedDrug?.items.base_price ?? 100;
   const vignetteAlpha = Math.max(0, (heat - 20) / 80) * 0.65;
 
-  const fairPrice = customer ? Math.round(customer.requestedPriceExpectation) : Math.round(basePrice * 1.0);
-  const highPrice = Math.round(pricePerUnit * 1.2);
-  const lessQty   = Math.max(1, quantity - 2);
+  const fairPrice  = customer ? Math.round(customer.requestedPriceExpectation) : Math.round(basePrice * 1.0);
+  const counterPricePreview = Math.round(pricePerUnit * 1.05);
+  const counterTotal = counterPricePreview * quantity;
+  const nextCounterPreview = counterPrice != null ? Math.round(counterPrice * 1.05) : 0;
   const nextDrug  = drugs.length > 1 ? drugs[(drugs.indexOf(selectedDrug!) + 1) % drugs.length] ?? drugs[0] : null;
   const portrait  = customer ? pickPortrait(customer.type, customer.id) : null;
 
@@ -1152,27 +1170,32 @@ export default function StreetsPage() {
                 </div>
               )}
 
-              {/* Counter-offer */}
+              {/* Counter-offer accepted — player chooses to close or push more */}
               {phase === "counter" && counterPrice != null && counterQty != null && (
                 <div className="px-4 py-3 border-b border-[#141416] btn-reveal shrink-0">
-                  <div className="rounded-xl p-4" style={{ background: "linear-gradient(135deg,rgba(78,52,10,0.5),rgba(14,14,16,0.9))", border: "1px solid #3a2800" }}>
-                    <p className="text-yellow-600 font-black text-[10px] uppercase tracking-widest mb-2">↔ Contra-proposta</p>
-                    <div className="flex items-center justify-between mb-3">
-                      <p className="text-yellow-300 font-black text-2xl">${(counterPrice * counterQty).toLocaleString()}</p>
-                      <p className="text-yellow-800 text-xs">${counterPrice}/g × {counterQty}g</p>
+                  <div className="rounded-xl p-4" style={{ background: "linear-gradient(135deg,rgba(34,100,60,0.35),rgba(14,14,16,0.9))", border: "1px solid rgba(34,197,94,0.25)" }}>
+                    <p className="text-green-500 font-black text-[10px] uppercase tracking-widest mb-2">💰 Cliente Aceitou!</p>
+                    <div className="flex items-center justify-between mb-1">
+                      <p className="text-green-300 font-black text-2xl">${(counterPrice * counterQty).toLocaleString()}</p>
+                      <p className="text-green-800 text-xs">${counterPrice}/g × {counterQty}g</p>
                     </div>
+                    <p className="text-[#333] text-[10px] mb-3">Próximo: ${nextCounterPreview}/g · mais ganhos, mais calor</p>
                     <div className="grid grid-cols-2 gap-2">
                       <button onClick={acceptCounter}
                         className="py-2.5 rounded-lg font-black text-sm text-white transition-all hover:scale-105 active:scale-95"
                         style={{ background: "linear-gradient(135deg,#166534,#15803d)" }}>
-                        ✅ Aceitar
+                        ✅ Fechar Negócio
                       </button>
-                      <button onClick={() => { setPhase("customer"); startTimer(); addLog("↩", "Contra-proposta rejeitada", "Recusaste a proposta do cliente."); }}
-                        className="py-2.5 rounded-lg border border-[#2a2a2a] font-bold text-sm text-[#888] hover:text-white transition-all hover:scale-105 active:scale-95"
-                        style={{ background: "#111" }}>
-                        ❌ Rejeitar
+                      <button onClick={pushMoreCounter}
+                        className="py-2.5 rounded-lg font-bold text-sm text-white transition-all hover:scale-105 active:scale-95"
+                        style={{ background: "linear-gradient(135deg,#1e3a5f,#1d4ed8)", border: "1px solid rgba(99,102,241,0.3)" }}>
+                        📈 +5% (${nextCounterPreview}/g)
                       </button>
                     </div>
+                    <button onClick={() => { addLog("↩", "Desistência", "Desististe da negociação."); setCustomer(null); setPhase("idle"); fetchDrugs(); }}
+                      className="mt-2 w-full py-1.5 rounded-lg border border-[#1e1e1e] font-bold text-[11px] text-[#444] hover:text-[#888] transition-all">
+                      ✖ Desistir
+                    </button>
                   </div>
                 </div>
               )}
@@ -1199,28 +1222,38 @@ export default function StreetsPage() {
                 <div className="px-4 py-3 btn-reveal shrink-0">
                   <p className="text-[9px] font-black tracking-[0.2em] text-[#333] uppercase mb-3">O Que Vai Fazer?</p>
 
-                  {/* ── MOBILE: full-width list ── */}
-                  <div className="flex flex-col gap-2 md:hidden">
+                  {/* Customer offer summary */}
+                  {customer && (
+                    <div className="mb-3 px-3 py-2 rounded-lg" style={{ background: "rgba(34,197,94,0.05)", border: "1px solid rgba(34,197,94,0.12)" }}>
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] text-[#444] font-bold uppercase tracking-wider">Oferta do Cliente</span>
+                        <span className="text-green-400 font-black text-sm">${(fairPrice * quantity).toLocaleString()}</span>
+                      </div>
+                      <p className="text-[#353535] text-[10px] mt-0.5">${fairPrice}/g × {quantity}g · contra-oferta ${counterPricePreview}/g (${counterTotal.toLocaleString()})</p>
+                    </div>
+                  )}
+
+                  <div className="flex flex-col gap-2">
                     {/* ACCEPT */}
                     <button
-                      onClick={() => { if (!customer) return; setPricePerUnit(fairPrice); setQuantity(customer.requestedQty); submitOffer("offer", fairPrice, customer.requestedQty); }}
+                      onClick={() => { if (!customer) return; submitOffer("offer", fairPrice, quantity); }}
                       disabled={!selectedDrug}
                       className="flex items-center gap-3 w-full px-4 py-3.5 rounded-xl transition-all active:scale-95 disabled:opacity-30"
                       style={{ background: "rgba(34,197,94,0.08)", border: "1px solid rgba(34,197,94,0.2)" }}>
                       <div className="w-9 h-9 rounded-full flex items-center justify-center shrink-0" style={{ background: "rgba(34,197,94,0.14)" }}>
-                        <span className="text-lg">🤝</span>
+                        <span className="text-lg">✅</span>
                       </div>
                       <div className="flex-1 text-left">
-                        <p className="text-white font-black text-sm leading-tight">ACEITAR NEGÓCIO</p>
-                        <p className="text-[#555] text-[11px] mt-0.5">Fechar o acordo por um preço justo.</p>
+                        <p className="text-white font-black text-sm leading-tight">ACEITAR</p>
+                        <p className="text-[#555] text-[11px] mt-0.5">Fechar pelo preço do cliente · <span className="text-green-700">+1 calor</span></p>
                       </div>
-                      <p className="font-black text-sm shrink-0" style={{ color: "#4ade80" }}>${fairPrice.toLocaleString()}</p>
+                      <p className="font-black text-sm shrink-0" style={{ color: "#4ade80" }}>${fairPrice.toLocaleString()}/g</p>
                       <span className="text-[#333] shrink-0">›</span>
                     </button>
 
-                    {/* RAISE PRICE */}
+                    {/* COUNTER +5% */}
                     <button
-                      onClick={() => submitOffer("push", highPrice, quantity)}
+                      onClick={() => { if (!customer) return; submitOffer("counter", counterPricePreview, quantity); }}
                       disabled={!selectedDrug}
                       className="flex items-center gap-3 w-full px-4 py-3.5 rounded-xl transition-all active:scale-95 disabled:opacity-30"
                       style={{ background: "rgba(99,102,241,0.07)", border: "1px solid rgba(99,102,241,0.2)" }}>
@@ -1228,41 +1261,10 @@ export default function StreetsPage() {
                         <span className="text-lg">📈</span>
                       </div>
                       <div className="flex-1 text-left">
-                        <p className="text-white font-black text-sm leading-tight">AUMENTAR PREÇO</p>
-                        <p className="text-[#555] text-[11px] mt-0.5">Tentar ganhar mais.</p>
+                        <p className="text-white font-black text-sm leading-tight">CONTRA-OFERTA +5%</p>
+                        <p className="text-[#555] text-[11px] mt-0.5">Pedir mais · <span className="text-indigo-600">calor sobe com a ganância</span></p>
                       </div>
-                      <span className="text-[#333] shrink-0">›</span>
-                    </button>
-
-                    {/* LOWER QTY */}
-                    <button
-                      onClick={() => submitOffer("offer", pricePerUnit, lessQty)}
-                      disabled={!selectedDrug || quantity <= 1}
-                      className="flex items-center gap-3 w-full px-4 py-3.5 rounded-xl transition-all active:scale-95 disabled:opacity-30"
-                      style={{ background: "rgba(148,163,184,0.04)", border: "1px solid rgba(148,163,184,0.12)" }}>
-                      <div className="w-9 h-9 rounded-full flex items-center justify-center shrink-0" style={{ background: "rgba(148,163,184,0.08)" }}>
-                        <span className="text-lg">🎒</span>
-                      </div>
-                      <div className="flex-1 text-left">
-                        <p className="text-white font-black text-sm leading-tight">REDUZIR QUANTIDADE</p>
-                        <p className="text-[#555] text-[11px] mt-0.5">Oferecer menos.</p>
-                      </div>
-                      <span className="text-[#333] shrink-0">›</span>
-                    </button>
-
-                    {/* SWAP */}
-                    <button
-                      onClick={() => { if (nextDrug) { setSelectedDrug(nextDrug); setPricePerUnit(Math.round(nextDrug.items.base_price * 1.2)); setQuantity(Math.min(customer?.requestedQty ?? 5, nextDrug.quantity)); } }}
-                      disabled={!nextDrug}
-                      className="flex items-center gap-3 w-full px-4 py-3.5 rounded-xl transition-all active:scale-95 disabled:opacity-30"
-                      style={{ background: "rgba(148,163,184,0.04)", border: "1px solid rgba(148,163,184,0.12)" }}>
-                      <div className="w-9 h-9 rounded-full flex items-center justify-center shrink-0" style={{ background: "rgba(148,163,184,0.08)" }}>
-                        <span className="text-lg">🔄</span>
-                      </div>
-                      <div className="flex-1 text-left">
-                        <p className="text-white font-black text-sm leading-tight">TROCAR PRODUTO</p>
-                        <p className="text-[#555] text-[11px] mt-0.5">Oferecer algo diferente.</p>
-                      </div>
+                      <p className="font-black text-sm shrink-0" style={{ color: "#818cf8" }}>${counterPricePreview.toLocaleString()}/g</p>
                       <span className="text-[#333] shrink-0">›</span>
                     </button>
 
@@ -1279,100 +1281,6 @@ export default function StreetsPage() {
                         <p className="text-[11px] mt-0.5" style={{ color: "#f87171" }}>Dispensar o cliente.</p>
                       </div>
                       <span className="text-[#333] shrink-0">›</span>
-                    </button>
-                  </div>
-
-                  {/* ── DESKTOP/TABLET: original 5-column grid ── */}
-                  <div className="hidden md:grid grid-cols-5 gap-2">
-
-                    {/* ACCEPT DEAL */}
-                    <button
-                      onClick={() => {
-                        if (!customer) return;
-                        setPricePerUnit(fairPrice);
-                        setQuantity(customer.requestedQty);
-                        submitOffer("offer", fairPrice, customer.requestedQty);
-                      }}
-                      disabled={!selectedDrug}
-                      className="flex flex-col items-center gap-2 py-4 px-1 rounded-xl transition-all hover:scale-105 active:scale-95 disabled:opacity-30"
-                      style={{ background: "rgba(34,197,94,0.07)", border: "1px solid rgba(34,197,94,0.18)" }}>
-                      <div className="w-9 h-9 rounded-full flex items-center justify-center"
-                        style={{ background: "rgba(34,197,94,0.14)" }}>
-                        <span className="text-lg">🤝</span>
-                      </div>
-                      <div className="text-center">
-                        <p className="text-white font-black text-[10px] leading-tight">ACEITAR</p>
-                        <p className="font-black text-[11px] mt-0.5" style={{ color: "#4ade80" }}>${fairPrice.toLocaleString()}</p>
-                      </div>
-                    </button>
-
-                    {/* RAISE PRICE */}
-                    <button
-                      onClick={() => submitOffer("push", highPrice, quantity)}
-                      disabled={!selectedDrug}
-                      className="flex flex-col items-center gap-2 py-4 px-1 rounded-xl transition-all hover:scale-105 active:scale-95 disabled:opacity-30"
-                      style={{ background: "rgba(99,102,241,0.07)", border: "1px solid rgba(99,102,241,0.18)" }}>
-                      <div className="w-9 h-9 rounded-full flex items-center justify-center"
-                        style={{ background: "rgba(99,102,241,0.14)" }}>
-                        <span className="text-lg">📈</span>
-                      </div>
-                      <div className="text-center">
-                        <p className="text-white font-black text-[10px] leading-tight">SUBIR PREÇO</p>
-                        <p className="text-[10px] mt-0.5" style={{ color: "#818cf8" }}>Pedir mais</p>
-                      </div>
-                    </button>
-
-                    {/* LOWER QUANTITY */}
-                    <button
-                      onClick={() => submitOffer("offer", pricePerUnit, lessQty)}
-                      disabled={!selectedDrug || quantity <= 1}
-                      className="flex flex-col items-center gap-2 py-4 px-1 rounded-xl transition-all hover:scale-105 active:scale-95 disabled:opacity-30"
-                      style={{ background: "rgba(148,163,184,0.04)", border: "1px solid rgba(148,163,184,0.1)" }}>
-                      <div className="w-9 h-9 rounded-full flex items-center justify-center"
-                        style={{ background: "rgba(148,163,184,0.08)" }}>
-                        <span className="text-lg">🎒</span>
-                      </div>
-                      <div className="text-center">
-                        <p className="text-white font-black text-[10px] leading-tight">MENOS QTD</p>
-                        <p className="text-[10px] mt-0.5 text-[#555]">Oferecer menos</p>
-                      </div>
-                    </button>
-
-                    {/* SWAP PRODUCT */}
-                    <button
-                      onClick={() => {
-                        if (nextDrug) {
-                          setSelectedDrug(nextDrug);
-                          setPricePerUnit(Math.round(nextDrug.items.base_price * 1.2));
-                          setQuantity(Math.min(customer?.requestedQty ?? 5, nextDrug.quantity));
-                        }
-                      }}
-                      disabled={!nextDrug}
-                      className="flex flex-col items-center gap-2 py-4 px-1 rounded-xl transition-all hover:scale-105 active:scale-95 disabled:opacity-30"
-                      style={{ background: "rgba(148,163,184,0.04)", border: "1px solid rgba(148,163,184,0.1)" }}>
-                      <div className="w-9 h-9 rounded-full flex items-center justify-center"
-                        style={{ background: "rgba(148,163,184,0.08)" }}>
-                        <span className="text-lg">🔄</span>
-                      </div>
-                      <div className="text-center">
-                        <p className="text-white font-black text-[10px] leading-tight">TROCAR</p>
-                        <p className="text-[10px] mt-0.5 text-[#555] truncate max-w-full px-1">{nextDrug?.items.name ?? "—"}</p>
-                      </div>
-                    </button>
-
-                    {/* REJECT */}
-                    <button
-                      onClick={rejectCustomer}
-                      className="flex flex-col items-center gap-2 py-4 px-1 rounded-xl transition-all hover:scale-105 active:scale-95"
-                      style={{ background: "rgba(239,68,68,0.07)", border: "1px solid rgba(239,68,68,0.18)" }}>
-                      <div className="w-9 h-9 rounded-full flex items-center justify-center"
-                        style={{ background: "rgba(239,68,68,0.12)" }}>
-                        <span className="text-lg">✖</span>
-                      </div>
-                      <div className="text-center">
-                        <p className="text-white font-black text-[10px] leading-tight">REJEITAR</p>
-                        <p className="text-[10px] mt-0.5" style={{ color: "#f87171" }}>Mandar embora</p>
-                      </div>
                     </button>
                   </div>
 

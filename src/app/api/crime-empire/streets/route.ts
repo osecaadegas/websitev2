@@ -295,40 +295,95 @@ async function handleNegotiate(body: any, user: any) {
     return NextResponse.json({ error: `Stock insuficiente (${(entry as any).quantity}g)` }, { status: 400 });
   }
 
-  const { data: rawCustomer } = await supabase
-    .from("street_customers")
-    .select("*")
-    .eq("id", customerId)
-    .single();
-  if (!rawCustomer) return NextResponse.json({ error: "Cliente não encontrado" }, { status: 404 });
+  // ── Build customer state ──────────────────────────────────────────────────
+  // Workers are not in street_customers — build entirely from customerState.
+  // For other types, fall back to street_customers if state is missing.
+  let customer: SpawnedCustomer;
+  if (customerState?.type === "worker") {
+    if (!customerState?.requestedPriceExpectation) {
+      return NextResponse.json({ error: "Estado do cliente em falta" }, { status: 400 });
+    }
+    customer = {
+      id: customerId,
+      name: customerState.name ?? "Trabalhadora",
+      type: "worker",
+      budget: customerState.budget ?? 1000,
+      patience: customerState.patience ?? 5,
+      riskTolerance: customerState.riskTolerance ?? 0.3,
+      snitchChance: customerState.snitchChance ?? 0.02,
+      preferredQty: customerState.preferredQty ?? 5,
+      offersReceived: customerState.offersReceived ?? 0,
+      suspicion: customerState.suspicion ?? 0,
+      requestedDrugName: customerState.requestedDrugName ?? item?.name ?? "produto",
+      requestedQty: customerState.requestedQty ?? 5,
+      requestedPriceExpectation: customerState.requestedPriceExpectation,
+      flexibility: customerState.flexibility ?? 0.5,
+    };
+  } else {
+    const { data: rawCustomer } = await supabase
+      .from("street_customers")
+      .select("*")
+      .eq("id", customerId)
+      .single();
+    if (!rawCustomer) return NextResponse.json({ error: "Cliente não encontrado" }, { status: 404 });
 
-  const customer: SpawnedCustomer = {
-    id: rawCustomer.id,
-    name: rawCustomer.type === "undercover" ? "???" : rawCustomer.name,
-    type: rawCustomer.type as CustomerType,
-    budget: customerState?.budget ?? rawCustomer.budget_min,
-    patience: customerState?.patience ?? rawCustomer.patience,
-    riskTolerance: rawCustomer.risk_tolerance,
-    snitchChance: rawCustomer.snitch_chance,
-    preferredQty: rawCustomer.preferred_quantity,
-    offersReceived: customerState?.offersReceived ?? 0,
-    suspicion: customerState?.suspicion ?? 0,
-    requestedDrugName: customerState?.requestedDrugName ?? item?.name ?? "produto",
-    requestedQty: customerState?.requestedQty ?? rawCustomer.preferred_quantity,
-    requestedPriceExpectation: customerState?.requestedPriceExpectation ?? rawCustomer.budget_min,
-    flexibility: customerState?.flexibility ?? 0.4,
-  };
+    customer = {
+      id: rawCustomer.id,
+      name: rawCustomer.type === "undercover" ? "???" : rawCustomer.name,
+      type: rawCustomer.type as CustomerType,
+      budget: customerState?.budget ?? rawCustomer.budget_min,
+      patience: customerState?.patience ?? rawCustomer.patience,
+      riskTolerance: rawCustomer.risk_tolerance,
+      snitchChance: rawCustomer.snitch_chance,
+      preferredQty: rawCustomer.preferred_quantity,
+      offersReceived: customerState?.offersReceived ?? 0,
+      suspicion: customerState?.suspicion ?? 0,
+      requestedDrugName: customerState?.requestedDrugName ?? item?.name ?? "produto",
+      requestedQty: customerState?.requestedQty ?? rawCustomer.preferred_quantity,
+      requestedPriceExpectation: customerState?.requestedPriceExpectation ?? rawCustomer.budget_min,
+      flexibility: customerState?.flexibility ?? 0.4,
+    };
+  }
 
   // Scale snitch chance by police intensity before negotiation engine sees it
   const policeMult = await getPoliceMultiplier();
   customer.snitchChance = Math.min(1, customer.snitchChance * policeMult);
 
+  // ── OFFER: player accepts customer's price instantly (heat +1) ────────────
+  if (negotiationAction === "offer") {
+    const earned = Math.floor(pricePerUnit * quantity * zone.rewardMult);
+    const heatDelta = 1;
+    const newHeat = Math.min(100, session.heat + heatDelta);
+    const baseArrestRisk = (player.class === "dealer" ? 0.05 : 0.10) * policeMult;
+    const arrestRisk = baseArrestRisk + zone.riskMod;
+    const caught = Math.random() < arrestRisk;
+    if (caught) {
+      return await triggerArrest(sessionId, player.id, quantity, entry, item, zone, newHeat, policeMult, earned);
+    }
+    await supabase.from("street_sessions").update({ heat: newHeat }).eq("id", sessionId);
+    await deductInventory(inventoryId, (entry as any).quantity, quantity);
+    await grantDirtyMoney(player.id, earned);
+    await grantXP(player.id, Math.max(5, Math.floor(earned / 50)));
+    await supabase.from("street_deals").insert({
+      session_id: sessionId, customer_id: customerId, item_id: item.id,
+      offered_price: pricePerUnit, agreed_price: pricePerUnit, quantity,
+      success: true, snitched: false, heat_added: heatDelta,
+    });
+    const dialogue = getDialogue(customer.type, "accept_fair", { drug: item.name, qty: quantity });
+    return NextResponse.json({
+      outcome: "accept", earned, dialogue,
+      heat: newHeat, heatStage: getHeatStage(newHeat),
+      suspicion: 0, offersReceived: 1,
+    });
+  }
+
+  // ── COUNTER: player pushes price +5% ─────────────────────────────────────
   const result = resolveNegotiation({
     customer,
     pricePerUnit,
     quantity,
     itemBasePrice: item.base_price,
-    action: negotiationAction as "offer" | "push" | "discount" | "rush",
+    action: "counter",
     zoneDef: zone,
     playerLevel: player.level,
   });
