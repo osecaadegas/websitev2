@@ -119,14 +119,24 @@ function generateIntelHint(segments: Tile[]): string {
 async function generateSessionLoot(
   seed: number,
   coverage: number,
+  forcedDrugId?: string | null,
 ): Promise<{ item_id: string; item_name: string; quantity: number; unit_value: number; category: string; rarity: string; image_url: string | null }[]> {
   const tier = coverage >= 0.9 ? 1.0 : coverage >= 0.6 ? 0.7 : coverage >= 0.3 ? 0.4 : 0.15;
 
-  const { data: drugs } = await supabase
+  let drugsQuery = supabase
     .from("items")
     .select("id, name, base_price, rarity, image_url")
     .eq("category", "drug")
     .order("base_price", { ascending: false });
+
+  if (forcedDrugId) {
+    drugsQuery = supabase
+      .from("items")
+      .select("id, name, base_price, rarity, image_url")
+      .eq("id", forcedDrugId);
+  }
+
+  const { data: drugs } = await drugsQuery;
 
   const { data: luxury } = await supabase
     .from("items")
@@ -438,7 +448,7 @@ export async function POST(req: NextRequest) {
 
     const { data: crash } = await supabase
       .from("plane_crashes")
-      .select("id, status, wreck_segments, total_segments, loot_seed")
+      .select("id, status, wreck_segments, total_segments, loot_seed, forced_drug_id")
       .eq("id", crashId)
       .single();
 
@@ -457,7 +467,7 @@ export async function POST(req: NextRequest) {
 
     const totalSegs = crash.total_segments > 0 ? crash.total_segments : 1;
     const coverage = session.hits / totalSegs;
-    const items = await generateSessionLoot(crash.loot_seed, coverage);
+    const items = await generateSessionLoot(crash.loot_seed, coverage, crash.forced_drug_id);
 
     for (const item of items) {
       const { data: inv } = await supabase

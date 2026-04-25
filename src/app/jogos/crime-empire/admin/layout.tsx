@@ -15,6 +15,7 @@ const NAV = [
   { href: `${BASE}/shop`,       label: "Loja",        icon: "🛒" },
   { href: `${BASE}/players`,    label: "Jogadores",   icon: "👥" },
   { href: `${BASE}/system`,     label: "Controlo",    icon: "🎛️" },
+  { href: `${BASE}/events`,     label: "Eventos",     icon: "🎯" },
   { href: `${BASE}/logs`,       label: "Logs",        icon: "📋" },
   { href: `${BASE}/streets`,    label: "Ruas",        icon: "🛣️" },
   { href: `${BASE}/pvp`,        label: "PvP",         icon: "⚔️" },
