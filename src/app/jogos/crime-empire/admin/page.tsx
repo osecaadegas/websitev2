@@ -52,14 +52,14 @@ export default function CEAdminHub() {
   }, []);
 
   const STAT_CARDS = [
-    { label: "Jogadores",       value: stats?.players,       icon: "👥", href: `${BASE}/players`,              color: "#3b82f6" },
-    { label: "Crimes",          value: stats?.crimes,        icon: "💰", href: `${BASE}/crimes`,               color: "#f59e0b" },
-    { label: "Negócios",        value: stats?.businesses,    icon: "🏢", href: `${BASE}/businesses`,           color: "#22c55e" },
-    { label: "Items",           value: stats?.items,         icon: "⚔️", href: `${BASE}/items`,                color: "#a855f7" },
-    { label: "Na Prisão",       value: stats?.jailed,        icon: "🚔", href: `${BASE}/players?jailed=true`,  color: "#ef4444" },
-    { label: "Loja (listings)", value: stats?.shop_listings, icon: "🏪", href: `${BASE}/shop`,                 color: "#ff6a00" },
-    { label: "Contratos",        value: stats?.contracts,      icon: "🎯", href: `${BASE}/contracts`,            color: "#ef4444" },
-    { label: "Batalhas PvP",     value: stats?.pvp_battles,   icon: "⚔️", href: `${BASE}/pvp`,                  color: "#ef4444" },
+    { label: "Jogadores",       value: stats?.players,       icon: "👥", href: `${BASE}/players`             },
+    { label: "Na Prisão",       value: stats?.jailed,        icon: "🚔", href: `${BASE}/players?jailed=true` },
+    { label: "Crimes",          value: stats?.crimes,        icon: "💰", href: `${BASE}/crimes`              },
+    { label: "Negócios",        value: stats?.businesses,    icon: "🏢", href: `${BASE}/businesses`          },
+    { label: "Items",           value: stats?.items,         icon: "⚔️", href: `${BASE}/items`               },
+    { label: "Loja",            value: stats?.shop_listings, icon: "🛒", href: `${BASE}/shop`                },
+    { label: "Contratos",       value: stats?.contracts,     icon: "📄", href: `${BASE}/contracts`           },
+    { label: "Batalhas PvP",    value: stats?.pvp_battles,   icon: "🥊", href: `${BASE}/pvp`                 },
   ];
 
   const actionColor = (action: string) => {
@@ -96,18 +96,18 @@ export default function CEAdminHub() {
       </div>
 
       {/* Stats grid */}
-      <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4 mb-8">
+      <div className="grid grid-cols-2 sm:grid-cols-4 xl:grid-cols-8 gap-3 mb-8">
         {STAT_CARDS.map((card) => (
           <Link
             key={card.label}
             href={card.href}
-            className="bg-[#0e0e0e] border border-[#1e1e1e] rounded-xl p-4 hover:border-[#333] transition-all group"
+            className="bg-[#0e0e0e] border border-[#1a1a1a] rounded-xl p-4 hover:border-[#333] transition-all group flex flex-col gap-1"
           >
-            <div className="text-2xl mb-2">{card.icon}</div>
-            <div className="text-2xl font-black text-white group-hover:text-[#ff6a00] transition-colors">
+            <span className="text-xl leading-none">{card.icon}</span>
+            <span className="text-2xl font-black text-white group-hover:text-[#ff6a00] transition-colors">
               {stats ? (card.value ?? 0).toLocaleString() : "–"}
-            </div>
-            <div className="text-xs text-[#555] mt-1">{card.label}</div>
+            </span>
+            <span className="text-[10px] text-[#444] leading-tight">{card.label}</span>
           </Link>
         ))}
       </div>
@@ -115,17 +115,18 @@ export default function CEAdminHub() {
       {/* Quick links + Recent logs */}
       <div className="grid md:grid-cols-2 gap-6">
         {/* Quick actions */}
-        <div className="bg-[#0e0e0e] border border-[#1e1e1e] rounded-xl p-5">
-          <h2 className="font-bold text-white mb-4">Ações Rápidas</h2>
+        <div className="bg-[#0e0e0e] border border-[#1a1a1a] rounded-xl p-5">
+          <h2 className="font-bold text-white mb-4 text-sm">Ações Rápidas</h2>
           <div className="grid grid-cols-2 gap-2">
             {[
-              { href: `${BASE}/items`,      label: "+ Novo Item",    color: "bg-purple-600/20 text-purple-400 hover:bg-purple-600/30" },
-              { href: `${BASE}/crimes`,     label: "+ Novo Crime",   color: "bg-yellow-600/20 text-yellow-400 hover:bg-yellow-600/30" },
-              { href: `${BASE}/businesses`, label: "+ Novo Negócio", color: "bg-green-600/20 text-green-400 hover:bg-green-600/30" },
-              { href: `${BASE}/shop`,       label: "+ Listing Loja", color: "bg-orange-600/20 text-orange-400 hover:bg-orange-600/30" },
-              { href: `${BASE}/system`,     label: "🎛️ Controlo",    color: "bg-blue-600/20 text-blue-400 hover:bg-blue-600/30" },
-              { href: `${BASE}/logs`,       label: "📋 Ver Logs",    color: "bg-[#1a1a1a] text-[#888] hover:text-white" },
-              { href: `${BASE}/system`,     label: "🛣️ Config Ruas", color: "bg-emerald-600/20 text-emerald-400 hover:bg-emerald-600/30 col-span-2" },
+              { href: `${BASE}/items`,      label: "+ Novo Item",     color: "bg-purple-600/20 text-purple-400 hover:bg-purple-600/30" },
+              { href: `${BASE}/crimes`,     label: "+ Novo Crime",    color: "bg-yellow-600/20 text-yellow-400 hover:bg-yellow-600/30" },
+              { href: `${BASE}/businesses`, label: "+ Novo Negócio",  color: "bg-green-600/20 text-green-400 hover:bg-green-600/30" },
+              { href: `${BASE}/contracts`,  label: "+ Novo Contrato", color: "bg-red-600/20 text-red-400 hover:bg-red-600/30" },
+              { href: `${BASE}/shop`,       label: "+ Listing Loja",  color: "bg-orange-600/20 text-orange-400 hover:bg-orange-600/30" },
+              { href: `${BASE}/events`,     label: "🎯 Eventos",      color: "bg-blue-600/20 text-blue-400 hover:bg-blue-600/30" },
+              { href: `${BASE}/system`,     label: "🎛️ Controlo",     color: "bg-indigo-600/20 text-indigo-400 hover:bg-indigo-600/30" },
+              { href: `${BASE}/streets`,    label: "🛣️ Ruas",         color: "bg-emerald-600/20 text-emerald-400 hover:bg-emerald-600/30" },
             ].map((btn) => (
               <Link
                 key={btn.label}
@@ -139,9 +140,9 @@ export default function CEAdminHub() {
         </div>
 
         {/* Recent audit logs */}
-        <div className="bg-[#0e0e0e] border border-[#1e1e1e] rounded-xl p-5">
+        <div className="bg-[#0e0e0e] border border-[#1a1a1a] rounded-xl p-5">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="font-bold text-white">Logs Recentes</h2>
+            <h2 className="font-bold text-white text-sm">Logs Recentes</h2>
             <Link href={`${BASE}/logs`} className="text-xs text-[#ff6a00] hover:underline">Ver todos →</Link>
           </div>
           {logs.length === 0 ? (
