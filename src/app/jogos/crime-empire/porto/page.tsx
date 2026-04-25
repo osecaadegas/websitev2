@@ -195,23 +195,25 @@ function DeliveryForm({
 
   return (
     <div className="mt-4 space-y-3">
-      <div className="flex items-center gap-3 bg-[#0c0c0c] rounded-xl p-3 border border-[#1c1c1c]">
-        {matchingDrug.image_url ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={matchingDrug.image_url} alt={matchingDrug.item_name} className="w-10 h-10 object-contain rounded flex-shrink-0" />
-        ) : (
-          <div className="w-10 h-10 rounded bg-[#1a1a1a] flex items-center justify-center text-xl flex-shrink-0">💊</div>
-        )}
-        <div className="flex-1 min-w-0">
-          <p className="text-white text-sm font-bold">{matchingDrug.item_name}</p>
-          <p className="text-[#555] text-xs">Tens: {fmt(available)}g · Max por entrega: {fmt(ship.max_delivery)}g</p>
-          {parsedQty > 0 && parsedQty <= maxQty && (
-            <p className="text-sky-400 text-xs font-semibold mt-0.5">
-              Recebes: 💵 {fmt(preview)} imediatamente
-            </p>
+      <div className="bg-[#0c0c0c] rounded-xl p-3 border border-[#1c1c1c] space-y-3">
+        <div className="flex items-center gap-3">
+          {matchingDrug.image_url ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={matchingDrug.image_url} alt={matchingDrug.item_name} className="w-10 h-10 object-contain rounded flex-shrink-0" />
+          ) : (
+            <div className="w-10 h-10 rounded bg-[#1a1a1a] flex items-center justify-center text-xl flex-shrink-0">💊</div>
           )}
+          <div className="flex-1 min-w-0">
+            <p className="text-white text-sm font-bold truncate">{matchingDrug.item_name}</p>
+            <p className="text-[#555] text-xs">Tens: {fmt(available)}g · Max: {fmt(ship.max_delivery)}g</p>
+            {parsedQty > 0 && parsedQty <= maxQty && (
+              <p className="text-sky-400 text-xs font-semibold mt-0.5">
+                Recebes: 💵 {fmt(preview)}
+              </p>
+            )}
+          </div>
         </div>
-        <div className="flex items-center gap-2 flex-shrink-0">
+        <div className="flex items-center gap-2">
           <input
             type="number"
             min={1}
@@ -219,7 +221,7 @@ function DeliveryForm({
             value={qty}
             placeholder="0"
             onChange={(e) => setQty(e.target.value)}
-            className="w-24 bg-[#141414] border border-[#2a2a2a] text-white text-sm rounded-lg px-2.5 py-2 text-center focus:outline-none focus:border-sky-700"
+            className="flex-1 min-w-0 bg-[#141414] border border-[#2a2a2a] text-white text-sm rounded-lg px-2.5 py-2 text-center focus:outline-none focus:border-sky-700"
           />
           <button
             disabled={maxQty <= 0}
@@ -237,7 +239,6 @@ function DeliveryForm({
           </button>
         </div>
       </div>
-
     </div>
   );
 }
@@ -478,7 +479,7 @@ export default function PortoShipsPage() {
     <div className="flex-1 p-4 md:p-6 max-w-7xl mx-auto w-full">
       {toast && <CEToast msg={toast.msg} ok={toast.ok} />}
 
-      <div className="mb-6 flex items-center justify-between gap-4">
+      <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <span className="text-3xl">⚓</span>
           <div>
@@ -486,14 +487,14 @@ export default function PortoShipsPage() {
             <p className="text-[#444] text-sm">Contrabando maritimo · Eventos competitivos</p>
           </div>
         </div>
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2 bg-[#0e0e0e] border border-[#1e1e1e] rounded-xl px-4 py-2">
-            <span className="text-[#555] text-xs">Dinheiro Sujo</span>
-            <span className="text-white font-black text-sm">💵 {fmt(player.dirty_cash)}</span>
+        <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex items-center gap-2 bg-[#0e0e0e] border border-[#1e1e1e] rounded-xl px-3 py-2 flex-1 min-w-0 sm:flex-none">
+            <span className="text-[#555] text-xs whitespace-nowrap">Dinheiro Sujo</span>
+            <span className="text-white font-black text-sm truncate">💵 {fmt(player.dirty_cash)}</span>
           </div>
-          <div className="flex items-center gap-2 bg-[#0e0e0e] border border-[#1e1e1e] rounded-xl px-4 py-2">
-            <span className="text-[#555] text-xs">Crypto</span>
-            <span className="text-violet-300 font-black text-sm">💎 {fmt(player.crypto ?? 0)}</span>
+          <div className="flex items-center gap-2 bg-[#0e0e0e] border border-[#1e1e1e] rounded-xl px-3 py-2 flex-1 min-w-0 sm:flex-none">
+            <span className="text-[#555] text-xs whitespace-nowrap">Crypto</span>
+            <span className="text-violet-300 font-black text-sm truncate">💎 {fmt(player.crypto ?? 0)}</span>
           </div>
         </div>
       </div>
@@ -506,10 +507,10 @@ export default function PortoShipsPage() {
           {currentShip ? (
             <div className={`rounded-2xl border-2 p-5 transition-all shadow-xl ${classMeta?.border ?? "border-[#1c1c1c]"} bg-gradient-to-br from-[#0a0f1a] to-[#080808]`}>
               <div className="flex items-start justify-between gap-3 mb-5">
-                <div>
+                <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2 mb-1">
-                    <span className="text-2xl">🚢</span>
-                    <h2 className="text-xl font-black text-white">{currentShip.name}</h2>
+                    <span className="text-2xl flex-shrink-0">🚢</span>
+                    <h2 className="text-lg sm:text-xl font-black text-white truncate">{currentShip.name}</h2>
                   </div>
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${classMeta?.badge}`}>
