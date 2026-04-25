@@ -215,13 +215,35 @@ export default function GlobalLockEscape({
   const levelColor  = LEVEL_COLORS[level];
 
   const content = (
-    <div className="fixed inset-0 z-[9999] bg-black/97 flex flex-col items-center justify-center overflow-hidden select-none">
+    <div className="fixed inset-0 z-[9999] bg-black/97 flex flex-col items-center justify-center select-none">
       {/* Alternating red/blue siren flash */}
       {(phase === "intro" || phase === "game") && (
         <>
           <div className="absolute inset-y-0 left-0 w-1/2 bg-red-600/10 pointer-events-none animate-siren-left" />
           <div className="absolute inset-y-0 right-0 w-1/2 bg-blue-600/10 pointer-events-none animate-siren-right" />
         </>
+      )}
+
+      {/* Thief — slides from off-screen-left to off-screen-right, loops every 2 s */}
+      {(phase === "intro" || phase === "game") && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src="/images/crime_empire/thief-minigame.png"
+          alt=""
+          className="absolute pointer-events-none z-[2] animate-thiefRun"
+          style={{ bottom: "6%", height: "180px", width: "auto" }}
+        />
+      )}
+
+      {/* Police officer — slides up from bottom-left when minigame starts */}
+      {phase === "game" && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src="/images/crime_empire/police-minigame.png"
+          alt=""
+          className="absolute bottom-0 left-6 pointer-events-none z-[1] animate-policeSlideUp"
+          style={{ height: "260px", width: "auto" }}
+        />
       )}
 
       {/* ── INTRO ─────────────────────────────────────────────────────── */}
@@ -421,6 +443,10 @@ export default function GlobalLockEscape({
         .animate-siren-right { animation: sirenRight 0.7s ease-in-out infinite; }
         @keyframes raidFadeIn { from{opacity:0;transform:scale(0.93)} to{opacity:1;transform:scale(1)} }
         .animate-raidFadeIn { animation: raidFadeIn 0.35s ease-out forwards; }
+        @keyframes thiefRun { 0%{transform:translateX(-190px)} 100%{transform:translateX(calc(100vw + 60px))} }
+        .animate-thiefRun { animation: thiefRun 2000ms linear infinite; }
+        @keyframes policeSlideUp { from{transform:translateY(120%);opacity:0} to{transform:translateY(0);opacity:1} }
+        .animate-policeSlideUp { animation: policeSlideUp 0.7s ease-out forwards; }
       `}</style>
     </div>
   );
