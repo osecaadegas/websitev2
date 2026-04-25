@@ -244,6 +244,13 @@ function DeliveryForm({
             className="w-24 bg-[#141414] border border-[#2a2a2a] text-white text-sm rounded-lg px-2.5 py-2 text-center focus:outline-none focus:border-sky-700"
           />
           <button
+            disabled={maxQty <= 0}
+            onClick={() => setQty(String(maxQty))}
+            className="px-3 py-2 rounded-lg bg-[#1e1e1e] hover:bg-[#2a2a2a] disabled:opacity-40 disabled:cursor-not-allowed text-[#aaa] hover:text-white text-xs font-bold transition-colors whitespace-nowrap border border-[#2a2a2a]"
+          >
+            Max
+          </button>
+          <button
             disabled={processing || parsedQty <= 0 || parsedQty > maxQty}
             onClick={() => { onDeliver(matchingDrug.item_id, parsedQty); setQty(""); }}
             className="px-4 py-2 rounded-lg bg-sky-700 hover:bg-sky-600 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-black transition-colors whitespace-nowrap"
