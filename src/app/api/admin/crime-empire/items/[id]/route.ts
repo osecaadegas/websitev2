@@ -7,6 +7,7 @@ export const dynamic = "force-dynamic";
 const EDITABLE = [
   "name","description","category","rarity","power_bonus","intelligence_bonus",
   "charisma_bonus","hp_bonus","stamina_restore","base_price","tradeable","image_url",
+  "success_rate_bonus","stamina_reduction","crypto_price","has_durability","max_durability","required_level",
 ];
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {

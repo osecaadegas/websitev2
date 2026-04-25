@@ -8,6 +8,9 @@ type Item = {
   power_bonus: number; intelligence_bonus: number; charisma_bonus: number;
   hp_bonus: number; stamina_restore: number; base_price: number; tradeable: boolean;
   image_url: string;
+  success_rate_bonus: number; stamina_reduction: number;
+  crypto_price: number | null; has_durability: boolean; max_durability: number | null;
+  required_level: number;
 };
 
 type ImageManifest = Record<string, string[]>;
@@ -23,6 +26,9 @@ const BLANK: Partial<Item> = {
   name:"", description:"", category:"weapon", rarity:"common",
   power_bonus:0, intelligence_bonus:0, charisma_bonus:0, hp_bonus:0,
   stamina_restore:0, base_price:100, tradeable:true, image_url:"",
+  success_rate_bonus:0, stamina_reduction:0,
+  crypto_price:null, has_durability:false, max_durability:null,
+  required_level:1,
 };
 
 export default function ItemsAdminPage() {
@@ -204,6 +210,9 @@ export default function ItemsAdminPage() {
                     item.charisma_bonus     && `✨${item.charisma_bonus}`,
                     item.hp_bonus           && `❤️${item.hp_bonus}`,
                     item.stamina_restore    && `⚡${item.stamina_restore}`,
+                    item.success_rate_bonus && `🎯+${(item.success_rate_bonus*100).toFixed(0)}%`,
+                    item.stamina_reduction  && `💨-${item.stamina_reduction}ST`,
+                    item.crypto_price       && `💸${item.crypto_price}💎`,
                   ].filter(Boolean).join(" ") || "–"}
                 </td>
                 <td className="px-4 py-3 text-right">
@@ -289,7 +298,44 @@ export default function ItemsAdminPage() {
                 {field("intelligence_bonus","🧠 Intel.","number")}
                 {field("charisma_bonus","✨ Carisma","number")}
                 {field("hp_bonus","❤️ HP","number")}
-                {field("stamina_restore","⚡ Stamina","number")}
+                {field("stamina_restore","⚡ Stamina Restore","number")}
+                {field("success_rate_bonus","🎯 Sucesso (0–1)","number")}
+                {field("stamina_reduction","💨 Reduz Stamina","number")}
+              </div>
+
+              <p className="text-xs text-[#444] uppercase tracking-widest pt-2">Loja SGT.Marchado (Crypto)</p>
+              <div className="grid grid-cols-2 gap-2">
+                <label className="block">
+                  <span className="text-xs text-[#666] mb-1 block">💸 Preço Crypto (null = não vendável)</span>
+                  <input
+                    type="number"
+                    value={form.crypto_price ?? ""}
+                    onChange={(e) => setForm((f) => ({ ...f, crypto_price: e.target.value === "" ? null : Number(e.target.value) }))}
+                    placeholder="nulo"
+                    className="w-full bg-[#0a0a0a] border border-[#333] rounded-lg px-3 py-2 text-sm text-white"
+                  />
+                </label>
+                {field("required_level","🔒 Nível Mínimo","number")}
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <label className="block">
+                  <span className="text-xs text-[#666] mb-1 block">Tem Durabilidade</span>
+                  <div className="flex items-center gap-2 mt-2">
+                    <input type="checkbox" checked={Boolean(form.has_durability)} onChange={(e) => setForm((f) => ({ ...f, has_durability: e.target.checked, max_durability: e.target.checked ? (f.max_durability ?? 100) : null }))} className="w-4 h-4 accent-[#ff6a00]" />
+                    <span className="text-sm text-[#888]">Sim</span>
+                  </div>
+                </label>
+                {form.has_durability && (
+                  <label className="block">
+                    <span className="text-xs text-[#666] mb-1 block">Max Durabilidade</span>
+                    <input
+                      type="number"
+                      value={form.max_durability ?? 100}
+                      onChange={(e) => setForm((f) => ({ ...f, max_durability: Number(e.target.value) }))}
+                      className="w-full bg-[#0a0a0a] border border-[#333] rounded-lg px-3 py-2 text-sm text-white"
+                    />
+                  </label>
+                )}
               </div>
             </div>
             <div className="flex gap-3 mt-6">

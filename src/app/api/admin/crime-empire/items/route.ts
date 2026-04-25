@@ -42,6 +42,9 @@ export async function POST(req: NextRequest) {
     power_bonus = 0, intelligence_bonus = 0, charisma_bonus = 0,
     hp_bonus = 0, stamina_restore = 0, base_price, tradeable = true,
     image_url = null,
+    success_rate_bonus = 0, stamina_reduction = 0,
+    crypto_price = null, has_durability = false, max_durability = null,
+    required_level = 1,
   } = body;
 
   if (!name || !category || base_price == null) {
@@ -50,7 +53,7 @@ export async function POST(req: NextRequest) {
 
   const { data, error } = await supabase
     .from("items")
-    .insert({ name, description, category, rarity, power_bonus, intelligence_bonus, charisma_bonus, hp_bonus, stamina_restore, base_price, tradeable, image_url })
+    .insert({ name, description, category, rarity, power_bonus, intelligence_bonus, charisma_bonus, hp_bonus, stamina_restore, base_price, tradeable, image_url, success_rate_bonus, stamina_reduction, crypto_price, has_durability, max_durability, required_level })
     .select()
     .single();
 
