@@ -56,7 +56,7 @@ export default function MinesPage() {
     setRevealed(new Array(25).fill(null));
     setRevealedCount(0);
     setCurrentMultiplier(1);
-    setCurrentPayout(bet);
+    setCurrentPayout(data.currentPayout);
     setFee(data.fee);
     setStatus("active");
     setGameResult(null);
@@ -179,8 +179,8 @@ export default function MinesPage() {
                 <div className="flex gap-3">
                   <div className="flex-1">
                     <label className="text-xs text-[#888]">Aposta</label>
-                    <input type="number" value={bet} onChange={(e) => setBet(Math.min(10000, Math.max(100, parseInt(e.target.value) || 100)))}
-                      className="w-full px-4 py-2 rounded-lg bg-[#1a1a1a] border border-[#333] text-white mt-1" min={100} max={10000} step={100} />
+                    <input type="number" value={bet} onChange={(e) => setBet(Math.min(100000, Math.max(100, parseInt(e.target.value) || 100)))}
+                      className="w-full px-4 py-2 rounded-lg bg-[#1a1a1a] border border-[#333] text-white mt-1" min={100} max={100000} step={100} />
                   </div>
                   <div>
                     <label className="text-xs text-[#888]">Minas</label>

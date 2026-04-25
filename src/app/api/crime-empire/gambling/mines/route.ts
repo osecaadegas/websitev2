@@ -127,7 +127,7 @@ export async function POST(req: NextRequest) {
   // ── START ────────────────────────────────────────────────────
   if (action === "start") {
     const { bet, mineCount } = body;
-    if (!bet || bet < 100 || bet > 10000) return NextResponse.json({ error: "Aposta inválida (min $100, max $10,000)" }, { status: 400 });
+    if (!bet || bet < 100 || bet > 100000) return NextResponse.json({ error: "Aposta inválida (min $100, max $100,000)" }, { status: 400 });
     if (!mineCount || mineCount < 1 || mineCount > 24)
       return NextResponse.json({ error: "Número de minas: 1–24" }, { status: 400 });
 

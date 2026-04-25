@@ -174,9 +174,9 @@ export default function BlackjackPage() {
               <>
                 <div className="flex items-center gap-3">
                   <label className="text-sm text-[#888] w-20">Aposta:</label>
-                  <input type="number" value={bet} onChange={(e) => setBet(Math.max(100, parseInt(e.target.value) || 0))}
+                  <input type="number" value={bet} onChange={(e) => setBet(Math.min(100000, Math.max(100, parseInt(e.target.value) || 0)))}
                     className="flex-1 px-4 py-2 rounded-lg bg-[#1a1a1a] border border-[#333] text-white"
-                    min={100} step={500} />
+                    min={100} step={500} max={100000} />
                 </div>
                 {fee > 0 && <p className="text-xs text-orange-400">+ taxa casino: ${fee.toLocaleString()}</p>}
                 <button onClick={deal} disabled={acting} className="w-full py-3 rounded-lg bg-gradient-to-r from-green-700 to-green-600 hover:from-green-600 hover:to-green-500 font-bold disabled:opacity-50">

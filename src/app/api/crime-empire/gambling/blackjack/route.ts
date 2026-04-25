@@ -93,12 +93,12 @@ function handValue(hand: Card[]): number {
 }
 
 function isSoft17(hand: Card[]): boolean {
-  const hasAce = hand.some((c) => c.value === "A");
-  const total = handValue(hand);
-  if (!hasAce) return false;
-  // Check if removing 10 from an ace still sums to 17 (soft)
-  const rawTotal = hand.reduce((s, c) => s + cardVal(c), 0);
-  return total === 17 && rawTotal > 17;
+  if (!hand.some((c) => c.value === "A")) return false;
+  if (handValue(hand) !== 17) return false;
+  // Hard total: all aces counted as 1. If hardTotal+10 <= 21, one ace CAN count as 11 → soft 17.
+  // Fixes: A-6 (hardTotal=7, 17≤21 → true) and A-A-6-9 (hardTotal=17, 27>21 → false, hard 17)
+  const hardTotal = hand.reduce((s, c) => s + (c.value === "A" ? 1 : cardVal(c)), 0);
+  return hardTotal + 10 <= 21;
 }
 
 export async function GET() {
@@ -160,7 +160,7 @@ export async function POST(req: NextRequest) {
   // ── DEAL ────────────────────────────────────────────────────
   if (action === "deal") {
     const { bet } = body;
-    if (!bet || bet < 100 || bet > 10000) return NextResponse.json({ error: "Aposta inválida (min $100, max $10,000)" }, { status: 400 });
+    if (!bet || bet < 100 || bet > 100000) return NextResponse.json({ error: "Aposta inválida (min $100, max $100,000)" }, { status: 400 });
 
     const fee = getCasinoFee(player.level);
     const totalCost = bet + fee;

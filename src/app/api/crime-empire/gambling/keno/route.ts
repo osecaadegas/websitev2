@@ -52,18 +52,20 @@ async function rollGamblingArrest(playerId: string, playerClass: string) {
   return { arrested: true, jailMinutes, escapeToken: et.escape_token };
 }
 
-// Payout table: PAYOUTS[picks][hits] = multiplier
+// Payout table: PAYOUTS[picks][hits] = multiplier (before /2 payout divisor)
+// Redesigned for ~65-70% RTP across all pick counts, with partial payouts for low picks.
+// Previous table had no partial payouts for picks 1-4, making those nearly unplayable (<30% RTP).
 const PAYOUTS: Record<number, Record<number, number>> = {
-  1:  { 1: 3 },
-  2:  { 2: 8 },
-  3:  { 2: 1.5, 3: 25 },
-  4:  { 2: 1, 3: 5, 4: 75 },
-  5:  { 3: 2, 4: 20, 5: 300 },
-  6:  { 3: 1.5, 4: 6, 5: 60, 6: 1000 },
-  7:  { 3: 1, 4: 3, 5: 20, 6: 150, 7: 3000 },
-  8:  { 4: 2, 5: 15, 6: 100, 7: 1000, 8: 10000 },
-  9:  { 4: 1.5, 5: 10, 6: 50, 7: 300, 8: 5000, 9: 25000 },
-  10: { 5: 5, 6: 25, 7: 150, 8: 1000, 9: 10000, 10: 50000 },
+  1:  { 1: 5 },
+  2:  { 1: 1.5, 2: 10 },
+  3:  { 1: 1,   2: 3,   3: 35 },
+  4:  { 1: 0.5, 2: 2,   3: 10,  4: 100 },
+  5:  { 2: 1,   3: 4,   4: 35,  5: 500 },
+  6:  { 2: 0.5, 3: 3,   4: 12,  5: 100,  6: 1000 },
+  7:  { 2: 0.5, 3: 2,   4: 6,   5: 35,   6: 250,   7: 3000 },
+  8:  { 3: 0.5, 4: 3,   5: 22,  6: 140,  7: 1200,  8: 10000 },
+  9:  { 4: 2,   5: 12,  6: 60,  7: 350,  8: 5000,  9: 25000 },
+  10: { 4: 1,   5: 7,   6: 30,  7: 200,  8: 1200,  9: 12000, 10: 100000 },
 };
 
 export async function POST(req: NextRequest) {
@@ -81,7 +83,7 @@ export async function POST(req: NextRequest) {
   }
 
   const { bet, picks } = await req.json();
-  if (!bet || bet < 100 || bet > 10000) return NextResponse.json({ error: "Aposta inválida (min $100, max $10,000)" }, { status: 400 });
+  if (!bet || bet < 100 || bet > 100000) return NextResponse.json({ error: "Aposta inválida (min $100, max $100,000)" }, { status: 400 });
   if (!picks || !Array.isArray(picks) || picks.length < 1 || picks.length > 10)
     return NextResponse.json({ error: "Escolhe 1 a 10 números" }, { status: 400 });
   if (picks.some((n: number) => n < 1 || n > 80))

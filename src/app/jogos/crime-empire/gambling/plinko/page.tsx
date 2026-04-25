@@ -3,11 +3,12 @@
 import { useState } from "react";
 import Link from "next/link";
 import RaidEscape from "@/components/crime-empire/raid/RaidEscape";
+import { notifyPlayerUpdate } from "@/lib/crime-empire/player-context";
 
 const MULTIPLIERS: Record<string, number[]> = {
-  low:    [0.5, 0.7, 1.0, 1.2, 1.4, 1.2, 1.0, 0.7, 0.5],
-  medium: [0.2, 0.4, 0.7, 1.0, 3.5, 1.0, 0.7, 0.4, 0.2],
-  high:   [0.0, 0.2, 0.3, 0.5, 12.0, 0.5, 0.3, 0.2, 0.0],
+  low:    [0.5, 0.7, 1.0, 1.3, 1.8, 1.3, 1.0, 0.7, 0.5],
+  medium: [0.2, 0.4, 0.7, 1.0, 3.0, 1.0, 0.7, 0.4, 0.2],
+  high:   [0.0, 0.2, 0.3, 0.5, 5.0, 0.5, 0.3, 0.2, 0.0],
 };
 
 const SLOT_COLORS = ["#ef4444", "#f97316", "#eab308", "#22c55e", "#3b82f6", "#22c55e", "#eab308", "#f97316", "#ef4444"];
@@ -32,7 +33,7 @@ function PlinkoBoard({ flips, slot, playing }: { flips: boolean[]; slot: number;
         return (
           <div key={row} className="flex justify-center gap-3 my-1">
             {Array.from({ length: pegsInRow }).map((_, peg) => {
-              const isBallHere = ballAtRow === peg || ballAtRow === peg - 1;
+              const isBallHere = ballAtRow === peg;
               return (
                 <div key={peg} className={`w-4 h-4 rounded-full transition-all duration-300 ${isBallHere && !playing ? "bg-orange-400 scale-125" : "bg-[#444]"}`} />
               );
@@ -98,6 +99,7 @@ export default function PlinkoPage() {
     setHasResult(true);
     setPlaying(false);
     setPlayer((p) => p ? { dirty_cash: p.dirty_cash - bet - (data.fee ?? 0), crypto: p.crypto + data.payout } : p);
+    notifyPlayerUpdate();
     if (data.escape_token) {
       setArrestEscape({ token: data.escape_token, jailMinutes: data.jail_minutes ?? 20 });
     }
@@ -124,8 +126,8 @@ export default function PlinkoPage() {
         <div className="grid grid-cols-2 gap-3 mb-4">
           <div>
             <label className="text-xs text-[#888]">Aposta</label>
-            <input type="number" value={bet} onChange={(e) => setBet(Math.min(10000, Math.max(100, parseInt(e.target.value) || 100)))}
-              className="w-full px-4 py-2 rounded-lg bg-[#1a1a1a] border border-[#333] text-white mt-1" min={100} max={10000} step={100} />
+            <input type="number" value={bet} onChange={(e) => setBet(Math.min(100000, Math.max(100, parseInt(e.target.value) || 100)))}
+              className="w-full px-4 py-2 rounded-lg bg-[#1a1a1a] border border-[#333] text-white mt-1" min={100} max={100000} step={100} />
           </div>
           <div>
             <label className="text-xs text-[#888]">Risco</label>

@@ -23,11 +23,12 @@ function getCasinoFee(level: number): number {
 }
 
 // 9 slots for 8 rows. Center (slot 4) most likely (~27%), edges least (~0.4%)
-// Multipliers designed for ~97% RTP
+// After /2 payout divisor: low ~66% RTP, medium ~72% RTP, high ~83% RTP
+// Previous high center (12x) gave player +78% edge (casino losing money) — fixed to 5x
 const MULTIPLIERS: Record<string, number[]> = {
-  low:    [0.5, 0.7, 1.0, 1.2, 1.4, 1.2, 1.0, 0.7, 0.5],
-  medium: [0.2, 0.4, 0.7, 1.0, 3.5, 1.0, 0.7, 0.4, 0.2],
-  high:   [0.0, 0.2, 0.3, 0.5, 12.0, 0.5, 0.3, 0.2, 0.0],
+  low:    [0.5, 0.7, 1.0, 1.3, 1.8, 1.3, 1.0, 0.7, 0.5],
+  medium: [0.2, 0.4, 0.7, 1.0, 3.0, 1.0, 0.7, 0.4, 0.2],
+  high:   [0.0, 0.2, 0.3, 0.5, 5.0, 0.5, 0.3, 0.2, 0.0],
 };
 
 // Simulate plinko: 8 coin flips, count rights → slot 0–8
@@ -85,7 +86,7 @@ export async function POST(req: NextRequest) {
   }
 
   const { bet, risk = "medium" } = await req.json();
-  if (!bet || bet < 100 || bet > 10000) return NextResponse.json({ error: "Aposta inválida (min $100, max $10,000)" }, { status: 400 });
+  if (!bet || bet < 100 || bet > 100000) return NextResponse.json({ error: "Aposta inválida (min $100, max $100,000)" }, { status: 400 });
   if (!["low", "medium", "high"].includes(risk)) return NextResponse.json({ error: "Risco inválido" }, { status: 400 });
 
   const fee = getCasinoFee(player.level);
