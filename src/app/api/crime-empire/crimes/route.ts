@@ -110,10 +110,10 @@ export async function POST(request: Request) {
 
   const bonusSuccessRate = experience?.bonus_success_rate || 0;
 
-  // Get equipped items success_rate bonus
+  // Get equipped items success_rate bonus + stamina_reduction
   const { data: equippedItems } = await supabase
     .from("player_inventory")
-    .select("items(success_rate_bonus)")
+    .select("items(success_rate_bonus, stamina_reduction, crypto_price)")
     .eq("player_id", player.id)
     .eq("equipped", true);
 
@@ -122,6 +122,17 @@ export async function POST(request: Request) {
   }, 0);
   // Hooligan gets +15% on all equipped item bonuses
   const itemSuccessBonus = player.class === 'hooligan' ? rawItemBonus * 1.15 : rawItemBonus;
+
+  // Stamina reduction from equipped items (each point of stamina_reduction reduces cost)
+  const totalStaminaReduction = (equippedItems || []).reduce((sum: number, row: any) => {
+    return sum + (row.items?.stamina_reduction || 0);
+  }, 0);
+  const effectiveStaminaCost = Math.max(1, crime.stamina_cost - totalStaminaReduction);
+
+  // Final stamina check using effective cost (may be lower due to equipped gear)
+  if (player.stamina < effectiveStaminaCost) {
+    return NextResponse.json({ error: "Not enough stamina" }, { status: 403 });
+  }
 
   // Calculate success rate
   let baseSuccess = crime.base_success_rate;
@@ -188,7 +199,7 @@ export async function POST(request: Request) {
   }
 
   // Calculate new stamina
-  const newStamina = player.stamina - crime.stamina_cost;
+  const newStamina = player.stamina - effectiveStaminaCost;
 
   // Calculate XP and level up
   let newXP = player.xp + xpEarned;
@@ -208,7 +219,7 @@ export async function POST(request: Request) {
 
   // Update player
   const updates: any = {
-    stamina: (freshPlayer?.stamina ?? player.stamina) - crime.stamina_cost,
+    stamina: (freshPlayer?.stamina ?? player.stamina) - effectiveStaminaCost,
     last_stamina_update: now.toISOString(),
     cash: ((freshPlayer as any)?.cash ?? player.cash ?? 0) + cleanCashEarned,
     respect: (freshPlayer?.respect ?? player.respect) + respectEarned,
@@ -337,16 +348,18 @@ export async function POST(request: Request) {
     }
   }
 
-  // Degrade equipped items with durability after each crime (-5 per crime)
+  // Degrade equipped items with durability after each crime
+  // Loss scales with item tier: base 3 + floor(crypto_price / 250), min 2, max 12
   const { data: durItems } = await supabase
     .from("player_inventory")
-    .select("id, durability")
+    .select("id, durability, items(crypto_price)")
     .eq("player_id", player.id)
     .eq("equipped", true)
     .not("durability", "is", null);
 
   for (const di of durItems || []) {
-    const newDur = Math.max(0, (di.durability ?? 100) - 5);
+    const tier = Math.min(12, Math.max(2, 3 + Math.floor(((di as any).items?.crypto_price ?? 0) / 250)));
+    const newDur = Math.max(0, (di.durability ?? 100) - tier);
     await supabase
       .from("player_inventory")
       .update(newDur <= 0 ? { durability: 0, equipped: false } : { durability: newDur })
@@ -368,6 +381,7 @@ export async function POST(request: Request) {
     new_stamina: updates.stamina,
     success_rate_used: effectiveSuccessRate,
     dropped_items: droppedItems,
-    broken_items: (durItems || []).filter((di) => Math.max(0, (di.durability ?? 100) - 5) <= 0).length,
+    broken_items: (durItems || []).filter((di) => Math.max(0, (di.durability ?? 100) - Math.min(12, Math.max(2, 3 + Math.floor(((di as any).items?.crypto_price ?? 0) / 250)))) <= 0).length,
+    stamina_reduction_applied: totalStaminaReduction,
   });
 }

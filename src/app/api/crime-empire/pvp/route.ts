@@ -250,16 +250,18 @@ export async function POST(req: NextRequest) {
       await supabase.from("crime_players").update({ xp: newXP, level: newLevel, xp_to_next_level: newXPToNext }).eq("id", winner.id);
     }
 
-    // Degrade attacker's equipped items with durability after PvP (-10 per fight)
+    // Degrade attacker's equipped items with durability after PvP
+    // Loss scales with item tier: base 5 + floor(crypto_price / 150), min 4, max 20
     const { data: atkDurItems } = await supabase
       .from("player_inventory")
-      .select("id, durability")
+      .select("id, durability, items(crypto_price)")
       .eq("player_id", attacker.id)
       .eq("equipped", true)
       .not("durability", "is", null);
 
     for (const di of atkDurItems || []) {
-      const newDur = Math.max(0, (di.durability ?? 100) - 10);
+      const tier = Math.min(20, Math.max(4, 5 + Math.floor(((di as any).items?.crypto_price ?? 0) / 150)));
+      const newDur = Math.max(0, (di.durability ?? 100) - tier);
       await supabase
         .from("player_inventory")
         .update(newDur <= 0 ? { durability: 0, equipped: false } : { durability: newDur })

@@ -45,7 +45,7 @@ const EVENTS = [
     title: "😤 Worker Insatisfeita",
     description: "Uma das tuas workers está a ameaçar sair se não receber bónus.",
     choices: [
-      { label: "Pagar bónus ($3,000)", action: "bonus_pay", reward_cash: -3000, reward_xp: 5 },
+      { label: "Pagar bónus ($1.500 sujo)", action: "bonus_pay", reward_cash: -1500, reward_xp: 5 },
       { label: "Ignorar (risco de saída)", action: "ignore_unhappy", reward_cash: 0, reward_xp: 0 },
     ],
   },
@@ -259,13 +259,13 @@ export async function POST(req: NextRequest) {
     /* â”€â”€ REFILL SUPPLIES â”€â”€ */
     if (action === "refill_supplies") {
       const { playerBrothelId, supplyType } = body; // 'drinks' | 'hygiene' | 'security'
-      if (!["drinks", "hygiene", "security"].includes(supplyType))
-        return NextResponse.json({ error: "Tipo de supply inválido." }, { status: 400 });
-      if (player.cash < SUPPLY_REFILL_COST)
-        return NextResponse.json({ error: `Precisas de $${SUPPLY_REFILL_COST.toLocaleString()}!` }, { status: 400 });
-      await supabase.from("crime_players").update({ cash: player.cash - SUPPLY_REFILL_COST }).eq("id", player.id);
-      await supabase.from("player_brothels")
-        .update({ [`supply_${supplyType}`]: 100 }).eq("id", playerBrothelId).eq("player_id", player.id);
+      if (!['drinks', 'hygiene', 'security'].includes(supplyType))
+        return NextResponse.json({ error: 'Tipo de supply inválido.' }, { status: 400 });
+      if (player.dirty_cash < SUPPLY_REFILL_COST)
+        return NextResponse.json({ error: `Precisas de $${SUPPLY_REFILL_COST.toLocaleString()} em dinheiro sujo!` }, { status: 400 });
+      await supabase.from('crime_players').update({ dirty_cash: player.dirty_cash - SUPPLY_REFILL_COST }).eq('id', player.id);
+      await supabase.from('player_brothels')
+        .update({ [`supply_${supplyType}`]: 100 }).eq('id', playerBrothelId).eq('player_id', player.id);
       return NextResponse.json({ success: true, message: `${supplyType} reabastecido!` });
     }
 
@@ -424,9 +424,18 @@ export async function POST(req: NextRequest) {
         await supabase.from("crime_players").update({ dirty_cash: (fp?.dirty_cash ?? 0) + chosen.reward_cash }).eq("id", player.id);
         message = `+$${chosen.reward_cash.toLocaleString()} ganhos!`;
       } else if (chosen.reward_cash < 0) {
-        const { data: fp } = await supabase.from("crime_players").select("cash").eq("id", player.id).single();
-        await supabase.from("crime_players").update({ cash: Math.max(0, (fp?.cash ?? 0) + chosen.reward_cash) }).eq("id", player.id);
-        message = `Pagaste $${Math.abs(chosen.reward_cash).toLocaleString()}.`;
+        // worker_unhappy bonus_pay costs dirty cash; other negative events cost clean cash
+        if (ev.event_type === "worker_unhappy" && choice === "bonus_pay") {
+          const { data: fp } = await supabase.from("crime_players").select("dirty_cash").eq("id", player.id).single();
+          if ((fp?.dirty_cash ?? 0) < Math.abs(chosen.reward_cash))
+            return NextResponse.json({ error: "Dinheiro sujo insuficiente!" }, { status: 400 });
+          await supabase.from("crime_players").update({ dirty_cash: Math.max(0, (fp?.dirty_cash ?? 0) + chosen.reward_cash) }).eq("id", player.id);
+          message = `Pagaste $${Math.abs(chosen.reward_cash).toLocaleString()} em dinheiro sujo.`;
+        } else {
+          const { data: fp } = await supabase.from("crime_players").select("cash").eq("id", player.id).single();
+          await supabase.from("crime_players").update({ cash: Math.max(0, (fp?.cash ?? 0) + chosen.reward_cash) }).eq("id", player.id);
+          message = `Pagaste $${Math.abs(chosen.reward_cash).toLocaleString()}.`;
+        }
       }
 
       // Special consequences
@@ -467,15 +476,15 @@ export async function POST(req: NextRequest) {
     }
 
     /* ── PAY WORKER BONUS ── */
-    if (action === "pay_worker_bonus") {
+    if (action === 'pay_worker_bonus') {
       const { workerId } = body;
-      const bonus = 2000;
-      if (player.cash < bonus) return NextResponse.json({ error: "Dinheiro insuficiente!" }, { status: 400 });
-      await supabase.from("crime_players").update({ cash: player.cash - bonus }).eq("id", player.id);
-      await supabase.from("brothel_workers")
+      const bonus = 1500; // dirty cash
+      if (player.dirty_cash < bonus) return NextResponse.json({ error: 'Dinheiro sujo insuficiente!' }, { status: 400 });
+      await supabase.from('crime_players').update({ dirty_cash: player.dirty_cash - bonus }).eq('id', player.id);
+      await supabase.from('brothel_workers')
         .update({ happiness: 100, mood: Math.min(100, 80) })
-        .eq("id", workerId).eq("player_id", player.id);
-      return NextResponse.json({ success: true, message: "Worker feliz novamente!" });
+        .eq('id', workerId).eq('player_id', player.id);
+      return NextResponse.json({ success: true, message: 'Worker feliz novamente!' });
     }
 
     /* ── RAID RESULT ── */

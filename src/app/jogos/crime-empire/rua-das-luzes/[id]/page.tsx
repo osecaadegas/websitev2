@@ -45,7 +45,7 @@ function SupplyBar({ label, value, icon, onRefill, canAfford }: {
             className={`px-2 py-0.5 rounded text-xs font-bold transition-all
               ${canAfford ? "bg-pink-700 hover:bg-pink-600 text-white" : "bg-[#222] text-[#555] cursor-not-allowed"}`}
           >
-            Reabastecer ($5k)
+            Reabastecer ($5k 💰sujo)
           </button>
         </div>
       </div>
@@ -76,6 +76,7 @@ export default function BrothelManagePage() {
   const [events, setEvents] = useState<BrothelEvent[]>([]);
   const [playerCash, setPlayerCash] = useState(0);
   const [playerCrypto, setPlayerCrypto] = useState(0);
+  const [playerDirtyCash, setPlayerDirtyCash] = useState(0);
   const [playerLevel, setPlayerLevel] = useState(1);
   const [showCarousel, setShowCarousel] = useState(false);
   const [hiring, setHiring] = useState(false);
@@ -113,6 +114,7 @@ export default function BrothelManagePage() {
       setEvents((data.events || []).filter((e: BrothelEvent) => e.player_brothel_id === brothelId));
       setPlayerCash(data.playerCash || 0);
       setPlayerCrypto(data.playerCrypto || 0);
+      setPlayerDirtyCash(data.playerDirtyCash || 0);
       setPlayerLevel(data.playerLevel || 1);
     } finally {
       setLoading(false);
@@ -424,13 +426,13 @@ export default function BrothelManagePage() {
               Supplies degradam ao longo do tempo. Baixo nível de supplies reduz o rendimento e a satisfação dos clientes.
             </p>
             <SupplyBar label="Bebidas" value={brothel.supply_drinks} icon="🍾"
-              onRefill={() => handleRefill("drinks")} canAfford={playerCash >= 5000} />
+              onRefill={() => handleRefill("drinks")} canAfford={playerDirtyCash >= 5000} />
             <SupplyBar label="Higiene" value={brothel.supply_hygiene} icon="🧴"
-              onRefill={() => handleRefill("hygiene")} canAfford={playerCash >= 5000} />
+              onRefill={() => handleRefill("hygiene")} canAfford={playerDirtyCash >= 5000} />
             <SupplyBar label="Segurança" value={brothel.supply_security} icon="🔒"
-              onRefill={() => handleRefill("security")} canAfford={playerCash >= 5000} />
+              onRefill={() => handleRefill("security")} canAfford={playerDirtyCash >= 5000} />
             <div className="pt-2 border-t border-[#222] text-xs text-[#555]">
-              Saldo disponível: <span className="text-green-400">${playerCash.toLocaleString()}</span>
+              Dinheiro sujo disponível: <span className="text-yellow-400">${playerDirtyCash.toLocaleString()}</span>
               {cryptoType && <span className="ml-3 text-yellow-400">🪙 {playerCrypto.toLocaleString()} crypto</span>}
             </div>
           </div>

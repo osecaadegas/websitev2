@@ -110,7 +110,7 @@ export default function WorkerCard({ worker, onFire, onPayBonus, compact = false
                 {worker.happiness < 50 && (
                   <button onClick={() => onPayBonus(worker.id)}
                     className="flex-1 text-[10px] py-1 rounded-lg bg-yellow-700 hover:bg-yellow-600 font-bold transition-all">
-                    💰 Bónus ($2k)
+                    💰 Bónus ($1.5k sujo)
                   </button>
                 )}
                 <button onClick={() => onFire(worker.id)}
@@ -192,7 +192,7 @@ export default function WorkerCard({ worker, onFire, onPayBonus, compact = false
           {worker.happiness < 50 && (
             <button onClick={() => onPayBonus(worker.id)}
               className="flex-1 py-2 rounded-xl bg-yellow-700/80 hover:bg-yellow-600 text-white text-xs font-bold transition-all hover:scale-[1.02] active:scale-95">
-              💰 Pagar Bónus ($2k)
+              💰 Pagar Bónus ($1.5k sujo)
             </button>
           )}
           <button onClick={() => onFire(worker.id)}
