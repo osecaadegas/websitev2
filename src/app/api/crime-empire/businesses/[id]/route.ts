@@ -673,31 +673,111 @@ async function handleRaidResult(pb: any, body: any, player: any) {
     await grantXP(player.id, 50);
     return NextResponse.json({ success: true, message: `Escapaste! Calor reduzido para ${newHeat.toFixed(0)}%. +50 XP` });
   } else {
-    // Arrested: lose accumulated income, heat resets, status set to raided
+    // Arrested: type-specific seizure + jail
+    const incomeType = def?.income_type ?? "dirty_cash";
+    const seized: Record<string, unknown> = {};
+    const businessUpdate: Record<string, unknown> = {
+      heat: 0,
+      last_heat_update: new Date().toISOString(),
+      status: "raided",
+      accumulated_income: 0,
+    };
+
+    // ── Seizure per business income type ─────────────────────────────────────
+    if (incomeType === "drugs") {
+      // Seize all uncollected drug production (accumulated_income = drug item count)
+      const pendingDrugs = pb.accumulated_income ?? 0;
+      if (pendingDrugs > 0) seized.drugs = pendingDrugs;
+      // accumulated_income already zeroed in businessUpdate
+
+    } else if (incomeType === "launder") {
+      // Seize any in-progress laundering amount
+      const launderingAmount = pb.laundering_amount ?? 0;
+      if (launderingAmount > 0) {
+        seized.laundering_amount = launderingAmount;
+        businessUpdate.laundering_amount = 0;
+      }
+
+    } else if (incomeType === "crypto_farm") {
+      // Seize hardware — player keeps mined crypto
+      const gpu      = pb.gpu_count      ?? 0;
+      const cpu      = pb.cpu_count      ?? 0;
+      const ram      = pb.ram_count      ?? 0;
+      const computer = pb.computer_count ?? 0;
+      if (gpu > 0 || cpu > 0 || ram > 0 || computer > 0) {
+        seized.hardware = { gpu, cpu, ram, computer };
+        businessUpdate.gpu_count      = 0;
+        businessUpdate.cpu_count      = 0;
+        businessUpdate.ram_count      = 0;
+        businessUpdate.computer_count = 0;
+      }
+
+    } else {
+      // dirty_cash — accumulated_income is dirty cash amount, already zeroed
+      const pendingCash = pb.accumulated_income ?? 0;
+      if (pendingCash > 0) seized.dirty_cash = pendingCash;
+    }
+
+    // ── Deduct escape cashAtRisk from player wallet ───────────────────────────
     const { data: fp } = await supabase.from("crime_players").select("dirty_cash").eq("id", player.id).single();
     const cashLost = Math.min(cashAtRisk, fp?.dirty_cash ?? 0);
-    if (cashLost > 0) await deductDirtyMoney(player.id, cashLost);
-    await supabase.from("player_businesses")
-      .update({ heat: 0, last_heat_update: new Date().toISOString(), status: "raided", accumulated_income: 0 })
-      .eq("id", pb.id);
+    if (cashLost > 0) {
+      await deductDirtyMoney(player.id, cashLost);
+      seized.dirty_cash = ((seized.dirty_cash as number | undefined) ?? 0) + cashLost;
+    }
 
-    // Send player to jail (30–60 min)
+    // ── Apply business update ─────────────────────────────────────────────────
+    await supabase.from("player_businesses").update(businessUpdate).eq("id", pb.id);
+
+    // ── Log the seizure ───────────────────────────────────────────────────────
+    if (Object.keys(seized).length > 0) {
+      await supabase.from("business_seizure_log").insert({
+        player_id:          player.id,
+        player_business_id: pb.id,
+        business_type:      pb.business.type,
+        seized,
+      });
+    }
+
+    // ── Jail the player (30–60 min) ───────────────────────────────────────────
     const jailMinutes = 30 + Math.floor(Math.random() * 31);
     const jailReleaseAt = new Date(Date.now() + jailMinutes * 60_000).toISOString();
     await supabase.from("crime_players").update({ in_jail: true, jail_release_at: jailReleaseAt }).eq("id", player.id);
 
-    // Spawn police investigation event so player can reopen the business
+    // ── Spawn police investigation event ─────────────────────────────────────
     await supabase.from("player_business_events").insert({
-      player_id: player.id,
+      player_id:          player.id,
       player_business_id: pb.id,
-      event_def_id: "police_investigation",
-      event_data: {},
+      event_def_id:       "police_investigation",
+      event_data:         {},
     });
+
+    // ── Build structured seizure response ─────────────────────────────────────
+    let seizurePayload: Record<string, unknown>;
+    if (incomeType === "drugs") {
+      seizurePayload = {
+        type: "drugs",
+        lost: ["pending_drugs", ...(cashLost > 0 ? ["dirty_cash"] : [])],
+      };
+    } else if (incomeType === "launder") {
+      seizurePayload = { type: "laundering", lost: ["laundering_amount"] };
+    } else if (incomeType === "crypto_farm") {
+      const lostHw: string[] = [];
+      if ((pb.gpu_count      ?? 0) > 0) lostHw.push("gpu");
+      if ((pb.cpu_count      ?? 0) > 0) lostHw.push("cpu");
+      if ((pb.ram_count      ?? 0) > 0) lostHw.push("ram");
+      if ((pb.computer_count ?? 0) > 0) lostHw.push("computer");
+      seizurePayload = { type: "crypto", lost: lostHw };
+    } else {
+      seizurePayload = { type: "dirty_cash", lost: cashLost > 0 ? ["dirty_cash"] : [] };
+    }
 
     return NextResponse.json({
       success: true,
       jailed: true,
       jail_minutes: jailMinutes,
+      raid_result: "arrested",
+      seizure: seizurePayload,
       message: `Foste preso por ${jailMinutes} min! Perdeste $${cashLost.toLocaleString()}. O negócio está sob investigação — resolve o evento para reabrir.`,
     });
   }
