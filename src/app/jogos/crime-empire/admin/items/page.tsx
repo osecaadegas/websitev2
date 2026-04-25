@@ -50,6 +50,8 @@ export default function ItemsAdminPage() {
   const [pickerCat, setPickerCat]       = useState("");
   const [pickerSearch, setPickerSearch] = useState("");
   const [pickerSelected, setPickerSelected] = useState("");
+  const [pickerPage, setPickerPage]     = useState(1);
+  const PICKER_PAGE_SIZE = 300;
 
   const showToast = (msg:string, ok=true) => { setToast({msg,ok}); setTimeout(()=>setToast(null),3500); };
 
@@ -276,6 +278,7 @@ export default function ItemsAdminPage() {
                     onClick={() => {
                       setPickerSelected(form.image_url || "");
                       setPickerSearch("");
+                      setPickerPage(1);
                       if (manifest) setPickerCat(Object.keys(manifest).sort()[0] || "");
                       setPickerOpen(true);
                     }}
@@ -357,7 +360,7 @@ export default function ItemsAdminPage() {
             <h3 className="text-white font-black text-sm flex-1">🖼️ Escolher Imagem</h3>
             <input
               value={pickerSearch}
-              onChange={(e) => setPickerSearch(e.target.value)}
+              onChange={(e) => { setPickerSearch(e.target.value); setPickerPage(1); }}
               placeholder="Pesquisar ficheiro…"
               className="bg-[#0e0e0e] border border-[#333] rounded-lg px-3 py-1.5 text-sm text-white w-52"
             />
@@ -374,7 +377,7 @@ export default function ItemsAdminPage() {
               {manifest && Object.keys(manifest).sort().map((cat) => (
                 <button
                   key={cat}
-                  onClick={() => { setPickerCat(cat); setPickerSearch(""); }}
+                  onClick={() => { setPickerCat(cat); setPickerSearch(""); setPickerPage(1); }}
                   className={`w-full text-left px-3 py-2 rounded-lg text-xs transition-all capitalize flex items-center justify-between ${
                     pickerCat === cat
                       ? "bg-[#ff6a00] text-white font-bold"
@@ -398,9 +401,36 @@ export default function ItemsAdminPage() {
                 <p className="text-[#333] text-center py-20 text-sm">Sem resultados para &quot;{pickerSearch}&quot;</p>
               ) : (
                 <>
-                  <p className="text-[#555] text-xs mb-3">{pickerImages.length} imagens{pickerImages.length > 300 ? " (a mostrar 300)" : ""}</p>
+                  {/* Pagination info + controls */}
+                  {(() => {
+                    const totalPages = Math.ceil(pickerImages.length / PICKER_PAGE_SIZE);
+                    const start = (pickerPage - 1) * PICKER_PAGE_SIZE + 1;
+                    const end   = Math.min(pickerPage * PICKER_PAGE_SIZE, pickerImages.length);
+                    return (
+                      <div className="flex items-center justify-between mb-3">
+                        <p className="text-[#555] text-xs">
+                          {pickerImages.length} imagens — a mostrar {start}–{end}
+                        </p>
+                        {totalPages > 1 && (
+                          <div className="flex items-center gap-2">
+                            <button
+                              disabled={pickerPage === 1}
+                              onClick={() => setPickerPage((p) => p - 1)}
+                              className="text-xs px-2.5 py-1 rounded bg-[#1a1a1a] text-white disabled:opacity-30 hover:bg-[#252525] transition-all"
+                            >← Ant.</button>
+                            <span className="text-xs text-[#555]">{pickerPage} / {totalPages}</span>
+                            <button
+                              disabled={pickerPage === totalPages}
+                              onClick={() => setPickerPage((p) => p + 1)}
+                              className="text-xs px-2.5 py-1 rounded bg-[#1a1a1a] text-white disabled:opacity-30 hover:bg-[#252525] transition-all"
+                            >Próx. →</button>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
                   <div className="grid gap-2" style={{gridTemplateColumns:"repeat(auto-fill,minmax(64px,1fr))"}}>
-                    {pickerImages.slice(0, 300).map((filename) => {
+                    {pickerImages.slice((pickerPage - 1) * PICKER_PAGE_SIZE, pickerPage * PICKER_PAGE_SIZE).map((filename) => {
                       const url = `/images/crime_empire/items/${encodeURIComponent(pickerCat)}/${encodeURIComponent(filename)}`;
                       const isCurrent = pickerSelected === url;
                       return (
@@ -418,6 +448,24 @@ export default function ItemsAdminPage() {
                       );
                     })}
                   </div>
+                  {/* Bottom pagination (repeat for convenience) */}
+                  {Math.ceil(pickerImages.length / PICKER_PAGE_SIZE) > 1 && (
+                    <div className="flex items-center justify-center gap-3 mt-4 pt-4 border-t border-[#1a1a1a]">
+                      <button
+                        disabled={pickerPage === 1}
+                        onClick={() => { setPickerPage((p) => p - 1); }}
+                        className="text-xs px-3 py-1.5 rounded bg-[#1a1a1a] text-white disabled:opacity-30 hover:bg-[#252525] transition-all"
+                      >← Anterior</button>
+                      <span className="text-xs text-[#555]">
+                        Página {pickerPage} de {Math.ceil(pickerImages.length / PICKER_PAGE_SIZE)}
+                      </span>
+                      <button
+                        disabled={pickerPage === Math.ceil(pickerImages.length / PICKER_PAGE_SIZE)}
+                        onClick={() => { setPickerPage((p) => p + 1); }}
+                        className="text-xs px-3 py-1.5 rounded bg-[#1a1a1a] text-white disabled:opacity-30 hover:bg-[#252525] transition-all"
+                      >Próxima →</button>
+                    </div>
+                  )}
                 </>
               )}
             </div>
