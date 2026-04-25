@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { notifyPlayerUpdate } from "@/lib/crime-empire/player-context";
 import RaidEscape from "@/components/crime-empire/raid/RaidEscape";
 
@@ -33,6 +34,7 @@ const RESULT_MSGS: Record<string, { text: string; color: string }> = {
 };
 
 export default function BlackjackPage() {
+  const router = useRouter();
   const [player, setPlayer] = useState<{ dirty_cash: number; crypto: number; level: number } | null>(null);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [playerHand, setPlayerHand] = useState<Card[]>([]);
@@ -219,7 +221,7 @@ export default function BlackjackPage() {
               method: "POST", headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ token, escaped: false }),
             });
-            fetchState();
+            router.push("/jogos/crime-empire/jail");
           }}
         />
       )}

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { notifyPlayerUpdate } from "@/lib/crime-empire/player-context";
 import RaidEscape from "@/components/crime-empire/raid/RaidEscape";
 
@@ -10,6 +11,7 @@ type TileState = null | "safe" | "mine";
 const MINE_PRESETS = [1, 3, 5, 10, 15, 20, 24];
 
 export default function MinesPage() {
+  const router = useRouter();
   const [player, setPlayer] = useState<{ dirty_cash: number; crypto: number; level: number } | null>(null);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [revealed, setRevealed] = useState<TileState[]>(new Array(25).fill(null));
@@ -232,7 +234,7 @@ export default function MinesPage() {
               method: "POST", headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ token, escaped: false }),
             });
-            fetchState();
+            router.push("/jogos/crime-empire/jail");
           }}
         />
       )}

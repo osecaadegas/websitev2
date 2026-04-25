@@ -22,6 +22,11 @@ interface Props {
   cashAtRisk: number;
   /** Crypto the player stands to lose (15% of balance) */
   cryptoAtRisk?: number;
+  /**
+   * Probability (0–1) that the player gets a chance to escape via minigame.
+   * If omitted: low=0.7, medium=0.5, high=0.3
+   */
+  escapeChance?: number;
   onEscape: (cashSaved: number) => void;
   onArrested: () => void;
 }
@@ -40,7 +45,13 @@ function getDifficulty(val: number): Difficulty {
 
 
 
-export default function RaidEscape({ businessValue, difficulty: difficultyProp, cashAtRisk, cryptoAtRisk = 0, onEscape, onArrested }: Props) {
+const ESCAPE_CHANCE: Record<Difficulty, number> = {
+  low:    0.7,
+  medium: 0.5,
+  high:   0.3,
+};
+
+export default function RaidEscape({ businessValue, difficulty: difficultyProp, cashAtRisk, cryptoAtRisk = 0, escapeChance: escapeChanceProp, onEscape, onArrested }: Props) {
   const [mounted, setMounted]     = useState(false);
   const [phase, setPhase]         = useState<Phase>("intro");
   const [arrestPct, setArrestPct] = useState(0);
@@ -49,18 +60,25 @@ export default function RaidEscape({ businessValue, difficulty: difficultyProp, 
   );
 
   const difficulty = difficultyProp ?? getDifficulty(businessValue ?? 0);
+
+  // Roll once at mount — determines whether player even gets a minigame
+  const [canEscape] = useState(() => {
+    const d = difficultyProp ?? getDifficulty(businessValue ?? 0);
+    const chance = escapeChanceProp ?? ESCAPE_CHANCE[d];
+    return Math.random() < chance;
+  });
   const phaseRef   = useRef<Phase>("intro");
   const doneRef    = useRef(false);
   phaseRef.current = phase;
 
   useEffect(() => { setMounted(true); }, []);
 
-  // Intro → game after 2.5s
+  // Intro → game (or straight to arrested if canEscape is false) after 2.5s
   useEffect(() => {
     if (phase !== "intro") return;
-    const t = setTimeout(() => setPhase("game"), 2500);
+    const t = setTimeout(() => setPhase(canEscape ? "game" : "arrested"), 2500);
     return () => clearTimeout(t);
-  }, [phase]);
+  }, [phase, canEscape]);
 
   // Arrest meter passive fill
   useEffect(() => {
@@ -119,9 +137,13 @@ export default function RaidEscape({ businessValue, difficulty: difficultyProp, 
       {/* ── INTRO ── */}
       {phase === "intro" && (
         <div className="text-center space-y-4 animate-fadeIn px-4">
-          <div className="text-8xl">🚔</div>
-          <h2 className="text-5xl font-black text-red-400 animate-pulse tracking-wide">RAID POLICIAL!</h2>
-          <p className="text-[#aaa] text-lg">O teu negócio está a ser invadido!</p>
+          <div className="text-8xl">{canEscape ? "🚔" : "👮"}</div>
+          <h2 className="text-5xl font-black text-red-400 animate-pulse tracking-wide">
+            {canEscape ? "RAID POLICIAL!" : "APANHADO!"}
+          </h2>
+          <p className="text-[#aaa] text-lg">
+            {canEscape ? "O teu negócio está a ser invadido!" : "A polícia cortou todas as saídas. Sem hipótese de fuga!"}
+          </p>
           {(cashAtRisk > 0 || cryptoAtRisk > 0) && (
             <div className="mt-3 px-6 py-3 rounded-xl bg-red-900/20 border border-red-500/40 inline-block space-y-1">
               <p className="text-red-300 font-bold text-sm">⚠️ Ativos em risco</p>
@@ -130,10 +152,17 @@ export default function RaidEscape({ businessValue, difficulty: difficultyProp, 
               <p className="text-orange-300 text-sm">💊 Drogas: % confiscadas se apanhado</p>
             </div>
           )}
-          <div className="mt-3 px-6 py-3 rounded-xl bg-[#1a0a0a] border border-red-500/40 inline-block">
-            <p className="text-pink-300 font-bold text-sm">{GAME_META[minigame].icon} {GAME_META[minigame].name}</p>
-            <p className="text-[#444] text-xs mt-1">A preparar fuga…</p>
-          </div>
+          {canEscape ? (
+            <div className="mt-3 px-6 py-3 rounded-xl bg-[#1a0a0a] border border-red-500/40 inline-block">
+              <p className="text-pink-300 font-bold text-sm">{GAME_META[minigame].icon} {GAME_META[minigame].name}</p>
+              <p className="text-[#444] text-xs mt-1">A preparar fuga…</p>
+            </div>
+          ) : (
+            <div className="mt-3 px-6 py-3 rounded-xl bg-[#1a0a0a] border border-red-700/60 inline-block">
+              <p className="text-red-400 font-bold text-sm">🚨 Nível de polícia elevado</p>
+              <p className="text-[#444] text-xs mt-1">A ser detido…</p>
+            </div>
+          )}
         </div>
       )}
 

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import RaidEscape from "@/components/crime-empire/raid/RaidEscape";
 import { notifyPlayerUpdate } from "@/lib/crime-empire/player-context";
 
@@ -55,6 +56,7 @@ function PlinkoBoard({ flips, slot, playing }: { flips: boolean[]; slot: number;
 }
 
 export default function PlinkoPage() {
+  const router = useRouter();
   const [player, setPlayer] = useState<{ dirty_cash: number; crypto: number; addiction: number; level: number } | null>(null);
   const [casinoFee, setCasinoFee] = useState(0);
   const [bet, setBet] = useState(500);
@@ -239,7 +241,7 @@ export default function PlinkoPage() {
               method: "POST", headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ token, escaped: false }),
             });
-            notifyPlayerUpdate();
+            router.push("/jogos/crime-empire/jail");
           }}
         />
       )}

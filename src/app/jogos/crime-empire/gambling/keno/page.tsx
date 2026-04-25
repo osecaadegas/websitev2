@@ -2,12 +2,14 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { notifyPlayerUpdate } from "@/lib/crime-empire/player-context";
 import RaidEscape from "@/components/crime-empire/raid/RaidEscape";
 
 const MAX_PICKS = 10;
 
 export default function KenoPage() {
+  const router = useRouter();
   const [player, setPlayer] = useState<{ dirty_cash: number; crypto: number } | null>(null);
   const [bet, setBet] = useState(500);
   const [picks, setPicks] = useState<number[]>([]);
@@ -173,7 +175,7 @@ export default function KenoPage() {
               method: "POST", headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ token, escaped: false }),
             });
-            notifyPlayerUpdate();
+            router.push("/jogos/crime-empire/jail");
           }}
         />
       )}

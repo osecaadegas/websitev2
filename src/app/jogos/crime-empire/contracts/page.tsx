@@ -1093,7 +1093,7 @@ export default function ContractsPage() {
               method: "POST", headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ token, escaped: false }),
             });
-            fetchData();
+            router.push("/jogos/crime-empire/jail");
           }}
         />
       )}

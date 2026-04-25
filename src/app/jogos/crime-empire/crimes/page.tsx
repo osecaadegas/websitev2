@@ -466,7 +466,7 @@ export default function CrimesPage() {
               method: "POST", headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ token, escaped: false }),
             });
-            fetchPlayer();
+            router.push("/jogos/crime-empire/jail");
           }}
         />
       )}

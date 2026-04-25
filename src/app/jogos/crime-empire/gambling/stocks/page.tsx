@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import RaidEscape from "@/components/crime-empire/raid/RaidEscape";
 
 type Coin = {
@@ -116,6 +117,7 @@ function sellCountdown(boughtAt: string, source?: string) {
 }
 
 export default function StocksPage() {
+  const router = useRouter();
   const [player, setPlayer] = useState<{ dirty_cash: number; crypto: number } | null>(null);
   const [market, setMarket] = useState<Coin[]>([]);
   const [positions, setPositions] = useState<Position[]>([]);
@@ -461,7 +463,7 @@ export default function StocksPage() {
               method: "POST", headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ token, escaped: false }),
             });
-            fetchData();
+            router.push("/jogos/crime-empire/jail");
           }}
         />
       )}
