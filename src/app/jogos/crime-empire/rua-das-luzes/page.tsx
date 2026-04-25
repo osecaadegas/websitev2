@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
+import { notifyPlayerUpdate } from "@/lib/crime-empire/player-context";
 import Link from "next/link";
 import WorkerCard, { Worker } from "@/components/crime-empire/WorkerCard";
 import BrothelEventPopup, { BrothelEvent } from "@/components/crime-empire/BrothelEventPopup";
@@ -217,7 +218,7 @@ export default function RuaDasLuzesPage() {
     setCollecting(playerBrothelId);
     const data = await api({ action: "collect", playerBrothelId });
     setCollecting(null);
-    if (data.success) { showToast(data.message); fetchData(); }
+    if (data.success) { showToast(data.message); notifyPlayerUpdate(); fetchData(); }
     else showToast(data.error);
   };
 

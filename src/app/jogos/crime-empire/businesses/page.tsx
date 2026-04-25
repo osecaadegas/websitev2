@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useAuth } from "@/lib/auth-context";
+import { notifyPlayerUpdate } from "@/lib/crime-empire/player-context";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -340,7 +341,7 @@ export default function BusinessesPage() {
         body: JSON.stringify({ action: "purchase", businessId }),
       });
       const data = await res.json();
-      if (data.success) { showToast(data.message || "Negócio comprado!"); await fetchData(); }
+      if (data.success) { showToast(data.message || "Negócio comprado!"); notifyPlayerUpdate(); await fetchData(); }
       else showToast(data.error || "Erro ao comprar", "error");
     } catch {
       showToast("Erro de rede", "error");

@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
+import { notifyPlayerUpdate } from "@/lib/crime-empire/player-context";
 import Link from "next/link";
 import { CEToast } from "@/components/CEToast";
 import RaidEscape from "@/components/crime-empire/raid/RaidEscape";
@@ -582,6 +583,7 @@ export default function StreetsPage() {
       addLog("🛡️", "Nível de Calor", `Calor atual: ${data.heat ?? heat}%`);
       setCustomer(null);
       setPhase("result");
+      notifyPlayerUpdate();
       await fetchDrugs();
     } else if (outcome === "counter") {
       setCounterPrice(data.counterPrice ?? null);

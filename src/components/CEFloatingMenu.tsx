@@ -3,35 +3,10 @@
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
+import { usePlayer, CEPlayer as Player } from "@/lib/crime-empire/player-context";
 
 /* ─────────────────── Types ─────────────────── */
-interface Player {
-  id: string;
-  username: string;
-  display_name: string;
-  avatar_url?: string;
-  class: string;
-  level: number;
-  xp: number;
-  xp_to_next_level: number;
-  prestige_level: number;
-  total_levels_earned: number;
-  hp: number;
-  max_hp: number;
-  respect: number;
-  power: number;
-  intelligence: number;
-  charisma: number;
-  dirty_cash: number;
-  cash: number;
-  vcash: number;
-  crypto?: number;
-  stamina: number;
-  max_stamina: number;
-  addiction?: number;
-  in_jail: boolean;
-  boost_active: boolean;
-}
+// Player type is imported from player-context (CEPlayer as Player)
 
 interface ItemData {
   id: string;
@@ -620,28 +595,15 @@ function LeaderboardPanel() {
 
 /* ─────────────────── MAIN COMPONENT ─────────────────── */
 export function CEFloatingMenu() {
-  const [player, setPlayer] = useState<Player | null>(null);
+  const { player, refreshPlayer } = usePlayer();
   const [open, setOpen] = useState(false);
   const [activePanel, setActivePanel] = useState<Panel>(null);
 
-  const fetchPlayer = useCallback(async () => {
-    try {
-      const res = await fetch("/api/crime-empire/player");
-      const data = await res.json();
-      if (data.player) setPlayer(data.player);
-    } catch {
-      // no player
-    }
-  }, []);
 
+  // Refresh player when stats panel opens (for latest stats)
   useEffect(() => {
-    fetchPlayer();
-  }, [fetchPlayer]);
-
-  // Refresh player when panel opens (for latest stats)
-  useEffect(() => {
-    if (activePanel === "stats") fetchPlayer();
-  }, [activePanel, fetchPlayer]);
+    if (activePanel === "stats") refreshPlayer();
+  }, [activePanel, refreshPlayer]);
 
   if (!player) return null;
 

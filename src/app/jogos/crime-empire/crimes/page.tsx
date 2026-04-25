@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/lib/auth-context";
+import { notifyPlayerUpdate } from "@/lib/crime-empire/player-context";
 import RaidEscape from "@/components/crime-empire/raid/RaidEscape";
 
 interface Player {
@@ -264,6 +265,7 @@ export default function CrimesPage() {
       if (data.escape_token) {
         setArrestEscape({ token: data.escape_token, jailMinutes: data.jail_time_minutes });
       }
+      notifyPlayerUpdate();
       setTimeout(() => { fetchPlayer(); setSelectedCrime(null); setCrimeResult(null); }, 3000);
     } catch (e) { console.error(e); setSelectedCrime(null); }
   };

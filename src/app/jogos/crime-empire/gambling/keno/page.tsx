@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { notifyPlayerUpdate } from "@/lib/crime-empire/player-context";
 import RaidEscape from "@/components/crime-empire/raid/RaidEscape";
 
 const MAX_PICKS = 10;
@@ -61,6 +62,7 @@ export default function KenoPage() {
     setHasResult(true);
     setPlaying(false);
     setPlayer((p) => p ? { dirty_cash: p.dirty_cash - bet - (data.fee ?? 0), crypto: p.crypto + data.payout } : p);
+    notifyPlayerUpdate();
     if (data.escape_token) {
       setArrestEscape({ token: data.escape_token, jailMinutes: data.jailMinutes ?? 20 });
     }

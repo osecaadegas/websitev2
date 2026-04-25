@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
+import { notifyPlayerUpdate } from "@/lib/crime-empire/player-context";
 import RaidEscape from "@/components/crime-empire/raid/RaidEscape";
 
 type Card = { suit: string; value: string };
@@ -113,6 +114,7 @@ export default function BlackjackPage() {
       const res2 = await fetch("/api/crime-empire/gambling/blackjack");
       const d2 = await res2.json();
       setPlayer(d2.player);
+      notifyPlayerUpdate();
     }
     setActing(false);
   };

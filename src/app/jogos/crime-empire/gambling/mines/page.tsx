@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
+import { notifyPlayerUpdate } from "@/lib/crime-empire/player-context";
 import RaidEscape from "@/components/crime-empire/raid/RaidEscape";
 
 type TileState = null | "safe" | "mine";
@@ -105,6 +106,7 @@ export default function MinesPage() {
     setCurrentPayout(data.payout);
     setCurrentMultiplier(data.multiplier);
     setPlayer((p) => p ? { ...p, crypto: p.crypto + data.payout } : p);
+    notifyPlayerUpdate();
     if (data.escape_token) {
       setArrestEscape({ token: data.escape_token, jailMinutes: data.jailMinutes ?? 20 });
     }

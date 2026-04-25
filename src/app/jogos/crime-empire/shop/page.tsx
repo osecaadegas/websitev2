@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useAuth } from "@/lib/auth-context";
+import { notifyPlayerUpdate } from "@/lib/crime-empire/player-context";
 import { CEToast } from "@/components/CEToast";
 import { useRouter } from "next/navigation";
 
@@ -88,6 +89,7 @@ export default function ShopPage() {
           ...m,
           [item.id]: { quantity: (m[item.id]?.quantity || 0) + 1, equipped: m[item.id]?.equipped || false },
         }));
+        notifyPlayerUpdate();
       } else {
         showToast(data.error || "Erro ao comprar item", false);
       }

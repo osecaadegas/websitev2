@@ -1,11 +1,12 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 import { useAuth } from "@/lib/auth-context";
+import { usePlayer } from "@/lib/crime-empire/player-context";
 
 const CLASS_NAMES: Record<string, string> = {
   thief: "Ladrão", hooligan: "Hooligan", businessman: "Empresário",
@@ -17,13 +18,6 @@ const CLASS_GLOW: Record<string, string> = {
   hitman: "#475569", scammer: "#d97706", brute: "#ea580c",
   dealer: "#16a34a", pimp: "#db2777",
 };
-
-interface SidebarPlayer {
-  username: string; display_name: string; class: string;
-  level: number; hp: number; max_hp: number;
-  cash: number; dirty_cash: number; in_jail: boolean;
-  prestige_level: number; avatar_url?: string;
-}
 
 interface Props {
   open: boolean;
@@ -80,20 +74,8 @@ export function CrimeEmpireSidebar({ open, onClose }: Props) {
   const isAdmin = user?.role === "admin" || user?.role === "configurador";
   const isGamblingActive = pathname.startsWith("/jogos/crime-empire/gambling");
   const [gamblingOpen, setGamblingOpen] = useState(isGamblingActive);
-  const [player, setPlayer] = useState<SidebarPlayer | null>(null);
+  const { player } = usePlayer();
   const [comingSoonToast, setComingSoonToast] = useState<string | null>(null);
-
-  const fetchPlayer = useCallback(async () => {
-    try {
-      const res = await fetch("/api/crime-empire/player");
-      const data = await res.json();
-      if (data.player) setPlayer(data.player);
-    } catch { /* silent */ }
-  }, []);
-
-  useEffect(() => {
-    if (user) fetchPlayer();
-  }, [user, fetchPlayer]);
 
   return (
     <>

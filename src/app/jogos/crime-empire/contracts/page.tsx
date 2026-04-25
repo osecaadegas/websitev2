@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useAuth } from "@/lib/auth-context";
+import { notifyPlayerUpdate } from "@/lib/crime-empire/player-context";
 import { CEToast } from "@/components/CEToast";
 import { useRouter } from "next/navigation";
 import RaidEscape from "@/components/crime-empire/raid/RaidEscape";
@@ -851,6 +852,7 @@ export default function ContractsPage() {
           ? `+?? $${data.cash_earned?.toLocaleString()} | +?? ${data.respect_earned} Respeito`
           : data.arrested ? "?? Preso!" : "";
         showToast(data.message, ok, details);
+        notifyPlayerUpdate();
         await fetchData();
       }
     } finally {
