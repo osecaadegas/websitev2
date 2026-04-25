@@ -214,7 +214,7 @@ async function generateWeekCrashes(weekNumber: number, weekYear: number, weekSta
 
     const activeUntil = new Date(scheduledAt.getTime() + 6 * 3600000);
     const wreckSegments = generateWreckSegments();
-    const lootSeed = Math.floor(Math.random() * 0xffffffff);
+    const lootSeed = Math.floor(Math.random() * 0x7fffffff);
     const location = LOCATIONS[Math.floor(Math.random() * LOCATIONS.length)];
 
     let status: string;

@@ -188,7 +188,7 @@ export async function POST(req: NextRequest) {
     else status = "upcoming";
 
     const wreckSegments = generateWreckSegments();
-    const lootSeed = Math.floor(Math.random() * 0xffffffff);
+    const lootSeed = Math.floor(Math.random() * 0x7fffffff);
     const { week, year } = getISOWeekInfo(now);
 
     const { data: crash, error } = await supabase.from("plane_crashes").insert({
