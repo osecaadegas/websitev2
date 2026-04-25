@@ -9,12 +9,11 @@ interface HistoryItem { game_type: string; bet_amount: number; payout: number; p
 const GAMES = [
   { href: "/jogos/crime-empire/gambling/blackjack", label: "Blackjack", icon: "🃏", desc: "Bate o dealer. Blackjack paga 2.5x.", color: "from-green-900/40 to-green-800/20 border-green-500/40 hover:border-green-400" },
   { href: "/jogos/crime-empire/gambling/mines", label: "Mines", icon: "💣", desc: "Revela tiles sem explodir. Faz cashout quando quiseres.", color: "from-red-900/40 to-red-800/20 border-red-500/40 hover:border-red-400" },
-  { href: "/jogos/crime-empire/gambling/plinko", label: "Plinko", icon: "🎯", desc: "Deixa a bola cair. Risco à tua escolha.", color: "from-blue-900/40 to-blue-800/20 border-blue-500/40 hover:border-blue-400" },
   { href: "/jogos/crime-empire/gambling/keno", label: "Keno", icon: "🎱", desc: "Escolhe até 10 números. 20 sorteados.", color: "from-purple-900/40 to-purple-800/20 border-purple-500/40 hover:border-purple-400" },
   { href: "/jogos/crime-empire/gambling/stocks", label: "Mercado Negro", icon: "📈", desc: "Investe em cripto anónima. Lucro real, risco real.", color: "from-yellow-900/40 to-yellow-800/20 border-yellow-500/40 hover:border-yellow-400" },
 ];
 
-const GAME_LABELS: Record<string, string> = { blackjack: "Blackjack", mines: "Mines", plinko: "Plinko", keno: "Keno", stocks: "Mercado" };
+const GAME_LABELS: Record<string, string> = { blackjack: "Blackjack", mines: "Mines", keno: "Keno", stocks: "Mercado" };
 
 export default function GamblingPage() {
   const [player, setPlayer] = useState<Player | null>(null);
