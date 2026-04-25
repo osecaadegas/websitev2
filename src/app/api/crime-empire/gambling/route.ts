@@ -24,7 +24,7 @@ export async function GET() {
 
   const { data: player } = await supabase
     .from("crime_players")
-    .select("id, level, dirty_cash, crypto, username")
+    .select("id, level, dirty_cash, crypto, username, addiction")
     .eq("user_id", user.id)
     .single();
 
@@ -43,6 +43,7 @@ export async function GET() {
       dirty_cash: player.dirty_cash,
       crypto: player.crypto,
       username: player.username,
+      addiction: player.addiction ?? 0,
     },
     casinoFee: getCasinoFee(player.level),
     history: history || [],

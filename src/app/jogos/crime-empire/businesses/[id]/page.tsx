@@ -135,7 +135,15 @@ function HirePanel({
               <div className="flex-1">
                 <p className="font-bold text-white text-sm">{w.name} <span className={`text-xs ${trait.color}`}>{trait.icon} {trait.label}</span></p>
                 <p className="text-xs text-gray-500">{w.description}</p>
-                <p className="text-xs text-gray-400 mt-0.5">${w.salary}/hr · Adiantamento: <span className={canAfford ? "text-green-400" : "text-red-400"}>${cost.toLocaleString()}</span></p>
+                <p className="text-xs text-gray-400 mt-0.5">
+                  ${w.salary}/hr · Adiantamento: <span className={canAfford ? "text-green-400" : "text-red-400"}>${cost.toLocaleString()}</span>
+                </p>
+                {w.production_bonus !== 0 && (
+                  <p className={`text-xs mt-0.5 ${w.production_bonus > 0 ? "text-green-400/80" : "text-red-400/80"}`}>
+                    {w.production_bonus > 0 ? "+" : ""}{(w.production_bonus * 100).toFixed(0)}% produção
+                    {w.stealth_bonus !== 0 && ` · ${w.stealth_bonus > 0 ? "-" : "+"}${Math.abs(w.stealth_bonus * 100).toFixed(0)}% 🌡️ calor`}
+                  </p>
+                )}
               </div>
               <button
                 onClick={() => onHire(w.id)}
@@ -385,7 +393,8 @@ export default function BusinessManagementPage({ params }: { params: Promise<{ i
       if (result.raided) showToast(`⚠️ ${result.message}`, "error");
       else if (result.drug_qty !== undefined) {
         const itemName = data?.player_business.drug_item_name || "unidades";
-        showToast(`📦 +${result.drug_qty} ${itemName} coletados!`);
+        const salaryMsg = result.salary_paid > 0 ? ` · 💸 -$${result.salary_paid.toLocaleString()} salários` : "";
+        showToast(`📦 +${result.drug_qty} ${itemName} coletados!${salaryMsg}`);
       } else if (result.farmed_value !== undefined) {
         showToast(`⛏️ +$${result.farmed_value?.toLocaleString()} em ${result.coin_name} adicionados ao portfolio!`);
       } else {
@@ -541,13 +550,27 @@ export default function BusinessManagementPage({ params }: { params: Promise<{ i
                   : `$${pb.income_per_hour.toLocaleString()}`}
               </p>
               {isDrug ? (
-                <p className="text-xs text-gray-500">{drugItemName}</p>
+                <>
+                  <p className="text-xs text-gray-500">{drugItemName}</p>
+                  {salaryCostPerHour > 0 && (
+                    <p className="text-xs text-red-400/80">💸 Salários: -${salaryCostPerHour.toLocaleString()}/hr</p>
+                  )}
+                </>
               ) : isCryptoFarm ? (
-                <p className="text-xs" style={{ color: cryptoCoin?.color ?? "#22d3ee" }}>
-                  {cryptoCoin?.name ?? "Crypto"} ({cryptoCoin?.symbol ?? "???"})
-                </p>
+                <>
+                  <p className="text-xs" style={{ color: cryptoCoin?.color ?? "#22d3ee" }}>
+                    {cryptoCoin?.name ?? "Crypto"} ({cryptoCoin?.symbol ?? "???"})
+                  </p>
+                  {salaryCostPerHour > 0 && (
+                    <p className="text-xs text-red-400/80">💸 Salários: -${salaryCostPerHour.toLocaleString()}/hr</p>
+                  )}
+                </>
               ) : (
-                <p className="text-xs text-gray-500">Salários: -${salaryCostPerHour.toLocaleString()}/hr</p>
+                <p className="text-xs text-gray-500">
+                  {salaryCostPerHour > 0
+                    ? `💸 -$${salaryCostPerHour.toLocaleString()}/hr salários (já deduzido)`
+                    : "Rendimento líquido"}
+                </p>
               )}
             </div>
             {/* Heat bar */}

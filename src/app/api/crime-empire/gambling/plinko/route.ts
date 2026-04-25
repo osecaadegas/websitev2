@@ -115,10 +115,14 @@ export async function POST(req: NextRequest) {
     player_id: player.id, game_type: "plinko", bet_amount: bet, payout, profit: payout - bet,
   });
 
-  const xpEarned = Math.max(5, Math.floor(bet / 200));
+  // XP capped to prevent gambling-as-XP-exploit (was bet/200, now bet/1000 = max 10 XP per play)
+  const xpEarned = Math.max(5, Math.floor(bet / 1000));
   await grantXP(player.id, xpEarned);
 
-  const arrestResult = await rollGamblingArrest(player.id, player.class, bet, Math.floor((player.crypto ?? 0) * 0.15));
+  // Crypto at risk = bet amount (capped by wallet), not 15% of total wallet.
+  // This prevents the exploit of emptying your wallet before gambling to avoid arrest penalties.
+  const cryptoAtRisk = Math.min(player.crypto ?? 0, bet);
+  const arrestResult = await rollGamblingArrest(player.id, player.class, bet, cryptoAtRisk);
 
   return NextResponse.json({ success: true, flips, slot, multiplier, payout, fee, multipliers: mults, xp_earned: xpEarned, arrested: arrestResult.arrested, jail_minutes: arrestResult.arrested ? (arrestResult as any).jailMinutes : 0, escape_token: arrestResult.arrested ? (arrestResult as any).escapeToken ?? null : null, crypto_at_risk: arrestResult.cryptoAtRisk ?? 0, stamina_gained: GAMBLING_STAMINA_GAIN, new_stamina: newStamina, new_addiction: newAddiction });
 }

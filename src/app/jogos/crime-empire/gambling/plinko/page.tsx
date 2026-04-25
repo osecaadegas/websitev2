@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import RaidEscape from "@/components/crime-empire/raid/RaidEscape";
 import { notifyPlayerUpdate } from "@/lib/crime-empire/player-context";
@@ -55,7 +55,8 @@ function PlinkoBoard({ flips, slot, playing }: { flips: boolean[]; slot: number;
 }
 
 export default function PlinkoPage() {
-  const [player, setPlayer] = useState<{ dirty_cash: number; crypto: number } | null>(null);
+  const [player, setPlayer] = useState<{ dirty_cash: number; crypto: number; addiction: number; level: number } | null>(null);
+  const [casinoFee, setCasinoFee] = useState(0);
   const [bet, setBet] = useState(500);
   const [risk, setRisk] = useState<"low" | "medium" | "high">("medium");
   const [flips, setFlips] = useState<boolean[]>([]);
@@ -71,7 +72,11 @@ export default function PlinkoPage() {
     const res = await fetch("/api/crime-empire/gambling");
     const data = await res.json();
     setPlayer(data.player);
+    setCasinoFee(data.casinoFee ?? 0);
   };
+
+  // Load on mount so addiction warning shows immediately
+  useEffect(() => { loadPlayer(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const drop = async () => {
     await loadPlayer();
@@ -98,7 +103,12 @@ export default function PlinkoPage() {
     setPayout(data.payout);
     setHasResult(true);
     setPlaying(false);
-    setPlayer((p) => p ? { dirty_cash: p.dirty_cash - bet - (data.fee ?? 0), crypto: p.crypto + data.payout } : p);
+    setPlayer((p) => p ? {
+      dirty_cash: p.dirty_cash - bet - (data.fee ?? 0),
+      crypto: p.crypto + data.payout,
+      addiction: Math.min(100, p.addiction + 2),
+      level: p.level,
+    } : p);
     notifyPlayerUpdate();
     if (data.escape_token) {
       setArrestEscape({ token: data.escape_token, jailMinutes: data.jail_minutes ?? 20, cryptoAtRisk: data.crypto_at_risk ?? 0 });
@@ -116,11 +126,44 @@ export default function PlinkoPage() {
         </div>
 
         {player && (
-          <div className="flex gap-4 mb-6 text-sm">
+          <div className="flex gap-4 mb-4 text-sm">
             <div className="px-4 py-2 rounded-lg bg-[#1a1a1a] border border-[#333]">💵 <span className="text-green-400 font-bold">${player.dirty_cash.toLocaleString()}</span></div>
             <div className="px-4 py-2 rounded-lg bg-[#1a1a1a] border border-[#333]">🪙 <span className="text-yellow-400 font-bold">{player.crypto.toLocaleString()}</span></div>
           </div>
         )}
+
+        {/* Addiction warning — shown before playing so player is informed */}
+        {player && player.addiction > 0 && (
+          <div className={`rounded-xl p-3 mb-4 border text-xs ${
+            player.addiction >= 70
+              ? "bg-red-900/30 border-red-500/50 text-red-200"
+              : player.addiction >= 30
+              ? "bg-yellow-900/30 border-yellow-500/50 text-yellow-200"
+              : "bg-orange-900/20 border-orange-500/30 text-orange-200"
+          }`}>
+            <div className="flex items-center justify-between mb-0.5">
+              <span className="font-bold">
+                {player.addiction >= 70 ? "🚨 Vício Grave" : player.addiction >= 30 ? "⚠️ Vício Moderado" : "💊 Vício Leve"}
+              </span>
+              <span className="font-mono font-bold">{player.addiction}%</span>
+            </div>
+            <p className="opacity-90">
+              Penalidade nos crimes: <span className="font-bold">-{(player.addiction / 2).toFixed(1)}%</span> taxa de sucesso
+            </p>
+            {player.addiction >= 70 && (
+              <p className="mt-0.5 font-bold text-red-300">Máximo: -{Math.min(50, player.addiction / 2).toFixed(0)}% nos crimes. Cada jogo piora.</p>
+            )}
+          </div>
+        )}
+
+        {/* Casino info hints */}
+        <div className="rounded-xl p-3 mb-4 bg-[#0d0d0d] border border-[#222] text-xs text-gray-500 space-y-0.5">
+          <p>💵 Apostar <strong className="text-white">Dinheiro Sujo</strong> → Ganhar <strong className="text-yellow-400">💎 Crypto</strong></p>
+          {casinoFee > 0 && <p>🎰 Taxa de entrada: <strong className="text-orange-400">${casinoFee.toLocaleString()}</strong> por jogo</p>}
+          <p>📈 Vantagem da casa: <strong>Baixo ~34%</strong> · <strong>Médio ~28%</strong> · <strong>Alto ~17%</strong></p>
+          <p>💊 Cada jogo: <strong className="text-orange-300">+2% vício</strong> (penaliza crimes)</p>
+          <p>🚔 Risco de prisão: <strong>15%</strong> por jogo · Crypto em risco: <strong>até o valor da aposta</strong></p>
+        </div>
 
         {/* Controls */}
         <div className="grid grid-cols-2 gap-3 mb-4">
@@ -168,6 +211,11 @@ export default function PlinkoPage() {
             {multiplier}x → 🪙{payout.toLocaleString()}
             {payout === 0 && <span className="block text-base text-[#888] mt-1">Slot vazio. Tenta de novo!</span>}
           </div>
+        )}
+        {hasResult && !playing && player && (
+          <p className="text-xs text-center text-orange-400/60 mt-1">
+            +2% vício · vício atual: {Math.min(100, (player.addiction ?? 0) + 2)}% → -{Math.min(50, ((player.addiction ?? 0) + 2) / 2).toFixed(1)}% crimes
+          </p>
         )}
       </div>
       {arrestEscape && (

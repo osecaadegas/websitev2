@@ -358,6 +358,20 @@ async function handleCollect(pb: any, player: any, pbId: string) {
     });
     let drugQty = Math.max(0, Math.floor(hoursElapsed * drugOutputRate));
 
+    // ── Worker salary deduction (ongoing operating cost for drug businesses) ──
+    // Salaries are paid in dirty_cash since the business output is drug items, not cash.
+    const salaryCostPerHour = (workers ?? []).reduce((s: number, w: any) => s + (w.salary ?? 0), 0);
+    const salaryCost = salaryCostPerHour > 0 ? Math.floor(hoursElapsed * salaryCostPerHour) : 0;
+    let salaryPaid = 0;
+    if (salaryCost > 0) {
+      const { data: fpDc } = await supabase.from("crime_players").select("dirty_cash").eq("id", player.id).single();
+      const availDc = fpDc?.dirty_cash ?? player.dirty_cash ?? 0;
+      salaryPaid = Math.min(salaryCost, availDc);
+      if (salaryPaid > 0) {
+        await supabase.from("crime_players").update({ dirty_cash: Math.max(0, availDc - salaryPaid) }).eq("id", player.id);
+      }
+    }
+
     if (newHeat >= 90) {
       const seized = Math.floor(drugQty * 0.70);
       drugQty = drugQty - seized;
@@ -368,7 +382,7 @@ async function handleCollect(pb: any, player: any, pbId: string) {
         await grantDrugItem(player.id, pb.business.drug_output_item_id, drugQty);
       }
       const itemName = pb.business.drug_output_item_slug ?? "droga";
-      return NextResponse.json({ success: true, drug_qty: drugQty, raided: true, message: `Foste invadido! A polícia apreendeu 70% da ${itemName}. Recuperaste ${drugQty} unidades.`, heat: newHeat });
+      return NextResponse.json({ success: true, drug_qty: drugQty, raided: true, salary_cost: salaryCost, salary_paid: salaryPaid, message: `Foste invadido! A polícia apreendeu 70% da ${itemName}. Recuperaste ${drugQty} unidades.`, heat: newHeat });
     }
 
     if (drugQty > 0 && pb.business.drug_output_item_id) {
@@ -378,7 +392,7 @@ async function handleCollect(pb: any, player: any, pbId: string) {
     await grantXP(player.id, Math.max(5, Math.floor(drugQty * 5)));
     let newEvent = null;
     if (def) newEvent = await maybeSpawnEvent(pb, def, player.id, pbId, newHeat);
-    return NextResponse.json({ success: true, drug_qty: drugQty, heat: newHeat, raided: false, new_event: newEvent });
+    return NextResponse.json({ success: true, drug_qty: drugQty, heat: newHeat, raided: false, salary_cost: salaryCost, salary_paid: salaryPaid, new_event: newEvent });
   }
 
   // ── CRYPTO FARM BUSINESSES ────────────────────────────────────────────────

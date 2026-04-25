@@ -202,6 +202,35 @@ async function tickShips(): Promise<void> {
       .update({ status: "departed", departed_at: now.toISOString() })
       .eq("id", ship.id);
 
+    // Refund captain fee (1000💎) to players who paid to unlock but never made a delivery
+    const { data: paidPlayers } = await supabaseAdmin
+      .from("porto_ship_intel")
+      .select("player_id")
+      .eq("ship_id", ship.id);
+
+    if (paidPlayers && paidPlayers.length > 0) {
+      const { data: deliveredPlayers } = await supabaseAdmin
+        .from("porto_ship_contributions")
+        .select("player_id")
+        .eq("ship_id", ship.id);
+      const deliveredSet = new Set((deliveredPlayers ?? []).map((d: any) => d.player_id));
+
+      for (const { player_id } of paidPlayers) {
+        if (!deliveredSet.has(player_id)) {
+          const { data: pp } = await supabaseAdmin.from("crime_players").select("crypto").eq("id", player_id).single();
+          if (pp) {
+            await supabaseAdmin.from("crime_players").update({ crypto: (pp.crypto ?? 0) + 1000 }).eq("id", player_id);
+            await supabaseAdmin.from("player_notifications").insert({
+              player_id,
+              type: "porto_refund",
+              title: "💎 Reembolso do Capitão",
+              message: `O "${ship.name}" partiu antes de fazeres qualquer entrega. Os teus 1000💎 foram devolvidos.`,
+            });
+          }
+        }
+      }
+    }
+
     const { data: topContrib } = await supabaseAdmin
       .from("porto_ship_contributions")
       .select("player_id, quantity, earned")
