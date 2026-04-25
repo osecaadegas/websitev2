@@ -337,6 +337,22 @@ export async function POST(request: Request) {
     }
   }
 
+  // Degrade equipped items with durability after each crime (-5 per crime)
+  const { data: durItems } = await supabase
+    .from("player_inventory")
+    .select("id, durability")
+    .eq("player_id", player.id)
+    .eq("equipped", true)
+    .not("durability", "is", null);
+
+  for (const di of durItems || []) {
+    const newDur = Math.max(0, (di.durability ?? 100) - 5);
+    await supabase
+      .from("player_inventory")
+      .update(newDur <= 0 ? { durability: 0, equipped: false } : { durability: newDur })
+      .eq("id", di.id);
+  }
+
   return NextResponse.json({
     success,
     went_to_jail: wentToJail,
@@ -352,5 +368,6 @@ export async function POST(request: Request) {
     new_stamina: updates.stamina,
     success_rate_used: effectiveSuccessRate,
     dropped_items: droppedItems,
+    broken_items: (durItems || []).filter((di) => Math.max(0, (di.durability ?? 100) - 5) <= 0).length,
   });
 }

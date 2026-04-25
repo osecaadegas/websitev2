@@ -44,6 +44,7 @@ const GAME_SECTIONS = [
       { href: "/jogos/crime-empire/porto", label: "Porto", icon: "⛵" },
       { href: "/jogos/crime-empire/acidente-de-aviao", label: "Acidente de Avião", icon: "✈️" },
       { href: "/jogos/crime-empire/shop", label: "Loja do Chinês", icon: "🏪" },
+      { href: "/jogos/crime-empire/gun-shop", label: "SGT.Marchado", icon: "🔫" },
     ],
   },
   {

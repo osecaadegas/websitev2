@@ -33,6 +33,7 @@ export async function GET() {
     .from("items")
     .select("*")
     .neq("category", "material")
+    .is("crypto_price", null)
     .order("base_price", { ascending: true });
 
   // Get what the player already owns
