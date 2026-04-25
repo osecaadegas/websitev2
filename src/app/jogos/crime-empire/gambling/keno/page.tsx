@@ -150,7 +150,7 @@ export default function KenoPage() {
       {arrestEscape && (
         <RaidEscape
           difficulty="medium"
-          cashAtRisk={0}
+          cashAtRisk={bet}
           onEscape={async () => {
             const token = arrestEscape.token;
             setArrestEscape(null);
@@ -158,6 +158,7 @@ export default function KenoPage() {
               method: "POST", headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ token, escaped: true }),
             });
+            notifyPlayerUpdate();
           }}
           onArrested={async () => {
             const token = arrestEscape.token;
@@ -166,6 +167,7 @@ export default function KenoPage() {
               method: "POST", headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ token, escaped: false }),
             });
+            notifyPlayerUpdate();
           }}
         />
       )}

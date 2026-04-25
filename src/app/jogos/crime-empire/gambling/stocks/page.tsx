@@ -437,7 +437,7 @@ export default function StocksPage() {
       {arrestEscape && (
         <RaidEscape
           difficulty="medium"
-          cashAtRisk={0}
+          cashAtRisk={buyAmount}
           onEscape={async () => {
             const token = arrestEscape.token;
             setArrestEscape(null);

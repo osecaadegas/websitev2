@@ -54,7 +54,7 @@ async function grantXP(playerId: string, xpEarned: number) {
   await supabase.from("crime_players").update({ xp: newXP, level: newLevel, xp_to_next_level: newXPToNext }).eq("id", playerId);
 }
 
-async function rollGamblingArrest(playerId: string, playerClass: string) {
+async function rollGamblingArrest(playerId: string, playerClass: string, bet: number) {
   const risk = playerClass === "scammer" ? 0.075 : 0.15;
   if (Math.random() >= risk) return { arrested: false, escapeToken: undefined as string | undefined };
   const jailMinutes = 20 + Math.floor(Math.random() * 21);
@@ -63,6 +63,7 @@ async function rollGamblingArrest(playerId: string, playerClass: string) {
   await supabase.from("crime_players").update({
     in_jail: true, jail_release_at: jailReleaseAt,
     escape_token: et.escape_token, escape_token_expires_at: et.escape_token_expires_at,
+    escape_cash_at_risk: bet,
   }).eq("id", playerId);
   await supabase.from("player_notifications").insert({
     player_id: playerId, type: "jail_released", title: "🚔 Apanhado no Casino!",
@@ -116,7 +117,7 @@ export async function POST(req: NextRequest) {
   const xpEarned = Math.max(5, Math.floor(bet / 200));
   await grantXP(player.id, xpEarned);
 
-  const arrestResult = await rollGamblingArrest(player.id, player.class);
+  const arrestResult = await rollGamblingArrest(player.id, player.class, bet);
 
   return NextResponse.json({ success: true, flips, slot, multiplier, payout, fee, multipliers: mults, xp_earned: xpEarned, arrested: arrestResult.arrested, jail_minutes: arrestResult.arrested ? (arrestResult as any).jailMinutes : 0, escape_token: arrestResult.arrested ? (arrestResult as any).escapeToken ?? null : null, stamina_gained: GAMBLING_STAMINA_GAIN, new_stamina: newStamina, new_addiction: newAddiction });
 }

@@ -33,7 +33,7 @@ async function grantXP(playerId: string, xpEarned: number) {
   await supabase.from("crime_players").update({ xp: newXP, level: newLevel, xp_to_next_level: newXPToNext }).eq("id", playerId);
 }
 
-async function rollGamblingArrest(playerId: string, playerClass: string) {
+async function rollGamblingArrest(playerId: string, playerClass: string, bet: number) {
   const risk = playerClass === "scammer" ? 0.075 : 0.15;
   if (Math.random() >= risk) return { arrested: false, escapeToken: undefined as string | undefined };
   const jailMinutes = 20 + Math.floor(Math.random() * 21);
@@ -42,6 +42,7 @@ async function rollGamblingArrest(playerId: string, playerClass: string) {
   await supabase.from("crime_players").update({
     in_jail: true, jail_release_at: jailReleaseAt,
     escape_token: et.escape_token, escape_token_expires_at: et.escape_token_expires_at,
+    escape_cash_at_risk: bet,
   }).eq("id", playerId);
   await supabase.from("player_notifications").insert({
     player_id: playerId,
@@ -120,7 +121,7 @@ export async function POST(req: NextRequest) {
     player_id: player.id, game_type: "keno", bet_amount: bet, payout, profit: payout - bet,
   });
 
-  const arrestInfo = await rollGamblingArrest(player.id, player.class);
+  const arrestInfo = await rollGamblingArrest(player.id, player.class, bet);
   // E8: XP for gambling
   await grantXP(player.id, 10);
 

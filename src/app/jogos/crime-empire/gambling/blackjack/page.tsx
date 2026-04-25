@@ -196,7 +196,7 @@ export default function BlackjackPage() {
       {arrestEscape && (
         <RaidEscape
           difficulty="medium"
-          cashAtRisk={0}
+          cashAtRisk={bet}
           onEscape={async () => {
             const token = arrestEscape.token;
             setArrestEscape(null);

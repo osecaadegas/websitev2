@@ -25,7 +25,7 @@ export async function POST(req: NextRequest) {
 
   const { data: player } = await supabase
     .from("crime_players")
-    .select("id, escape_token, escape_token_expires_at, escape_pending_cash, dirty_cash")
+    .select("id, escape_token, escape_token_expires_at, escape_pending_cash, dirty_cash, escape_cash_at_risk")
     .eq("user_id", user.id)
     .single();
 
@@ -47,23 +47,40 @@ export async function POST(req: NextRequest) {
   if (escaped) {
     // Player beat the minigame — release from jail
     const pendingCash = player.escape_pending_cash ?? 0;
-    const newDirtyCash = (player.dirty_cash ?? 0) + pendingCash;
+    const cashAtRisk = player.escape_cash_at_risk ?? 0;
+    // When cashAtRisk > 0 (gambling raid), player escapes but loses 50% of their at-risk cash
+    const cashLostOnEscape = Math.floor(cashAtRisk / 2);
+    const newDirtyCash = Math.max(0, (player.dirty_cash ?? 0) + pendingCash - cashLostOnEscape);
     await supabase
       .from("crime_players")
       .update({
         in_jail: false, jail_release_at: null,
         escape_token: null, escape_token_expires_at: null,
         escape_pending_cash: 0,
-        ...(pendingCash > 0 ? { dirty_cash: newDirtyCash } : {}),
+        escape_cash_at_risk: 0,
+        dirty_cash: newDirtyCash,
       })
       .eq("id", player.id);
-    return NextResponse.json({ success: true, escaped: true, cash_granted: pendingCash });
+    return NextResponse.json({
+      success: true, escaped: true,
+      cash_granted: pendingCash,
+      cash_lost: cashLostOnEscape,
+      cash_saved: cashAtRisk - cashLostOnEscape,
+    });
   } else {
-    // Player failed the minigame — keep in jail, just clear token and pending cash
+    // Player failed the minigame — keep in jail, deduct full cashAtRisk from dirty_cash
+    const cashAtRisk = player.escape_cash_at_risk ?? 0;
+    const cashLost = Math.min(cashAtRisk, player.dirty_cash ?? 0);
+    const newDirtyCash = Math.max(0, (player.dirty_cash ?? 0) - cashLost);
     await supabase
       .from("crime_players")
-      .update({ escape_token: null, escape_token_expires_at: null, escape_pending_cash: 0 })
+      .update({
+        escape_token: null, escape_token_expires_at: null,
+        escape_pending_cash: 0,
+        escape_cash_at_risk: 0,
+        ...(cashAtRisk > 0 ? { dirty_cash: newDirtyCash } : {}),
+      })
       .eq("id", player.id);
-    return NextResponse.json({ success: true, escaped: false });
+    return NextResponse.json({ success: true, escaped: false, cash_lost: cashLost });
   }
 }

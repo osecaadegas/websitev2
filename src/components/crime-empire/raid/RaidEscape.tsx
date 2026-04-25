@@ -170,12 +170,20 @@ export default function RaidEscape({ businessValue, difficulty: difficultyProp, 
         <div className="text-center space-y-4 animate-fadeIn px-4">
           <div className="text-8xl">🏃</div>
           <h2 className="text-5xl font-black text-green-400 tracking-wide">FUGISTE!</h2>
-          <p className="text-[#aaa] text-lg">Escapaste pelos seus pés.</p>
-          <div className="px-6 py-3 rounded-xl bg-green-900/20 border border-green-500/40 inline-block">
-            <p className="text-green-300 font-bold">💰 ${cashAtRisk.toLocaleString()} protegido</p>
-          </div>
+          {cashAtRisk > 0 ? (
+            <>
+              <p className="text-[#aaa] text-lg">Escapaste, mas a polícia apanhou metade!</p>
+              <div className="px-6 py-4 rounded-xl bg-yellow-900/20 border border-yellow-500/40 inline-block space-y-1">
+                <p className="text-yellow-300 font-bold text-lg">⚠️ Só conseguiste agarrar 50%</p>
+                <p className="text-green-400 font-bold">💰 ${Math.floor(cashAtRisk / 2).toLocaleString()} recuperado</p>
+                <p className="text-red-400 text-sm">💸 ${Math.floor(cashAtRisk / 2).toLocaleString()} confiscado pela polícia</p>
+              </div>
+            </>
+          ) : (
+            <p className="text-[#aaa] text-lg">Escapaste pelos seus pés.</p>
+          )}
           <button
-            onClick={() => onEscape(cashAtRisk)}
+            onClick={() => onEscape(Math.floor(cashAtRisk / 2))}
             className="mt-2 px-10 py-4 rounded-xl font-black text-lg bg-gradient-to-r from-green-700 to-emerald-700 hover:from-green-600 hover:to-emerald-600 text-white transition-all hover:scale-[1.02] active:scale-95 block mx-auto"
           >
             Continuar →
