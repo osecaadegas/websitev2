@@ -1,16 +1,16 @@
 "use client";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { createPortal } from "react-dom";
-import LockSequence, { type Difficulty } from "./LockSequence";
-import HeatZone from "./HeatZone";
-import EscapeRoute from "./EscapeRoute";
+import { CrimeMinigame } from "../minigames/CrimeMinigame";
+import { GAME_IDS, GAME_META, type GameId } from "../minigames/gameConfig";
+import type { Difficulty } from "./LockSequence";
 
 /* ─────────────────────────────────────────────────────────────────────
    RaidEscape — Orchestrator
    Randomly picks one of 3 minigames and manages the global arrest meter.
    ───────────────────────────────────────────────────────────────────── */
 
-type MinigameType = "lock_sequence" | "heat_zone" | "escape_route";
+type MinigameType = GameId;
 type Phase = "intro" | "game" | "escaped" | "arrested";
 
 interface Props {
@@ -38,20 +38,15 @@ function getDifficulty(val: number): Difficulty {
   return "high";
 }
 
-const MINIGAME_NAMES: Record<MinigameType, string> = {
-  lock_sequence: "Quebra de Código",
-  heat_zone:     "Zona de Calor",
-  escape_route:  "Rota de Fuga",
-};
+
 
 export default function RaidEscape({ businessValue, difficulty: difficultyProp, cashAtRisk, cryptoAtRisk = 0, onEscape, onArrested }: Props) {
   const [mounted, setMounted]     = useState(false);
   const [phase, setPhase]         = useState<Phase>("intro");
   const [arrestPct, setArrestPct] = useState(0);
-  const [minigame]                = useState<MinigameType>(() => {
-    const all: MinigameType[] = ["lock_sequence", "heat_zone", "escape_route"];
-    return all[Math.floor(Math.random() * all.length)];
-  });
+  const [minigame]                = useState<MinigameType>(() =>
+    GAME_IDS[Math.floor(Math.random() * GAME_IDS.length)]
+  );
 
   const difficulty = difficultyProp ?? getDifficulty(businessValue ?? 0);
   const phaseRef   = useRef<Phase>("intro");
@@ -105,6 +100,10 @@ export default function RaidEscape({ businessValue, difficulty: difficultyProp, 
     setPhase("escaped");
   }, []);
 
+  const handleMinigameFail = useCallback(() => {
+    bumpArrest(100);
+  }, [bumpArrest]);
+
   if (!mounted) return null;
 
   const content = (
@@ -132,7 +131,7 @@ export default function RaidEscape({ businessValue, difficulty: difficultyProp, 
             </div>
           )}
           <div className="mt-3 px-6 py-3 rounded-xl bg-[#1a0a0a] border border-red-500/40 inline-block">
-            <p className="text-pink-300 font-bold text-sm">Minijogo: {MINIGAME_NAMES[minigame]}</p>
+            <p className="text-pink-300 font-bold text-sm">{GAME_META[minigame].icon} {GAME_META[minigame].name}</p>
             <p className="text-[#444] text-xs mt-1">A preparar fuga…</p>
           </div>
         </div>
@@ -162,15 +161,12 @@ export default function RaidEscape({ businessValue, difficulty: difficultyProp, 
 
           {/* Minigame card */}
           <div className="p-5 rounded-2xl bg-[#0d0d0d] border-2 border-red-500/30 shadow-[0_0_40px_rgba(239,68,68,0.12)]">
-            {minigame === "lock_sequence" && (
-              <LockSequence difficulty={difficulty} onSuccess={handleSuccess} onMistake={bumpArrest} />
-            )}
-            {minigame === "heat_zone" && (
-              <HeatZone difficulty={difficulty} onSuccess={handleSuccess} onMistake={bumpArrest} />
-            )}
-            {minigame === "escape_route" && (
-              <EscapeRoute difficulty={difficulty} onSuccess={handleSuccess} onMistake={bumpArrest} />
-            )}
+            <CrimeMinigame
+              gameId={minigame}
+              difficulty={difficulty}
+              onSuccess={handleSuccess}
+              onFail={handleMinigameFail}
+            />
           </div>
         </div>
       )}

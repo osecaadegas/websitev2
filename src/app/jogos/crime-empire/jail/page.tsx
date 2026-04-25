@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { useAuth } from "@/lib/auth-context";
+import { CrimeMinigame } from "@/components/crime-empire/minigames/CrimeMinigame";
+import type { GameDifficulty } from "@/components/crime-empire/minigames/gameConfig";
 
 interface Player {
   id: string;
@@ -13,6 +15,10 @@ interface Player {
   dirty_cash: number;
   in_jail: boolean;
   jail_release_at: string | null;
+  escape_token: string | null;
+  escape_token_expires_at: string | null;
+  escape_cash_at_risk: number;
+  escape_crypto_at_risk: number;
 }
 
 export default function JailPage() {
@@ -23,6 +29,8 @@ export default function JailPage() {
   const [timeRemaining, setTimeRemaining] = useState("");
   const [earlyReleaseCost, setEarlyReleaseCost] = useState(0);
   const [releasing, setReleasing] = useState(false);
+  const [showEscape, setShowEscape] = useState(false);
+  const [escapeResult, setEscapeResult] = useState<"success" | "fail" | null>(null);
 
   useEffect(() => {
     if (!user) {
@@ -90,8 +98,45 @@ export default function JailPage() {
     setEarlyReleaseCost(cost);
   };
 
-  const payForRelease = async () => {
-    if (!player || releasing) return;
+  const hasValidEscapeToken = (): boolean => {
+    if (!player?.escape_token || !player?.escape_token_expires_at) return false;
+    return new Date(player.escape_token_expires_at) > new Date();
+  };
+
+  const escapeDifficulty = (): GameDifficulty => {
+    const lvl = player?.level ?? 1;
+    if (lvl < 10) return "low";
+    if (lvl < 25) return "medium";
+    return "high";
+  };
+
+  const handleEscapeSuccess = async () => {
+    try {
+      const res = await fetch("/api/crime-empire/escape-attempt", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token: player?.escape_token, escaped: true }),
+      });
+      setEscapeResult("success");
+      if (res.ok) setTimeout(() => { fetchPlayer(); setShowEscape(false); setEscapeResult(null); }, 2500);
+    } catch {
+      setEscapeResult("success");
+    }
+  };
+
+  const handleEscapeFail = async () => {
+    try {
+      await fetch("/api/crime-empire/escape-attempt", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token: player?.escape_token, escaped: false }),
+      });
+    } catch { /* ignore */ }
+    setEscapeResult("fail");
+    setTimeout(() => { fetchPlayer(); setShowEscape(false); setEscapeResult(null); }, 2500);
+  };
+
+  const payForRelease = async () => {    if (!player || releasing) return;
 
     if (player.cash < earlyReleaseCost) {
       alert("Não tens dinheiro suficiente para pagar a fiança!");
@@ -124,8 +169,7 @@ export default function JailPage() {
     }
   };
 
-  if (loading) {
-    return (
+  if (loading) {    return (
       <div className="flex-1 flex items-center justify-center">
         <div className="text-white text-xl">A carregar...</div>
       </div>
@@ -202,6 +246,28 @@ export default function JailPage() {
                 💡 <strong>Dica:</strong> Podes esperar pela libertação automática ou pagar a fiança usando dinheiro limpo (não dinheiro sujo).
               </p>
             </div>
+
+            {/* Escape Attempt */}
+            {hasValidEscapeToken() && (
+              <div className="mt-6 p-6 rounded-xl bg-slate-900/60 border border-purple-500/50">
+                <h3 className="text-xl font-bold mb-2 text-purple-300">🏃 Tentativa de Fuga</h3>
+                <p className="text-sm text-slate-400 mb-4">
+                  Tens uma janela de oportunidade para fugir. Completa o minijogo para escapar — se falhares, perdes os ativos em risco.
+                </p>
+                {(player.escape_cash_at_risk > 0 || player.escape_crypto_at_risk > 0) && (
+                  <div className="mb-4 space-y-1 text-sm">
+                    {player.escape_cash_at_risk > 0 && <p className="text-pink-300">💸 Em risco: ${player.escape_cash_at_risk.toLocaleString()} dinheiro sujo</p>}
+                    {player.escape_crypto_at_risk > 0 && <p className="text-purple-300">💎 Em risco: ${player.escape_crypto_at_risk.toLocaleString()} crypto</p>}
+                  </div>
+                )}
+                <button
+                  onClick={() => setShowEscape(true)}
+                  className="w-full py-4 rounded-xl font-black text-lg bg-gradient-to-r from-purple-700 to-indigo-700 hover:from-purple-600 hover:to-indigo-600 text-white transition-all hover:scale-[1.02] active:scale-95"
+                >
+                  🏃 Tentar Fugir
+                </button>
+              </div>
+            )}
           </motion.div>
         ) : (
           <motion.div
@@ -222,6 +288,47 @@ export default function JailPage() {
           </motion.div>
         )}
       </div>
+
+      {/* ── Escape Minigame Overlay ── */}
+      {showEscape && (
+        <div className="fixed inset-0 z-[9999] bg-black/95 flex flex-col items-center justify-center p-6">
+          <div className="w-full max-w-lg">
+            {escapeResult === null ? (
+              <>
+                <div className="mb-6 text-center">
+                  <h2 className="text-3xl font-black text-purple-300 mb-1">🏃 Tentativa de Fuga</h2>
+                  <p className="text-slate-400 text-sm">Completa o desafio para escapar da prisão</p>
+                </div>
+                <div className="p-5 rounded-2xl bg-slate-900/80 border border-purple-500/30">
+                  <CrimeMinigame
+                    difficulty={escapeDifficulty()}
+                    onSuccess={handleEscapeSuccess}
+                    onFail={handleEscapeFail}
+                  />
+                </div>
+                <button
+                  onClick={() => setShowEscape(false)}
+                  className="mt-4 w-full py-2 rounded-xl text-slate-500 hover:text-slate-300 text-sm transition-colors"
+                >
+                  Cancelar
+                </button>
+              </>
+            ) : (
+              <div className="text-center space-y-4">
+                <div className="text-7xl">{escapeResult === "success" ? "🏃" : "👮"}</div>
+                <h2 className={`text-4xl font-black ${escapeResult === "success" ? "text-green-400" : "text-red-400"}`}>
+                  {escapeResult === "success" ? "FUGISTE!" : "FALHASTE!"}
+                </h2>
+                <p className="text-slate-400">
+                  {escapeResult === "success"
+                    ? "Conseguiste escapar da prisão!"
+                    : "Não conseguiste escapar. Os teus ativos foram confiscados."}
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

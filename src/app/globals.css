@@ -4090,3 +4090,75 @@ body {
   .bdm-featured__body { padding: 16px 16px 20px; }
   .bdm-admin-form-wrap { padding: 16px; }
 }
+
+/* ══════════════════════════════════════════════════════════════════════
+   CRIME EMPIRE MINIGAMES
+   ══════════════════════════════════════════════════════════════════════ */
+.mg-hud-row { width: min(780px, 100%); display: flex; justify-content: space-between; gap: 16px; color: #8ea0b8; font-size: 13px; margin-bottom: 18px; }
+.mg-bar { height: 10px; width: 100%; background: rgba(15,23,42,.92); border: 1px solid rgba(148,163,184,.18); border-radius: 999px; overflow: hidden; }
+.mg-bar > i { display: block; height: 100%; width: 0%; background: linear-gradient(90deg,#38bdf8,#22c55e); transition: width 90ms linear; }
+.mg-bar.mg-danger > i { background: linear-gradient(90deg,#f59e0b,#ef4444); }
+.mg-readout { width: min(760px,100%); display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.mg-metric { background: rgba(15,23,42,.55); border: 1px solid rgba(148,163,184,.16); border-radius: 16px; padding: 13px; }
+.mg-metric b { display: block; margin-bottom: 8px; }
+.mg-btn { border: 1px solid rgba(148,163,184,.24); border-radius: 999px; color: #e5edf9; background: rgba(15,23,42,.8); padding: 10px 20px; cursor: pointer; font-family: inherit; font-weight: 700; transition: transform 150ms ease, border-color 150ms ease; }
+.mg-btn:hover { transform: translateY(-1px); border-color: rgba(56,189,248,.62); }
+.mg-btn.primary { background: linear-gradient(135deg,rgba(14,165,233,.92),rgba(34,197,94,.78)); border-color: transparent; font-weight: 900; }
+.mg-flash-good { animation: mgGoodPulse 340ms ease; }
+@keyframes mgGoodPulse { 50% { filter: drop-shadow(0 0 18px rgba(34,197,94,.75)); } }
+.mg-flash-bad { animation: mgBadPulse 260ms ease; }
+@keyframes mgBadPulse { 50% { filter: drop-shadow(0 0 18px rgba(239,68,68,.85)); } }
+/* Lockpick */
+.mg-lock-wrap { width: min(660px,100%); display: grid; gap: 20px; justify-items: center; position: relative; z-index: 1; }
+.mg-lock-stage { width: min(430px,88vw); aspect-ratio: 1; display: grid; place-items: center; position: relative; touch-action: none; }
+.mg-lock-body { width: 72%; aspect-ratio: 1; border-radius: 50%; background: radial-gradient(circle at 38% 30%,#334155,#111827 58%,#020617); border: 10px solid #1e293b; box-shadow: inset 0 0 42px rgba(0,0,0,.75),0 28px 70px rgba(0,0,0,.5); display: grid; place-items: center; }
+.mg-lock-cylinder { width: 45%; aspect-ratio: 1; border-radius: 50%; background: radial-gradient(circle at 35% 30%,#64748b,#1f2937 62%,#020617); border: 7px solid rgba(148,163,184,.22); position: relative; transition: filter 80ms linear; }
+.mg-lock-cylinder::after { content: ""; position: absolute; top: 6%; left: 50%; width: 12%; height: 44%; transform: translateX(-50%); border-radius: 999px; background: #020617; box-shadow: inset 0 0 10px rgba(255,255,255,.12); }
+.mg-pick { position: absolute; left: 50%; top: 50%; width: 3px; height: 47%; background: linear-gradient(#e2e8f0,#64748b); transform-origin: 50% 0%; border-radius: 999px; box-shadow: 0 0 14px rgba(226,232,240,.35); }
+.mg-tension-arm { position: absolute; left: 50%; top: 50%; width: 35%; height: 6px; transform-origin: 0 50%; background: linear-gradient(90deg,#94a3b8,#334155); border-radius: 999px; }
+/* Safe cracking */
+.mg-safe-wrap { width: min(760px,100%); display: grid; justify-items: center; gap: 18px; position: relative; z-index: 1; }
+.mg-dial { width: min(360px,78vw); aspect-ratio: 1; border-radius: 50%; border: 12px solid #1e293b; background: radial-gradient(circle,#0f172a 0 41%,#020617 42% 46%,#263244 47% 100%); position: relative; touch-action: none; box-shadow: inset 0 0 34px rgba(0,0,0,.8),0 24px 60px rgba(0,0,0,.45); }
+.mg-dial::before { content: ""; position: absolute; left: 50%; top: -23px; transform: translateX(-50%); border-left: 12px solid transparent; border-right: 12px solid transparent; border-top: 26px solid #38bdf8; filter: drop-shadow(0 0 10px rgba(56,189,248,.7)); }
+.mg-dial-face { position: absolute; inset: 0; border-radius: 50%; transition: filter 120ms ease; }
+.mg-dial-mark { position: absolute; left: 50%; top: 7px; width: 2px; height: 18px; background: rgba(226,232,240,.86); transform-origin: 50% 165px; }
+.mg-dial-mark.major { height: 28px; width: 3px; background: #e5edf9; }
+.mg-dial-number { position: absolute; inset: 0; display: grid; place-items: center; font-size: 54px; font-weight: 900; letter-spacing: -0.06em; color: #dbeafe; text-shadow: 0 0 20px rgba(56,189,248,.28); pointer-events: none; }
+.mg-combo-slots { display: flex; gap: 10px; }
+.mg-combo-slots i { width: 52px; height: 12px; border-radius: 999px; background: rgba(148,163,184,.22); display: block; }
+.mg-combo-slots i.done { background: #22c55e; box-shadow: 0 0 16px rgba(34,197,94,.55); }
+.mg-near-click { color: #bae6fd; min-height: 22px; letter-spacing: .12em; text-transform: uppercase; font-size: 12px; font-weight: 900; }
+/* Wire cutting */
+.mg-wire-wrap { width: min(800px,100%); position: relative; z-index: 1; display: grid; gap: 20px; }
+.mg-rule-box { padding: 18px; border: 1px solid rgba(56,189,248,.34); background: rgba(8,47,73,.28); border-radius: 18px; font-size: clamp(18px,2.5vw,26px); font-weight: 900; }
+.mg-wire-list { display: grid; gap: 14px; }
+.mg-wire { display: grid; grid-template-columns: 48px 1fr 92px; gap: 12px; align-items: center; background: rgba(15,23,42,.5); border: 1px solid rgba(148,163,184,.16); border-radius: 16px; padding: 12px; cursor: pointer; font-family: inherit; transition: transform 140ms ease, border-color 140ms ease; }
+.mg-wire:hover { transform: translateX(4px); border-color: rgba(56,189,248,.5); }
+.mg-wire-line { height: 12px; border-radius: 999px; box-shadow: inset 0 2px 4px rgba(255,255,255,.22),0 0 14px currentColor; }
+.mg-wire.red { color: #ef4444; } .mg-wire.blue { color: #3b82f6; } .mg-wire.yellow { color: #eab308; } .mg-wire.green { color: #22c55e; } .mg-wire.black { color: #94a3b8; } .mg-wire.white { color: #e5e7eb; } .mg-wire.purple { color: #a855f7; } .mg-wire.orange { color: #f97316; }
+.mg-wire small { color: #8ea0b8; text-transform: uppercase; letter-spacing: .12em; font-weight: 900; font-size: 11px; }
+/* Hacking grid */
+.mg-hack-wrap { width: min(650px,100%); display: grid; gap: 18px; justify-items: center; position: relative; z-index: 1; }
+.mg-hack-grid { width: min(460px,86vw); display: grid; gap: 10px; }
+.mg-cell { aspect-ratio: 1; border: 1px solid rgba(148,163,184,.22); border-radius: 16px; background: rgba(15,23,42,.68); color: #8ea0b8; font-weight: 900; cursor: pointer; font-family: inherit; transition: transform 90ms ease, background 90ms ease, border-color 90ms ease, color 90ms ease; }
+.mg-cell:hover { border-color: rgba(56,189,248,.45); }
+.mg-cell.lit { transform: scale(.94); color: #082f49; background: #7dd3fc; box-shadow: 0 0 24px rgba(56,189,248,.72); }
+.mg-cell.hit { color: #052e16; background: #86efac; border-color: #22c55e; }
+.mg-cell.bad { color: #450a0a; background: #fca5a5; border-color: #ef4444; }
+/* Thermite / Keypad / Panic shared */
+.mg-balance-wrap, .mg-keypad-wrap, .mg-panic-wrap { width: min(780px,100%); display: grid; gap: 20px; position: relative; z-index: 1; }
+.mg-track { height: 62px; border-radius: 999px; border: 1px solid rgba(148,163,184,.22); background: linear-gradient(180deg,rgba(15,23,42,.78),rgba(2,6,23,.86)); position: relative; overflow: hidden; touch-action: none; box-shadow: inset 0 0 24px rgba(0,0,0,.5); }
+.mg-safe-zone-bar { position: absolute; top: 9px; bottom: 9px; border-radius: 999px; background: rgba(34,197,94,.28); border: 1px solid rgba(34,197,94,.75); box-shadow: 0 0 18px rgba(34,197,94,.32); }
+.mg-indicator { position: absolute; top: 4px; width: 8px; height: calc(100% - 8px); border-radius: 999px; background: #e0f2fe; box-shadow: 0 0 18px rgba(56,189,248,.8); transform: translateX(-50%); }
+.mg-track-labels { display: flex; justify-content: space-between; color: #8ea0b8; font-size: 12px; letter-spacing: .14em; text-transform: uppercase; font-weight: 900; }
+.mg-keypad-track { height: 54px; }
+.mg-hit-counter { display: flex; gap: 9px; flex-wrap: wrap; }
+.mg-hit-counter i { width: 34px; height: 10px; border-radius: 999px; background: rgba(148,163,184,.22); }
+.mg-hit-counter i.done { background: #22c55e; box-shadow: 0 0 12px rgba(34,197,94,.55); }
+.mg-panic-seq { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
+.mg-keycap { min-width: 56px; height: 56px; padding: 0 14px; display: grid; place-items: center; border-radius: 14px; border: 1px solid rgba(148,163,184,.24); background: rgba(15,23,42,.72); color: #e5edf9; font-size: 22px; font-weight: 900; font-family: inherit; transition: transform 100ms ease, background 100ms ease; }
+.mg-keycap.current { border-color: rgba(56,189,248,.72); box-shadow: 0 0 18px rgba(56,189,248,.38); transform: translateY(-4px); }
+.mg-keycap.done { background: rgba(34,197,94,.35); color: #dcfce7; }
+.mg-keycap.bad { background: rgba(239,68,68,.44); color: #fee2e2; }
+.mg-panic-pad { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
+.mg-panic-pad .mg-keycap { cursor: pointer; }
