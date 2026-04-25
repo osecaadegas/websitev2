@@ -23,6 +23,7 @@ export async function GET() {
       stat_attractiveness: d.stats.attractiveness, stat_stamina: d.stats.stamina,
       stat_mood: d.stats.mood, stat_charisma: d.stats.charisma,
       sort_order: d.order, enabled: true,
+      required_level: d.required_level,
     }));
     return NextResponse.json({ defs: fallback, fallback: true });
   }
@@ -38,7 +39,7 @@ export async function POST(req: NextRequest) {
   const {
     id, slug, name, description, rarity, hire_price, hire_uses_crypto,
     earnings_per_hour, traits, stat_attractiveness, stat_stamina,
-    stat_mood, stat_charisma, sort_order, enabled,
+    stat_mood, stat_charisma, sort_order, enabled, required_level,
   } = body;
 
   if (!id || !slug || !name || !rarity)
@@ -60,6 +61,7 @@ export async function POST(req: NextRequest) {
       stat_charisma: stat_charisma ?? 50,
       sort_order: sort_order ?? 0,
       enabled: enabled ?? true,
+      required_level: required_level ?? 1,
       updated_at: new Date().toISOString(),
     })
     .select()

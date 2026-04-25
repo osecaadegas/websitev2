@@ -32,9 +32,8 @@ export async function GET() {
         earnings_per_hour: d.earnings_per_hour,
         traits: d.traits,
         rarity: d.rarity,
-        // required_level is not stored in DB yet — always use static def as source of truth
-        // so client lock logic stays in sync with server-side enforcement
-        required_level: (d as any).required_level ?? staticDef?.required_level ?? 1,
+        // required_level is stored in DB (see 23-worker-required-level.sql); fallback to static if missing
+        required_level: d.required_level ?? staticDef?.required_level ?? 1,
         stats: {
           attractiveness: d.stat_attractiveness,
           stamina: d.stat_stamina,
