@@ -3,6 +3,7 @@ import { supabase } from "@/lib/supabase";
 import { cookies } from "next/headers";
 import { grantDirtyMoney, deductDirtyMoney } from "@/lib/dirty-money";
 import { BUSINESS_DEFS } from "@/lib/business-defs";
+import { grantXP } from "@/lib/crime-empire/xp";
 
 export const dynamic = "force-dynamic";
 
@@ -15,21 +16,6 @@ async function getAuthUser() {
   } catch {
     return null;
   }
-}
-
-/* ── E8: Shared XP helper ─────────────────────────────────── */
-async function grantXP(playerId: string, xpEarned: number) {
-  if (xpEarned <= 0) return;
-  const { data: p } = await supabase.from("crime_players").select("xp, level, xp_to_next_level").eq("id", playerId).single();
-  if (!p) return;
-  let newXP = p.xp + xpEarned;
-  let newLevel = p.level;
-  while (newXP >= p.xp_to_next_level) {
-    newXP -= p.xp_to_next_level;
-    newLevel++;
-  }
-  const newXPToNext = Math.floor(100 * Math.pow(1.25, newLevel - 1));
-  await supabase.from("crime_players").update({ xp: newXP, level: newLevel, xp_to_next_level: newXPToNext }).eq("id", playerId);
 }
 
 /* ── GET - Fetch all businesses and player's owned businesses ─── */

@@ -13,6 +13,7 @@ import {
 } from "@/lib/business-defs";
 import { grantDirtyMoney, deductDirtyMoney, getDirtyMoneyBalance } from "@/lib/dirty-money";
 import { getPoliceMultiplier } from "@/lib/crime-empire/system-settings";
+import { grantXP } from "@/lib/crime-empire/xp";
 
 export const dynamic = "force-dynamic";
 
@@ -21,16 +22,6 @@ async function getAuthUser() {
   const raw = cookieStore.get("twitch_session")?.value;
   if (!raw) return null;
   try { return JSON.parse(raw); } catch { return null; }
-}
-
-async function grantXP(playerId: string, xpEarned: number) {
-  if (xpEarned <= 0) return;
-  const { data: p } = await supabase.from("crime_players").select("xp, level, xp_to_next_level").eq("id", playerId).single();
-  if (!p) return;
-  let newXP = p.xp + xpEarned;
-  let newLevel = p.level;
-  while (newXP >= p.xp_to_next_level) { newXP -= p.xp_to_next_level; newLevel++; }
-  await supabase.from("crime_players").update({ xp: newXP, level: newLevel, xp_to_next_level: Math.floor(100 * Math.pow(1.25, newLevel - 1)) }).eq("id", playerId);
 }
 
 // ── Shared: calculate current heat ──────────────────────────────────────────

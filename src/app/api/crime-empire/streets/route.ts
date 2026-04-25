@@ -30,6 +30,7 @@ import {
   type SpawnedCustomer,
   type CustomerType,
 } from "@/lib/street-defs";
+import { grantXP } from "@/lib/crime-empire/xp";
 
 export const dynamic = "force-dynamic";
 
@@ -40,26 +41,6 @@ async function getAuthUser() {
   const raw = cookieStore.get("twitch_session")?.value;
   if (!raw) return null;
   try { return JSON.parse(raw); } catch { return null; }
-}
-
-// ─── XP helper ──────────────────────────────────────────────────────────────
-
-async function grantXP(playerId: string, xpEarned: number) {
-  if (xpEarned <= 0) return;
-  const { data: p } = await supabase
-    .from("crime_players")
-    .select("xp, level, xp_to_next_level")
-    .eq("id", playerId)
-    .single();
-  if (!p) return;
-  let newXP = p.xp + xpEarned;
-  let newLevel = p.level;
-  while (newXP >= p.xp_to_next_level) { newXP -= p.xp_to_next_level; newLevel++; }
-  const newXPToNext = Math.floor(100 * Math.pow(1.25, newLevel - 1));
-  await supabase
-    .from("crime_players")
-    .update({ xp: newXP, level: newLevel, xp_to_next_level: newXPToNext })
-    .eq("id", playerId);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

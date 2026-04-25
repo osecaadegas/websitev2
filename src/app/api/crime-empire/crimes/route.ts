@@ -3,7 +3,7 @@ import { cookies } from "next/headers";
 import { supabase } from "@/lib/supabase";
 import { grantDirtyMoney } from "@/lib/dirty-money";
 import { generateEscapeToken } from "@/lib/crime-empire/arrest-helpers";
-import { getPoliceMultiplier } from "@/lib/crime-empire/system-settings";
+import { getPoliceMultiplier, getXPMultiplier } from "@/lib/crime-empire/system-settings";
 
 export const dynamic = "force-dynamic";
 
@@ -202,17 +202,20 @@ export async function POST(request: Request) {
   const newStamina = player.stamina - effectiveStaminaCost;
 
   // Calculate XP and level up
-  let newXP = player.xp + xpEarned;
+  const xpMultiplier = await getXPMultiplier();
+  let newXP = player.xp + Math.round(xpEarned * xpMultiplier);
   let newLevel = player.level;
   let leveledUp = false;
+  let xpThreshold = player.xp_to_next_level;
 
-  while (newXP >= player.xp_to_next_level) {
-    newXP -= player.xp_to_next_level;
+  while (newXP >= xpThreshold) {
+    newXP -= xpThreshold;
     newLevel++;
     leveledUp = true;
+    xpThreshold = Math.floor(100 * Math.pow(1.25, newLevel - 1));
   }
 
-  const newXPToNext = Math.floor(100 * Math.pow(1.25, newLevel - 1));
+  const newXPToNext = xpThreshold;
 
   // Re-fetch fresh balance to prevent race conditions
   const { data: freshPlayer } = await supabase.from("crime_players").select("dirty_cash, cash, respect, stamina").eq("id", player.id).single();

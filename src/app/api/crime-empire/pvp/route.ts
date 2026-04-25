@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { supabase } from "@/lib/supabase";
+import { grantXP } from "@/lib/crime-empire/xp";
 
 export const dynamic = "force-dynamic";
 
@@ -241,14 +242,7 @@ export async function POST(req: NextRequest) {
 
     // E8: Grant XP to winner
     const pvpXP = 50 + (loser.level ?? 1) * 2;
-    const { data: wp } = await supabase.from("crime_players").select("xp, level, xp_to_next_level").eq("id", winner.id).single();
-    if (wp) {
-      let newXP = wp.xp + pvpXP;
-      let newLevel = wp.level;
-      while (newXP >= wp.xp_to_next_level) { newXP -= wp.xp_to_next_level; newLevel++; }
-      const newXPToNext = Math.floor(100 * Math.pow(1.25, newLevel - 1));
-      await supabase.from("crime_players").update({ xp: newXP, level: newLevel, xp_to_next_level: newXPToNext }).eq("id", winner.id);
-    }
+    await grantXP(winner.id, pvpXP);
 
     // Degrade attacker's equipped items with durability after PvP
     // Loss scales with item tier: base 5 + floor(crypto_price / 150), min 4, max 20
