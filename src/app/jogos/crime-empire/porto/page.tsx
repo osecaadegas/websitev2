@@ -57,19 +57,45 @@ interface ActivityEntry {
   player_name: string | null;
 }
 
+interface NextShipPreviewData {
+  id: string;
+  name: string;
+  arrival_time: string;
+  departure_time: string;
+  ship_class: "normal" | "high_demand" | "risky";
+  capacity_total: number;
+  drug_type: string | null;
+  price_per_unit: number | null;
+}
+
 interface PageData {
   currentShip: Ship | null;
+  nextShip: NextShipPreviewData | null;
+  nextShipRevealed: boolean;
   topContributors: Contributor[];
   myContribution: MyContribution | null;
   drugInventory: DrugItem[];
   activityFeed: ActivityEntry[];
-  player: { id: string; dirty_cash: number; in_jail: boolean; hp: number };
+  player: { id: string; dirty_cash: number; in_jail: boolean; hp: number; crypto: number };
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function fmt(n: number) {
   return n.toLocaleString("pt-PT");
+}
+
+function formatArrivalDay(iso: string): string {
+  const d = new Date(iso);
+  const today = new Date();
+  const tomorrow = new Date(today.getTime() + 86400000);
+  if (d.toDateString() === today.toDateString()) return "Hoje";
+  if (d.toDateString() === tomorrow.toDateString()) return "Amanhã";
+  return d.toLocaleDateString("pt-PT", { weekday: "short", day: "numeric", month: "short" });
+}
+
+function formatArrivalHour(iso: string): string {
+  return new Date(iso).toLocaleTimeString("pt-PT", { hour: "2-digit", minute: "2-digit" });
 }
 
 function formatCountdown(ms: number): string {
@@ -323,7 +349,82 @@ function ActivityFeed({ entries }: { entries: ActivityEntry[] }) {
     </div>
   );
 }
+// ─── Next Ship Preview ────────────────────────────────────────────────────────────────
 
+function NextShipPreview({
+  nextShip,
+  revealed,
+  playerCrypto,
+  processing,
+  onReveal,
+}: {
+  nextShip: NextShipPreviewData;
+  revealed: boolean;
+  playerCrypto: number;
+  processing: boolean;
+  onReveal: () => void;
+}) {
+  const meta = CLASS_META[nextShip.ship_class];
+  const arrivalDay = formatArrivalDay(nextShip.arrival_time);
+  const arrivalHour = formatArrivalHour(nextShip.arrival_time);
+  const canAfford = playerCrypto >= 1000;
+  return (
+    <div className={`rounded-2xl border p-4 bg-[#06080f] ${meta.border}`}>
+      <div className="flex items-center justify-between mb-3">
+        <p className="text-xs text-[#444] uppercase tracking-widest font-bold">Próximo Navio</p>
+        <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${meta.badge}`}>{meta.label}</span>
+      </div>
+      <div className="flex items-center gap-2 mb-3">
+        <span className="text-lg">🚢</span>
+        <p className="text-white font-black text-sm">{nextShip.name}</p>
+      </div>
+      <div className="space-y-2 text-sm mb-4">
+        <div className="flex justify-between">
+          <span className="text-[#555]">Chega</span>
+          <span className="text-white font-semibold">{arrivalDay}</span>
+        </div>
+        <div className="flex justify-between">
+          <span className="text-[#555]">Hora</span>
+          {revealed ? (
+            <span className="text-sky-400 font-bold">{arrivalHour}</span>
+          ) : (
+            <span className="text-[#333] font-bold tracking-widest select-none">██:██</span>
+          )}
+        </div>
+        <div className="flex justify-between">
+          <span className="text-[#555]">Droga</span>
+          {revealed && nextShip.drug_type ? (
+            <span className="text-sky-300 font-bold">{nextShip.drug_type}</span>
+          ) : (
+            <span className="text-[#333] font-bold">🔒 Desconhecido</span>
+          )}
+        </div>
+        <div className="flex justify-between">
+          <span className="text-[#555]">Capacidade</span>
+          <span className="text-white font-semibold">{fmt(nextShip.capacity_total)}g</span>
+        </div>
+      </div>
+      {!revealed && (
+        <>
+          <button
+            disabled={processing || !canAfford}
+            onClick={onReveal}
+            className="w-full py-2.5 rounded-xl bg-violet-900/60 hover:bg-violet-800/70 border border-violet-700/50 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-black transition-colors flex items-center justify-center gap-2"
+          >
+            <span>💎</span>
+            <span>Pagar 1000 ao Capitão</span>
+          </button>
+          {!canAfford && (
+            <p className="text-[#444] text-xs text-center mt-2">Crypto insuficiente ({fmt(playerCrypto)}💎)</p>
+          )}
+        </>
+      )}
+      {revealed && (
+        <p className="text-violet-400 text-xs text-center">✓ Intel confirmado pelo Capitão</p>
+      )}
+    </div>
+  );
+}
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 export default function PortoShipsPage() {
@@ -398,6 +499,27 @@ export default function PortoShipsPage() {
     }
   }
 
+  async function handleReveal() {
+    setProcessing(true);
+    try {
+      const res = await fetch("/api/crime-empire/porto/ships", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "reveal_ship" }),
+      });
+      const json = await res.json();
+      if (!res.ok) showToast(json.error || "Erro ao revelar", false);
+      else {
+        showToast(json.message || "Informações reveladas! -1000💎", true);
+        await load();
+      }
+    } catch {
+      showToast("Erro de ligação", false);
+    } finally {
+      setProcessing(false);
+    }
+  }
+
   const ship = data?.currentShip ?? null;
   const timerTarget = ship?.status === "docked" ? ship.departure_time : ship?.arrival_time ?? null;
   const timerMs = useCountdown(timerTarget);
@@ -427,9 +549,15 @@ export default function PortoShipsPage() {
             <p className="text-[#444] text-sm">Contrabando maritimo · Eventos competitivos</p>
           </div>
         </div>
-        <div className="flex items-center gap-2 bg-[#0e0e0e] border border-[#1e1e1e] rounded-xl px-4 py-2">
-          <span className="text-[#555] text-xs">Dinheiro Sujo</span>
-          <span className="text-white font-black text-sm">💵 {fmt(player.dirty_cash)}</span>
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 bg-[#0e0e0e] border border-[#1e1e1e] rounded-xl px-4 py-2">
+            <span className="text-[#555] text-xs">Dinheiro Sujo</span>
+            <span className="text-white font-black text-sm">💵 {fmt(player.dirty_cash)}</span>
+          </div>
+          <div className="flex items-center gap-2 bg-[#0e0e0e] border border-[#1e1e1e] rounded-xl px-4 py-2">
+            <span className="text-[#555] text-xs">Crypto</span>
+            <span className="text-violet-300 font-black text-sm">💎 {fmt(player.crypto ?? 0)}</span>
+          </div>
         </div>
       </div>
 
@@ -598,6 +726,16 @@ export default function PortoShipsPage() {
           </div>
 
           <ActivityFeed entries={activityFeed} />
+
+          {data.nextShip && (
+            <NextShipPreview
+              nextShip={data.nextShip}
+              revealed={data.nextShipRevealed}
+              playerCrypto={player.crypto ?? 0}
+              processing={processing}
+              onReveal={handleReveal}
+            />
+          )}
         </div>
       </div>
     </div>

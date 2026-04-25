@@ -38,6 +38,57 @@ const ORIGIN_COUNTRIES: Record<string, string[]> = {
   risky:       ["México", "El Salvador", "Guiné", "Panamá"],
 };
 
+// ─── Preview ship generator ────────────────────────────────────────────────────
+
+async function generatePreviewShip(afterDepartureTime: Date): Promise<void> {
+  const { data: drugs } = await supabase
+    .from("items")
+    .select("id, name, base_price")
+    .eq("category", "drug")
+    .order("base_price", { ascending: false });
+
+  if (!drugs || drugs.length === 0) return;
+
+  const drug = drugs[Math.floor(Math.random() * Math.min(drugs.length, 5))];
+  const roll = Math.random();
+  const shipClass = roll < 0.7 ? "normal" : roll < 0.9 ? "high_demand" : "risky";
+  const priceMult = shipClass === "normal"
+    ? 1.3 + Math.random() * 0.7
+    : shipClass === "high_demand"
+    ? 1.8 + Math.random() * 0.7
+    : 1.5 + Math.random() * 0.5;
+  const pricePerUnit = Math.floor(drug.base_price * priceMult);
+  const capacityTotal = 10000 + Math.floor(Math.random() * 40001);
+  const durationHours = 6 + Math.floor(Math.random() * 7);
+  const inspectionChance = shipClass === "risky" ? 15 : shipClass === "high_demand" ? 3 : 5;
+  const maxDelivery = 5000;
+  const topBonusPct = shipClass === "high_demand" ? 30 : 25;
+
+  // Arrives 30min after the current ship departs
+  const arrivalTime = new Date(afterDepartureTime.getTime() + 30 * 60 * 1000);
+  const departureTime = new Date(arrivalTime.getTime() + durationHours * 3600 * 1000);
+
+  const origins = ORIGIN_COUNTRIES[shipClass];
+  const originCountry = origins[Math.floor(Math.random() * origins.length)];
+  const shipName = SHIP_NAMES[Math.floor(Math.random() * SHIP_NAMES.length)];
+
+  await supabase.from("porto_ships").insert({
+    name: shipName,
+    drug_type: drug.name,
+    drug_item_id: drug.id,
+    capacity_total: capacityTotal,
+    price_per_unit: pricePerUnit,
+    arrival_time: arrivalTime.toISOString(),
+    departure_time: departureTime.toISOString(),
+    status: "preview",
+    ship_class: shipClass,
+    origin_country: originCountry,
+    inspection_chance: inspectionChance,
+    max_delivery: maxDelivery,
+    top_bonus_pct: topBonusPct,
+  });
+}
+
 // ─── Ship generator ──────────────────────────────────────────────────────────
 
 async function generateNextShip(): Promise<void> {
@@ -107,6 +158,9 @@ async function generateNextShip(): Promise<void> {
     event_type: "ship_docked",
     message: `Novo navio "${shipName}" chegará em breve com ${capacityTotal.toLocaleString("pt-PT")} de capacidade. Procura: ${drug.name}.`,
   });
+
+  // Pre-generate the next ship as a preview (intel locked behind crypto payment)
+  await generatePreviewShip(departureTime);
 }
 
 // ─── Tick: advance ship lifecycle ─────────────────────────────────────────────
@@ -168,14 +222,53 @@ async function tickShips(): Promise<void> {
     }
   }
 
-  // If no active ship (docked or scheduled), generate next one
+  // If no active ship, promote preview → scheduled or generate fresh
   const { count } = await supabase
     .from("porto_ships")
     .select("id", { count: "exact", head: true })
     .in("status", ["scheduled", "docked"]);
 
   if ((count ?? 0) === 0) {
-    await generateNextShip();
+    const { data: preview } = await supabase
+      .from("porto_ships")
+      .select("id, arrival_time, departure_time")
+      .eq("status", "preview")
+      .order("arrival_time", { ascending: true })
+      .limit(1)
+      .maybeSingle();
+
+    if (preview) {
+      // Promote preview to scheduled, reschedule to 10min from now, keep original duration
+      const newArrival = new Date(now.getTime() + 10 * 60 * 1000);
+      const origDuration = new Date(preview.departure_time).getTime() - new Date(preview.arrival_time).getTime();
+      const newDeparture = new Date(newArrival.getTime() + origDuration);
+      await supabase.from("porto_ships").update({
+        status: "scheduled",
+        arrival_time: newArrival.toISOString(),
+        departure_time: newDeparture.toISOString(),
+      }).eq("id", preview.id);
+      await generatePreviewShip(newDeparture);
+    } else {
+      await generateNextShip();
+    }
+  }
+
+  // Bootstrap: ensure there is always a preview ship when an active ship exists
+  if ((count ?? 0) > 0) {
+    const { count: previewCount } = await supabase
+      .from("porto_ships")
+      .select("id", { count: "exact", head: true })
+      .eq("status", "preview");
+    if ((previewCount ?? 0) === 0) {
+      const { data: activeShip } = await supabase
+        .from("porto_ships")
+        .select("departure_time")
+        .in("status", ["scheduled", "docked"])
+        .order("arrival_time", { ascending: true })
+        .limit(1)
+        .maybeSingle();
+      if (activeShip) await generatePreviewShip(new Date(activeShip.departure_time));
+    }
   }
 }
 
@@ -187,7 +280,7 @@ export async function GET() {
 
   const { data: player } = await supabase
     .from("crime_players")
-    .select("id, dirty_cash, in_jail, jail_release_at, hp")
+    .select("id, dirty_cash, in_jail, jail_release_at, hp, crypto")
     .eq("user_id", user.id)
     .single();
 
@@ -205,6 +298,38 @@ export async function GET() {
     .limit(1);
 
   const currentShip = ships?.[0] ?? null;
+
+  // Preview ship — the next ship after the current one (intel locked)
+  const { data: previewShips } = await supabase
+    .from("porto_ships")
+    .select("id, name, arrival_time, departure_time, ship_class, capacity_total, drug_type, price_per_unit")
+    .eq("status", "preview")
+    .order("arrival_time", { ascending: true })
+    .limit(1);
+  const previewShip = previewShips?.[0] ?? null;
+
+  // Check if this player has already paid to reveal the next ship's intel
+  let nextShipRevealed = false;
+  if (previewShip && player) {
+    const { data: intel } = await supabase
+      .from("porto_ship_intel")
+      .select("id")
+      .eq("ship_id", previewShip.id)
+      .eq("player_id", player.id)
+      .maybeSingle();
+    nextShipRevealed = !!intel;
+  }
+
+  const nextShip = previewShip ? {
+    id: previewShip.id,
+    name: previewShip.name,
+    arrival_time: previewShip.arrival_time,
+    departure_time: previewShip.departure_time,
+    ship_class: previewShip.ship_class as "normal" | "high_demand" | "risky",
+    capacity_total: previewShip.capacity_total,
+    drug_type: nextShipRevealed ? previewShip.drug_type : null,
+    price_per_unit: nextShipRevealed ? previewShip.price_per_unit : null,
+  } : null;
 
   // Top contributors for current ship
   let topContributors: { player_id: string; player_name: string; quantity: number; earned: number }[] = [];
@@ -302,6 +427,8 @@ export async function GET() {
 
   return NextResponse.json({
     currentShip,
+    nextShip,
+    nextShipRevealed,
     topContributors,
     myContribution,
     drugInventory,
@@ -311,6 +438,7 @@ export async function GET() {
       dirty_cash: player.dirty_cash,
       in_jail: player.in_jail,
       hp: player.hp,
+      crypto: player.crypto ?? 0,
     },
   });
 }
@@ -336,6 +464,41 @@ export async function POST(req: NextRequest) {
     if (releaseAt > new Date()) return NextResponse.json({ error: "Estás na prisão" }, { status: 403 });
   }
   if (player.hp <= 0) return NextResponse.json({ error: "Estás no hospital" }, { status: 403 });
+
+  // ── REVEAL NEXT SHIP ─────────────────────────────────────────────────────
+  if (action === "reveal_ship") {
+    const REVEAL_COST = 1000;
+    const { data: fp } = await supabase
+      .from("crime_players")
+      .select("id, crypto")
+      .eq("user_id", user.id)
+      .single();
+    if (!fp) return NextResponse.json({ error: "Jogador não encontrado" }, { status: 404 });
+    if ((fp.crypto ?? 0) < REVEAL_COST)
+      return NextResponse.json({ error: "Precisas de 1000💎 de crypto para subornar o Capitão" }, { status: 403 });
+
+    const { data: preview } = await supabase
+      .from("porto_ships")
+      .select("id")
+      .eq("status", "preview")
+      .order("arrival_time", { ascending: true })
+      .limit(1)
+      .maybeSingle();
+    if (!preview) return NextResponse.json({ error: "Sem navio para revelar" }, { status: 404 });
+
+    const { data: existing } = await supabase
+      .from("porto_ship_intel")
+      .select("id")
+      .eq("ship_id", preview.id)
+      .eq("player_id", fp.id)
+      .maybeSingle();
+    if (existing) return NextResponse.json({ error: "Já revelaste as informações deste navio" }, { status: 400 });
+
+    await supabase.from("crime_players").update({ crypto: (fp.crypto ?? 0) - REVEAL_COST }).eq("id", fp.id);
+    await supabase.from("porto_ship_intel").insert({ ship_id: preview.id, player_id: fp.id });
+
+    return NextResponse.json({ success: true, message: "O Capitão Barbosa revelou o próximo carregamento. -1000💎" });
+  }
 
   // ── DELIVER ──────────────────────────────────────────────────────────────
   if (action === "deliver") {
