@@ -33,7 +33,11 @@ const RARITY_META: Record<string, { color: string; label: string }> = {
   legendary: { color: "#f59e0b", label: "Lendario" },
 };
 
-const BLANK_FORM = { crypto_price: "", required_level: "1" };
+const BLANK_FORM = {
+  crypto_price: "", required_level: "1",
+  power_bonus: "0", intelligence_bonus: "0", charisma_bonus: "0",
+  hp_bonus: "0", stamina_restore: "0", success_rate_bonus: "0", stamina_reduction: "0",
+};
 
 /* ── Sub-components ─────────────────────────────────────────────── */
 function StatCard({ label, value, color }: { label: string; value: number | string; color: string }) {
@@ -93,9 +97,19 @@ export default function GunShopAdminPage() {
   }), [items, q, catFilter, shopFilter]);
 
   /* ── Actions ───────────────────────────────────────────────────── */
+  const statFields = (item: Item) => ({
+    power_bonus:        String(item.power_bonus        ?? 0),
+    intelligence_bonus: String(item.intelligence_bonus ?? 0),
+    charisma_bonus:     String(item.charisma_bonus     ?? 0),
+    hp_bonus:           String(item.hp_bonus           ?? 0),
+    stamina_restore:    String(item.stamina_restore    ?? 0),
+    success_rate_bonus: String(item.success_rate_bonus ?? 0),
+    stamina_reduction:  String(item.stamina_reduction  ?? 0),
+  });
+
   const openAdd = (item: Item) => {
     setActiveItem(item);
-    setForm({ crypto_price: "", required_level: String(item.required_level ?? 1) });
+    setForm({ crypto_price: "", required_level: String(item.required_level ?? 1), ...statFields(item) });
     setModal("add");
   };
 
@@ -104,6 +118,7 @@ export default function GunShopAdminPage() {
     setForm({
       crypto_price:   String(item.crypto_price ?? ""),
       required_level: String(item.required_level ?? 1),
+      ...statFields(item),
     });
     setModal("edit");
   };
@@ -117,8 +132,15 @@ export default function GunShopAdminPage() {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        crypto_price:   form.crypto_price !== "" ? Number(form.crypto_price) : null,
-        required_level: Number(form.required_level) || 1,
+        crypto_price:       form.crypto_price !== "" ? Number(form.crypto_price) : null,
+        required_level:     Number(form.required_level) || 1,
+        power_bonus:        Number(form.power_bonus)        || 0,
+        intelligence_bonus: Number(form.intelligence_bonus) || 0,
+        charisma_bonus:     Number(form.charisma_bonus)     || 0,
+        hp_bonus:           Number(form.hp_bonus)           || 0,
+        stamina_restore:    Number(form.stamina_restore)    || 0,
+        success_rate_bonus: Number(form.success_rate_bonus) || 0,
+        stamina_reduction:  Number(form.stamina_reduction)  || 0,
       }),
     });
     const data = await res.json();
@@ -335,7 +357,7 @@ export default function GunShopAdminPage() {
           onClick={closeModal}
         >
           <div
-            className="bg-[#0d0d10] border border-[#252528] rounded-2xl p-6 w-full max-w-sm"
+            className="bg-[#0d0d10] border border-[#252528] rounded-2xl p-6 w-full max-w-md max-h-[90vh] overflow-y-auto"
             onClick={e => e.stopPropagation()}
           >
             <div className="flex items-center gap-3 mb-5 pb-4 border-b border-[#1a1a1a]">
@@ -378,6 +400,45 @@ export default function GunShopAdminPage() {
                   className="w-full bg-[#0a0a0c] border border-[#222] rounded-xl px-3 py-2.5 text-sm text-white outline-none focus:border-[#a855f7] transition-colors"
                 />
               </label>
+
+              {/* ── Stat Boosts ───────────────────────────────────── */}
+              <div>
+                <p className="text-xs text-[#555] font-black uppercase tracking-widest mb-3 pt-1 border-t border-[#1a1a1a]">Stat Boosts</p>
+                <div className="grid grid-cols-2 gap-2.5">
+                  {([
+                    { key: "power_bonus",        label: "⚔ Power",        color: "#ef4444" },
+                    { key: "intelligence_bonus", label: "🧠 Intelligence",  color: "#3b82f6" },
+                    { key: "charisma_bonus",     label: "✨ Charisma",     color: "#a855f7" },
+                    { key: "hp_bonus",           label: "❤ HP Bonus",     color: "#22c55e" },
+                    { key: "stamina_restore",    label: "⚡ Stamina Rest.", color: "#34d399" },
+                    { key: "stamina_reduction",  label: "💨 Stamina Red.", color: "#f59e0b" },
+                  ] as const).map(({ key, label, color }) => (
+                    <label key={key} className="block">
+                      <span className="text-[10px] font-bold mb-1 block" style={{ color }}>{label}</span>
+                      <input
+                        type="number"
+                        min={0}
+                        value={form[key]}
+                        onChange={e => setForm(f => ({ ...f, [key]: e.target.value }))}
+                        className="w-full bg-[#0a0a0c] border border-[#1e1e1e] rounded-lg px-2.5 py-2 text-sm text-white outline-none transition-colors"
+                        style={{ focusBorderColor: color } as React.CSSProperties}
+                      />
+                    </label>
+                  ))}
+                  <label className="block col-span-2">
+                    <span className="text-[10px] font-bold mb-1 block" style={{ color: "#06b6d4" }}>🎯 Success Rate (0–1, ex: 0.05 = 5%)</span>
+                    <input
+                      type="number"
+                      min={0}
+                      max={1}
+                      step={0.01}
+                      value={form.success_rate_bonus}
+                      onChange={e => setForm(f => ({ ...f, success_rate_bonus: e.target.value }))}
+                      className="w-full bg-[#0a0a0c] border border-[#1e1e1e] rounded-lg px-2.5 py-2 text-sm text-white outline-none transition-colors"
+                    />
+                  </label>
+                </div>
+              </div>
             </div>
 
             <div className="flex gap-3 mt-6">

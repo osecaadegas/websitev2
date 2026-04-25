@@ -24,7 +24,11 @@ const RARITY_META: Record<string, { color: string; label: string }> = {
   legendary: { color: "#f59e0b", label: "Lendario" },
 };
 const ROTATION_TYPES = ["permanent", "daily", "weekly"];
-const BLANK_FORM = { price_override: "", stock: "", rotation_type: "permanent", rotation_ends_at: "", enabled: true };
+const BLANK_FORM = {
+  price_override: "", stock: "", rotation_type: "permanent", rotation_ends_at: "", enabled: true,
+  power_bonus: "0", intelligence_bonus: "0", charisma_bonus: "0",
+  hp_bonus: "0", stamina_restore: "0", success_rate_bonus: "0", stamina_reduction: "0",
+};
 
 function StatCard({ label, value, color }: { label: string; value: number | string; color: string }) {
   return (
@@ -106,8 +110,20 @@ export default function ShopAdminPage() {
     return matchQ && matchCat && matchStatus;
   });
 
+  const rowStatFields = (row: Row) => ({
+    power_bonus:        String(row.power_bonus        ?? 0),
+    intelligence_bonus: String(row.intelligence_bonus ?? 0),
+    charisma_bonus:     String(row.charisma_bonus     ?? 0),
+    hp_bonus:           String(row.hp_bonus           ?? 0),
+    stamina_restore:    String(row.stamina_restore    ?? 0),
+    success_rate_bonus: String(row.success_rate_bonus ?? 0),
+    stamina_reduction:  String(row.stamina_reduction  ?? 0),
+  });
+
   const openAdd = (row: Row) => {
-    setActiveItem(row); setActiveListing(null); setForm(BLANK_FORM); setModal("add");
+    setActiveItem(row); setActiveListing(null);
+    setForm({ ...BLANK_FORM, ...rowStatFields(row) });
+    setModal("add");
   };
   const openEdit = (row: Row) => {
     if (!row.listing) return;
@@ -118,6 +134,7 @@ export default function ShopAdminPage() {
       rotation_type:    row.listing.rotation_type,
       rotation_ends_at: row.listing.rotation_ends_at ? row.listing.rotation_ends_at.slice(0, 16) : "",
       enabled:          row.listing.enabled,
+      ...rowStatFields(row),
     });
     setModal("edit");
   };
@@ -135,14 +152,30 @@ export default function ShopAdminPage() {
       enabled:          form.enabled,
     };
     const isEdit = modal === "edit" && activeListing;
-    const res = await fetch(
-      isEdit ? `/api/admin/crime-empire/shop/${activeListing!.id}` : "/api/admin/crime-empire/shop",
-      { method: isEdit ? "PUT" : "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) },
-    );
-    const data = await res.json();
+    const [listingRes, statsRes] = await Promise.all([
+      fetch(
+        isEdit ? `/api/admin/crime-empire/shop/${activeListing!.id}` : "/api/admin/crime-empire/shop",
+        { method: isEdit ? "PUT" : "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) },
+      ),
+      fetch(`/api/admin/crime-empire/items/${activeItem.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          power_bonus:        Number(form.power_bonus)        || 0,
+          intelligence_bonus: Number(form.intelligence_bonus) || 0,
+          charisma_bonus:     Number(form.charisma_bonus)     || 0,
+          hp_bonus:           Number(form.hp_bonus)           || 0,
+          stamina_restore:    Number(form.stamina_restore)    || 0,
+          success_rate_bonus: Number(form.success_rate_bonus) || 0,
+          stamina_reduction:  Number(form.stamina_reduction)  || 0,
+        }),
+      }),
+    ]);
+    const data      = await listingRes.json();
+    const statsData = await statsRes.json();
     setSaving(false);
-    if (!data.error) { showToast(isEdit ? "Listagem atualizada!" : "Item adicionado!"); closeModal(); load(); }
-    else showToast(data.error || "Erro", false);
+    if (!data.error && !statsData.error) { showToast(isEdit ? "Listagem atualizada!" : "Item adicionado!"); closeModal(); load(); }
+    else showToast(data.error || statsData.error || "Erro", false);
   };
 
   const handleRemove = async (row: Row) => {
@@ -371,6 +404,44 @@ export default function ShopAdminPage() {
                 </label>
               )}
               <Toggle value={form.enabled} onChange={v => setForm(f => ({ ...f, enabled: v }))} />
+
+              {/* ── Stat Boosts ───────────────────────────────────── */}
+              <div>
+                <p className="text-xs text-[#555] font-black uppercase tracking-widest mb-3 pt-1 border-t border-[#1a1a1a]">Stat Boosts</p>
+                <div className="grid grid-cols-2 gap-2.5">
+                  {([
+                    { key: "power_bonus",        label: "⚔ Power",        color: "#ef4444" },
+                    { key: "intelligence_bonus", label: "🧠 Intelligence",  color: "#3b82f6" },
+                    { key: "charisma_bonus",     label: "✨ Charisma",     color: "#a855f7" },
+                    { key: "hp_bonus",           label: "❤ HP Bonus",     color: "#22c55e" },
+                    { key: "stamina_restore",    label: "⚡ Stamina Rest.", color: "#34d399" },
+                    { key: "stamina_reduction",  label: "💨 Stamina Red.", color: "#f59e0b" },
+                  ] as const).map(({ key, label, color }) => (
+                    <label key={key} className="block">
+                      <span className="text-[10px] font-bold mb-1 block" style={{ color }}>{label}</span>
+                      <input
+                        type="number"
+                        min={0}
+                        value={form[key]}
+                        onChange={e => setForm(f => ({ ...f, [key]: e.target.value }))}
+                        className="w-full bg-[#0a0a0c] border border-[#1e1e1e] rounded-lg px-2.5 py-2 text-sm text-white outline-none transition-colors"
+                      />
+                    </label>
+                  ))}
+                  <label className="block col-span-2">
+                    <span className="text-[10px] font-bold mb-1 block" style={{ color: "#06b6d4" }}>🎯 Success Rate (0–1, ex: 0.05 = 5%)</span>
+                    <input
+                      type="number"
+                      min={0}
+                      max={1}
+                      step={0.01}
+                      value={form.success_rate_bonus}
+                      onChange={e => setForm(f => ({ ...f, success_rate_bonus: e.target.value }))}
+                      className="w-full bg-[#0a0a0c] border border-[#1e1e1e] rounded-lg px-2.5 py-2 text-sm text-white outline-none transition-colors"
+                    />
+                  </label>
+                </div>
+              </div>
             </div>
 
             <div className="flex gap-3 mt-6">
