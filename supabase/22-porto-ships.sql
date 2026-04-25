@@ -67,19 +67,19 @@ CREATE INDEX IF NOT EXISTS idx_porto_activity_created ON porto_activity(created_
 ALTER TABLE porto_activity DISABLE ROW LEVEL SECURITY;
 
 -- ── Seed: insert first ship (docked now, departing in 8 hours) ───────────────
--- Only insert if no ships exist yet
+-- Only insert if no active ships exist
 DO $$
 DECLARE
   cocaine_id UUID;
+  drug_name  TEXT;
+  drug_price INT;
 BEGIN
-  -- Get cocaine item id (or first drug)
-  SELECT id INTO cocaine_id FROM items
-  WHERE category = 'drug' AND (LOWER(name) LIKE '%coca%' OR LOWER(name) LIKE '%cocain%')
-  ORDER BY base_price DESC LIMIT 1;
-
-  IF NOT FOUND THEN
-    SELECT id INTO cocaine_id FROM items WHERE category = 'drug' ORDER BY base_price DESC LIMIT 1;
-  END IF;
+  -- Get cocaine item id (or highest-value drug)
+  SELECT id, name, base_price INTO cocaine_id, drug_name, drug_price
+  FROM items
+  WHERE category = 'drug'
+  ORDER BY (LOWER(name) LIKE '%coca%')::int DESC, base_price DESC
+  LIMIT 1;
 
   IF NOT EXISTS (SELECT 1 FROM porto_ships WHERE status IN ('scheduled', 'docked')) THEN
     INSERT INTO porto_ships (
@@ -88,10 +88,10 @@ BEGIN
       origin_country, inspection_chance, max_delivery, top_bonus_pct
     ) VALUES (
       'Ocean Reaper',
-      COALESCE((SELECT name FROM items WHERE id = cocaine_id), 'Cocaína'),
+      COALESCE(drug_name, 'Cocaína'),
       cocaine_id,
       35000,
-      COALESCE((SELECT FLOOR(base_price * 1.8) FROM items WHERE id = cocaine_id), 180),
+      COALESCE(FLOOR(drug_price * 1.8), 180),
       NOW(),
       NOW() + INTERVAL '8 hours',
       'docked',

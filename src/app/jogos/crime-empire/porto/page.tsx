@@ -243,9 +243,12 @@ function CaptainPanel({ ship }: { ship: Ship | null }) {
     <div className="flex flex-col gap-4">
       <div className="rounded-2xl bg-[#0a0a0a] border border-[#1c1c1c] overflow-hidden">
         <div className="bg-gradient-to-b from-[#0d1117] to-[#0a0a0a] px-4 py-5 border-b border-[#1c1c1c] text-center">
-          <div className="w-20 h-20 mx-auto mb-3 rounded-full bg-[#111] border-2 border-[#2a2a2a] flex items-center justify-center text-4xl">
-            🧭
-          </div>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/images/personagem/capitan_avatar.jpg"
+            alt="Capitao Barbosa"
+            className="w-20 h-20 mx-auto mb-3 rounded-full object-cover border-2 border-[#3a3a3a]"
+          />
           <p className="text-white font-black text-sm">Capitao Barbosa</p>
           <p className="text-[#444] text-xs mt-0.5">Porto Antigo · Contrabandista</p>
         </div>

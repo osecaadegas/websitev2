@@ -73,8 +73,14 @@ async function generateNextShip(): Promise<void> {
 
   // Arrive in 30 minutes (give players time to see it coming), depart after duration
   const now = new Date();
-  const arrivalTime = new Date(now.getTime() + 30 * 60 * 1000);
+  // First ship or forced-immediate: dock right away; otherwise schedule 10 min out
+  const { count: existingCount } = await supabase
+    .from("porto_ships")
+    .select("id", { count: "exact", head: true });
+  const isFirstEver = (existingCount ?? 0) === 0;
+  const arrivalTime = isFirstEver ? now : new Date(now.getTime() + 10 * 60 * 1000);
   const departureTime = new Date(arrivalTime.getTime() + durationHours * 3600 * 1000);
+  const initialStatus = isFirstEver ? "docked" : "scheduled";
 
   const origins = ORIGIN_COUNTRIES[shipClass];
   const originCountry = origins[Math.floor(Math.random() * origins.length)];
@@ -88,7 +94,7 @@ async function generateNextShip(): Promise<void> {
     price_per_unit: pricePerUnit,
     arrival_time: arrivalTime.toISOString(),
     departure_time: departureTime.toISOString(),
-    status: "scheduled",
+    status: initialStatus,
     ship_class: shipClass,
     origin_country: originCountry,
     inspection_chance: inspectionChance,
