@@ -6,7 +6,7 @@ export const dynamic = "force-dynamic";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const ENTRY_COST = 125_000; // crypto
+const ENTRY_COST = 10_000; // crypto
 const SHOTS_TOTAL = 10;
 const HEAT_PER_SHOT_MIN = 4;
 const HEAT_PER_SHOT_MAX = 10;

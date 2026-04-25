@@ -57,21 +57,9 @@ interface ActivityEntry {
   player_name: string | null;
 }
 
-interface NextShipPreviewData {
-  id: string;
-  name: string;
-  arrival_time: string;
-  departure_time: string;
-  ship_class: "normal" | "high_demand" | "risky";
-  capacity_total: number;
-  drug_type: string | null;
-  price_per_unit: number | null;
-}
-
 interface PageData {
   currentShip: Ship | null;
-  nextShip: NextShipPreviewData | null;
-  nextShipRevealed: boolean;
+  playerUnlocked: boolean;
   topContributors: Contributor[];
   myContribution: MyContribution | null;
   drugInventory: DrugItem[];
@@ -83,19 +71,6 @@ interface PageData {
 
 function fmt(n: number) {
   return n.toLocaleString("pt-PT");
-}
-
-function formatArrivalDay(iso: string): string {
-  const d = new Date(iso);
-  const today = new Date();
-  const tomorrow = new Date(today.getTime() + 86400000);
-  if (d.toDateString() === today.toDateString()) return "Hoje";
-  if (d.toDateString() === tomorrow.toDateString()) return "Amanhã";
-  return d.toLocaleDateString("pt-PT", { weekday: "short", day: "numeric", month: "short" });
-}
-
-function formatArrivalHour(iso: string): string {
-  return new Date(iso).toLocaleTimeString("pt-PT", { hour: "2-digit", minute: "2-digit" });
 }
 
 function formatCountdown(ms: number): string {
@@ -139,7 +114,7 @@ const CLASS_META: Record<Ship["ship_class"], { label: string; border: string; gl
 
 // ─── Captain Barbosa dialogue ─────────────────────────────────────────────────
 
-function getCaptainDialogue(ship: Ship | null): string {
+function getCaptainDialogue(ship: Ship | null, playerUnlocked?: boolean): string {
   if (!ship) return "...nenhum navio no horizonte. Aguarda.";
   const fillPct = ship.capacity_total > 0 ? (ship.capacity_filled / ship.capacity_total) * 100 : 0;
   if (ship.status === "scheduled") {
@@ -148,6 +123,9 @@ function getCaptainDialogue(ship: Ship | null): string {
     const m = Math.floor((ms % 3600000) / 60000);
     const timeStr = h > 0 ? `${h}h ${m}m` : `${m} minutos`;
     return `Proximo navio chega em ${timeStr}. Querem ${ship.drug_type}. Prepara o que tens.`;
+  }
+  if (ship.status === "docked" && !playerUnlocked) {
+    return "Queres acesso ao carregamento? 1000 de crypto e és meu homem. Sem isso, nao carregas nada.";
   }
   if (ship.status === "departed") {
     return "E isso. Partiu. Prepara-te para o proximo - nao vou esperar muito.";
@@ -266,8 +244,8 @@ function DeliveryForm({
 
 // ─── Captain Panel ────────────────────────────────────────────────────────────
 
-function CaptainPanel({ ship }: { ship: Ship | null }) {
-  const dialogue = getCaptainDialogue(ship);
+function CaptainPanel({ ship, playerUnlocked }: { ship: Ship | null; playerUnlocked?: boolean }) {
+  const dialogue = getCaptainDialogue(ship, playerUnlocked);
   return (
     <div className="flex flex-col gap-4">
       <div className="rounded-2xl bg-[#0a0a0a] border border-[#1c1c1c] overflow-hidden">
@@ -352,78 +330,37 @@ function ActivityFeed({ entries }: { entries: ActivityEntry[] }) {
     </div>
   );
 }
-// ─── Next Ship Preview ────────────────────────────────────────────────────────────────
+// ─── Captain Unlock Panel ─────────────────────────────────────────────────────
 
-function NextShipPreview({
-  nextShip,
-  revealed,
+function CaptainUnlockPanel({
   playerCrypto,
   processing,
-  onReveal,
+  onUnlock,
 }: {
-  nextShip: NextShipPreviewData;
-  revealed: boolean;
   playerCrypto: number;
   processing: boolean;
-  onReveal: () => void;
+  onUnlock: () => void;
 }) {
-  const meta = CLASS_META[nextShip.ship_class];
-  const arrivalDay = formatArrivalDay(nextShip.arrival_time);
-  const arrivalHour = formatArrivalHour(nextShip.arrival_time);
   const canAfford = playerCrypto >= 1000;
   return (
-    <div className={`rounded-2xl border p-4 bg-[#06080f] ${meta.border}`}>
-      <div className="flex items-center justify-between mb-3">
-        <p className="text-xs text-[#444] uppercase tracking-widest font-bold">Próximo Navio</p>
-        <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${meta.badge}`}>{meta.label}</span>
-      </div>
-      <div className="flex items-center gap-2 mb-3">
-        <span className="text-lg">🚢</span>
-        <p className="text-white font-black text-sm">{nextShip.name}</p>
-      </div>
-      <div className="space-y-2 text-sm mb-4">
-        <div className="flex justify-between">
-          <span className="text-[#555]">Chega</span>
-          <span className="text-white font-semibold">{arrivalDay}</span>
-        </div>
-        <div className="flex justify-between">
-          <span className="text-[#555]">Hora</span>
-          {revealed ? (
-            <span className="text-sky-400 font-bold">{arrivalHour}</span>
-          ) : (
-            <span className="text-[#333] font-bold tracking-widest select-none">██:██</span>
-          )}
-        </div>
-        <div className="flex justify-between">
-          <span className="text-[#555]">Droga</span>
-          {revealed && nextShip.drug_type ? (
-            <span className="text-sky-300 font-bold">{nextShip.drug_type}</span>
-          ) : (
-            <span className="text-[#333] font-bold">🔒 Desconhecido</span>
-          )}
-        </div>
-        <div className="flex justify-between">
-          <span className="text-[#555]">Capacidade</span>
-          <span className="text-white font-semibold">{fmt(nextShip.capacity_total)}g</span>
+    <div className="mt-4 p-4 rounded-xl bg-violet-950/20 border border-violet-700/40 space-y-3">
+      <div className="flex items-center gap-2">
+        <span className="text-xl">🏴‍☠️</span>
+        <div>
+          <p className="text-white text-sm font-bold">Acesso ao Carregamento</p>
+          <p className="text-[#666] text-xs">Paga ao Capitão para poderes entregar droga neste navio</p>
         </div>
       </div>
-      {!revealed && (
-        <>
-          <button
-            disabled={processing || !canAfford}
-            onClick={onReveal}
-            className="w-full py-2.5 rounded-xl bg-violet-900/60 hover:bg-violet-800/70 border border-violet-700/50 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-black transition-colors flex items-center justify-center gap-2"
-          >
-            <span>💎</span>
-            <span>Pagar 1000 ao Capitão</span>
-          </button>
-          {!canAfford && (
-            <p className="text-[#444] text-xs text-center mt-2">Crypto insuficiente ({fmt(playerCrypto)}💎)</p>
-          )}
-        </>
-      )}
-      {revealed && (
-        <p className="text-violet-400 text-xs text-center">✓ Intel confirmado pelo Capitão</p>
+      <button
+        disabled={processing || !canAfford}
+        onClick={onUnlock}
+        className="w-full py-2.5 rounded-xl bg-violet-800/60 hover:bg-violet-700/70 border border-violet-600/50 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-black transition-colors flex items-center justify-center gap-2"
+      >
+        <span>💎</span>
+        <span>Pagar 1.000 ao Capitão</span>
+      </button>
+      {!canAfford && (
+        <p className="text-[#444] text-xs text-center">Crypto insuficiente ({playerCrypto.toLocaleString("pt-PT")}💎)</p>
       )}
     </div>
   );
@@ -499,18 +436,18 @@ export default function PortoShipsPage() {
     }
   }
 
-  async function handleReveal() {
+  async function handleUnlock() {
     setProcessing(true);
     try {
       const res = await fetch("/api/crime-empire/porto/ships", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "reveal_ship" }),
+        body: JSON.stringify({ action: "unlock_ship" }),
       });
       const json = await res.json();
-      if (!res.ok) showToast(json.error || "Erro ao revelar", false);
+      if (!res.ok) showToast(json.error || "Erro ao pagar capitão", false);
       else {
-        showToast(json.message || "Informações reveladas! -1000💎", true);
+        showToast(json.message || "Acesso desbloqueado! -1000💎", true);
         await load();
       }
     } catch {
@@ -534,7 +471,7 @@ export default function PortoShipsPage() {
 
   if (!data) return null;
 
-  const { currentShip, topContributors, myContribution, drugInventory, activityFeed, player } = data;
+  const { currentShip, topContributors, myContribution, drugInventory, activityFeed, player, playerUnlocked } = data;
   const classMeta = currentShip ? CLASS_META[currentShip.ship_class] : null;
 
   return (
@@ -563,7 +500,7 @@ export default function PortoShipsPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr_280px] gap-5">
 
-        <CaptainPanel ship={currentShip} />
+        <CaptainPanel ship={currentShip} playerUnlocked={playerUnlocked} />
 
         <div className="space-y-4">
           {currentShip ? (
@@ -625,12 +562,20 @@ export default function PortoShipsPage() {
               )}
 
               {currentShip.status === "docked" && !player.in_jail && player.hp > 0 && (
-                <DeliveryForm
-                  ship={currentShip}
-                  drugInventory={drugInventory}
-                  processing={processing}
-                  onDeliver={handleDeliver}
-                />
+                playerUnlocked ? (
+                  <DeliveryForm
+                    ship={currentShip}
+                    drugInventory={drugInventory}
+                    processing={processing}
+                    onDeliver={handleDeliver}
+                  />
+                ) : (
+                  <CaptainUnlockPanel
+                    playerCrypto={player.crypto ?? 0}
+                    processing={processing}
+                    onUnlock={handleUnlock}
+                  />
+                )
               )}
 
               {currentShip.status === "docked" && player.in_jail && (
@@ -676,10 +621,10 @@ export default function PortoShipsPage() {
           <div className="rounded-2xl bg-[#080808] border border-[#131313] p-4">
             <p className="text-xs text-[#333] uppercase tracking-widest font-bold mb-3">Como funciona</p>
             <ul className="text-[#444] text-xs space-y-2">
-              <li>🚢 Navios chegam com uma droga especifica e capacidade partilhada</li>
+              <li>🚢 Navios chegam ~3x por semana com droga aleatória</li>
+              <li>💎 Paga 1.000 crypto ao Capitão para aceder ao carregamento</li>
               <li>💵 Recebes dinheiro sujo imediatamente por cada entrega</li>
               <li>🏆 O maior contribuidor recebe bonus de +{currentShip?.top_bonus_pct ?? 25}% no final</li>
-
             </ul>
           </div>
         </div>
@@ -726,16 +671,6 @@ export default function PortoShipsPage() {
           </div>
 
           <ActivityFeed entries={activityFeed} />
-
-          {data.nextShip && (
-            <NextShipPreview
-              nextShip={data.nextShip}
-              revealed={data.nextShipRevealed}
-              playerCrypto={player.crypto ?? 0}
-              processing={processing}
-              onReveal={handleReveal}
-            />
-          )}
         </div>
       </div>
     </div>
