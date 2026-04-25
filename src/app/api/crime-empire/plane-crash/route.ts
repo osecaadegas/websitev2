@@ -164,13 +164,19 @@ async function generateSessionLoot(
 // ─── Week crash generator ─────────────────────────────────────────────────────
 
 async function generateWeekCrashes(weekNumber: number, weekYear: number, weekStart: Date): Promise<void> {
+  const now = new Date();
+
   const { data: existing } = await supabase
     .from("plane_crashes")
     .select("id, scheduled_at")
     .eq("week_number", weekNumber)
     .eq("week_year", weekYear);
 
-  const needed = 3 - (existing?.length ?? 0);
+  // Only count crashes that are still active or upcoming (not already expired)
+  const nonExpiredExisting = (existing || []).filter((e: any) =>
+    new Date(e.scheduled_at).getTime() + 6 * 3600_000 > now.getTime()
+  );
+  const needed = 3 - nonExpiredExisting.length;
   if (needed <= 0) return;
 
   const usedDays = new Set<number>(
@@ -180,8 +186,6 @@ async function generateWeekCrashes(weekNumber: number, weekYear: number, weekSta
     })
   );
 
-  const now = new Date();
-
   for (let i = 0; i < needed; i++) {
     let day = Math.floor(Math.random() * 7);
     let attempts = 0;
@@ -190,9 +194,15 @@ async function generateWeekCrashes(weekNumber: number, weekYear: number, weekSta
 
     const hour   = Math.floor(Math.random() * 24);
     const minute = Math.floor(Math.random() * 60);
-    const scheduledAt = new Date(weekStart.getTime() + day * 86400000 + hour * 3600000 + minute * 60000);
-    const activeUntil = new Date(scheduledAt.getTime() + 6 * 3600000);
+    let scheduledAt = new Date(weekStart.getTime() + day * 86400000 + hour * 3600000 + minute * 60000);
 
+    // If this slot is already expired (or will expire immediately), push it to the near future
+    if (new Date(scheduledAt.getTime() + 6 * 3600_000) <= now) {
+      const hoursAhead = 2 + Math.floor(Math.random() * 22); // 2–24 hours from now
+      scheduledAt = new Date(now.getTime() + hoursAhead * 3600_000);
+    }
+
+    const activeUntil = new Date(scheduledAt.getTime() + 6 * 3600000);
     const wreckSegments = generateWreckSegments();
     const lootSeed = Math.floor(Math.random() * 0xffffffff);
     const location = LOCATIONS[Math.floor(Math.random() * LOCATIONS.length)];

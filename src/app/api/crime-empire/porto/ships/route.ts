@@ -168,13 +168,34 @@ async function generateNextShip(): Promise<void> {
 async function tickShips(): Promise<void> {
   const now = new Date();
 
-  // scheduled → docked
+  // scheduled → docked (only if departure_time hasn't passed yet)
   await supabase
     .from("porto_ships")
     .update({ status: "docked" })
     .eq("status", "scheduled")
     .lte("arrival_time", now.toISOString())
     .gt("departure_time", now.toISOString());
+
+  // Stale scheduled ships: departure_time passed before docking → depart immediately
+  const { data: staleScheduled } = await supabase
+    .from("porto_ships")
+    .select("id, name, capacity_filled, capacity_total")
+    .eq("status", "scheduled")
+    .lte("departure_time", now.toISOString());
+
+  if (staleScheduled) {
+    for (const ship of staleScheduled) {
+      await supabase
+        .from("porto_ships")
+        .update({ status: "departed", departed_at: now.toISOString() })
+        .eq("id", ship.id);
+      await supabase.from("porto_activity").insert({
+        ship_id: ship.id,
+        event_type: "ship_departed",
+        message: `O "${ship.name}" partiu sem atracar (janela ultrapassada). ${ship.capacity_filled?.toLocaleString("pt-PT") ?? 0}/${ship.capacity_total?.toLocaleString("pt-PT") ?? 0} carregado.`,
+      });
+    }
+  }
 
   // docked → departed (timer expired OR full)
   // NOTE: PostgREST cannot do column-to-column comparisons in .or(), so we
@@ -268,7 +289,11 @@ async function tickShips(): Promise<void> {
         .order("arrival_time", { ascending: true })
         .limit(1)
         .maybeSingle();
-      if (activeShip) await generatePreviewShip(new Date(activeShip.departure_time));
+      if (activeShip) {
+        // Ensure preview is always scheduled in the future even if the active ship is overdue
+        const baseDeparture = new Date(Math.max(new Date(activeShip.departure_time).getTime(), now.getTime()));
+        await generatePreviewShip(baseDeparture);
+      }
     }
   }
 }

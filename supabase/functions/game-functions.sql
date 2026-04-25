@@ -29,7 +29,7 @@ DECLARE
 BEGIN
   UPDATE porto_ships
   SET status = 'docked'
-  WHERE status = 'preview'
+  WHERE status = 'scheduled'
     AND arrival_time <= now();
   GET DIAGNOSTICS updated_count = ROW_COUNT;
   RETURN updated_count;
