@@ -74,7 +74,19 @@ export function CrimePlayerProvider({ children }: { children: React.ReactNode })
     try {
       const res = await fetch("/api/crime-empire/player");
       const data = await res.json();
-      if (data.player) setPlayer(data.player);
+      if (data.player) {
+        setPlayer((prev) => {
+          // Detect level-up & broadcast
+          if (prev && data.player.level > prev.level && typeof window !== "undefined") {
+            window.dispatchEvent(
+              new CustomEvent("ce:level-up", {
+                detail: { fromLevel: prev.level, toLevel: data.player.level },
+              }),
+            );
+          }
+          return data.player;
+        });
+      }
     } catch {
       // silent
     }

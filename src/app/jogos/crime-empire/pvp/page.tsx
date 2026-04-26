@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { useRouter } from "next/navigation";
+import { pushReward } from "@/components/crime-empire/ui/GlobalRewardLayer";
 
 interface PvpPlayer {
   id: string;
@@ -162,6 +163,16 @@ export default function PvPPage() {
       const data = await res.json();
       if (!res.ok) { alert(data.error || "Erro"); return; }
       setResult(data);
+      if (data.attackerWon) {
+        pushReward("damage", `⚡ ${data.atkScore} vs ${data.defScore}`);
+        if (data.lootAmount) {
+          const kind = data.lootType === "crypto" ? "gold" : "cash";
+          const prefix = data.lootType === "crypto" ? "❤️" : "$";
+          pushReward(kind, `+${prefix}${Number(data.lootAmount).toLocaleString()}`);
+        }
+      } else {
+        pushReward("damage", `💀 ${data.atkScore} vs ${data.defScore}`);
+      }
       setSelfLastPvpAt(new Date().toISOString());
       await fetchAll();
     } finally {

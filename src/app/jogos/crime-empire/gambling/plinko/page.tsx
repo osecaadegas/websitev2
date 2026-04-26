@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import RaidEscape from "@/components/crime-empire/raid/RaidEscape";
 import { notifyPlayerUpdate } from "@/lib/crime-empire/player-context";
+import { pushReward } from "@/components/crime-empire/ui/GlobalRewardLayer";
 
 const MULTIPLIERS: Record<string, number[]> = {
   low:    [0.5, 0.7, 1.0, 1.3, 1.8, 1.3, 1.0, 0.7, 0.5],
@@ -105,6 +106,7 @@ export default function PlinkoPage() {
     setPayout(data.payout);
     setHasResult(true);
     setPlaying(false);
+    if (data.payout > 0) pushReward("gold", `+❤️${Number(data.payout).toLocaleString()} (${data.multiplier}x)`);
     setPlayer((p) => p ? {
       dirty_cash: p.dirty_cash - bet - (data.fee ?? 0),
       crypto: p.crypto + data.payout,

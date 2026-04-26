@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import RaidEscape from "@/components/crime-empire/raid/RaidEscape";
+import { pushReward } from "@/components/crime-empire/ui/GlobalRewardLayer";
 
 type Coin = {
   id: string;
@@ -172,6 +173,7 @@ export default function StocksPage() {
     if (data.success) {
       const sign = data.profit >= 0 ? "+" : "";
       showMsg(`Vendido! 🪙 ${data.payout.toLocaleString()} crypto (taxa $${data.fee.toLocaleString()} · ${sign}${data.profit.toLocaleString()})`, true);
+      if (data.payout) pushReward("gold", `+❤️${Number(data.payout).toLocaleString()}`);
       if (data.escape_token) {
         setArrestEscape({ token: data.escape_token, jailMinutes: data.jailMinutes ?? 20, cryptoAtRisk: data.crypto_at_risk ?? 0 });
       }

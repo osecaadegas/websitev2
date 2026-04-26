@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { CEToast } from "@/components/CEToast";
+import { pushReward } from "@/components/crime-empire/ui/GlobalRewardLayer";
 import { useRouter } from "next/navigation";
 
 /* ─── Types ────────────────────────────────────────────────── */
@@ -633,6 +634,9 @@ export default function MissoesPage() {
       const parts = [`+${data.xp_earned} XP`, `$${data.cash_earned?.toLocaleString()}`];
       if (data.crypto_earned > 0) parts.push(`💎 +${data.crypto_earned} crypto`);
       showToast(parts.join("  •  "), true);
+      if (data.xp_earned) pushReward("xp", `+${data.xp_earned} XP`);
+      if (data.cash_earned) pushReward("cash", `+$${Number(data.cash_earned).toLocaleString()}`);
+      if (data.crypto_earned) pushReward("gold", `+${data.crypto_earned} 💎`);
       await fetchMissions();
     } catch {
       showToast("Erro de ligação", false);

@@ -14,6 +14,8 @@ import { CrimePlayerProvider } from "@/lib/crime-empire/player-context";
 import PageViewTracker from "@/components/PageViewTracker";
 import { DynamicPageBackground } from "@/components/DynamicPageBackground";
 import { CEFloatingMenu } from "@/components/CEFloatingMenu";
+import { GlobalRewardLayer } from "@/components/crime-empire/ui/GlobalRewardLayer";
+import { LevelUpOverlay } from "@/components/crime-empire/ui/LevelUpOverlay";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -40,6 +42,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
         {/* Floating character menu — game only */}
         {isInGame && <CEFloatingMenu />}
+
+        {/* Reward callout layer — game only */}
+        {isInGame && <GlobalRewardLayer />}
+
+        {/* Level-up celebration — game only */}
+        {isInGame && <LevelUpOverlay />}
 
         {/* Push content below navbar + right of sidebar */}
         <main className="relative z-10 flex-1 pt-16 lg:pl-56 flex flex-col">{children}</main>

@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 import { notifyPlayerUpdate } from "@/lib/crime-empire/player-context";
+import { pushReward } from "@/components/crime-empire/ui/GlobalRewardLayer";
 import Link from "next/link";
 import { CEToast } from "@/components/CEToast";
 import RaidEscape from "@/components/crime-empire/raid/RaidEscape";
@@ -584,6 +585,8 @@ export default function StreetsPage() {
       setSessionEarned((s) => s + earned);
       setSessionDeals((s) => s + 1);
       showFloat(earned);
+      pushReward("cash", `+$${earned.toLocaleString()}`);
+      if (data.xp_gained) pushReward("xp", `+${data.xp_gained} XP`);
       addLog("✅", "Negócio Fechado", `${customer?.name} aceitou — +$${earned.toLocaleString()} sujos`);
       addLog("🛡️", "Nível de Calor", `Calor atual: ${data.heat ?? heat}%`);
       setCustomer(null);

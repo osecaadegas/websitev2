@@ -6,6 +6,7 @@ import { useAuth } from "@/lib/auth-context";
 import { CEToast } from "@/components/CEToast";
 import { useRouter } from "next/navigation";
 import { notifyPlayerUpdate } from "@/lib/crime-empire/player-context";
+import { pushReward } from "@/components/crime-empire/ui/GlobalRewardLayer";
 import {
   pickBountyFlavor,
   riskTier,
@@ -720,6 +721,12 @@ export default function HitmanContratosPage() {
             : `${data.message} (-${data.hp_lost} HP)`,
           data.success,
         );
+        if (data.success) {
+          if (data.xp_earned) pushReward("xp", `+${data.xp_earned} XP`);
+          if (data.cash_earned) pushReward("cash", `+$${Number(data.cash_earned).toLocaleString()}`);
+        } else if (data.hp_lost) {
+          pushReward("damage", `-${data.hp_lost} HP`);
+        }
         notifyPlayerUpdate();
         await fetchData();
       }
