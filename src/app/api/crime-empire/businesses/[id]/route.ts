@@ -14,6 +14,7 @@ import {
 import { grantDirtyMoney, deductDirtyMoney, getDirtyMoneyBalance } from "@/lib/dirty-money";
 import { getPoliceMultiplier } from "@/lib/crime-empire/system-settings";
 import { grantXP } from "@/lib/crime-empire/xp";
+import { trackMissionEvent } from "@/lib/crime-empire/missions";
 
 export const dynamic = "force-dynamic";
 
@@ -806,6 +807,8 @@ async function handleBuyUpgrade(pb: any, body: any, player: any, pbId: string) {
 
   await supabase.from("player_business_upgrades").insert({ player_id: player.id, player_business_id: pbId, upgrade_def_id: upgrade_id });
   await supabase.from("crime_players").update({ cash: (fp?.cash ?? player.cash) - upgradeDef.cost }).eq("id", player.id);
+
+  void trackMissionEvent(player.id, "onBusinessUpgraded", 1);
 
   return NextResponse.json({ success: true, message: `${upgradeDef.name} instalado!`, cost: upgradeDef.cost });
 }
