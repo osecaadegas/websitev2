@@ -216,6 +216,16 @@ export default function BrothelManagePage() {
     else showToast(data.error);
   };
 
+  const handlePayAllBonuses = async () => {
+    const unhappy = workers.filter((w) => w.happiness < 80);
+    if (unhappy.length === 0) { showToast("Todas as workers já estão felizes (≥80)."); return; }
+    const cost = unhappy.length * 1500;
+    if (!confirm(`Pagar bónus a ${unhappy.length} worker${unhappy.length > 1 ? "s" : ""} por $${cost.toLocaleString()} sujo?`)) return;
+    const data = await api({ action: "pay_all_bonuses", playerBrothelId: brothelId });
+    if (data.success) { showToast(data.message); fetchData(); }
+    else showToast(data.error);
+  };
+
   const handleRefill = async (supplyType: string) => {
     const data = await api({ action: "refill_supplies", playerBrothelId: brothelId, supplyType });
     if (data.success) { showToast(data.message); fetchData(); }
@@ -403,18 +413,45 @@ export default function BrothelManagePage() {
                 </button>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {workers.map((w) => (
-                  <WorkerCard key={w.id} worker={w} onFire={handleFire} onPayBonus={handlePayBonus} />
-                ))}
-                {workers.length < brothel.max_employees && (
-                  <button onClick={() => setShowCarousel(true)}
-                    className="p-5 rounded-2xl border-2 border-dashed border-pink-500/30 hover:border-pink-500 text-pink-400 hover:text-pink-300 transition-all flex flex-col items-center justify-center gap-2 min-h-[180px]">
-                    <span className="text-3xl">+</span>
-                    <span className="font-bold">Contratar Worker</span>
-                  </button>
-                )}
-              </div>
+              <>
+                {(() => {
+                  const unhappy = workers.filter((w) => w.happiness < 80);
+                  if (unhappy.length === 0) return null;
+                  const totalCost = unhappy.length * 1500;
+                  const canAfford = playerDirtyCash >= totalCost;
+                  return (
+                    <div className="mb-4 flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between p-3 rounded-xl bg-gradient-to-r from-yellow-900/20 to-pink-900/20 border border-yellow-600/30">
+                      <div className="text-xs sm:text-sm text-yellow-200/90">
+                        <span className="font-bold text-yellow-300">{unhappy.length}</span>{" "}
+                        worker{unhappy.length > 1 ? "s" : ""} com felicidade abaixo de 80.
+                        <span className="text-[#999] ml-2">Custo total: <span className="font-bold text-yellow-300">${totalCost.toLocaleString()}</span> sujo</span>
+                      </div>
+                      <button
+                        onClick={handlePayAllBonuses}
+                        disabled={!canAfford}
+                        className={`px-4 py-2 rounded-xl text-sm font-bold transition-all whitespace-nowrap
+                          ${canAfford
+                            ? "bg-yellow-600 hover:bg-yellow-500 text-black hover:scale-[1.03] active:scale-95"
+                            : "bg-[#222] text-[#555] cursor-not-allowed"}`}
+                      >
+                        💰 Pagar Bónus a Todas
+                      </button>
+                    </div>
+                  );
+                })()}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {workers.map((w) => (
+                    <WorkerCard key={w.id} worker={w} onFire={handleFire} onPayBonus={handlePayBonus} />
+                  ))}
+                  {workers.length < brothel.max_employees && (
+                    <button onClick={() => setShowCarousel(true)}
+                      className="p-5 rounded-2xl border-2 border-dashed border-pink-500/30 hover:border-pink-500 text-pink-400 hover:text-pink-300 transition-all flex flex-col items-center justify-center gap-2 min-h-[180px]">
+                      <span className="text-3xl">+</span>
+                      <span className="font-bold">Contratar Worker</span>
+                    </button>
+                  )}
+                </div>
+              </>
             )}
           </div>
         )}

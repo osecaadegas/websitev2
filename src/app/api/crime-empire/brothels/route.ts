@@ -487,6 +487,51 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: true, message: 'Worker feliz novamente!' });
     }
 
+    /* ── PAY BONUS TO ALL WORKERS (below 80 happiness) ── */
+    if (action === 'pay_all_bonuses') {
+      const { playerBrothelId } = body;
+      const PER_WORKER = 1500; // dirty cash per worker
+
+      // Find all workers below 80 happiness for this player
+      const workersQuery = supabase
+        .from('brothel_workers')
+        .select('id, happiness')
+        .eq('player_id', player.id)
+        .lt('happiness', 80);
+      if (playerBrothelId) workersQuery.eq('player_brothel_id', playerBrothelId);
+
+      const { data: lowWorkers } = await workersQuery;
+      const targets = lowWorkers ?? [];
+
+      if (targets.length === 0) {
+        return NextResponse.json({ error: 'Todas as workers já estão felizes (≥80).' }, { status: 400 });
+      }
+
+      const totalCost = PER_WORKER * targets.length;
+      if (player.dirty_cash < totalCost) {
+        return NextResponse.json({
+          error: `Dinheiro sujo insuficiente! Precisas de $${totalCost.toLocaleString()} para ${targets.length} worker${targets.length > 1 ? 's' : ''}.`,
+        }, { status: 400 });
+      }
+
+      await supabase
+        .from('crime_players')
+        .update({ dirty_cash: player.dirty_cash - totalCost })
+        .eq('id', player.id);
+
+      await supabase
+        .from('brothel_workers')
+        .update({ happiness: 100, mood: 80 })
+        .in('id', targets.map((w) => w.id));
+
+      return NextResponse.json({
+        success: true,
+        message: `${targets.length} worker${targets.length > 1 ? 's felizes' : ' feliz'}! -$${totalCost.toLocaleString()} sujo.`,
+        count: targets.length,
+        cost: totalCost,
+      });
+    }
+
     /* ── RAID RESULT ── */
     if (action === "raid_result") {
       const { playerBrothelId, escaped, cashAtRisk } = body as {
