@@ -31,6 +31,7 @@ import {
   type CustomerType,
 } from "@/lib/street-defs";
 import { grantXP } from "@/lib/crime-empire/xp";
+import { grantRespect } from "@/lib/crime-empire/respect";
 import { trackMissionEvent } from "@/lib/crime-empire/missions";
 
 export const dynamic = "force-dynamic";
@@ -346,6 +347,7 @@ async function handleNegotiate(body: any, user: any) {
     await deductInventory(inventoryId, (entry as any).quantity, quantity);
     await grantDirtyMoney(player.id, earned);
     await grantXP(player.id, Math.max(5, Math.floor(earned / 50)));
+    await grantRespect(player.id, Math.max(1, Math.floor(earned / 200)));
     void trackMissionEvent(player.id, "onDrugSold", quantity);
     await supabase.from("street_deals").insert({
       session_id: sessionId, customer_id: customerId, item_id: item.id,
@@ -389,6 +391,7 @@ async function handleNegotiate(body: any, user: any) {
     await deductInventory(inventoryId, (entry as any).quantity, quantity);
     await grantDirtyMoney(player.id, result.earned);
     await grantXP(player.id, Math.max(5, Math.floor(result.earned / 50)));
+    await grantRespect(player.id, Math.max(1, Math.floor(result.earned / 200)));
     void trackMissionEvent(player.id, "onDrugSold", quantity);
     await supabase.from("street_deals").insert({
       session_id: sessionId, customer_id: customerId, item_id: item.id,
@@ -483,6 +486,7 @@ async function handleAcceptDeal(body: any, user: any) {
   await deductInventory(inventoryId, (entry as any).quantity, quantity);
   await grantDirtyMoney(player.id, earned);
   await grantXP(player.id, Math.max(5, Math.floor(earned / 50)));
+  await grantRespect(player.id, Math.max(1, Math.floor(earned / 200)));
 
   const heatDelta = zone.heatPerDeal;
   const newHeat = Math.min(100, session.heat + heatDelta);

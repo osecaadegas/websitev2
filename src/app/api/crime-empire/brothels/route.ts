@@ -2,6 +2,25 @@
 import { supabase } from "@/lib/supabase";
 import { cookies } from "next/headers";
 import { WORKER_DEFS } from "@/lib/crime-empire/worker-defs";
+import { grantXP } from "@/lib/crime-empire/xp";
+import { grantRespect } from "@/lib/crime-empire/respect";
+
+// Higher-tier brothels pay more even with low-class workers.
+// Anchored at $50k baseline (cheapest brothel) → ×1.
+//   $50k → ×1.0   $150k → ×1.65   $500k → ×2.84   $1M → ×3.88   $5M → ×8.16
+function brothelTierMultiplier(purchasePrice: number): number {
+  const ref = Math.max(50000, purchasePrice || 50000);
+  return Math.pow(ref / 50000, 0.45);
+}
+
+// Cost-scaled progression rewards for management actions.
+// Floors guarantee a minimum tick so cheap actions still feel rewarding.
+function xpFromCost(cost: number, floor = 2): number {
+  return Math.max(floor, Math.floor(cost / 4000));
+}
+function respectFromCost(cost: number, floor = 1): number {
+  return Math.max(floor, Math.floor(cost / 8000));
+}
 
 export const dynamic = "force-dynamic";
 
@@ -191,6 +210,9 @@ export async function POST(req: NextRequest) {
       await supabase.from("player_brothels").insert({
         player_id: player.id, brothel_type_id: brothelTypeId, max_employees: maxWorkers,
       });
+      // Big-ticket purchase → meaningful one-shot progression reward.
+      await grantXP(player.id, xpFromCost(brothelType.purchase_price, 50));
+      await grantRespect(player.id, respectFromCost(brothelType.purchase_price, 25));
       return NextResponse.json({ success: true, message: `Compraste ${brothelType.name}!` });
     }
 
@@ -262,6 +284,9 @@ export async function POST(req: NextRequest) {
         trait_1: trait1 ?? WORKER_TRAITS[Math.floor(Math.random() * WORKER_TRAITS.length)],
         trait_2: trait2 ?? WORKER_TRAITS2[Math.floor(Math.random() * WORKER_TRAITS2.length)],
       });
+      // Hiring a worker = scouting/recruiting effort → XP + respect scaled by hire cost.
+      await grantXP(player.id, xpFromCost(cost, 3));
+      await grantRespect(player.id, respectFromCost(cost, 1));
       return NextResponse.json({ success: true, message: `Contrataste ${workerName || "nova worker"}!` });
     }
 
@@ -291,6 +316,9 @@ export async function POST(req: NextRequest) {
       await supabase.from('crime_players').update({ dirty_cash: player.dirty_cash - SUPPLY_REFILL_COST }).eq('id', player.id);
       await supabase.from('player_brothels')
         .update({ [`supply_${supplyType}`]: 100 }).eq('id', playerBrothelId).eq('player_id', player.id);
+      // Logistics work → small XP/respect tick.
+      await grantXP(player.id, xpFromCost(SUPPLY_REFILL_COST, 2));
+      await grantRespect(player.id, respectFromCost(SUPPLY_REFILL_COST, 1));
       return NextResponse.json({ success: true, message: `${supplyType} reabastecido!` });
     }
 
@@ -322,6 +350,9 @@ export async function POST(req: NextRequest) {
       const updatePayload: Record<string, unknown> = { [col]: true };
       if (slotBonus > 0) updatePayload.max_employees = pb.max_employees + slotBonus;
       await supabase.from("player_brothels").update(updatePayload).eq("id", playerBrothelId);
+      // Upgrades are big investments → progression reward scales with cost.
+      await grantXP(player.id, xpFromCost(cost, 10));
+      await grantRespect(player.id, respectFromCost(cost, 5));
       const slotMsg = slotBonus > 0 ? ` (+${slotBonus} vagas de worker)` : "";
       return NextResponse.json({ success: true, message: `Upgrade aplicado!${slotMsg}` });
     }
@@ -374,7 +405,11 @@ export async function POST(req: NextRequest) {
         if (pb[`upgrade_${key}` as keyof typeof pb]) upgradeMult += bonus;
       }
 
-      baseIncome = Math.floor(baseIncome * drinkMod * hygieneMod * clientMod * upgradeMult);
+      // Tier multiplier — the bigger / more expensive the brothel, the more it pays
+      // even with low-class workers. Uses brothel_types.purchase_price as the proxy.
+      const tierMult = brothelTierMultiplier((pb as any).brothel_type?.purchase_price ?? 50000);
+
+      baseIncome = Math.floor(baseIncome * drinkMod * hygieneMod * clientMod * upgradeMult * tierMult);
       if (player.class === "pimp") baseIncome = Math.floor(baseIncome * 1.2);
 
       const collected = Math.floor(baseIncome * hoursPassed);
@@ -407,19 +442,11 @@ export async function POST(req: NextRequest) {
         total_earned: pb.total_earned + collected,
       }).eq("id", playerBrothelId);
 
-      // XP
+      // XP + Respect — routed through the centralized grant functions so the
+      // new XP curve, mid-game boost, and global multiplier all apply.
       const xpEarned = Math.max(5, Math.floor(collected / 1000));
-      const { data: xpPlayer } = await supabase
-        .from("crime_players").select("xp, level, xp_to_next_level").eq("id", player.id).single();
-      if (xpPlayer) {
-        let newXP = xpPlayer.xp + xpEarned;
-        let newLevel = xpPlayer.level;
-        while (newXP >= xpPlayer.xp_to_next_level) { newXP -= xpPlayer.xp_to_next_level; newLevel++; }
-        await supabase.from("crime_players").update({
-          xp: newXP, level: newLevel,
-          xp_to_next_level: Math.floor(100 * Math.pow(1.25, newLevel - 1)),
-        }).eq("id", player.id);
-      }
+      await grantXP(player.id, xpEarned);
+      await grantRespect(player.id, Math.max(1, Math.floor(collected / 5000)));
 
       // Maybe spawn random event (20% chance)
       if (Math.random() < 0.20) {
