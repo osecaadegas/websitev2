@@ -57,6 +57,7 @@ const GAME_SECTIONS = [
   {
     section: "Outros",
     links: [
+      { href: "/jogos/crime-empire/missoes",  label: "Missões",  icon: "📋" },
       { href: "/jogos/crime-empire/security", label: "Segurança", icon: "🛡️" },
       { href: "/jogos/crime-empire/jail", label: "Prisão", icon: "🚔" },
       { href: "/jogos/crime-empire/hospital", label: "Hospital", icon: "🏥" },

@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import { supabase } from "@/lib/supabase";
 import { generateEscapeToken } from "@/lib/crime-empire/arrest-helpers";
 import { grantXP } from "@/lib/crime-empire/xp";
+import { trackMissionEvent } from "@/lib/crime-empire/missions";
 
 export const dynamic = "force-dynamic";
 
@@ -206,6 +207,7 @@ export async function POST(req: NextRequest) {
       source: "bought",
     });
 
+    void trackMissionEvent(player.id, "onStockBought", 1);
     return NextResponse.json({ success: true, quantity, price: currentPrice, symbol: coin.symbol, fee: buyFee, totalCost });
   }
 
@@ -243,6 +245,7 @@ export async function POST(req: NextRequest) {
     });
     const arrestInfo = await rollGamblingArrest(player.id, player.class, position.dirty_cash_invested, Math.min(player.crypto ?? 0, position.dirty_cash_invested));
     await grantXP(player.id, 10);
+    void trackMissionEvent(player.id, "onStockSold", 1);
 
     return NextResponse.json({ success: true, payout, profit, fee: sellFee, rawPayout, arrested: arrestInfo.arrested, jailMinutes: (arrestInfo as any).jailMinutes, escape_token: (arrestInfo as any).escapeToken ?? null, crypto_at_risk: arrestInfo.cryptoAtRisk ?? 0 });
   }

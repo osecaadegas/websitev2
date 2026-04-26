@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import { supabase } from "@/lib/supabase";
 import { generateEscapeToken } from "@/lib/crime-empire/arrest-helpers";
 import { grantXP } from "@/lib/crime-empire/xp";
+import { trackMissionEvent } from "@/lib/crime-empire/missions";
 
 export const dynamic = "force-dynamic";
 
@@ -173,6 +174,7 @@ export async function POST(req: NextRequest) {
     const dealerBJ = dv === 21 && dealerHand.length === 2;
 
     await supabase.from("crime_players").update({ dirty_cash: player.dirty_cash - totalCost }).eq("id", player.id);
+    void trackMissionEvent(player.id, "onCasinoPlay", 1);
     // E8: XP for placing a bet
     await grantXP(player.id, 10);
 
@@ -299,6 +301,8 @@ export async function POST(req: NextRequest) {
   await supabase.from("casino_sessions").update({ status: "finished", state: { ...state, deck, playerHand, dealerHand: dHand, bet, result, dealerRevealed: true } }).eq("id", sessionId);
   await supabase.from("gambling_history").insert({ player_id: player.id, game_type: "blackjack", bet_amount: bet, payout, profit: payout - bet });
   const arrestInfo = await rollGamblingArrest(player.id, player.class, bet, Math.min(player.crypto ?? 0, bet));
+  if (result === "win" || result === "blackjack") void trackMissionEvent(player.id, "onCasinoWin", 1);
+  void trackMissionEvent(player.id, "onCasinoSessionEnd", 1);
 
   return NextResponse.json({ success: true, playerHand, dealerHand: dHand, playerValue: pv, dealerValue: dv, status: "finished", result, payout, arrested: arrestInfo.arrested, jailMinutes: arrestInfo.jailMinutes, escape_token: arrestInfo.escapeToken ?? null, crypto_at_risk: arrestInfo.cryptoAtRisk ?? 0, stamina_gained: GAMBLING_STAMINA_GAIN, new_stamina: newStamina, new_addiction: newAddiction });
 }

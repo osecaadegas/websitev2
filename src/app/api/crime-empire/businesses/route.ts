@@ -4,6 +4,7 @@ import { cookies } from "next/headers";
 import { grantDirtyMoney, deductDirtyMoney } from "@/lib/dirty-money";
 import { BUSINESS_DEFS } from "@/lib/business-defs";
 import { grantXP } from "@/lib/crime-empire/xp";
+import { trackMissionEvent } from "@/lib/crime-empire/missions";
 
 export const dynamic = "force-dynamic";
 
@@ -274,6 +275,8 @@ async function handleHire(player: any, businessId: string, amount: number) {
     })
     .eq("id", player.id);
 
+  void trackMissionEvent(player.id, "onWorkerHired", amount);
+
   return NextResponse.json({
     success: true,
     message: `${amount} worker(s) hired!`,
@@ -281,8 +284,6 @@ async function handleHire(player: any, businessId: string, amount: number) {
     new_employees: newEmployees,
   });
 }
-
-/* ── Fire Workers ──────────────────────────────────────────── */
 async function handleFire(player: any, businessId: string, amount: number) {
   const { data: playerBusiness } = await supabase
     .from("player_businesses")
@@ -429,6 +430,7 @@ async function handleCollect(player: any, businessId: string) {
   // E8: Grant XP for collecting income
   const xpEarned = Math.floor((collectedMoney > 0 ? collectedMoney : 50) / 100);
   await grantXP(player.id, Math.max(5, xpEarned));
+  void trackMissionEvent(player.id, "onBusinessCollected", 1, { businessId });
 
   return NextResponse.json({
     success: true,
@@ -518,6 +520,7 @@ async function handleLaunder(player: any, businessId: string, amount: number) {
   // E8: Grant XP for laundering
   const launderXP = Math.max(5, Math.floor(cleanMoney / 200));
   await grantXP(player.id, launderXP);
+  void trackMissionEvent(player.id, "onCashLaundered", 1);
 
   return NextResponse.json({
     success: true,

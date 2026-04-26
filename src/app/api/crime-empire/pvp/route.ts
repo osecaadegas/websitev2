@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { supabase } from "@/lib/supabase";
 import { grantXP } from "@/lib/crime-empire/xp";
+import { trackMissionEvent } from "@/lib/crime-empire/missions";
 
 export const dynamic = "force-dynamic";
 
@@ -243,6 +244,15 @@ export async function POST(req: NextRequest) {
     // E8: Grant XP to winner
     const pvpXP = 50 + (loser.level ?? 1) * 2;
     await grantXP(winner.id, pvpXP);
+
+    // Track mission events for attacker and winner/defender
+    void trackMissionEvent(attacker.id, "onPvPAttack", 1, { targetId: defender.id });
+    if (attackerWon) {
+      void trackMissionEvent(attacker.id, "onPvPWin", 1, { targetId: defender.id });
+    } else {
+      void trackMissionEvent(defender.id, "onPvPDefend", 1, { targetId: attacker.id });
+      void trackMissionEvent(defender.id, "onPvPWin", 1, { targetId: attacker.id });
+    }
 
     // Degrade attacker's equipped items with durability after PvP
     // Loss scales with item tier: base 5 + floor(crypto_price / 150), min 4, max 20

@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import { supabase } from "@/lib/supabase";
 import { generateEscapeToken } from "@/lib/crime-empire/arrest-helpers";
 import { grantXP } from "@/lib/crime-empire/xp";
+import { trackMissionEvent } from "@/lib/crime-empire/missions";
 
 export const dynamic = "force-dynamic";
 
@@ -166,6 +167,7 @@ export async function POST(req: NextRequest) {
 
     const xpEarned = contract.xp_reward ?? Math.max(10, Math.floor(cash / 500));
     await grantXP(player.id, xpEarned);
+    void trackMissionEvent(player.id, "onContractCompleted", 1, { difficulty: contract.difficulty });
 
     return NextResponse.json({
       success: true,
@@ -223,6 +225,8 @@ export async function POST(req: NextRequest) {
       cash_reward: 0,
       respect_reward: 0,
     });
+
+    void trackMissionEvent(player.id, "onContractFailed", 1);
 
     return NextResponse.json({
       success: false,
