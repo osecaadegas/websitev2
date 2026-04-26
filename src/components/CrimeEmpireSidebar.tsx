@@ -37,6 +37,7 @@ const GAME_SECTIONS = [
     links: [
       { href: "/jogos/crime-empire/crimes", label: "Crimes", icon: "💰" },
       { href: "/jogos/crime-empire/contracts", label: "Contratos", icon: "🎯" },
+      { href: "/jogos/crime-empire/hitman-contratos", label: "Hitman", icon: "☠️" },
       { href: "/jogos/crime-empire/businesses", label: "Negócios", icon: "🏢" },
       { href: "/jogos/crime-empire/rua-das-luzes", label: "Rua das Luzes", icon: "💋" },
       { href: "/jogos/crime-empire/black-market", label: "Black Market", icon: "💎" },

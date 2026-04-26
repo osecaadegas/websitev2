@@ -562,7 +562,7 @@ function ContractBriefing({
                       EXECUTANDO
                     </>
                   ) : (
-                    <>⚔ EXECUTAR CONTRATO</>
+                    <>⚔ {isFailed ? "TENTAR NOVAMENTE ↺" : "EXECUTAR CONTRATO"}</>
                   )}
                 </span>
               </button>
@@ -849,8 +849,8 @@ export default function ContractsPage() {
           setArrestEscape({ token: data.escape_token, jailMinutes: data.jail_time_minutes ?? 30, roadmapLevel: data.roadmap_level ?? 1 });
         }
         const details = ok
-          ? `+?? $${data.cash_earned?.toLocaleString()} | +?? ${data.respect_earned} Respeito`
-          : data.arrested ? "?? Preso!" : "";
+          ? `💵 +$${data.cash_earned?.toLocaleString()} | 👑 +${data.respect_earned} Respeito | ⭐ +${data.xp_earned} XP`
+          : data.arrested ? "🚔 Preso!" : "";
         showToast(data.message, ok, details);
         notifyPlayerUpdate();
         await fetchData();

@@ -157,13 +157,14 @@ export async function POST(req: NextRequest) {
       respect: player.respect + respectEarned,
     }).eq("id", player.id);
 
-    await supabase.from("player_contracts").insert({
+    // Upsert so that retrying a previously-failed contract works
+    await supabase.from("player_contracts").upsert({
       player_id: player.id,
       contract_id: contractId,
       status: "completed",
       cash_reward: cash,
       respect_reward: respectEarned,
-    });
+    }, { onConflict: "player_id,contract_id" });
 
     const xpEarned = contract.xp_reward ?? Math.max(10, Math.floor(cash / 500));
     await grantXP(player.id, xpEarned);
@@ -218,13 +219,14 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    await supabase.from("player_contracts").insert({
+    // Upsert so that retrying a previously-failed contract works
+    await supabase.from("player_contracts").upsert({
       player_id: player.id,
       contract_id: contractId,
       status: "failed",
       cash_reward: 0,
       respect_reward: 0,
-    });
+    }, { onConflict: "player_id,contract_id" });
 
     void trackMissionEvent(player.id, "onContractFailed", 1);
 
