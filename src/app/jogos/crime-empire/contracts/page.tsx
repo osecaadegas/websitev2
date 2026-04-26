@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { notifyPlayerUpdate } from "@/lib/crime-empire/player-context";
 import { CEToast } from "@/components/CEToast";
@@ -47,6 +47,49 @@ interface Player {
   class: string;
   addiction: number;
   in_jail: boolean;
+}
+
+/* -- Black-market (player-posted) contracts -- */
+interface HitmanContract {
+  id: string;
+  requester_id: string;
+  target_id: string;
+  target_username: string;
+  target_display_name: string;
+  target_level: number;
+  reward_cash: number;
+  status: "open" | "completed" | "failed" | "cancelled";
+  executed_by: string | null;
+  created_at: string;
+  expires_at: string;
+  message: string | null;
+}
+
+interface SearchResult {
+  id: string;
+  username: string;
+  display_name: string;
+  level: number;
+  class: string;
+}
+
+const CLASS_LABEL: Record<string, string> = {
+  thief: "Ladrão", hooligan: "Hooligan", businessman: "Empresário",
+  hitman: "Assassino", scammer: "Burlão", brute: "Bruto",
+  dealer: "Traficante", pimp: "Chulo",
+};
+
+function minBounty(level: number) { return Math.max(10_000, level * 3_000); }
+function hitChance(myLevel: number, targetLevel: number) {
+  const raw = 0.50 + (myLevel - targetLevel) * 0.02;
+  return Math.round(Math.min(80, Math.max(20, raw * 100)));
+}
+function timeLeft(expires_at: string) {
+  const diff = new Date(expires_at).getTime() - Date.now();
+  if (diff <= 0) return "Expirado";
+  const h = Math.floor(diff / 3_600_000);
+  const m = Math.floor((diff % 3_600_000) / 60_000);
+  return h > 0 ? `${h}h ${m}m` : `${m}m`;
 }
 
 /* ------------------------------ CONFIG ------------------------------- */
@@ -781,6 +824,301 @@ function ThreeCardFan({
   );
 }
 
+/* --------------------------- BOUNTY CARD (player-posted) ----------- */
+function BountyCard({
+  contract, myLevel, isOwn, processing, onExecute, onCancel,
+}: {
+  contract: HitmanContract;
+  myLevel: number;
+  isOwn: boolean;
+  processing: string | null;
+  onExecute: (id: string) => void;
+  onCancel: (id: string) => void;
+}) {
+  const chance    = hitChance(myLevel, contract.target_level);
+  const remaining = timeLeft(contract.expires_at);
+  const expired   = remaining === "Expirado";
+  const isBusy    = processing === contract.id;
+
+  const urgency = contract.reward_cash >= 500_000 ? "#ef4444"
+    : contract.reward_cash >= 200_000 ? "#f97316"
+    : contract.reward_cash >= 50_000  ? "#fbbf24"
+    : "#22c55e";
+
+  const tier = contract.reward_cash >= 500_000 ? "LENDÁRIO"
+    : contract.reward_cash >= 200_000 ? "ELITE"
+    : contract.reward_cash >= 50_000  ? "ALTO VALOR"
+    : "STANDARD";
+
+  return (
+    <div
+      className="relative rounded-xl overflow-hidden"
+      style={{
+        background: "linear-gradient(135deg, rgba(14,8,3,0.98), rgba(10,6,2,0.97))",
+        border: `1px solid ${urgency}22`,
+        boxShadow: `0 0 20px ${urgency}08`,
+      }}
+    >
+      <div className="absolute left-0 top-0 bottom-0 w-[3px]" style={{ background: urgency, boxShadow: `0 0 8px ${urgency}80` }} />
+      <div
+        className="absolute top-3 right-3 text-[7px] font-black tracking-widest px-2 py-0.5 rounded"
+        style={{ background: `${urgency}18`, color: urgency, border: `1px solid ${urgency}30` }}
+      >
+        {tier}
+      </div>
+
+      <div className="pl-5 pr-4 py-4">
+        <div className="flex items-center gap-3 mb-3">
+          <div
+            className="w-10 h-10 rounded-full flex items-center justify-center text-lg flex-shrink-0"
+            style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}
+          >
+            🎯
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-black" style={{ color: "#ddc870", ...serif }}>
+                {contract.target_display_name || contract.target_username}
+              </span>
+              <span
+                className="text-[8px] font-bold px-1.5 py-0.5 rounded"
+                style={{ background: "rgba(255,255,255,0.05)", color: "rgba(200,160,60,0.7)", border: "1px solid rgba(255,255,255,0.07)" }}
+              >
+                NÍV. {contract.target_level}
+              </span>
+            </div>
+            <span className="text-[9px]" style={{ color: "rgba(160,120,40,0.5)" }}>
+              @{contract.target_username}
+            </span>
+          </div>
+        </div>
+
+        {contract.message && (
+          <p
+            className="text-[10px] italic mb-3 px-3 py-2 rounded-lg"
+            style={{ color: "rgba(180,130,50,0.55)", background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.04)", ...serif }}
+          >
+            &ldquo;{contract.message}&rdquo;
+          </p>
+        )}
+
+        <div className="flex items-center gap-4 mb-4">
+          <div>
+            <span className="text-[8px] block" style={{ color: "rgba(140,100,35,0.4)" }}>RECOMPENSA</span>
+            <span className="text-lg font-black tabular-nums" style={{ color: urgency }}>
+              ${contract.reward_cash.toLocaleString()}
+            </span>
+          </div>
+          {!isOwn && (
+            <div>
+              <span className="text-[8px] block" style={{ color: "rgba(140,100,35,0.4)" }}>CHANCE HIT</span>
+              <span className="text-base font-black"
+                style={{ color: chance >= 60 ? "#22c55e" : chance >= 40 ? "#fbbf24" : "#ef4444" }}>
+                {chance}%
+              </span>
+            </div>
+          )}
+          <div className="ml-auto text-right">
+            <span className="text-[8px] block" style={{ color: "rgba(140,100,35,0.4)" }}>EXPIRA EM</span>
+            <span className="text-[11px] font-bold" style={{ color: expired ? "#ef4444" : "rgba(200,160,60,0.6)" }}>
+              {remaining}
+            </span>
+          </div>
+        </div>
+
+        {isOwn ? (
+          <button
+            onClick={() => onCancel(contract.id)}
+            disabled={isBusy || expired}
+            className="w-full py-2 rounded-lg text-[10px] font-black tracking-widest transition-all active:scale-95"
+            style={{
+              background: "rgba(239,68,68,0.08)", color: "rgba(248,113,113,0.6)",
+              border: "1px solid rgba(239,68,68,0.2)",
+              cursor: isBusy ? "wait" : "pointer", opacity: expired ? 0.4 : 1,
+            }}
+          >
+            {isBusy ? "..." : "CANCELAR (reembolso 75%)"}
+          </button>
+        ) : (
+          <button
+            onClick={() => onExecute(contract.id)}
+            disabled={isBusy || expired}
+            className="w-full py-2.5 rounded-lg text-[11px] font-black tracking-widest transition-all active:scale-95"
+            style={{
+              background: isBusy ? "rgba(255,106,0,0.15)" : "linear-gradient(135deg, #cc4400, #ff6a00)",
+              color: "#fff", border: "1px solid rgba(255,106,0,0.35)",
+              boxShadow: isBusy ? "none" : "0 0 14px rgba(255,106,0,0.2)",
+              cursor: isBusy ? "wait" : expired ? "not-allowed" : "pointer", opacity: expired ? 0.4 : 1,
+            }}
+          >
+            {isBusy ? "EXECUTANDO..." : "🔫 EXECUTAR"}
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* --------------------------- PLACE BOUNTY FORM ---------------------- */
+function PlaceBountyForm({
+  player, processing, onPlace,
+}: {
+  player: { level: number; cash: number };
+  processing: boolean;
+  onPlace: (targetId: string, reward: number, message: string) => void;
+}) {
+  const [search, setSearch]   = useState("");
+  const [results, setResults] = useState<SearchResult[]>([]);
+  const [selected, setSelected] = useState<SearchResult | null>(null);
+  const [reward, setReward]   = useState("");
+  const [msg, setMsg]         = useState("");
+  const [searching, setSearching] = useState(false);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const doSearch = useCallback(async (q: string) => {
+    if (q.length < 2) { setResults([]); return; }
+    setSearching(true);
+    try {
+      const res  = await fetch(`/api/crime-empire/hitman-contratos?search=${encodeURIComponent(q)}`);
+      const data = await res.json();
+      setResults(data.searchResults ?? []);
+    } finally { setSearching(false); }
+  }, []);
+
+  useEffect(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => doSearch(search), 350);
+    return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
+  }, [search, doSearch]);
+
+  const minimum   = selected ? minBounty(selected.level) : 10_000;
+  const rewardNum = parseInt(reward.replace(/\D/g, ""), 10) || 0;
+  const canSubmit = selected && rewardNum >= minimum && player.cash >= rewardNum && !processing;
+  const chance    = selected ? hitChance(player.level, selected.level) : null;
+
+  return (
+    <div className="rounded-2xl p-5 space-y-4" style={{ background: "#111", border: "1px solid rgba(255,106,0,0.12)" }}>
+      <div className="flex items-center gap-2 mb-1">
+        <div className="w-7 h-7 rounded-lg flex items-center justify-center text-sm"
+          style={{ background: "rgba(255,106,0,0.1)", border: "1px solid rgba(255,106,0,0.2)" }}>💀</div>
+        <span className="text-[10px] font-black tracking-[0.25em] uppercase" style={{ color: "#ff6a00" }}>
+          Colocar Contrato
+        </span>
+      </div>
+
+      <div className="relative">
+        <label className="text-[8px] font-black tracking-[0.2em] uppercase block mb-1.5" style={{ color: "rgba(160,120,40,0.45)" }}>
+          Alvo (pesquisar por username)
+        </label>
+        {selected ? (
+          <div className="flex items-center justify-between px-3 py-2.5 rounded-lg"
+            style={{ background: "rgba(255,106,0,0.06)", border: "1px solid rgba(255,106,0,0.2)" }}>
+            <div>
+              <span className="text-sm font-black" style={{ color: "#ddc870" }}>
+                {selected.display_name || selected.username}
+              </span>
+              <span className="text-[9px] ml-2" style={{ color: "rgba(160,120,40,0.5)" }}>
+                Nív. {selected.level} · {CLASS_LABEL[selected.class] ?? selected.class}
+              </span>
+            </div>
+            <button onClick={() => { setSelected(null); setSearch(""); setResults([]); }}
+              className="text-[9px] font-bold px-2 py-1 rounded"
+              style={{ color: "rgba(248,113,113,0.6)", background: "rgba(239,68,68,0.08)" }}>✕</button>
+          </div>
+        ) : (
+          <>
+            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Ex: xXKillerXx"
+              className="w-full px-3 py-2.5 rounded-lg text-sm outline-none"
+              style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", color: "#fff" }} />
+            {(results.length > 0 || searching) && (
+              <div className="absolute top-full left-0 right-0 z-20 mt-1 rounded-xl overflow-hidden"
+                style={{ background: "#1a1a1a", border: "1px solid rgba(255,255,255,0.08)" }}>
+                {searching && (
+                  <div className="px-3 py-2 text-[10px]" style={{ color: "rgba(160,120,40,0.4)" }}>A procurar...</div>
+                )}
+                {results.map((r) => (
+                  <button key={r.id} onClick={() => { setSelected(r); setResults([]); setSearch(""); }}
+                    className="w-full text-left px-3 py-2.5 flex items-center gap-3 hover:brightness-125 transition-all"
+                    style={{ borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
+                    <div className="w-7 h-7 rounded-full flex items-center justify-center text-sm" style={{ background: "rgba(255,255,255,0.06)" }}>🎯</div>
+                    <div>
+                      <span className="text-sm font-bold text-white block">{r.display_name || r.username}</span>
+                      <span className="text-[9px]" style={{ color: "rgba(160,120,40,0.5)" }}>
+                        @{r.username} · Nív. {r.level} · {CLASS_LABEL[r.class] ?? r.class}
+                      </span>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+          </>
+        )}
+      </div>
+
+      <div>
+        <label className="text-[8px] font-black tracking-[0.2em] uppercase block mb-1.5" style={{ color: "rgba(160,120,40,0.45)" }}>
+          Recompensa {selected ? `(mínimo $${minimum.toLocaleString()})` : ""}
+        </label>
+        <div className="relative">
+          <span className="absolute left-3 top-1/2 -translate-y-1/2 font-black" style={{ color: "rgba(200,160,60,0.5)" }}>$</span>
+          <input type="number" value={reward} onChange={(e) => setReward(e.target.value)} min={minimum}
+            placeholder={minimum.toLocaleString()}
+            className="w-full pl-7 pr-3 py-2.5 rounded-lg text-sm outline-none"
+            style={{
+              background: "rgba(255,255,255,0.04)",
+              border: `1px solid ${rewardNum > 0 && rewardNum < minimum ? "rgba(239,68,68,0.35)" : "rgba(255,255,255,0.08)"}`,
+              color: "#fff",
+            }} />
+        </div>
+        {selected && rewardNum > 0 && rewardNum < minimum && (
+          <p className="text-[9px] mt-1" style={{ color: "#f87171" }}>
+            Mínimo para nível {selected.level}: ${minimum.toLocaleString()}
+          </p>
+        )}
+        {rewardNum > player.cash && (
+          <p className="text-[9px] mt-1" style={{ color: "#f87171" }}>
+            Dinheiro insuficiente. Tens ${player.cash.toLocaleString()}
+          </p>
+        )}
+      </div>
+
+      <div>
+        <label className="text-[8px] font-black tracking-[0.2em] uppercase block mb-1.5" style={{ color: "rgba(160,120,40,0.45)" }}>
+          Mensagem (opcional)
+        </label>
+        <input value={msg} onChange={(e) => setMsg(e.target.value)} maxLength={120} placeholder="Motivo do contrato..."
+          className="w-full px-3 py-2.5 rounded-lg text-sm outline-none"
+          style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", color: "#fff" }} />
+      </div>
+
+      {selected && chance !== null && (
+        <div className="flex items-center gap-3 px-3 py-2.5 rounded-lg"
+          style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)" }}>
+          <span className="text-[9px]" style={{ color: "rgba(160,120,40,0.5)" }}>
+            Um assassino de nível {player.level} teria:
+          </span>
+          <span className="text-sm font-black ml-auto"
+            style={{ color: chance >= 60 ? "#22c55e" : chance >= 40 ? "#fbbf24" : "#ef4444" }}>
+            {chance}% chance
+          </span>
+        </div>
+      )}
+
+      <button onClick={() => selected && onPlace(selected.id, rewardNum, msg)} disabled={!canSubmit}
+        className="w-full py-3 rounded-xl text-[11px] font-black tracking-widest transition-all active:scale-95"
+        style={{
+          background: canSubmit ? "linear-gradient(135deg, #7f1d1d, #ef4444)" : "rgba(255,255,255,0.04)",
+          color: canSubmit ? "#fff" : "rgba(255,255,255,0.2)",
+          border: canSubmit ? "1px solid rgba(239,68,68,0.35)" : "1px solid rgba(255,255,255,0.06)",
+          boxShadow: canSubmit ? "0 0 14px rgba(239,68,68,0.2)" : "none",
+          cursor: canSubmit ? "pointer" : "not-allowed",
+        }}>
+        {processing ? "A PROCESSAR..." : "💀 COLOCAR CONTRATO"}
+      </button>
+    </div>
+  );
+}
+
 /* --------------------------- MAIN PAGE ----------------------------- */
 export default function ContractsPage() {
   const { user } = useAuth();
@@ -795,6 +1133,16 @@ export default function ContractsPage() {
   const [selected, setSelected]               = useState<string | null>(null);
   const [briefingKey, setBriefingKey]         = useState(0);
   const [arrestEscape, setArrestEscape]       = useState<{ token: string; jailMinutes: number; roadmapLevel: number } | null>(null);
+
+  /* -- Black market (player-posted) state -- */
+  const [mode, setMode] = useState<"oficial" | "blackmarket">("oficial");
+  const [bountyTab, setBountyTab] = useState<"open" | "mine">("open");
+  const [openBounties, setOpenBounties] = useState<HitmanContract[]>([]);
+  const [myBounties, setMyBounties]     = useState<HitmanContract[]>([]);
+  const [bountiesLoaded, setBountiesLoaded] = useState(false);
+  const [processingBounty, setProcessingBounty] = useState<string | null>(null);
+  const [placing, setPlacing] = useState(false);
+  const [showPlaceForm, setShowPlaceForm] = useState(false);
 
   const showToast = (msg: string, ok: boolean, details?: string) => {
     setToast({ msg, ok, details });
@@ -858,6 +1206,74 @@ export default function ContractsPage() {
     } finally {
       setProcessing(null);
     }
+  };
+
+  /* -- Black-market bounties -- */
+  const fetchBounties = useCallback(async () => {
+    const res  = await fetch("/api/crime-empire/hitman-contratos");
+    const data = await res.json();
+    if (!res.ok) return;
+    setOpenBounties(data.openBounties ?? []);
+    setMyBounties(data.myBounties ?? []);
+    setBountiesLoaded(true);
+  }, []);
+
+  useEffect(() => {
+    if (mode === "blackmarket" && !bountiesLoaded) fetchBounties();
+  }, [mode, bountiesLoaded, fetchBounties]);
+
+  const executeBounty = async (id: string) => {
+    setProcessingBounty(id);
+    try {
+      const res  = await fetch("/api/crime-empire/hitman-contratos", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "execute", contractId: id }),
+      });
+      const data = await res.json();
+      if (!res.ok) showToast(data.error ?? "Erro", false);
+      else {
+        showToast(
+          data.success
+            ? `${data.message}`
+            : `${data.message} (-${data.hp_lost} HP)`,
+          data.success,
+          data.success ? `💵 +$${data.cash_earned?.toLocaleString()} | ⭐ +${data.xp_earned} XP` : undefined,
+        );
+        notifyPlayerUpdate();
+        await fetchBounties();
+        await fetchData();
+      }
+    } finally { setProcessingBounty(null); }
+  };
+
+  const cancelBounty = async (id: string) => {
+    setProcessingBounty(id);
+    try {
+      const res  = await fetch("/api/crime-empire/hitman-contratos", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "cancel", contractId: id }),
+      });
+      const data = await res.json();
+      showToast(data.message ?? (res.ok ? "Cancelado" : "Erro"), res.ok);
+      if (res.ok) { notifyPlayerUpdate(); await fetchBounties(); await fetchData(); }
+    } finally { setProcessingBounty(null); }
+  };
+
+  const placeBounty = async (targetId: string, reward: number, message: string) => {
+    setPlacing(true);
+    try {
+      const res  = await fetch("/api/crime-empire/hitman-contratos", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "place", targetId, reward, message: message || null }),
+      });
+      const data = await res.json();
+      showToast(data.message ?? (res.ok ? "Contrato colocado" : "Erro"), res.ok);
+      if (res.ok) {
+        setShowPlaceForm(false);
+        notifyPlayerUpdate();
+        await fetchBounties(); await fetchData();
+      }
+    } finally { setPlacing(false); }
   };
 
   /* -- Derived helpers -- */
@@ -986,8 +1402,47 @@ export default function ContractsPage() {
           </div>
         )}
 
+        {/* -- MODE TOGGLE -- */}
+        <div
+          className="flex gap-1 p-1 rounded-xl"
+          style={{ background: "rgba(255,255,255,0.025)", border: "1px solid rgba(255,255,255,0.05)" }}
+        >
+          {([
+            { key: "oficial",     label: "ALVOS OFICIAIS", icon: "📜", color: "#f0d090" },
+            { key: "blackmarket", label: "MERCADO NEGRO",  icon: "💀", color: "#ef4444" },
+          ] as const).map((m) => {
+            const active = mode === m.key;
+            return (
+              <button
+                key={m.key}
+                onClick={() => setMode(m.key)}
+                className="flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg transition-all duration-200"
+                style={{
+                  background: active ? `${m.color}14` : "transparent",
+                  border: active ? `1px solid ${m.color}33` : "1px solid transparent",
+                  color: active ? m.color : "rgba(140,110,50,0.35)",
+                }}
+              >
+                <span className="text-sm">{m.icon}</span>
+                <span className="text-[10px] font-black tracking-[0.18em]">{m.label}</span>
+                {m.key === "blackmarket" && bountiesLoaded && openBounties.length > 0 && (
+                  <span
+                    className="text-[9px] font-black px-1.5 py-0.5 rounded-full"
+                    style={{
+                      background: active ? `${m.color}22` : "rgba(255,255,255,0.04)",
+                      color: active ? m.color : "rgba(140,110,50,0.35)",
+                    }}
+                  >
+                    {openBounties.length}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+
         {/* -- MAIN SPLIT LAYOUT -- */}
-        {contracts.length === 0 ? (
+        {mode === "oficial" && (contracts.length === 0 ? (
           <div className="text-center py-24">
             <p className="text-2xl opacity-10 mb-3">??</p>
             <p className="text-[9px] uppercase tracking-[0.4em]" style={{ color: "rgba(180,110,40,0.40)" }}>Sem contratos disponiveis</p>
@@ -1070,6 +1525,186 @@ export default function ContractsPage() {
               )}
             </div>
 
+          </div>
+        ))}
+
+        {/* -- BLACK MARKET (player-posted contracts) -- */}
+        {mode === "blackmarket" && (
+          <div className="flex flex-col gap-5">
+            {/* Info strip */}
+            <div
+              className="grid grid-cols-3 gap-3 px-4 py-3 rounded-xl"
+              style={{ background: "rgba(14,8,3,0.9)", border: "1px solid rgba(255,106,0,0.08)" }}
+            >
+              {[
+                { label: "Preço mínimo", value: "Nível × $3.000", icon: "💰" },
+                { label: "Chance base",  value: "50% ±2% por nível", icon: "🎯" },
+                { label: "Falha",        value: "-40% HP ao executor", icon: "💔" },
+              ].map((s) => (
+                <div key={s.label} className="text-center">
+                  <div className="text-xl mb-1">{s.icon}</div>
+                  <div className="text-[10px] font-bold" style={{ color: "#ddc870" }}>{s.value}</div>
+                  <div className="text-[8px] mt-0.5" style={{ color: "rgba(160,120,40,0.4)" }}>{s.label}</div>
+                </div>
+              ))}
+            </div>
+
+            {/* Place bounty toggle */}
+            <button
+              onClick={() => setShowPlaceForm((v) => !v)}
+              disabled={player?.in_jail ?? false}
+              className="w-full py-3 rounded-xl text-[11px] font-black tracking-widest transition-all active:scale-[0.98]"
+              style={{
+                background: showPlaceForm
+                  ? "rgba(239,68,68,0.1)"
+                  : "linear-gradient(135deg, rgba(127,29,29,0.8), rgba(185,28,28,0.8))",
+                color: showPlaceForm ? "rgba(248,113,113,0.8)" : "#fff",
+                border: showPlaceForm ? "1px solid rgba(239,68,68,0.2)" : "1px solid rgba(239,68,68,0.35)",
+                boxShadow: showPlaceForm ? "none" : "0 0 16px rgba(239,68,68,0.15)",
+                opacity: (player?.in_jail ?? false) ? 0.4 : 1,
+                cursor: (player?.in_jail ?? false) ? "not-allowed" : "pointer",
+              }}
+            >
+              {showPlaceForm ? "✕ CANCELAR" : "💀 COLOCAR CONTRATO"}
+            </button>
+
+            {showPlaceForm && player && (
+              <PlaceBountyForm
+                player={{ level: player.level, cash: player.cash }}
+                processing={placing}
+                onPlace={placeBounty}
+              />
+            )}
+
+            {/* Bounty tabs */}
+            <div
+              className="flex gap-1 p-1 rounded-xl"
+              style={{ background: "rgba(255,255,255,0.025)", border: "1px solid rgba(255,255,255,0.05)" }}
+            >
+              {(["open", "mine"] as const).map((t) => {
+                const active = bountyTab === t;
+                const count  = t === "open"
+                  ? openBounties.length
+                  : myBounties.filter((b) => b.status === "open").length;
+                return (
+                  <button
+                    key={t}
+                    onClick={() => setBountyTab(t)}
+                    className="flex-1 flex items-center justify-center gap-2 py-2.5 px-2 rounded-lg transition-all duration-200"
+                    style={{
+                      background: active ? "rgba(255,106,0,0.1)" : "transparent",
+                      border: active ? "1px solid rgba(255,106,0,0.22)" : "1px solid transparent",
+                      color: active ? "#ff6a00" : "rgba(140,110,50,0.35)",
+                    }}
+                  >
+                    <span className="text-[10px] font-black tracking-[0.12em]">
+                      {t === "open" ? "CONTRATOS ABERTOS" : "OS MEUS CONTRATOS"}
+                    </span>
+                    {count > 0 && (
+                      <span
+                        className="text-[9px] font-black px-1.5 py-0.5 rounded-full"
+                        style={{
+                          background: active ? "rgba(255,106,0,0.18)" : "rgba(255,255,255,0.04)",
+                          color: active ? "#ff6a00" : "rgba(140,110,50,0.35)",
+                        }}
+                      >
+                        {count}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Bounty list */}
+            {!bountiesLoaded ? (
+              <div className="flex flex-col items-center justify-center py-16">
+                <div className="relative w-10 h-10 mb-3">
+                  <div className="absolute inset-0 rounded-full border border-red-900/30 animate-ping" />
+                  <div className="absolute inset-2 rounded-full border border-red-800/40 animate-pulse" />
+                </div>
+                <p className="text-[8px] uppercase tracking-[0.4em]" style={{ color: "rgba(180,60,40,0.5)" }}>A CARREGAR MERCADO</p>
+              </div>
+            ) : (() => {
+              const list = bountyTab === "open" ? openBounties : myBounties;
+              if (list.length === 0) {
+                return (
+                  <div
+                    className="flex flex-col items-center justify-center py-20 rounded-xl"
+                    style={{ background: "rgba(10,7,3,0.5)", border: "1px solid rgba(255,255,255,0.03)" }}
+                  >
+                    <span className="text-4xl mb-3" style={{ opacity: 0.1 }}>🔫</span>
+                    <p className="text-[9px] tracking-[0.3em]" style={{ color: "rgba(160,120,40,0.3)" }}>
+                      {bountyTab === "open" ? "SEM CONTRATOS ABERTOS" : "NÃO TENS CONTRATOS COLOCADOS"}
+                    </p>
+                  </div>
+                );
+              }
+              return (
+                <div className="space-y-3">
+                  {list.map((c) => (
+                    <BountyCard
+                      key={c.id}
+                      contract={c}
+                      myLevel={player?.level ?? 1}
+                      isOwn={bountyTab === "mine"}
+                      processing={processingBounty}
+                      onExecute={executeBounty}
+                      onCancel={cancelBounty}
+                    />
+                  ))}
+                </div>
+              );
+            })()}
+
+            {/* History */}
+            {bountyTab === "mine" && myBounties.some((b) => b.status !== "open") && (
+              <div>
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="h-px flex-1" style={{ background: "rgba(255,255,255,0.05)" }} />
+                  <span className="text-[8px] font-black tracking-[0.25em]" style={{ color: "rgba(160,120,40,0.3)" }}>
+                    HISTÓRICO
+                  </span>
+                  <div className="h-px flex-1" style={{ background: "rgba(255,255,255,0.05)" }} />
+                </div>
+                <div className="space-y-2">
+                  {myBounties.filter((b) => b.status !== "open").map((c) => (
+                    <div
+                      key={c.id}
+                      className="flex items-center justify-between px-4 py-3 rounded-xl"
+                      style={{
+                        background: "rgba(8,5,2,0.8)",
+                        border: `1px solid ${c.status === "completed" ? "rgba(34,197,94,0.15)" : "rgba(255,255,255,0.05)"}`,
+                        opacity: 0.6,
+                      }}
+                    >
+                      <div>
+                        <span className="text-xs font-bold" style={{ color: "#ddc870" }}>
+                          {c.target_display_name || c.target_username}
+                        </span>
+                        <span className="text-[8px] ml-2" style={{ color: "rgba(160,120,40,0.4)" }}>
+                          Nív. {c.target_level}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <span className="text-[9px] font-bold" style={{ color: "rgba(200,160,60,0.5)" }}>
+                          ${c.reward_cash.toLocaleString()}
+                        </span>
+                        <span
+                          className="text-[8px] font-black px-2 py-0.5 rounded"
+                          style={{
+                            color: c.status === "completed" ? "#4ade80" : c.status === "failed" ? "#f87171" : "rgba(200,160,60,0.6)",
+                            background: c.status === "completed" ? "rgba(34,197,94,0.1)" : c.status === "failed" ? "rgba(239,68,68,0.1)" : "rgba(200,160,60,0.06)",
+                          }}
+                        >
+                          {c.status === "completed" ? "✓ CONCLUÍDO" : c.status === "failed" ? "✗ FALHADO" : "CANCELADO"}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>
