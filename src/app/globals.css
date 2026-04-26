@@ -4245,27 +4245,42 @@ body {
 
 .ce-card {
   position: relative;
-  background: linear-gradient(160deg, #151515 0%, #0e0e0e 50%, #0a0a0a 100%);
-  border: 1px solid rgba(255,255,255,0.06);
+  background: linear-gradient(160deg, #161a22 0%, #0f1218 50%, #0a0c12 100%);
+  border: 1px solid rgba(160,180,210,0.08);
   border-radius: 14px;
   box-shadow:
-    0 1px 0 rgba(255,255,255,0.04) inset,
-    0 -1px 0 rgba(0,0,0,0.8) inset,
-    0 4px 24px rgba(0,0,0,0.6),
-    0 1px 3px rgba(0,0,0,0.8);
+    0 1px 0 rgba(180,200,225,0.05) inset,
+    0 -1px 0 rgba(0,0,0,0.85) inset,
+    0 4px 24px rgba(0,0,0,0.65),
+    0 1px 3px rgba(0,0,0,0.85);
   overflow: hidden;
   transition: transform 0.2s cubic-bezier(0.25,0.46,0.45,0.94),
               box-shadow 0.2s ease,
               border-color 0.2s ease;
 }
 
-.ce-card::before {
+/* Default metallic frame on EVERY .ce-card (steel-blue tone). */
+/* Suppressed when an explicit .ce-card--metal-X variant is also applied. */
+.ce-card:not(.ce-card--metal):not(.ce-card--metal-gold):not(.ce-card--metal-blood):not(.ce-card--metal-acid):not(.ce-card--metal-violet):not(.ce-card--metal-steel)::before {
   content: '';
   position: absolute;
   inset: 0;
-  background: linear-gradient(160deg, rgba(255,255,255,0.03) 0%, transparent 50%);
+  padding: 1.5px;
+  border-radius: inherit;
+  background: linear-gradient(
+    180deg,
+    rgba(190,215,240,0.55) 0%,
+    rgba(110,140,180,0.18) 30%,
+    rgba(35,50,75,0.6) 80%,
+    rgba(15,22,38,0.85) 100%
+  );
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+          mask-composite: exclude;
   pointer-events: none;
-  z-index: 0;
+  z-index: 2;
 }
 
 .ce-card:hover {
@@ -5011,39 +5026,39 @@ body {
 .ce-card--metal-steel::before {
   background: linear-gradient(
     180deg,
-    rgba(255,255,255,0.7) 0%,
-    rgba(180,200,220,0.35) 25%,
-    rgba(40,50,60,0.7) 75%,
-    rgba(10,15,25,0.95) 100%
+    rgba(190,215,240,0.85) 0%,
+    rgba(130,160,200,0.45) 25%,
+    rgba(40,55,80,0.85) 75%,
+    rgba(15,22,38,0.95) 100%
   );
 }
 .ce-card--metal-steel::after {
   background:
-    radial-gradient(ellipse at top, rgba(180,200,230,0.18) 0%, transparent 55%),
-    linear-gradient(180deg, transparent 60%, rgba(120,140,170,0.08) 100%);
+    radial-gradient(ellipse at top, rgba(130,170,220,0.22) 0%, transparent 55%),
+    linear-gradient(180deg, transparent 60%, rgba(60,90,140,0.12) 100%);
   box-shadow:
-    inset 0 1px 0 rgba(255,255,255,0.18),
-    inset 0 -1px 0 rgba(0,0,0,0.5),
-    0 0 30px rgba(120,140,170,0.18);
+    inset 0 1px 0 rgba(190,215,240,0.28),
+    inset 0 -1px 0 rgba(10,18,35,0.65),
+    0 0 32px rgba(100,140,200,0.22);
 }
 
 .ce-card--metal-gold::before {
   background: linear-gradient(
     180deg,
-    rgba(255,235,160,0.95) 0%,
-    rgba(251,191,36,0.55) 30%,
-    rgba(140,90,15,0.85) 80%,
-    rgba(70,45,8,0.95) 100%
+    rgba(255,200,140,0.95) 0%,
+    rgba(255,130,40,0.6) 30%,
+    rgba(180,75,15,0.85) 80%,
+    rgba(80,35,8,0.95) 100%
   );
 }
 .ce-card--metal-gold::after {
   background:
-    radial-gradient(ellipse at top, rgba(251,191,36,0.18) 0%, transparent 55%),
-    linear-gradient(180deg, transparent 50%, rgba(120,80,10,0.12) 100%);
+    radial-gradient(ellipse at top, rgba(255,130,40,0.22) 0%, transparent 55%),
+    linear-gradient(180deg, transparent 50%, rgba(160,70,15,0.14) 100%);
   box-shadow:
-    inset 0 1px 0 rgba(255,235,160,0.3),
-    inset 0 -1px 0 rgba(60,40,5,0.6),
-    0 0 36px rgba(251,191,36,0.22);
+    inset 0 1px 0 rgba(255,210,150,0.32),
+    inset 0 -1px 0 rgba(70,30,5,0.65),
+    0 0 40px rgba(255,130,40,0.28);
 }
 
 .ce-card--metal-blood::before {
