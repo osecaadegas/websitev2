@@ -23,6 +23,12 @@ interface OwnedBrothel {
   client_satisfaction: number; heat_level: number;
   upgrade_vip_rooms: boolean; upgrade_lighting: boolean;
   upgrade_security: boolean; upgrade_marketing: boolean;
+  upgrade_premium_drinks: boolean;
+  upgrade_luxury_decor: boolean;
+  upgrade_private_lounge: boolean;
+  upgrade_celebrity_endorsement: boolean;
+  upgrade_high_class_clientele: boolean;
+  upgrade_signature_brand: boolean;
   total_earned: number; last_collection: string | null;
 }
 
@@ -87,6 +93,22 @@ export default function BrothelManagePage() {
   const [floatingIncome, setFloatingIncome] = useState<number | null>(null);
   const [tab, setTab] = useState<"workers" | "supplies" | "upgrades">("workers");
 
+  // Cooldown timer (ticks every second so countdown updates)
+  const [nowTs, setNowTs] = useState(() => Date.now());
+  useEffect(() => {
+    const id = setInterval(() => setNowTs(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, []);
+
+  const COLLECT_COOLDOWN_MS = 60 * 60 * 1000; // 1 hour
+  const lastCollectTs = brothel?.last_collection ? new Date(brothel.last_collection).getTime() : 0;
+  const msSinceCollect = lastCollectTs ? nowTs - lastCollectTs : COLLECT_COOLDOWN_MS;
+  const collectReady = msSinceCollect >= COLLECT_COOLDOWN_MS;
+  const cooldownLeftMs = Math.max(0, COLLECT_COOLDOWN_MS - msSinceCollect);
+  const cooldownMin = Math.floor(cooldownLeftMs / 60_000);
+  const cooldownSec = Math.floor((cooldownLeftMs % 60_000) / 1000);
+  const cooldownLabel = `${String(cooldownMin).padStart(2, "0")}:${String(cooldownSec).padStart(2, "0")}`;
+
   // Raid escape state
   const [raidActive, setRaidActive]       = useState(false);
   const [raidCashAtRisk, setRaidCashAtRisk] = useState(0);
@@ -144,6 +166,12 @@ export default function BrothelManagePage() {
     if (brothel?.upgrade_vip_rooms) upMult += 0.25;
     if (brothel?.upgrade_lighting)  upMult += 0.10;
     if (brothel?.upgrade_marketing) upMult += 0.15;
+    if (brothel?.upgrade_premium_drinks)        upMult += 0.10;
+    if (brothel?.upgrade_luxury_decor)          upMult += 0.12;
+    if (brothel?.upgrade_private_lounge)        upMult += 0.15;
+    if (brothel?.upgrade_celebrity_endorsement) upMult += 0.20;
+    if (brothel?.upgrade_high_class_clientele)  upMult += 0.25;
+    if (brothel?.upgrade_signature_brand)       upMult += 0.30;
     setLiveIncome(Math.floor(perHour * supplyMod * upMult));
   }, [workers, brothel]);
 
@@ -367,9 +395,16 @@ export default function BrothelManagePage() {
           <div className="mt-4 flex gap-3">
             <button
               onClick={handleCollect}
-              className="flex-1 py-3 rounded-xl font-black text-base bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 transition-all hover:scale-[1.02] active:scale-95 shadow-lg"
+              disabled={!collectReady}
+              className={`flex-1 py-3 rounded-xl font-black text-base transition-all shadow-lg ${
+                collectReady
+                  ? "bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 hover:scale-[1.02] active:scale-95"
+                  : "bg-[#1a1a1a] border border-[#333] text-[#666] cursor-not-allowed"
+              }`}
             >
-              💰 Recolher Rendimento
+              {collectReady
+                ? "💰 Recolher Rendimento"
+                : `⏳ Próxima recolha em ${cooldownLabel}`}
             </button>
             {activeWorkers.length < brothel.max_employees && (
               <button
@@ -488,6 +523,12 @@ export default function BrothelManagePage() {
               { key: "marketing", title: "Marketing Discreto",  desc: "+15% rendimento. Mais clientes por hora.",  icon: "📢", cost: 40000, slots: 3, owned: brothel.upgrade_marketing, prereq: "upgrade_lighting" },
               { key: "security",  title: "Segurança Reforçada", desc: "Reduz atenção policial e heat.",             icon: "🛡️", cost: 50000, slots: 5, owned: brothel.upgrade_security,  prereq: "upgrade_marketing" },
               { key: "vip_rooms", title: "Quartos VIP",         desc: "+25% rendimento. Atrai clientes de alto valor.", icon: "👑", cost: 75000, slots: 10, owned: brothel.upgrade_vip_rooms, prereq: "upgrade_security" },
+              { key: "premium_drinks",        title: "Bebidas Premium",        desc: "+10% rendimento. Champagne e bebidas raras para os clientes.", icon: "🍾", cost:  90000, slots: 0, owned: brothel.upgrade_premium_drinks,        prereq: "upgrade_vip_rooms" },
+              { key: "luxury_decor",          title: "Decoração de Luxo",      desc: "+12% rendimento. Mobiliário e arte de alta gama.",            icon: "🏛️", cost: 130000, slots: 0, owned: brothel.upgrade_luxury_decor,          prereq: "upgrade_premium_drinks" },
+              { key: "private_lounge",        title: "Salão Privado",          desc: "+15% rendimento. Sala discreta para clientes selectos.",      icon: "🛋️", cost: 200000, slots: 0, owned: brothel.upgrade_private_lounge,        prereq: "upgrade_luxury_decor" },
+              { key: "celebrity_endorsement", title: "Endorsement de Celebridade", desc: "+20% rendimento. Uma figura pública recomenda em surdina.", icon: "⭐", cost: 300000, slots: 0, owned: brothel.upgrade_celebrity_endorsement, prereq: "upgrade_private_lounge" },
+              { key: "high_class_clientele",  title: "Clientela de Elite",      desc: "+25% rendimento. Acesso restrito a clientes com fortuna.",    icon: "💎", cost: 450000, slots: 0, owned: brothel.upgrade_high_class_clientele,  prereq: "upgrade_celebrity_endorsement" },
+              { key: "signature_brand",       title: "Marca Própria",          desc: "+30% rendimento. O teu bordel torna-se uma instituição.",    icon: "🏆", cost: 700000, slots: 0, owned: brothel.upgrade_signature_brand,       prereq: "upgrade_high_class_clientele" },
             ].map((upg, i) => {
               const prereqOwned = upg.prereq === null || brothel[upg.prereq as keyof OwnedBrothel];
               const locked = !upg.owned && !prereqOwned;
@@ -507,7 +548,11 @@ export default function BrothelManagePage() {
                         {locked && <span className="text-xs text-[#555] font-bold">🔒 BLOQUEADO</span>}
                       </div>
                       <p className="text-xs text-[#777]">{upg.desc}</p>
-                      <p className="text-xs text-pink-400 font-bold mt-0.5">+{upg.slots} vagas de worker</p>
+                      {upg.slots > 0 ? (
+                        <p className="text-xs text-pink-400 font-bold mt-0.5">+{upg.slots} vagas de worker</p>
+                      ) : (
+                        <p className="text-xs text-yellow-400 font-bold mt-0.5">Bónus puro de rendimento</p>
+                      )}
                     </div>
                     <div className="flex-shrink-0 text-right">
                       {upg.owned ? (

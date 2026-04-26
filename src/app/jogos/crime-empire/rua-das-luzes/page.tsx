@@ -21,6 +21,12 @@ interface OwnedBrothel {
   client_satisfaction: number; heat_level: number;
   upgrade_vip_rooms: boolean; upgrade_lighting: boolean;
   upgrade_security: boolean; upgrade_marketing: boolean;
+  upgrade_premium_drinks: boolean;
+  upgrade_luxury_decor: boolean;
+  upgrade_private_lounge: boolean;
+  upgrade_celebrity_endorsement: boolean;
+  upgrade_high_class_clientele: boolean;
+  upgrade_signature_brand: boolean;
   total_earned: number; last_collection: string | null;
 }
 
@@ -61,6 +67,12 @@ function OwnedBrothelCard({
   if (brothel.upgrade_vip_rooms) upMult += 0.25;
   if (brothel.upgrade_lighting) upMult += 0.10;
   if (brothel.upgrade_marketing) upMult += 0.15;
+  if (brothel.upgrade_premium_drinks)        upMult += 0.10;
+  if (brothel.upgrade_luxury_decor)          upMult += 0.12;
+  if (brothel.upgrade_private_lounge)        upMult += 0.15;
+  if (brothel.upgrade_celebrity_endorsement) upMult += 0.20;
+  if (brothel.upgrade_high_class_clientele)  upMult += 0.25;
+  if (brothel.upgrade_signature_brand)       upMult += 0.30;
   const effective = Math.floor(perHour * drinkMod * hygieneMod * clientMod * upMult);
 
   const criticalSupply = (brothel.supply_drinks ?? 100) < 30 ||

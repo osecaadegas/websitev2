@@ -8,14 +8,26 @@ export const dynamic = "force-dynamic";
 const CRYPTO_BROTHEL_TYPES = ["brothel_luxury", "brothel_exclusive", "brothel_empire"];
 
 const UPGRADE_COSTS: Record<string, number> = {
-  vip_rooms: 75000,
+  // Tier 1 — slot/structure upgrades
   lighting: 30000,
-  security: 50000,
   marketing: 40000,
+  security: 50000,
+  vip_rooms: 75000,
+  // Tier 2 — pure income boosters (no slots)
+  premium_drinks:        90000,
+  luxury_decor:         130000,
+  private_lounge:       200000,
+  celebrity_endorsement:300000,
+  high_class_clientele: 450000,
+  signature_brand:      700000,
 };
 
 // Strict purchase order — each upgrade requires the previous one
-const UPGRADE_ORDER = ["lighting", "marketing", "security", "vip_rooms"];
+const UPGRADE_ORDER = [
+  "lighting", "marketing", "security", "vip_rooms",
+  "premium_drinks", "luxury_decor", "private_lounge",
+  "celebrity_endorsement", "high_class_clientele", "signature_brand",
+];
 
 // Worker slots unlocked per upgrade (cumulative on top of brothel base)
 const UPGRADE_SLOT_BONUS: Record<string, number> = {
@@ -23,7 +35,20 @@ const UPGRADE_SLOT_BONUS: Record<string, number> = {
   marketing: 3,
   security:  5,
   vip_rooms: 10,
+  // Tier 2 income upgrades grant no slots
 };
+
+// Tier 2 income multiplier bonuses (added to upgradeMult on collect)
+const UPGRADE_INCOME_BONUS: Record<string, number> = {
+  premium_drinks:        0.10,
+  luxury_decor:          0.12,
+  private_lounge:        0.15,
+  celebrity_endorsement: 0.20,
+  high_class_clientele:  0.25,
+  signature_brand:       0.30,
+};
+
+const COLLECT_COOLDOWN_HOURS = 1;
 
 const SUPPLY_REFILL_COST = 5000; // per supply type
 
@@ -321,9 +346,15 @@ export async function POST(req: NextRequest) {
       // Time-based (max 24h)
       const now = new Date();
       const lastRaw = pb.last_collection ?? pb.purchased_at ?? now.toISOString();
-      const hoursPassed = Math.min((now.getTime() - new Date(lastRaw).getTime()) / 3_600_000, 24);
-      if (hoursPassed < 1 / 60)
-        return NextResponse.json({ error: "Aguarda um pouco antes de recolher novamente!" }, { status: 400 });
+      const elapsedMs = now.getTime() - new Date(lastRaw).getTime();
+      const hoursPassed = Math.min(elapsedMs / 3_600_000, 24);
+      if (hoursPassed < COLLECT_COOLDOWN_HOURS) {
+        const minutesLeft = Math.ceil((COLLECT_COOLDOWN_HOURS * 3_600_000 - elapsedMs) / 60_000);
+        return NextResponse.json({
+          error: `Tens de esperar ${minutesLeft} min antes de recolher novamente.`,
+          cooldown_minutes_left: minutesLeft,
+        }, { status: 400 });
+      }
 
       // Compute income
       let baseIncome = workers.reduce((s, w) => s + w.income_per_hour, 0);
@@ -338,6 +369,10 @@ export async function POST(req: NextRequest) {
       if (pb.upgrade_vip_rooms)  upgradeMult += 0.25;
       if (pb.upgrade_lighting)   upgradeMult += 0.10;
       if (pb.upgrade_marketing)  upgradeMult += 0.15;
+      // Tier 2 income upgrades
+      for (const [key, bonus] of Object.entries(UPGRADE_INCOME_BONUS)) {
+        if (pb[`upgrade_${key}` as keyof typeof pb]) upgradeMult += bonus;
+      }
 
       baseIncome = Math.floor(baseIncome * drinkMod * hygieneMod * clientMod * upgradeMult);
       if (player.class === "pimp") baseIncome = Math.floor(baseIncome * 1.2);
