@@ -274,15 +274,28 @@ export default function BrothelManagePage() {
 
   const handleRaidEscape = async (cashSaved: number) => {
     setRaidActive(false);
-    const data = await api({ action: "raid_result", playerBrothelId: brothelId, escaped: true, cashAtRisk: cashSaved });
-    showToast(data.message || "Escapaste!");
+    try {
+      const data = await api({ action: "raid_result", playerBrothelId: brothelId, escaped: true, cashAtRisk: cashSaved });
+      showToast(data.message || data.error || "Escapaste!");
+      if (data.error) console.error("raid_result(escaped) error:", data.error);
+    } catch (e) {
+      console.error("raid_result(escaped) failed:", e);
+      showToast("Escapaste!");
+    }
     fetchData();
   };
 
   const handleRaidArrested = async () => {
+    // Close modal IMMEDIATELY so the player is never stuck if the API fails.
     setRaidActive(false);
-    const data = await api({ action: "raid_result", playerBrothelId: brothelId, escaped: false, cashAtRisk: raidCashAtRisk });
-    showToast(data.message || "Foste preso!");
+    try {
+      const data = await api({ action: "raid_result", playerBrothelId: brothelId, escaped: false, cashAtRisk: raidCashAtRisk });
+      showToast(data.message || data.error || "Foste preso!");
+      if (data.error) console.error("raid_result(arrested) error:", data.error);
+    } catch (e) {
+      console.error("raid_result(arrested) failed:", e);
+      showToast("Foste preso!");
+    }
     fetchData();
   };
 

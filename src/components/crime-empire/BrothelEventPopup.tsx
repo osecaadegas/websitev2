@@ -48,8 +48,8 @@ export default function BrothelEventPopup({ event, onResolve, cashAtRisk = 5000 
       <RaidEscape
         difficulty="medium"
         cashAtRisk={cashAtRisk}
-        onEscape={() => onResolve(event.id, "police_risk_escaped")}
-        onArrested={() => onResolve(event.id, "police_risk_arrested")}
+        onEscape={() => { setShowRaid(false); onResolve(event.id, "police_risk_escaped"); }}
+        onArrested={() => { setShowRaid(false); onResolve(event.id, "police_risk_arrested"); }}
       />
     );
   }

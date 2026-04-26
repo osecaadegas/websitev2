@@ -125,18 +125,43 @@ export default function RaidEscape({ businessValue, difficulty: difficultyProp, 
   if (!mounted) return null;
 
   const content = (
-    <div className="fixed inset-0 z-[9999] bg-black/96 flex flex-col items-center justify-center overflow-hidden">
+    <div className="fixed inset-0 z-[9999] bg-black/97 flex flex-col items-center justify-center overflow-hidden select-none">
       {/* Police siren flash (intro + game) */}
       {(phase === "intro" || phase === "game") && (
         <>
           <div className="absolute inset-y-0 left-0 w-1/2 bg-red-600/12 pointer-events-none animate-siren-left" />
           <div className="absolute inset-y-0 right-0 w-1/2 bg-blue-600/12 pointer-events-none animate-siren-right" />
+          {/* Edge vignette + scanlines for cop-show vibe */}
+          <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(ellipse_at_center,transparent_50%,rgba(0,0,0,0.85)_100%)]" />
+          <div className="absolute inset-0 pointer-events-none opacity-[0.07] bg-[repeating-linear-gradient(0deg,transparent_0px,transparent_2px,rgba(255,255,255,0.5)_2px,rgba(255,255,255,0.5)_3px)]" />
         </>
+      )}
+
+      {/* Thief — slides from off-screen-left to off-screen-right, loops every 2s */}
+      {(phase === "intro" || phase === "game") && canEscape && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src="/images/crime_empire/thief-minigame.png"
+          alt=""
+          className="absolute pointer-events-none z-[2] animate-thiefRun drop-shadow-[0_8px_18px_rgba(0,0,0,0.7)]"
+          style={{ bottom: "6%", height: "180px", width: "auto" }}
+        />
+      )}
+
+      {/* Police officer — slides up from bottom-left when minigame starts */}
+      {(phase === "game" || (phase === "intro" && !canEscape)) && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src="/images/crime_empire/police-minigame.png"
+          alt=""
+          className="absolute bottom-0 left-6 pointer-events-none z-[1] animate-policeSlideUp drop-shadow-[0_-6px_30px_rgba(59,130,246,0.5)]"
+          style={{ height: "260px", width: "auto" }}
+        />
       )}
 
       {/* ── INTRO ── */}
       {phase === "intro" && (
-        <div className="text-center space-y-4 animate-fadeIn px-4">
+        <div className="relative z-10 text-center space-y-4 animate-fadeIn px-4">
           <div className="text-8xl">{canEscape ? "🚔" : "👮"}</div>
           <h2 className="text-5xl font-black text-red-400 animate-pulse tracking-wide">
             {canEscape ? "RAID POLICIAL!" : "APANHADO!"}
@@ -168,7 +193,19 @@ export default function RaidEscape({ businessValue, difficulty: difficultyProp, 
 
       {/* ── GAME ── */}
       {phase === "game" && (
-        <div className="w-full max-w-lg mx-4 flex flex-col gap-4">
+        <div className="relative z-10 w-full max-w-lg mx-4 flex flex-col gap-4">
+          {/* Header */}
+          <div className="text-center -mb-1">
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-red-950/60 border border-red-500/40 text-red-300 text-[10px] font-black tracking-[0.3em] uppercase shadow-[0_0_20px_rgba(239,68,68,0.25)]">
+              <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+              RAID EM CURSO
+              <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
+            </div>
+            <p className="mt-2 text-[11px] text-[#666] uppercase tracking-[0.25em]">
+              {GAME_META[minigame].icon} {GAME_META[minigame].name}
+            </p>
+          </div>
+
           {/* Arrest meter */}
           <div className="space-y-1">
             <div className="flex justify-between text-xs font-bold">
@@ -180,16 +217,18 @@ export default function RaidEscape({ businessValue, difficulty: difficultyProp, 
             <div className="w-full h-4 bg-[#1a1a1a] rounded-full overflow-hidden border border-[#2a2a2a]">
               <div
                 className={`h-full rounded-full transition-none ${
-                  arrestPct > 70 ? "bg-red-500" :
-                  arrestPct > 40 ? "bg-orange-500" : "bg-yellow-500"
+                  arrestPct > 70 ? "bg-gradient-to-r from-red-600 to-red-400" :
+                  arrestPct > 40 ? "bg-gradient-to-r from-orange-600 to-orange-400" : "bg-gradient-to-r from-yellow-600 to-yellow-400"
                 }`}
                 style={{ width: `${arrestPct}%` }}
               />
             </div>
           </div>
 
-          {/* Minigame card */}
-          <div className="p-5 rounded-2xl bg-[#0d0d0d] border-2 border-red-500/30 shadow-[0_0_40px_rgba(239,68,68,0.12)]">
+          {/* Minigame card with siren-pulsing border */}
+          <div className="relative p-5 rounded-2xl bg-[#0d0d0d] border-2 border-red-500/40 shadow-[0_0_60px_rgba(239,68,68,0.25)] animate-cardSiren">
+            <div className="absolute -top-px left-4 right-4 h-px bg-gradient-to-r from-transparent via-red-500/70 to-transparent" />
+            <div className="absolute -bottom-px left-4 right-4 h-px bg-gradient-to-r from-transparent via-blue-500/70 to-transparent" />
             <CrimeMinigame
               gameId={minigame}
               difficulty={difficulty}
@@ -202,7 +241,7 @@ export default function RaidEscape({ businessValue, difficulty: difficultyProp, 
 
       {/* ── ESCAPED ── */}
       {phase === "escaped" && (
-        <div className="text-center space-y-4 animate-fadeIn px-4">
+        <div className="relative z-10 text-center space-y-4 animate-fadeIn px-4">
           <div className="text-8xl">🏃</div>
           <h2 className="text-5xl font-black text-green-400 tracking-wide">FUGISTE!</h2>
           {(cashAtRisk > 0 || cryptoAtRisk > 0) ? (
@@ -239,7 +278,7 @@ export default function RaidEscape({ businessValue, difficulty: difficultyProp, 
 
       {/* ── ARRESTED ── */}
       {phase === "arrested" && (
-        <div className="text-center space-y-4 animate-fadeIn px-4">
+        <div className="relative z-10 text-center space-y-4 animate-fadeIn px-4">
           <div className="text-8xl">👮</div>
           <h2 className="text-5xl font-black text-red-400 tracking-wide">PRESO!</h2>
           <p className="text-[#aaa] text-lg">Não conseguiste escapar.</p>
@@ -264,6 +303,15 @@ export default function RaidEscape({ businessValue, difficulty: difficultyProp, 
         .animate-siren-right { animation: sirenRight 0.7s ease-in-out infinite; }
         @keyframes raidFadeIn { from{opacity:0;transform:scale(0.95)} to{opacity:1;transform:scale(1)} }
         .animate-fadeIn { animation: raidFadeIn 0.3s ease-out; }
+        @keyframes thiefRun { 0%{transform:translateX(-220px)} 100%{transform:translateX(calc(100vw + 60px))} }
+        .animate-thiefRun { animation: thiefRun 2200ms linear infinite; }
+        @keyframes policeSlideUp { from{transform:translateY(120%);opacity:0} to{transform:translateY(0);opacity:1} }
+        .animate-policeSlideUp { animation: policeSlideUp 0.8s ease-out forwards; }
+        @keyframes cardSiren {
+          0%,100% { box-shadow: 0 0 60px rgba(239,68,68,0.25), 0 0 0 0 rgba(59,130,246,0); border-color: rgba(239,68,68,0.45); }
+          50%     { box-shadow: 0 0 60px rgba(59,130,246,0.30), 0 0 0 0 rgba(239,68,68,0); border-color: rgba(59,130,246,0.45); }
+        }
+        .animate-cardSiren { animation: cardSiren 1.4s ease-in-out infinite; }
       `}</style>
     </div>
   );
