@@ -427,9 +427,9 @@ async function handleCollect(player: any, businessId: string) {
     .update({ last_collection: now.toISOString() })
     .eq("id", playerBusiness.id);
 
-  // E8: Grant XP for collecting income
-  const xpEarned = Math.floor((collectedMoney > 0 ? collectedMoney : 50) / 100);
-  await grantXP(player.id, Math.max(5, xpEarned));
+  // E8: Grant XP for collecting income — business v2 cap.
+  const xpEarned = Math.min(1500, Math.max(5, Math.floor(Math.min(collectedMoney > 0 ? collectedMoney : 50, 100000) / 80)));
+  await grantXP(player.id, xpEarned, "business");
   void trackMissionEvent(player.id, "onBusinessCollected", 1, { businessId });
 
   return NextResponse.json({
@@ -517,9 +517,9 @@ async function handleLaunder(player: any, businessId: string, amount: number) {
     })
     .eq("id", playerBusiness.id);
 
-  // E8: Grant XP for laundering
-  const launderXP = Math.max(5, Math.floor(cleanMoney / 200));
-  await grantXP(player.id, launderXP);
+  // E8: Grant XP for laundering — business v2 cap.
+  const launderXP = Math.min(1500, Math.max(5, Math.floor(Math.min(cleanMoney, 200000) / 150)));
+  await grantXP(player.id, launderXP, "business");
   void trackMissionEvent(player.id, "onCashLaundered", 1);
 
   return NextResponse.json({

@@ -241,9 +241,10 @@ export async function POST(req: NextRequest) {
         dirty_cash: player.dirty_cash,
       }).eq("id", player.id);
 
-      // XP for executor
-      const xpEarned = Math.max(200, Math.floor(contract.reward_cash / 1000));
-      await grantXP(player.id, xpEarned);
+      // XP for executor — hitman v2: scales with bounty + target level, capped per action.
+      const xpRaw = Math.max(400, Math.floor(contract.reward_cash / 600));
+      const xpEarned = Math.min(5000, Math.floor(xpRaw * (1 + 0.008 * (target.level ?? 1))));
+      await grantXP(player.id, xpEarned, "hitman");
 
       // Notify target
       await supabase.from("player_notifications").insert({

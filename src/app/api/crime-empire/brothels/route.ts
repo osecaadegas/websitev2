@@ -15,8 +15,11 @@ function brothelTierMultiplier(purchasePrice: number): number {
 
 // Cost-scaled progression rewards for management actions.
 // Floors guarantee a minimum tick so cheap actions still feel rewarding.
-function xpFromCost(cost: number, floor = 2): number {
-  return Math.max(floor, Math.floor(cost / 4000));
+// Higher-level players get a damped reward so $50k purchases don't carry endgame.
+function xpFromCost(cost: number, floor = 2, level = 1): number {
+  const raw = Math.max(floor, Math.floor(cost / 4000));
+  const damp = Math.max(0.5, 1.5 - 0.01 * level);
+  return Math.floor(raw * damp);
 }
 function respectFromCost(cost: number, floor = 1): number {
   return Math.max(floor, Math.floor(cost / 8000));
@@ -211,7 +214,7 @@ export async function POST(req: NextRequest) {
         player_id: player.id, brothel_type_id: brothelTypeId, max_employees: maxWorkers,
       });
       // Big-ticket purchase → meaningful one-shot progression reward.
-      await grantXP(player.id, xpFromCost(brothelType.purchase_price, 50));
+      await grantXP(player.id, xpFromCost(brothelType.purchase_price, 50, player.level ?? 1), "brothel");
       await grantRespect(player.id, respectFromCost(brothelType.purchase_price, 25));
       return NextResponse.json({ success: true, message: `Compraste ${brothelType.name}!` });
     }
@@ -285,7 +288,7 @@ export async function POST(req: NextRequest) {
         trait_2: trait2 ?? WORKER_TRAITS2[Math.floor(Math.random() * WORKER_TRAITS2.length)],
       });
       // Hiring a worker = scouting/recruiting effort → XP + respect scaled by hire cost.
-      await grantXP(player.id, xpFromCost(cost, 3));
+      await grantXP(player.id, xpFromCost(cost, 3, player.level ?? 1), "brothel");
       await grantRespect(player.id, respectFromCost(cost, 1));
       return NextResponse.json({ success: true, message: `Contrataste ${workerName || "nova worker"}!` });
     }
@@ -317,7 +320,7 @@ export async function POST(req: NextRequest) {
       await supabase.from('player_brothels')
         .update({ [`supply_${supplyType}`]: 100 }).eq('id', playerBrothelId).eq('player_id', player.id);
       // Logistics work → small XP/respect tick.
-      await grantXP(player.id, xpFromCost(SUPPLY_REFILL_COST, 2));
+      await grantXP(player.id, xpFromCost(SUPPLY_REFILL_COST, 2, player.level ?? 1), "brothel");
       await grantRespect(player.id, respectFromCost(SUPPLY_REFILL_COST, 1));
       return NextResponse.json({ success: true, message: `${supplyType} reabastecido!` });
     }
@@ -351,7 +354,7 @@ export async function POST(req: NextRequest) {
       if (slotBonus > 0) updatePayload.max_employees = pb.max_employees + slotBonus;
       await supabase.from("player_brothels").update(updatePayload).eq("id", playerBrothelId);
       // Upgrades are big investments → progression reward scales with cost.
-      await grantXP(player.id, xpFromCost(cost, 10));
+      await grantXP(player.id, xpFromCost(cost, 10, player.level ?? 1), "brothel");
       await grantRespect(player.id, respectFromCost(cost, 5));
       const slotMsg = slotBonus > 0 ? ` (+${slotBonus} vagas de worker)` : "";
       return NextResponse.json({ success: true, message: `Upgrade aplicado!${slotMsg}` });
@@ -442,10 +445,10 @@ export async function POST(req: NextRequest) {
         total_earned: pb.total_earned + collected,
       }).eq("id", playerBrothelId);
 
-      // XP + Respect — routed through the centralized grant functions so the
-      // new XP curve, mid-game boost, and global multiplier all apply.
-      const xpEarned = Math.max(5, Math.floor(collected / 1000));
-      await grantXP(player.id, xpEarned);
+      // XP + Respect — brothel collect v2: cap raw, divide by 400, tier-mult applied,
+      // capped at 2500 per collect.
+      const xpEarned = Math.min(2500, Math.max(5, Math.floor(Math.min(collected, 200000) / 400 * tierMult)));
+      await grantXP(player.id, xpEarned, "brothel");
       await grantRespect(player.id, Math.max(1, Math.floor(collected / 5000)));
 
       // Maybe spawn random event (20% chance)

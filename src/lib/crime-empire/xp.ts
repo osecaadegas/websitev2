@@ -2,65 +2,126 @@ import { supabase } from "@/lib/supabase";
 import { getXPMultiplier } from "@/lib/crime-empire/system-settings";
 
 /* ──────────────────────────────────────────────────────────────
- * XP CURVE — piecewise scaling tuned for ~40h to prestige (L120).
+ * XP CURVE v2  —  smooth power curve, no bands, no cliffs.
  *
- *   Hook       L1–15      base 60   × 1.15  (fast onboarding)
- *   Climb      L16–40     × 1.07            (steady growth)
- *   Plateau    L41–70     × 1.045           (anti mid-game wall)
- *   Late       L71–100    × 1.05            (slower, still meaningful)
- *   Endgame    L101–120   × 1.055           (prestige push)
+ *   xpForLevel(L) = floor(60 * L^1.85)
  *
- * Mid-game "Second Wind" catch-up: any XP earned while between
- * L40 and L70 is multiplied by 1.20 on top of the global setting.
+ * Total XP to L120 ≈ 19.06M. Designed against a global 120k XP/h
+ * cap (see HOURLY_CAP) so even full-cap play needs ~14 days minimum.
+ *
+ * Anti-exploit: per-source hourly buckets + diminishing returns
+ * past 70% in <30 min + global hourly ceiling. State stored in
+ * crime_players.xp_buckets (JSONB).
  * ──────────────────────────────────────────────────────────────*/
 
 const XP_CURVE_BASE = 60;
+const XP_CURVE_EXPONENT = 1.85;
 
 /** XP required to advance from `level` to `level + 1`. */
 export function xpForLevel(level: number): number {
-  let v = XP_CURVE_BASE;
-  const stop = Math.max(1, level);
-  for (let L = 2; L <= stop; L++) {
-    if (L <= 15)        v *= 1.15;
-    else if (L <= 40)   v *= 1.07;
-    else if (L <= 70)   v *= 1.045;
-    else if (L <= 100)  v *= 1.05;
-    else                v *= 1.055;
-  }
-  return Math.max(10, Math.floor(v));
+  const L = Math.max(1, level);
+  return Math.max(10, Math.floor(XP_CURVE_BASE * Math.pow(L, XP_CURVE_EXPONENT)));
 }
 
-/** Mid-game "Second Wind" multiplier (rubberband, soft-applied). */
-function midGameBoost(level: number): number {
-  if (level >= 40 && level <= 70) return 1.20;
-  return 1.0;
+/* ── Anti-exploit configuration ──────────────────────────────── */
+
+export type XPSource =
+  | "crime"
+  | "street"
+  | "contract"
+  | "hitman"
+  | "pvp"
+  | "mission"
+  | "brothel"
+  | "business"
+  | "casino"
+  | "passive";
+
+const HOURLY_CAP: Record<XPSource, number> = {
+  crime:    60_000,
+  street:   35_000,
+  contract: 20_000,
+  hitman:   12_000,
+  pvp:       8_000,
+  mission:  30_000,
+  brothel:  12_000,
+  business: 18_000,
+  casino:      600, // hard ceiling — casino is entertainment, not progression
+  passive:   1_500,
+};
+
+const GLOBAL_HOURLY_CAP = 120_000;
+const WINDOW_MS = 3_600_000;
+
+type Bucket = { window_start: string; spent: number };
+type BucketMap = Record<string, Bucket>;
+
+function rollBucket(b: Bucket | undefined, now: number): Bucket {
+  if (!b || now - new Date(b.window_start).getTime() >= WINDOW_MS) {
+    return { window_start: new Date(now).toISOString(), spent: 0 };
+  }
+  return b;
 }
 
 /**
  * Grants XP to a player.
- * - Applies the global `xp_multiplier` admin setting.
- * - Applies a Mid-Game Boost (L40–L70) to soften the historical wall.
- * - Recalculates threshold on every individual level-up to avoid skipping.
+ *
+ * @param source Anti-exploit category. Defaults to "crime" so legacy call
+ *               sites compile, but every site should pass an explicit source.
+ * @returns { granted, capped } — `granted` is the actual XP added after
+ *          caps and diminishing returns; `capped` is true when the request
+ *          was reduced.
  */
-export async function grantXP(playerId: string, xpEarned: number): Promise<void> {
-  if (xpEarned <= 0) return;
+export async function grantXP(
+  playerId: string,
+  xpEarned: number,
+  source: XPSource = "crime",
+): Promise<{ granted: number; capped: boolean }> {
+  if (xpEarned <= 0) return { granted: 0, capped: false };
 
   const multiplier = await getXPMultiplier();
 
   const { data: p } = await supabase
     .from("crime_players")
-    .select("xp, level, xp_to_next_level")
+    .select("xp, level, xp_to_next_level, xp_buckets")
     .eq("id", playerId)
     .single();
-  if (!p) return;
+  if (!p) return { granted: 0, capped: false };
 
-  const boost = midGameBoost(p.level);
-  const scaled = Math.round(xpEarned * multiplier * boost);
-  if (scaled <= 0) return;
+  const now = Date.now();
+  const buckets: BucketMap = ((p as any).xp_buckets ?? {}) as BucketMap;
 
-  let newXP = p.xp + scaled;
+  const srcBucket = rollBucket(buckets[source], now);
+  const globalBucket = rollBucket(buckets.__global__, now);
+
+  const remainingSrc    = Math.max(0, HOURLY_CAP[source]     - srcBucket.spent);
+  const remainingGlobal = Math.max(0, GLOBAL_HOURLY_CAP      - globalBucket.spent);
+
+  // Apply admin multiplier first.
+  let granted = Math.round(xpEarned * multiplier);
+  granted = Math.min(granted, remainingSrc, remainingGlobal);
+
+  // Diminishing returns: past 70% of source bucket in <30 min → 50% pay-out.
+  const minutesIn = (now - new Date(srcBucket.window_start).getTime()) / 60_000;
+  if (minutesIn < 30 && srcBucket.spent / HOURLY_CAP[source] > 0.7) {
+    granted = Math.floor(granted * 0.5);
+  }
+
+  if (granted <= 0) {
+    // Persist updated buckets so windows roll correctly even on full caps.
+    buckets[source] = srcBucket;
+    buckets.__global__ = globalBucket;
+    await supabase.from("crime_players").update({ xp_buckets: buckets }).eq("id", playerId);
+    return { granted: 0, capped: true };
+  }
+
+  srcBucket.spent    += granted;
+  globalBucket.spent += granted;
+  buckets[source]    = srcBucket;
+  buckets.__global__ = globalBucket;
+
+  let newXP = p.xp + granted;
   let newLevel = p.level;
-  // Recompute threshold from the new curve so old DB rows self-heal on next gain.
   let threshold = xpForLevel(newLevel);
 
   while (newXP >= threshold) {
@@ -71,6 +132,13 @@ export async function grantXP(playerId: string, xpEarned: number): Promise<void>
 
   await supabase
     .from("crime_players")
-    .update({ xp: newXP, level: newLevel, xp_to_next_level: threshold })
+    .update({
+      xp: newXP,
+      level: newLevel,
+      xp_to_next_level: threshold,
+      xp_buckets: buckets,
+    })
     .eq("id", playerId);
+
+  return { granted, capped: granted < Math.round(xpEarned * multiplier) };
 }

@@ -3,7 +3,8 @@ import { cookies } from "next/headers";
 import { supabase } from "@/lib/supabase";
 import { grantDirtyMoney } from "@/lib/dirty-money";
 import { generateEscapeToken } from "@/lib/crime-empire/arrest-helpers";
-import { getPoliceMultiplier, getXPMultiplier } from "@/lib/crime-empire/system-settings";
+import { getPoliceMultiplier } from "@/lib/crime-empire/system-settings";
+import { grantXP } from "@/lib/crime-empire/xp";
 
 export const dynamic = "force-dynamic";
 
@@ -171,7 +172,12 @@ export async function POST(request: Request) {
     const cleanPct = Math.max(0, Math.min(100, crime.clean_cash_pct ?? 0));
     cleanCashEarned = Math.floor(totalCash * cleanPct / 100);
     dirtyCashEarned = totalCash - cleanCashEarned;
-    xpEarned = Math.floor(crime.xp_reward);
+    // XP v2: base × level scaling × risk modifier × commitment modifier, capped per action.
+    const baseXP = Math.floor(crime.xp_reward);
+    const levelScale  = 1 + 0.012 * (player.level ?? 1);
+    const riskScale   = 1 + (crime.jail_risk ?? 0);
+    const commitScale = Math.max(0.25, (crime.stamina_cost ?? 5) / 20);
+    xpEarned = Math.min(8000, Math.floor(baseXP * levelScale * riskScale * commitScale));
     respectEarned = crime.respect_reward;
 
     // Apply class bonuses
@@ -201,34 +207,18 @@ export async function POST(request: Request) {
   // Calculate new stamina
   const newStamina = player.stamina - effectiveStaminaCost;
 
-  // Calculate XP and level up
-  const xpMultiplier = await getXPMultiplier();
-  let newXP = player.xp + Math.round(xpEarned * xpMultiplier);
-  let newLevel = player.level;
+  // XP and level-up handled by grantXP() below.
   let leveledUp = false;
-  let xpThreshold = player.xp_to_next_level;
-
-  while (newXP >= xpThreshold) {
-    newXP -= xpThreshold;
-    newLevel++;
-    leveledUp = true;
-    xpThreshold = Math.floor(100 * Math.pow(1.25, newLevel - 1));
-  }
-
-  const newXPToNext = xpThreshold;
 
   // Re-fetch fresh balance to prevent race conditions
   const { data: freshPlayer } = await supabase.from("crime_players").select("dirty_cash, cash, respect, stamina").eq("id", player.id).single();
 
-  // Update player
+  // Update player (excluding XP/level — grantXP handles those after)
   const updates: any = {
     stamina: (freshPlayer?.stamina ?? player.stamina) - effectiveStaminaCost,
     last_stamina_update: now.toISOString(),
     cash: ((freshPlayer as any)?.cash ?? player.cash ?? 0) + cleanCashEarned,
     respect: (freshPlayer?.respect ?? player.respect) + respectEarned,
-    xp: newXP,
-    level: newLevel,
-    xp_to_next_level: newXPToNext,
   };
 
   let escapeToken: string | null = null;
@@ -243,6 +233,16 @@ export async function POST(request: Request) {
 
   await supabase.from("crime_players").update(updates).eq("id", player.id);
   if (dirtyCashEarned > 0) await grantDirtyMoney(player.id, dirtyCashEarned);
+
+  // Grant XP through the central pipeline (caps + buckets + curve).
+  let newLevel = player.level;
+  if (xpEarned > 0) {
+    const before = player.level;
+    await grantXP(player.id, xpEarned, "crime");
+    const { data: postXP } = await supabase.from("crime_players").select("level").eq("id", player.id).single();
+    newLevel = postXP?.level ?? player.level;
+    leveledUp = newLevel > before;
+  }
 
   // Record attempt
   await supabase.from("crime_attempts").insert({

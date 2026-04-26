@@ -346,7 +346,11 @@ async function handleNegotiate(body: any, user: any) {
     await supabase.from("street_sessions").update({ heat: newHeat }).eq("id", sessionId);
     await deductInventory(inventoryId, (entry as any).quantity, quantity);
     await grantDirtyMoney(player.id, earned);
-    await grantXP(player.id, Math.max(5, Math.floor(earned / 50)));
+    // Streets v2: cap raw earnings, zone-scaled, level-scaled, action cap 1200.
+    const streetXP = Math.min(1200, Math.floor(
+      (Math.min(earned, 50000) / 25) * (zone.rewardMult ?? 1) * (1 + 0.005 * (player.level ?? 1))
+    ));
+    await grantXP(player.id, Math.max(5, streetXP), "street");
     await grantRespect(player.id, Math.max(1, Math.floor(earned / 200)));
     void trackMissionEvent(player.id, "onDrugSold", quantity);
     await supabase.from("street_deals").insert({
@@ -390,7 +394,10 @@ async function handleNegotiate(body: any, user: any) {
     }
     await deductInventory(inventoryId, (entry as any).quantity, quantity);
     await grantDirtyMoney(player.id, result.earned);
-    await grantXP(player.id, Math.max(5, Math.floor(result.earned / 50)));
+    const streetXP = Math.min(1200, Math.floor(
+      (Math.min(result.earned, 50000) / 25) * (zone.rewardMult ?? 1) * (1 + 0.005 * (player.level ?? 1))
+    ));
+    await grantXP(player.id, Math.max(5, streetXP), "street");
     await grantRespect(player.id, Math.max(1, Math.floor(result.earned / 200)));
     void trackMissionEvent(player.id, "onDrugSold", quantity);
     await supabase.from("street_deals").insert({
@@ -454,7 +461,7 @@ async function handleAcceptDeal(body: any, user: any) {
 
   const { data: player } = await supabase
     .from("crime_players")
-    .select("id, class")
+    .select("id, class, level")
     .eq("user_id", user.id)
     .single();
   if (!player) return NextResponse.json({ error: "Player not found" }, { status: 404 });
@@ -485,7 +492,10 @@ async function handleAcceptDeal(body: any, user: any) {
 
   await deductInventory(inventoryId, (entry as any).quantity, quantity);
   await grantDirtyMoney(player.id, earned);
-  await grantXP(player.id, Math.max(5, Math.floor(earned / 50)));
+  const streetXP = Math.min(1200, Math.floor(
+    (Math.min(earned, 50000) / 25) * (zone.rewardMult ?? 1) * (1 + 0.005 * (player.level ?? 1))
+  ));
+  await grantXP(player.id, Math.max(5, streetXP), "street");
   await grantRespect(player.id, Math.max(1, Math.floor(earned / 200)));
 
   const heatDelta = zone.heatPerDeal;

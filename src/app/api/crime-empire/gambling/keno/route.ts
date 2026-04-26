@@ -113,8 +113,9 @@ export async function POST(req: NextRequest) {
   });
 
   const arrestInfo = await rollGamblingArrest(player.id, player.class, bet, Math.min(player.crypto ?? 0, bet));
-  // E8: XP for gambling
-  await grantXP(player.id, 10);
+  // E8: XP for gambling — v2 casino bucket (cap 600/h).
+  const kenoXP = Math.max(0, Math.min(25, Math.floor(bet * 0.0002)));
+  if (kenoXP > 0) await grantXP(player.id, kenoXP, "casino");
 
   return NextResponse.json({ success: true, drawn, hits, picks, multiplier, payout, fee, arrested: arrestInfo.arrested, jailMinutes: (arrestInfo as any).jailMinutes, escape_token: (arrestInfo as any).escapeToken ?? null, crypto_at_risk: arrestInfo.cryptoAtRisk ?? 0, stamina_gained: GAMBLING_STAMINA_GAIN, new_stamina: newStamina, new_addiction: newAddiction });
 }

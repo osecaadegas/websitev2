@@ -56,22 +56,23 @@ export interface PlayerMission {
 
 // ─── Tier helpers ─────────────────────────────────────────────────────────────
 
-function getTier(level: number): 1 | 2 | 3 | 4 {
+function getTier(level: number): 1 | 2 | 3 | 4 | 5 {
   if (level <= 10) return 1;
   if (level <= 25) return 2;
   if (level <= 50) return 3;
-  return 4;
+  if (level <= 80) return 4;
+  return 5;
 }
 
-const TIER_MULT: Record<number, number> = { 1: 1.0, 2: 1.8, 3: 3.2, 4: 5.5 };
-const DIFF_MOD: Record<string, number>  = { easy: 1.0, medium: 1.5, hard: 2.2 };
+const TIER_MULT: Record<number, number> = { 1: 1.0, 2: 1.8, 3: 3.2, 4: 5.5, 5: 9.0 };
+const DIFF_MOD: Record<string, number>  = { easy: 1.0, medium: 1.6, hard: 2.5 };
 
 function scaleTarget(base: number, tier: number): number {
   return Math.max(1, Math.round(base * TIER_MULT[tier]));
 }
 
-function scaleXP(base: number, tier: number, difficulty: string): number {
-  return Math.round(base * TIER_MULT[tier] * (DIFF_MOD[difficulty] ?? 1));
+function scaleXP(base: number, tier: number, difficulty: string, level: number = 1): number {
+  return Math.round(base * TIER_MULT[tier] * (DIFF_MOD[difficulty] ?? 1) * (1 + 0.005 * level));
 }
 
 function scaleCash(base: number, tier: number, difficulty: string, level: number): number {
@@ -571,7 +572,7 @@ export async function claimMissionReward(
   const tier = getTier(player.level);
   const def  = m.definition;
 
-  const xp     = scaleXP(def.xp_reward, tier, def.difficulty);
+  const xp     = scaleXP(def.xp_reward, tier, def.difficulty, player.level);
   const cash   = scaleCash(def.cash_reward, tier, def.difficulty, player.level);
   const crypto = m.type === "monthly" ? (def.crypto_reward ?? 0) : 0;
 
@@ -589,7 +590,7 @@ export async function claimMissionReward(
       .eq("id", playerId),
     (async () => {
       const { grantXP } = await import("@/lib/crime-empire/xp");
-      await grantXP(playerId, xp);
+      await grantXP(playerId, xp, "mission");
     })(),
   ]);
 
@@ -677,6 +678,12 @@ export async function updateLoginStreak(playerId: string): Promise<{
       updated_at:      new Date().toISOString(),
     })
     .eq("player_id", playerId);
+
+  // Passive XP: daily login streak reward (capped at 30-day streak → 3000 XP/day, bucket cap 1500/h).
+  try {
+    const { grantXP } = await import("@/lib/crime-empire/xp");
+    await grantXP(playerId, 100 * Math.min(newStreak, 30), "passive");
+  } catch { /* swallow — streak update must not fail because of XP grant */ }
 
   return {
     current_streak:  newStreak,

@@ -166,8 +166,9 @@ export async function POST(req: NextRequest) {
       respect_reward: respectEarned,
     }, { onConflict: "player_id,contract_id" });
 
-    const xpEarned = contract.xp_reward ?? Math.max(10, Math.floor(cash / 500));
-    await grantXP(player.id, xpEarned);
+    const xpRaw = contract.xp_reward ?? Math.max(10, Math.floor(cash / 500));
+    const xpEarned = Math.floor(xpRaw * (1 + 0.01 * (player.level ?? 1)));
+    await grantXP(player.id, xpEarned, "contract");
     void trackMissionEvent(player.id, "onContractCompleted", 1, { difficulty: contract.difficulty });
 
     return NextResponse.json({

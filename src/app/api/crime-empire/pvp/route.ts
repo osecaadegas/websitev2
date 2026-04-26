@@ -241,9 +241,12 @@ export async function POST(req: NextRequest) {
       }),
     ]);
 
-    // E8: Grant XP to winner
-    const pvpXP = 50 + (loser.level ?? 1) * 2;
-    await grantXP(winner.id, pvpXP);
+    // E8: Grant XP to winner — PvP v2: base + level-scaled + power-margin bonus.
+    const atkPow = Math.max(1, (attacker as any).power ?? atkScore ?? 1);
+    const defPow = Math.max(1, (defender as any).power ?? defScore ?? 1);
+    const margin = Math.min(2.0, Math.max(0.5, (attackerWon ? defPow / atkPow : atkPow / defPow)));
+    const pvpXP = Math.floor((250 + (loser.level ?? 1) * 12) * margin);
+    await grantXP(winner.id, pvpXP, "pvp");
 
     // Track mission events for attacker and winner/defender
     void trackMissionEvent(attacker.id, "onPvPAttack", 1, { targetId: defender.id });
