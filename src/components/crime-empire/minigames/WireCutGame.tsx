@@ -44,15 +44,40 @@ export function WireCutGame({ config, onSuccess, onFail, onFeedback }: Props) {
     let cutCount = 0;
 
     const count = config.wireMin + Math.floor(Math.random() * (config.wireMax - config.wireMin + 1));
-    const shuffled = [...WIRE_COLORS].sort(() => Math.random() - 0.5).slice(0, count);
-    const rule = RULES[Math.floor(Math.random() * RULES.length)];
 
-    const wireRows = shuffled.map((c, i) => `
+    // Generate wires WITH duplicates allowed so colour-count rules are satisfiable.
+    // We bias toward having at least one duplicate by picking from a smaller pool.
+    const poolSize = Math.max(2, Math.min(WIRE_COLORS.length, count - 1));
+    const pool = [...WIRE_COLORS].sort(() => Math.random() - 0.5).slice(0, poolSize);
+    const shuffled: string[] = [];
+    for (let i = 0; i < count; i++) {
+      shuffled.push(pool[Math.floor(Math.random() * pool.length)]);
+    }
+
+    // Only pick a rule that actually has a valid cut on this wire set.
+    const candidateRules = RULES.filter(r => shuffled.some(c => r.check(shuffled, c)));
+    const rule = (candidateRules.length > 0
+      ? candidateRules[Math.floor(Math.random() * candidateRules.length)]
+      : RULES[2]); // fallback: "Não cortes o fio PRETO"
+
+    // Number duplicate-color wires so player can disambiguate ("VERDE #1", "VERDE #2")
+    const colorCounts: Record<string, number> = {};
+    shuffled.forEach(c => { colorCounts[c] = (colorCounts[c] || 0) + 1; });
+    const colorSeen: Record<string, number> = {};
+    const wireRows = shuffled.map((c, i) => {
+      const baseName = COLOR_NAMES[c] ?? c.toUpperCase();
+      let label = baseName;
+      if (colorCounts[c] > 1) {
+        colorSeen[c] = (colorSeen[c] || 0) + 1;
+        label = `${baseName} #${colorSeen[c]}`;
+      }
+      return `
       <button class="mg-wire ${c}" id="mg-wire-${i}" data-idx="${i}" data-color="${c}" style="border:none">
         <div class="mg-wire-line" style="background:${COLOR_BG[c]}"></div>
-        <span style="font-weight:900;font-size:18px">${COLOR_NAMES[c] ?? c.toUpperCase()}</span>
+        <span style="font-weight:900;font-size:18px">${label}</span>
         <small>CORTAR</small>
-      </button>`).join("");
+      </button>`;
+    }).join("");
 
     container.innerHTML = `
       <div class="mg-wire-wrap">
