@@ -5,7 +5,7 @@ import { useAuth } from "@/lib/auth-context";
 import { CEToast } from "@/components/CEToast";
 import { useRouter } from "next/navigation";
 
-/* ─── Types ───────────────────────────────────────────────── */
+/* ─── Types ────────────────────────────────────────────────── */
 
 interface MissionDefinition {
   id: string;
@@ -43,213 +43,548 @@ interface StreakInfo {
   gained?: boolean;
 }
 
-/* ─── Helpers ─────────────────────────────────────────────── */
+type TabType = "daily" | "weekly" | "monthly";
 
-const DIFF_STYLE: Record<string, { label: string; color: string; border: string }> = {
-  easy:   { label: "FÁCIL",  color: "#22c55e", border: "rgba(34,197,94,0.3)" },
-  medium: { label: "MÉDIO",  color: "#f59e0b", border: "rgba(245,158,11,0.3)" },
-  hard:   { label: "DIFÍCIL",color: "#ef4444", border: "rgba(239,68,68,0.3)" },
-};
+/* ─── Constants ─────────────────────────────────────────────── */
 
 const SYSTEM_ICON: Record<string, string> = {
   drugs: "🌿", businesses: "🏢", contracts: "🎯", pvp: "⚔️",
   casino: "🎰", stocks: "📈", mixed: "⚡",
 };
 
-function progressPct(progress: number, target: number): number {
+const DIFF: Record<string, { label: string; color: string; bg: string }> = {
+  easy:   { label: "SEGURO",    color: "#4ade80", bg: "rgba(74,222,128,0.1)"  },
+  medium: { label: "EXPOSTO",   color: "#fbbf24", bg: "rgba(251,191,36,0.1)" },
+  hard:   { label: "PROCURADO", color: "#f87171", bg: "rgba(248,113,113,0.1)" },
+};
+
+const TAB: Record<TabType, { label: string; color: string; dim: string; accent: string; border: string }> = {
+  daily:   { label: "DIÁRIAS",  color: "#fb923c", dim: "rgba(251,146,60,0.5)",  accent: "rgba(249,115,22,0.12)", border: "rgba(249,115,22,0.25)"  },
+  weekly:  { label: "SEMANAIS", color: "#60a5fa", dim: "rgba(96,165,250,0.5)",  accent: "rgba(59,130,246,0.12)",  border: "rgba(59,130,246,0.25)"  },
+  monthly: { label: "MENSAIS",  color: "#fbbf24", dim: "rgba(251,191,36,0.5)",  accent: "rgba(251,191,36,0.08)",  border: "rgba(251,191,36,0.2)"   },
+};
+
+function pct(progress: number, target: number) {
   return Math.min(100, Math.round((progress / Math.max(1, target)) * 100));
 }
 
-function progressColor(pct: number): string {
-  if (pct >= 100) return "#22c55e";
-  if (pct >= 80)  return "#f59e0b";
-  return "#3b82f6";
+function nextMonthLabel(): string {
+  const months = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
+  const d = new Date();
+  return `1 de ${months[(d.getMonth() + 1) % 12]}`;
 }
 
-/* ─── MissionCard ─────────────────────────────────────────── */
+/* ─── StreakMeter ───────────────────────────────────────────── */
 
-function MissionCard({
-  mission,
+function StreakMeter({ streak }: { streak: StreakInfo }) {
+  const n = streak.current_streak;
+  const fireColor = n >= 30 ? "#ff2200" : n >= 14 ? "#ff5500" : n >= 7 ? "#ff8c00" : n >= 3 ? "#ffa500" : "#ffc200";
+  const filledSegments = Math.ceil(Math.min(n, 30) / 3);
+
+  return (
+    <div
+      className="flex items-center gap-4 px-5 py-4 rounded-2xl"
+      style={{
+        background: "linear-gradient(135deg, rgba(18,10,4,0.98), rgba(12,8,3,0.96))",
+        border: `1px solid ${fireColor}28`,
+        boxShadow: `inset 0 1px 0 rgba(255,255,255,0.03), 0 0 24px ${fireColor}0a`,
+      }}
+    >
+      <div className="relative flex-shrink-0">
+        <span className="text-4xl" style={{ filter: `drop-shadow(0 0 10px ${fireColor}cc)` }}>🔥</span>
+        {n >= 7 && (
+          <span
+            className="absolute -bottom-0.5 -right-1 text-[8px] font-black px-1 rounded-full leading-tight"
+            style={{ background: fireColor, color: "#000" }}
+          >
+            {n}
+          </span>
+        )}
+      </div>
+
+      <div className="flex-1 min-w-0">
+        <div className="flex items-baseline justify-between mb-2">
+          <span className="text-[9px] font-black tracking-[0.25em]" style={{ color: `${fireColor}66` }}>
+            STREAK DE LOGIN
+          </span>
+          <div className="flex items-center gap-2">
+            {streak.streak_shields > 0 && (
+              <span className="text-[9px] font-bold" style={{ color: "rgba(148,163,184,0.6)" }}>
+                🛡️ ×{streak.streak_shields}
+              </span>
+            )}
+            <span className="text-sm font-black tabular-nums" style={{ color: fireColor }}>
+              {n} <span className="text-[9px] font-normal" style={{ color: `${fireColor}66` }}>dias</span>
+            </span>
+          </div>
+        </div>
+
+        <div className="flex gap-1">
+          {Array.from({ length: 10 }).map((_, i) => (
+            <div
+              key={i}
+              className="flex-1 h-1.5 rounded-full"
+              style={{
+                background: i < filledSegments
+                  ? `linear-gradient(90deg, ${fireColor}88, ${fireColor})`
+                  : "rgba(255,255,255,0.05)",
+                boxShadow: i < filledSegments ? `0 0 4px ${fireColor}70` : "none",
+                transition: "all 0.4s ease",
+              }}
+            />
+          ))}
+        </div>
+
+        <div className="text-[9px] mt-1.5" style={{ color: "rgba(140,110,50,0.4)" }}>
+          Recorde: {streak.longest_streak} dias consecutivos
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ─── PriorityRail ──────────────────────────────────────────── */
+
+function PriorityRail({
+  missions,
   onClaim,
   claiming,
 }: {
-  mission: PlayerMission;
+  missions: PlayerMission[];
   onClaim: (id: string) => void;
   claiming: string | null;
 }) {
-  const def   = mission.definition;
-  const diff  = DIFF_STYLE[def.difficulty] ?? DIFF_STYLE.easy;
-  const icon  = SYSTEM_ICON[def.system] ?? "🎮";
-  const pct   = progressPct(mission.progress, def.base_target);
-  const barColor = progressColor(pct);
-  const isClaimed   = mission.status === "claimed";
-  const isCompleted = mission.status === "completed";
-  const isActive    = mission.status === "active";
-  const isClaiming  = claiming === mission.id;
+  const urgent = missions.filter(
+    (m) => m.status === "completed" || (m.status === "active" && pct(m.progress, m.definition.base_target) >= 75)
+  );
+
+  if (urgent.length === 0) return null;
+
+  return (
+    <div>
+      <div className="flex items-center gap-2 mb-3">
+        <div
+          className="w-1.5 h-1.5 rounded-full animate-pulse"
+          style={{ background: "#ef4444", boxShadow: "0 0 6px #ef4444" }}
+        />
+        <span className="text-[9px] font-black tracking-[0.3em]" style={{ color: "rgba(239,68,68,0.55)" }}>
+          INTEL URGENTE
+        </span>
+        <span
+          className="text-[9px] font-black px-1.5 rounded-full"
+          style={{ background: "rgba(239,68,68,0.15)", color: "#f87171", border: "1px solid rgba(239,68,68,0.2)" }}
+        >
+          {urgent.length}
+        </span>
+      </div>
+
+      <div className="flex gap-3 overflow-x-auto pb-1" style={{ scrollbarWidth: "none" }}>
+        {urgent.map((m) => {
+          const p = pct(m.progress, m.definition.base_target);
+          const done = m.status === "completed";
+          const t = TAB[m.type];
+
+          return (
+            <div
+              key={m.id}
+              className="flex-shrink-0 w-60 rounded-xl overflow-hidden"
+              style={{
+                background: "rgba(10,6,2,0.97)",
+                border: done ? "1px solid rgba(34,197,94,0.35)" : "1px solid rgba(239,68,68,0.3)",
+                boxShadow: done ? "0 0 16px rgba(34,197,94,0.08)" : "0 0 14px rgba(239,68,68,0.07)",
+              }}
+            >
+              <div
+                className="px-3 py-1.5 flex items-center justify-between"
+                style={{ background: done ? "rgba(34,197,94,0.06)" : "rgba(239,68,68,0.05)" }}
+              >
+                <span className="text-[9px] font-black tracking-widest" style={{ color: done ? "#4ade80" : "#f87171" }}>
+                  {done ? "✓ PRONTO PARA LEVANTAR" : `⚡ ${p}%`}
+                </span>
+                <span
+                  className="text-[8px] font-black px-1.5 py-0.5 rounded"
+                  style={{ color: t.color, background: t.accent }}
+                >
+                  {t.label}
+                </span>
+              </div>
+
+              <div className="px-3 pt-2 pb-3">
+                <div className="text-xs font-black mb-1.5" style={{ color: "#ddc870", fontFamily: "Georgia, serif" }}>
+                  {SYSTEM_ICON[m.definition.system] ?? "💀"} {m.definition.name}
+                </div>
+
+                {!done && (
+                  <div
+                    className="relative h-1 rounded-full overflow-hidden mb-2.5"
+                    style={{ background: "rgba(255,255,255,0.04)" }}
+                  >
+                    <div
+                      className="absolute left-0 top-0 h-full rounded-full"
+                      style={{
+                        width: `${p}%`,
+                        background: "linear-gradient(90deg, #dc262670, #ef4444)",
+                        boxShadow: "0 0 6px rgba(239,68,68,0.5)",
+                      }}
+                    />
+                  </div>
+                )}
+
+                {done && (
+                  <button
+                    onClick={() => onClaim(m.id)}
+                    disabled={claiming === m.id}
+                    className="w-full py-1.5 rounded-lg text-[10px] font-black tracking-widest transition-all active:scale-95"
+                    style={{
+                      background: claiming === m.id
+                        ? "rgba(34,197,94,0.2)"
+                        : "linear-gradient(135deg, #15803d, #22c55e)",
+                      color: "#fff",
+                      border: "1px solid rgba(34,197,94,0.3)",
+                      boxShadow: "0 0 10px rgba(34,197,94,0.2)",
+                    }}
+                  >
+                    {claiming === m.id ? "..." : "LEVANTAR"}
+                  </button>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+/* ─── TabBar ────────────────────────────────────────────────── */
+
+function TabBar({
+  active, onChange, counts,
+}: {
+  active: TabType;
+  onChange: (t: TabType) => void;
+  counts: Record<TabType, { done: number; total: number }>;
+}) {
+  const keys: TabType[] = ["daily", "weekly", "monthly"];
 
   return (
     <div
-      className="relative rounded-xl overflow-hidden transition-all duration-200"
-      style={{
-        background: isClaimed
-          ? "rgba(15,20,10,0.85)"
-          : "rgba(12,10,6,0.92)",
-        border: isCompleted
-          ? "1px solid rgba(34,197,94,0.5)"
-          : isClaimed
-          ? "1px solid rgba(80,80,80,0.3)"
-          : `1px solid ${diff.border}`,
-        opacity: isClaimed ? 0.6 : 1,
-        boxShadow: isCompleted ? "0 0 16px rgba(34,197,94,0.15)" : "none",
-      }}
+      className="flex gap-1 p-1 rounded-xl"
+      style={{ background: "rgba(255,255,255,0.025)", border: "1px solid rgba(255,255,255,0.05)" }}
     >
-      {/* Header bar */}
-      <div
-        className="flex items-center justify-between px-4 py-2"
-        style={{ borderBottom: `1px solid rgba(255,255,255,0.05)` }}
-      >
-        <div className="flex items-center gap-2">
-          <span className="text-lg">{icon}</span>
-          <span
-            className="text-[10px] font-bold tracking-widest px-2 py-0.5 rounded"
-            style={{ color: diff.color, background: `${diff.color}18` }}
+      {keys.map((key) => {
+        const t = TAB[key];
+        const { done, total } = counts[key];
+        const isActive = active === key;
+        const allDone = total > 0 && done === total;
+
+        return (
+          <button
+            key={key}
+            onClick={() => onChange(key)}
+            className="flex-1 flex items-center justify-center gap-2 py-2.5 px-2 rounded-lg transition-all duration-200"
+            style={{
+              background: isActive ? t.accent : "transparent",
+              border: isActive ? `1px solid ${t.border}` : "1px solid transparent",
+              color: isActive ? t.color : "rgba(140,110,50,0.35)",
+            }}
           >
-            {diff.label}
-          </span>
-        </div>
-        {isClaimed && (
-          <span className="text-[10px] font-bold tracking-widest text-emerald-500/60">RECLAMADO</span>
-        )}
-        {isCompleted && (
-          <span className="text-[10px] font-bold tracking-widest text-emerald-400 animate-pulse">CONCLUÍDO ✓</span>
-        )}
-      </div>
-
-      {/* Body */}
-      <div className="px-4 py-3">
-        <h3
-          className="text-sm font-bold mb-0.5"
-          style={{ color: isClaimed ? "#666" : "#e8c97a", fontFamily: "Georgia, serif" }}
-        >
-          {def.name}
-        </h3>
-        <p className="text-[11px] mb-3" style={{ color: "rgba(200,160,80,0.6)" }}>
-          {def.description}
-        </p>
-
-        {/* Progress bar */}
-        <div className="mb-3">
-          <div className="flex justify-between items-center mb-1">
-            <span className="text-[10px]" style={{ color: "rgba(200,160,80,0.5)" }}>PROGRESSO</span>
-            <span
-              className="text-[11px] font-bold tabular-nums"
-              style={{ color: isClaimed ? "#555" : barColor }}
-            >
-              {mission.progress} / {def.base_target}
-            </span>
-          </div>
-          <div
-            className="h-2 rounded-full overflow-hidden"
-            style={{ background: "rgba(255,255,255,0.06)" }}
-          >
-            <div
-              className="h-full rounded-full transition-all duration-700"
-              style={{
-                width: `${pct}%`,
-                background: isClaimed
-                  ? "rgba(80,80,80,0.4)"
-                  : `linear-gradient(90deg, ${barColor}88, ${barColor})`,
-              }}
-            />
-          </div>
-        </div>
-
-        {/* Rewards */}
-        <div className="flex items-center justify-between">
-          <div className="flex flex-wrap gap-3">
-            <span className="text-[10px]" style={{ color: "rgba(200,160,80,0.6)" }}>
-              🟡 <span className="text-amber-400/90 font-semibold">+{def.xp_reward} XP</span>
-            </span>
-            <span className="text-[10px]" style={{ color: "rgba(200,160,80,0.6)" }}>
-              💵 <span className="text-green-400/90 font-semibold">${def.cash_reward.toLocaleString()}</span>
-            </span>
-            {def.crypto_reward > 0 && (
-              <span className="text-[10px]" style={{ color: "rgba(200,160,80,0.6)" }}>
-                💎 <span className="font-bold" style={{ color: "#a78bfa" }}>+{def.crypto_reward} crypto</span>
+            <span className="text-[10px] font-black tracking-[0.12em]">{t.label}</span>
+            {total > 0 && (
+              <span
+                className="text-[9px] font-black px-1.5 py-0.5 rounded-full leading-tight"
+                style={{
+                  background: allDone
+                    ? "rgba(34,197,94,0.2)"
+                    : isActive ? `${t.color}18` : "rgba(255,255,255,0.04)",
+                  color: allDone ? "#4ade80" : isActive ? t.color : "rgba(140,110,50,0.35)",
+                  border: allDone ? "1px solid rgba(34,197,94,0.25)" : "none",
+                }}
+              >
+                {done}/{total}
               </span>
             )}
-          </div>
-
-          {/* Claim button */}
-          {isCompleted && (
-            <button
-              onClick={() => onClaim(mission.id)}
-              disabled={isClaiming}
-              className="px-3 py-1 rounded-lg text-[11px] font-bold tracking-wider transition-all"
-              style={{
-                background: isClaiming
-                  ? "rgba(34,197,94,0.3)"
-                  : "linear-gradient(135deg, #22c55e, #16a34a)",
-                color: "#fff",
-                border: "1px solid rgba(34,197,94,0.5)",
-                cursor: isClaiming ? "not-allowed" : "pointer",
-              }}
-            >
-              {isClaiming ? "..." : "RECLAMAR"}
-            </button>
-          )}
-        </div>
-      </div>
+          </button>
+        );
+      })}
     </div>
   );
 }
 
-/* ─── StreakBadge ─────────────────────────────────────────── */
+/* ─── MissionRow ────────────────────────────────────────────── */
 
-function StreakBadge({ streak }: { streak: StreakInfo }) {
+function MissionRow({
+  mission, tabType, onClaim, claiming,
+}: {
+  mission: PlayerMission;
+  tabType: TabType;
+  onClaim: (id: string) => void;
+  claiming: string | null;
+}) {
+  const def       = mission.definition;
+  const diff      = DIFF[def.difficulty] ?? DIFF.easy;
+  const icon      = SYSTEM_ICON[def.system] ?? "💀";
+  const p         = pct(mission.progress, def.base_target);
+  const t         = TAB[tabType];
+  const isClaimed   = mission.status === "claimed";
+  const isCompleted = mission.status === "completed";
+  const isNear      = !isClaimed && !isCompleted && p >= 75;
+  const isMonthly   = tabType === "monthly";
+  const isClaiming  = claiming === mission.id;
+
+  const borderColor = isCompleted
+    ? "rgba(34,197,94,0.4)"
+    : isNear
+    ? "rgba(239,68,68,0.35)"
+    : isMonthly
+    ? "rgba(251,191,36,0.15)"
+    : "rgba(255,255,255,0.05)";
+
   return (
     <div
-      className="flex items-center gap-3 px-4 py-3 rounded-xl"
+      className="relative rounded-xl overflow-hidden transition-all duration-300"
       style={{
-        background: "rgba(12,10,6,0.92)",
-        border: "1px solid rgba(255,106,0,0.25)",
+        background: isClaimed
+          ? "rgba(7,5,3,0.7)"
+          : isMonthly
+          ? "linear-gradient(150deg, rgba(14,8,22,0.97), rgba(8,5,14,0.96))"
+          : "rgba(11,7,3,0.96)",
+        border: `1px solid ${borderColor}`,
+        opacity: isClaimed ? 0.4 : 1,
+        boxShadow: isCompleted
+          ? "0 0 20px rgba(34,197,94,0.07), inset 0 1px 0 rgba(34,197,94,0.05)"
+          : isNear
+          ? "0 0 20px rgba(239,68,68,0.06)"
+          : "none",
       }}
     >
-      <div className="text-3xl">🔥</div>
-      <div>
-        <div className="text-xs font-bold tracking-widest" style={{ color: "rgba(200,120,40,0.7)" }}>
-          STREAK DE LOGIN
-        </div>
-        <div className="flex items-baseline gap-2 mt-0.5">
-          <span className="text-2xl font-black" style={{ color: "#ff9500" }}>
-            {streak.current_streak}
-          </span>
-          <span className="text-xs" style={{ color: "rgba(200,160,80,0.5)" }}>dias consecutivos</span>
-        </div>
-        <div className="text-[10px] mt-0.5" style={{ color: "rgba(200,160,80,0.4)" }}>
-          Máximo: {streak.longest_streak} dias
-          {streak.streak_shields > 0 && (
-            <span className="ml-2">🛡️ {streak.streak_shields} escudo{streak.streak_shields !== 1 ? "s" : ""}</span>
-          )}
+      {/* Left accent bar */}
+      <div
+        className="absolute left-0 top-0 bottom-0 w-[3px] rounded-l-xl"
+        style={{
+          background: isClaimed
+            ? "#1a1a1a"
+            : isCompleted
+            ? "#22c55e"
+            : isNear
+            ? "#ef4444"
+            : t.color,
+          boxShadow: isCompleted
+            ? "0 0 8px rgba(34,197,94,0.6)"
+            : isNear
+            ? "0 0 8px rgba(239,68,68,0.5)"
+            : `0 0 6px ${t.color}50`,
+        }}
+      />
+
+      <div className="pl-5 pr-4 py-4">
+        <div className="flex items-start gap-3">
+          {/* Icon */}
+          <div
+            className="flex-shrink-0 w-9 h-9 rounded-lg flex items-center justify-center text-lg mt-0.5"
+            style={{
+              background: isClaimed ? "rgba(30,25,20,0.4)" : `${t.color}10`,
+              border: `1px solid ${isClaimed ? "rgba(50,40,30,0.2)" : `${t.color}1a`}`,
+            }}
+          >
+            {icon}
+          </div>
+
+          {/* Body */}
+          <div className="flex-1 min-w-0">
+            {/* Title row */}
+            <div className="flex items-start justify-between gap-2 mb-1">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span
+                  className="text-sm font-black leading-tight"
+                  style={{
+                    color: isClaimed ? "#1e1510" : isMonthly ? "#fbbf24" : "#ddc870",
+                    fontFamily: "Georgia, serif",
+                  }}
+                >
+                  {def.name}
+                </span>
+                {isMonthly && !isClaimed && (
+                  <span
+                    className="text-[8px] font-black tracking-widest px-1.5 py-0.5 rounded"
+                    style={{ color: "#c4b5fd", background: "rgba(139,92,246,0.18)", border: "1px solid rgba(139,92,246,0.25)" }}
+                  >
+                    ELITE
+                  </span>
+                )}
+                {isNear && (
+                  <span
+                    className="text-[8px] font-black tracking-widest px-1.5 py-0.5 rounded animate-pulse"
+                    style={{ color: "#fca5a5", background: "rgba(239,68,68,0.12)", border: "1px solid rgba(239,68,68,0.25)" }}
+                  >
+                    ALVO PRÓXIMO
+                  </span>
+                )}
+                {isCompleted && (
+                  <span
+                    className="text-[8px] font-black tracking-widest px-1.5 py-0.5 rounded"
+                    style={{ color: "#4ade80", background: "rgba(34,197,94,0.1)", border: "1px solid rgba(34,197,94,0.2)" }}
+                  >
+                    CONCLUÍDO ✓
+                  </span>
+                )}
+              </div>
+
+              {/* Difficulty */}
+              <span
+                className="flex-shrink-0 text-[8px] font-black tracking-widest px-2 py-1 rounded"
+                style={{
+                  color: isClaimed ? "#1e1510" : diff.color,
+                  background: isClaimed ? "transparent" : diff.bg,
+                  border: isClaimed ? "none" : `1px solid ${diff.color}28`,
+                }}
+              >
+                {diff.label}
+              </span>
+            </div>
+
+            {/* Description */}
+            <p
+              className="text-[11px] mb-3 leading-relaxed"
+              style={{ color: isClaimed ? "#1a1208" : "rgba(175,135,55,0.5)" }}
+            >
+              {def.description}
+            </p>
+
+            {/* Progress */}
+            {!isClaimed && (
+              <div className="mb-3">
+                <div className="flex justify-between items-center mb-1.5">
+                  <span className="text-[9px] font-black tracking-[0.2em]" style={{ color: "rgba(140,105,40,0.35)" }}>
+                    PROGRESSO
+                  </span>
+                  <span
+                    className="text-[11px] font-black tabular-nums"
+                    style={{ color: isCompleted ? "#4ade80" : isNear ? "#f87171" : "rgba(200,155,60,0.65)" }}
+                  >
+                    {mission.progress}
+                    <span style={{ color: "rgba(120,90,35,0.3)" }}> / </span>
+                    {def.base_target}
+                  </span>
+                </div>
+                <div
+                  className="relative h-[5px] rounded-full overflow-hidden"
+                  style={{ background: "rgba(255,255,255,0.04)" }}
+                >
+                  <div
+                    className="absolute left-0 top-0 h-full rounded-full transition-all duration-700 ease-out"
+                    style={{
+                      width: `${p}%`,
+                      background: isCompleted
+                        ? "linear-gradient(90deg, #16a34a, #4ade80)"
+                        : isNear
+                        ? "linear-gradient(90deg, #b91c1c80, #ef4444)"
+                        : `linear-gradient(90deg, ${t.color}55, ${t.color})`,
+                      boxShadow: isCompleted
+                        ? "0 0 8px rgba(34,197,94,0.55)"
+                        : isNear
+                        ? "0 0 8px rgba(239,68,68,0.45)"
+                        : `0 0 5px ${t.color}55`,
+                    }}
+                  />
+                  <div
+                    className="absolute inset-0 pointer-events-none"
+                    style={{
+                      backgroundImage:
+                        "repeating-linear-gradient(90deg, transparent, transparent 2px, rgba(0,0,0,0.18) 2px, rgba(0,0,0,0.18) 3px)",
+                    }}
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Rewards + claim */}
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-3 flex-wrap">
+                <span className="text-[10px]" style={{ color: isClaimed ? "#1a1208" : "rgba(175,135,55,0.45)" }}>
+                  🟡{" "}
+                  <span style={{ color: isClaimed ? "#1a1208" : "#fbbf24", fontWeight: 700 }}>
+                    +{def.xp_reward} XP
+                  </span>
+                </span>
+                <span className="text-[10px]" style={{ color: isClaimed ? "#1a1208" : "rgba(175,135,55,0.45)" }}>
+                  💵{" "}
+                  <span style={{ color: isClaimed ? "#1a1208" : "#4ade80", fontWeight: 700 }}>
+                    ${def.cash_reward.toLocaleString()}
+                  </span>
+                </span>
+                {def.crypto_reward > 0 && (
+                  <span className="text-[10px]">
+                    💎{" "}
+                    <span style={{ color: isClaimed ? "#1a1208" : "#a78bfa", fontWeight: 700 }}>
+                      +{def.crypto_reward}
+                    </span>
+                  </span>
+                )}
+              </div>
+
+              {isClaimed && (
+                <span className="text-[9px] font-black tracking-widest" style={{ color: "#1a1208" }}>
+                  ENCERRADO
+                </span>
+              )}
+
+              {isCompleted && (
+                <button
+                  onClick={() => onClaim(mission.id)}
+                  disabled={isClaiming}
+                  className="px-4 py-1.5 rounded-lg text-[10px] font-black tracking-widest transition-all duration-150 active:scale-95"
+                  style={{
+                    background: isClaiming
+                      ? "rgba(34,197,94,0.18)"
+                      : "linear-gradient(135deg, #15803d, #22c55e)",
+                    color: "#fff",
+                    border: "1px solid rgba(34,197,94,0.35)",
+                    boxShadow: isClaiming ? "none" : "0 0 12px rgba(34,197,94,0.25)",
+                    cursor: isClaiming ? "not-allowed" : "pointer",
+                  }}
+                >
+                  {isClaiming ? "..." : "LEVANTAR"}
+                </button>
+              )}
+            </div>
+          </div>
         </div>
       </div>
+
+      {/* Claimed watermark */}
+      {isClaimed && (
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+          <span
+            className="text-[9px] font-black tracking-[0.45em] px-4 py-1 rounded border"
+            style={{
+              color: "rgba(40,28,10,0.55)",
+              borderColor: "rgba(40,28,10,0.18)",
+              transform: "rotate(-18deg)",
+            }}
+          >
+            ENCERRADO
+          </span>
+        </div>
+      )}
     </div>
   );
 }
 
-/* ─── Main Page ───────────────────────────────────────────── */
+/* ─── Main Page ─────────────────────────────────────────────── */
 
 export default function MissoesPage() {
   const { user } = useAuth();
   const router   = useRouter();
 
-  const [daily,   setDaily]   = useState<PlayerMission[]>([]);
-  const [weekly,  setWeekly]  = useState<PlayerMission[]>([]);
-  const [monthly, setMonthly] = useState<PlayerMission[]>([]);
-  const [streak,  setStreak]  = useState<StreakInfo | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [toast,   setToast]   = useState<{ msg: string; ok: boolean } | null>(null);
-  const [claiming, setClaiming] = useState<string | null>(null);
+  const [daily,     setDaily]    = useState<PlayerMission[]>([]);
+  const [weekly,    setWeekly]   = useState<PlayerMission[]>([]);
+  const [monthly,   setMonthly]  = useState<PlayerMission[]>([]);
+  const [streak,    setStreak]   = useState<StreakInfo | null>(null);
+  const [loading,   setLoading]  = useState(true);
+  const [toast,     setToast]    = useState<{ msg: string; ok: boolean } | null>(null);
+  const [claiming,  setClaiming] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<TabType>("daily");
 
   const showToast = (msg: string, ok: boolean) => {
     setToast({ msg, ok });
@@ -266,10 +601,10 @@ export default function MissoesPage() {
         showToast(data.error ?? "Erro ao carregar missões", false);
         return;
       }
-      setDaily(data.daily   ?? []);
+      setDaily(data.daily    ?? []);
       setWeekly(data.weekly  ?? []);
       setMonthly(data.monthly ?? []);
-      setStreak(data.streak ?? null);
+      setStreak(data.streak  ?? null);
     } catch {
       showToast("Erro de ligação", false);
     } finally {
@@ -292,14 +627,12 @@ export default function MissoesPage() {
       });
       const data = await res.json();
       if (!res.ok) {
-        showToast(data.error ?? "Erro ao reclamar recompensa", false);
+        showToast(data.error ?? "Erro ao reclamar", false);
         return;
       }
-      showToast(
-        `+${data.xp_earned} XP  •  $${data.cash_earned?.toLocaleString()}${data.crypto_earned > 0 ? `  •  💎 +${data.crypto_earned} crypto` : ""}`,
-        true
-      );
-      // Refresh missions list
+      const parts = [`+${data.xp_earned} XP`, `$${data.cash_earned?.toLocaleString()}`];
+      if (data.crypto_earned > 0) parts.push(`💎 +${data.crypto_earned} crypto`);
+      showToast(parts.join("  •  "), true);
       await fetchMissions();
     } catch {
       showToast("Erro de ligação", false);
@@ -308,214 +641,139 @@ export default function MissoesPage() {
     }
   };
 
-  const noiseSvg = "data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='1'/%3E%3C/svg%3E";
-
-  const dailyCompleted   = daily.filter((m) => m.status !== "active").length;
-  const weeklyCompleted  = weekly.filter((m) => m.status !== "active").length;
-  const monthlyCompleted = monthly.filter((m) => m.status !== "active").length;
+  const allMissions = [...daily, ...weekly, ...monthly];
+  const tabMissions: Record<TabType, PlayerMission[]> = { daily, weekly, monthly };
+  const counts: Record<TabType, { done: number; total: number }> = {
+    daily:   { done: daily.filter((m)   => m.status !== "active").length, total: daily.length },
+    weekly:  { done: weekly.filter((m)  => m.status !== "active").length, total: weekly.length },
+    monthly: { done: monthly.filter((m) => m.status !== "active").length, total: monthly.length },
+  };
 
   return (
     <div
       className="min-h-screen text-white"
-      style={{ background: "linear-gradient(180deg, #0a0805 0%, #06040a 100%)" }}
+      style={{ background: "linear-gradient(155deg, #090507 0%, #060409 55%, #09070a 100%)" }}
     >
-      {/* Noise overlay */}
+      {/* Grid overlay */}
       <div
-        className="fixed inset-0 pointer-events-none z-0 opacity-[0.025]"
-        style={{ backgroundImage: `url("${noiseSvg}")`, backgroundSize: "256px" }}
+        className="fixed inset-0 pointer-events-none z-0"
+        style={{
+          backgroundImage:
+            "linear-gradient(rgba(255,255,255,0.01) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.01) 1px, transparent 1px)",
+          backgroundSize: "48px 48px",
+        }}
       />
 
       {/* Header */}
       <div
         className="relative z-10 border-b"
         style={{
-          background: "linear-gradient(135deg, rgba(20,12,4,0.98), rgba(10,6,2,0.98))",
-          borderColor: "rgba(255,106,0,0.15)",
+          background: "linear-gradient(180deg, rgba(14,8,4,0.99), rgba(9,5,2,0.97))",
+          borderColor: "rgba(180,130,40,0.08)",
         }}
       >
-        <div className="max-w-4xl mx-auto px-4 py-6">
-          <div className="flex items-center gap-3 mb-1">
-            <span className="text-3xl">📋</span>
-            <h1
-              className="text-2xl font-black tracking-widest uppercase"
-              style={{ color: "#e8c97a", fontFamily: "Georgia, serif" }}
+        <div className="max-w-2xl mx-auto px-4 py-5">
+          <div className="flex items-center gap-3">
+            <div
+              className="w-9 h-9 rounded-xl flex items-center justify-center text-xl flex-shrink-0"
+              style={{
+                background: "rgba(249,115,22,0.08)",
+                border: "1px solid rgba(249,115,22,0.15)",
+                boxShadow: "inset 0 1px 0 rgba(255,255,255,0.04)",
+              }}
             >
-              Missões
-            </h1>
+              🎯
+            </div>
+            <div>
+              <h1
+                className="text-lg font-black tracking-[0.12em] uppercase leading-none"
+                style={{ color: "#ddc870", fontFamily: "Georgia, serif" }}
+              >
+                Centro de Operações
+              </h1>
+              <p className="text-[9px] tracking-[0.3em] mt-0.5" style={{ color: "rgba(160,120,40,0.35)" }}>
+                MISSÕES ACTIVAS
+              </p>
+            </div>
           </div>
-          <p className="text-xs tracking-wider" style={{ color: "rgba(200,160,80,0.5)" }}>
-            Completa missões diárias, semanais e mensais para ganhar XP, dinheiro e crypto
-          </p>
         </div>
       </div>
 
       {toast && <CEToast msg={toast.msg} ok={toast.ok} />}
 
-      <div className="relative z-10 max-w-4xl mx-auto px-4 py-6 space-y-8">
+      <div className="relative z-10 max-w-2xl mx-auto px-4 py-5 space-y-5">
         {loading ? (
-          <div className="flex items-center justify-center py-20">
+          <div className="flex flex-col items-center justify-center py-28 gap-4">
             <div
               className="w-8 h-8 rounded-full border-2 border-t-transparent animate-spin"
-              style={{ borderColor: "rgba(255,106,0,0.4)", borderTopColor: "transparent" }}
+              style={{ borderColor: "rgba(249,115,22,0.3)", borderTopColor: "transparent" }}
             />
+            <span className="text-[9px] tracking-[0.35em]" style={{ color: "rgba(160,120,40,0.3)" }}>
+              A CARREGAR INTEL...
+            </span>
           </div>
         ) : (
           <>
             {/* Streak */}
-            {streak && <StreakBadge streak={streak} />}
+            {streak && <StreakMeter streak={streak} />}
 
-            {/* Daily Missions */}
-            <section>
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-3">
-                  <div
-                    className="w-1 h-6 rounded-full"
-                    style={{ background: "linear-gradient(180deg, #ff6a00, #ff9500)" }}
-                  />
-                  <h2
-                    className="text-base font-black tracking-widest uppercase"
-                    style={{ color: "#e8c97a", fontFamily: "Georgia, serif" }}
-                  >
-                    Missões Diárias
-                  </h2>
-                </div>
-                <span
-                  className="text-xs font-bold px-2 py-1 rounded"
-                  style={{ color: "#f59e0b", background: "rgba(245,158,11,0.1)", border: "1px solid rgba(245,158,11,0.2)" }}
-                >
-                  {dailyCompleted}/{daily.length}
-                </span>
-              </div>
+            {/* Priority rail — near-complete and completed missions float here */}
+            <PriorityRail missions={allMissions} onClaim={handleClaim} claiming={claiming} />
 
-              {daily.length === 0 ? (
-                <div
-                  className="text-center py-10 rounded-xl"
-                  style={{ background: "rgba(12,10,6,0.6)", border: "1px solid rgba(255,106,0,0.1)" }}
-                >
-                  <p className="text-sm" style={{ color: "rgba(200,160,80,0.4)" }}>
-                    Sem missões diárias atribuídas. Actualiza a página.
-                  </p>
-                </div>
-              ) : (
-                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                  {daily.map((m) => (
-                    <MissionCard
-                      key={m.id}
-                      mission={m}
-                      onClaim={handleClaim}
-                      claiming={claiming}
-                    />
-                  ))}
-                </div>
-              )}
-            </section>
+            {/* Tabs */}
+            <TabBar active={activeTab} onChange={setActiveTab} counts={counts} />
 
-            {/* Weekly Missions */}
-            <section>
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-3">
-                  <div
-                    className="w-1 h-6 rounded-full"
-                    style={{ background: "linear-gradient(180deg, #7c3aed, #a855f7)" }}
-                  />
-                  <h2
-                    className="text-base font-black tracking-widest uppercase"
-                    style={{ color: "#e8c97a", fontFamily: "Georgia, serif" }}
-                  >
-                    Missões Semanais
-                  </h2>
-                </div>
-                <span
-                  className="text-xs font-bold px-2 py-1 rounded"
-                  style={{ color: "#a855f7", background: "rgba(168,85,247,0.1)", border: "1px solid rgba(168,85,247,0.2)" }}
-                >
-                  {weeklyCompleted}/{weekly.length}
-                </span>
-              </div>
-
-              {weekly.length === 0 ? (
-                <div
-                  className="text-center py-10 rounded-xl"
-                  style={{ background: "rgba(12,10,6,0.6)", border: "1px solid rgba(168,85,247,0.1)" }}
-                >
-                  <p className="text-sm" style={{ color: "rgba(200,160,80,0.4)" }}>
-                    Sem missões semanais atribuídas. Actualiza a página.
-                  </p>
-                </div>
-              ) : (
-                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                  {weekly.map((m) => (
-                    <MissionCard
-                      key={m.id}
-                      mission={m}
-                      onClaim={handleClaim}
-                      claiming={claiming}
-                    />
-                  ))}
-                </div>
-              )}
-            </section>
-
-            {/* Monthly Missions */}
-            <section>
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-3">
-                  <div
-                    className="w-1 h-6 rounded-full"
-                    style={{ background: "linear-gradient(180deg, #d97706, #fbbf24)" }}
-                  />
-                  <h2
-                    className="text-base font-black tracking-widest uppercase"
-                    style={{ color: "#e8c97a", fontFamily: "Georgia, serif" }}
-                  >
-                    👑 Missões Mensais
-                  </h2>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span
-                    className="text-[10px] font-bold px-2 py-0.5 rounded"
-                    style={{ color: "#a78bfa", background: "rgba(167,139,250,0.1)", border: "1px solid rgba(167,139,250,0.2)" }}
-                  >
-                    💎 crypto
-                  </span>
-                  <span
-                    className="text-xs font-bold px-2 py-1 rounded"
-                    style={{ color: "#fbbf24", background: "rgba(251,191,36,0.08)", border: "1px solid rgba(251,191,36,0.2)" }}
-                  >
-                    {monthlyCompleted}/{monthly.length}
-                  </span>
-                </div>
-              </div>
-
+            {/* Monthly reset info */}
+            {activeTab === "monthly" && monthly.length > 0 && (
               <div
-                className="mb-4 px-4 py-2 rounded-lg text-[11px]"
-                style={{ background: "rgba(167,139,250,0.06)", border: "1px solid rgba(167,139,250,0.15)", color: "rgba(200,160,80,0.55)" }}
+                className="flex items-center gap-3 px-4 py-2.5 rounded-xl"
+                style={{
+                  background: "rgba(139,92,246,0.05)",
+                  border: "1px solid rgba(139,92,246,0.12)",
+                  color: "rgba(196,181,253,0.5)",
+                }}
               >
-                📅 Missões mensais repõem no primeiro dia do próximo mês. Recompensas incluem grandes quantidades de XP, dinheiro — e um drop de 💎 crypto.
+                <span className="text-base flex-shrink-0">👑</span>
+                <span className="text-[10px] leading-relaxed">
+                  Missões de elite. Repõem a{" "}
+                  <strong className="text-purple-300/70">{nextMonthLabel()}</strong>.{" "}
+                  Recompensas incluem{" "}
+                  <strong className="text-purple-300/70">💎 crypto</strong>.
+                </span>
               </div>
+            )}
 
-              {monthly.length === 0 ? (
-                <div
-                  className="text-center py-10 rounded-xl"
-                  style={{ background: "rgba(12,10,6,0.6)", border: "1px solid rgba(251,191,36,0.1)" }}
+            {/* Mission list */}
+            {tabMissions[activeTab].length === 0 ? (
+              <div
+                className="flex flex-col items-center justify-center py-20 rounded-xl"
+                style={{ background: "rgba(10,7,3,0.5)", border: "1px solid rgba(255,255,255,0.03)" }}
+              >
+                <span className="text-4xl mb-3" style={{ opacity: 0.12 }}>📭</span>
+                <p className="text-[9px] tracking-[0.3em] mb-4" style={{ color: "rgba(160,120,40,0.3)" }}>
+                  SEM MISSÕES ATRIBUÍDAS
+                </p>
+                <button
+                  onClick={fetchMissions}
+                  className="text-[9px] font-black tracking-[0.2em] px-4 py-2 rounded-lg transition-all hover:opacity-80"
+                  style={{ color: "rgba(160,120,40,0.45)", border: "1px solid rgba(160,120,40,0.12)" }}
                 >
-                  <p className="text-sm" style={{ color: "rgba(200,160,80,0.4)" }}>
-                    Sem missões mensais atribuídas. Actualiza a página.
-                  </p>
-                </div>
-              ) : (
-                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                  {monthly.map((m) => (
-                    <MissionCard
-                      key={m.id}
-                      mission={m}
-                      onClaim={handleClaim}
-                      claiming={claiming}
-                    />
-                  ))}
-                </div>
-              )}
-            </section>
+                  ACTUALIZAR
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-2.5">
+                {tabMissions[activeTab].map((m) => (
+                  <MissionRow
+                    key={m.id}
+                    mission={m}
+                    tabType={activeTab}
+                    onClaim={handleClaim}
+                    claiming={claiming}
+                  />
+                ))}
+              </div>
+            )}
           </>
         )}
       </div>
