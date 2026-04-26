@@ -59,8 +59,8 @@ const DIFF: Record<string, { label: string; color: string; bg: string }> = {
 };
 
 const TAB: Record<TabType, { label: string; color: string; dim: string; accent: string; border: string }> = {
-  daily:   { label: "DIÁRIAS",  color: "#fb923c", dim: "rgba(251,146,60,0.5)",  accent: "rgba(249,115,22,0.12)", border: "rgba(249,115,22,0.25)"  },
-  weekly:  { label: "SEMANAIS", color: "#60a5fa", dim: "rgba(96,165,250,0.5)",  accent: "rgba(59,130,246,0.12)",  border: "rgba(59,130,246,0.25)"  },
+  daily:   { label: "DIÁRIAS",  color: "#ff6a00", dim: "rgba(255,106,0,0.5)",   accent: "rgba(255,106,0,0.1)",   border: "rgba(255,106,0,0.22)"   },
+  weekly:  { label: "SEMANAIS", color: "#22c55e", dim: "rgba(34,197,94,0.5)",   accent: "rgba(34,197,94,0.1)",   border: "rgba(34,197,94,0.22)"   },
   monthly: { label: "MENSAIS",  color: "#fbbf24", dim: "rgba(251,191,36,0.5)",  accent: "rgba(251,191,36,0.08)",  border: "rgba(251,191,36,0.2)"   },
 };
 
@@ -347,7 +347,7 @@ function MissionRow({
         background: isClaimed
           ? "rgba(7,5,3,0.7)"
           : isMonthly
-          ? "linear-gradient(150deg, rgba(14,8,22,0.97), rgba(8,5,14,0.96))"
+          ? "linear-gradient(150deg, rgba(15,10,3,0.97), rgba(10,8,3,0.96))"
           : "rgba(11,7,3,0.96)",
         border: `1px solid ${borderColor}`,
         opacity: isClaimed ? 0.4 : 1,
@@ -407,7 +407,7 @@ function MissionRow({
                 {isMonthly && !isClaimed && (
                   <span
                     className="text-[8px] font-black tracking-widest px-1.5 py-0.5 rounded"
-                    style={{ color: "#c4b5fd", background: "rgba(139,92,246,0.18)", border: "1px solid rgba(139,92,246,0.25)" }}
+                    style={{ color: "#fbbf24", background: "rgba(251,191,36,0.12)", border: "1px solid rgba(251,191,36,0.25)" }}
                   >
                     ELITE
                   </span>
@@ -516,7 +516,7 @@ function MissionRow({
                 {def.crypto_reward > 0 && (
                   <span className="text-[10px]">
                     💎{" "}
-                    <span style={{ color: isClaimed ? "#1a1208" : "#a78bfa", fontWeight: 700 }}>
+                    <span style={{ color: isClaimed ? "#1a1208" : "#22d3ee", fontWeight: 700 }}>
                       +{def.crypto_reward}
                     </span>
                   </span>
@@ -652,7 +652,7 @@ export default function MissoesPage() {
   return (
     <div
       className="min-h-screen text-white"
-      style={{ background: "linear-gradient(155deg, #090507 0%, #060409 55%, #09070a 100%)" }}
+      style={{ background: "linear-gradient(135deg, #0d0d0d 0%, #0f0a00 100%)" }}
     >
       {/* Grid overlay */}
       <div
@@ -728,17 +728,17 @@ export default function MissoesPage() {
               <div
                 className="flex items-center gap-3 px-4 py-2.5 rounded-xl"
                 style={{
-                  background: "rgba(139,92,246,0.05)",
-                  border: "1px solid rgba(139,92,246,0.12)",
-                  color: "rgba(196,181,253,0.5)",
+                  background: "rgba(251,191,36,0.04)",
+                  border: "1px solid rgba(251,191,36,0.1)",
+                  color: "rgba(251,191,36,0.45)",
                 }}
               >
                 <span className="text-base flex-shrink-0">👑</span>
                 <span className="text-[10px] leading-relaxed">
                   Missões de elite. Repõem a{" "}
-                  <strong className="text-purple-300/70">{nextMonthLabel()}</strong>.{" "}
+                  <strong style={{ color: "rgba(251,191,36,0.85)" }}>{nextMonthLabel()}</strong>.{" "}
                   Recompensas incluem{" "}
-                  <strong className="text-purple-300/70">💎 crypto</strong>.
+                  <strong style={{ color: "rgba(34,211,238,0.85)" }}>💎 crypto</strong>.
                 </span>
               </div>
             )}
