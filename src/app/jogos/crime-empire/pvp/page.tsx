@@ -230,7 +230,7 @@ export default function PvPPage() {
 
         {/* Cooldown banner */}
         {cooldownSecs > 0 && (
-          <div className="ce-card ce-card-orange mb-4 p-3 rounded-xl ce-text-gold font-semibold text-sm">
+          <div className="ce-card ce-card-orange ce-card--metal-blood mb-4 p-3 rounded-xl ce-text-gold font-semibold text-sm">
             ⏳ Próximo ataque disponível em:{" "}
             {Math.floor(cooldownSecs / 60)}:{String(cooldownSecs % 60).padStart(2, "0")}
           </div>

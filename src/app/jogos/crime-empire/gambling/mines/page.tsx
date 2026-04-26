@@ -168,7 +168,7 @@ export default function MinesPage() {
 
         {/* Active game stats */}
         {status === "active" && (
-          <div className="ce-card ce-card-green rounded-2xl p-4 mb-5 flex items-center justify-between gap-3"
+          <div className="ce-card ce-card-green ce-card--metal-acid rounded-2xl p-4 mb-5 flex items-center justify-between gap-3"
             style={{ boxShadow: "0 0 40px rgba(34,197,94,0.1)" }}>
             <div>
               <p className="ce-stat-label text-[9px]">Multiplicador</p>

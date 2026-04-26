@@ -153,7 +153,7 @@ export default function KenoPage() {
         </div>
 
         {/* Number Grid */}
-        <div className="ce-card ce-card-purple p-3 mb-5 rounded-2xl">
+        <div className="ce-card ce-card-purple ce-card--metal-violet p-3 mb-5 rounded-2xl">
           <div className="grid grid-cols-10 gap-1">
             {Array.from({ length: 80 }, (_, i) => i + 1).map((n) => {
               const isPicked = picksSet.has(n);

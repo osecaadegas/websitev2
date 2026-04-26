@@ -7,6 +7,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 import { useAuth } from "@/lib/auth-context";
 import { usePlayer } from "@/lib/crime-empire/player-context";
+import { useTickingNumber } from "@/hooks/useTickingNumber";
+import { useEffect, useRef } from "react";
 
 const CLASS_NAMES: Record<string, string> = {
   thief: "Ladrão", hooligan: "Hooligan", businessman: "Empresário",
@@ -156,11 +158,11 @@ export function CrimeEmpireSidebar({ open, onClose }: Props) {
                 <div className="mt-2 grid grid-cols-2 gap-1.5 text-center">
                   <div className="rounded-lg py-1 px-2" style={{ background: "rgba(0,0,0,0.3)" }}>
                     <p className="text-[8px] text-gray-500">Limpo</p>
-                    <p className="text-[10px] font-bold text-green-400">${player.cash.toLocaleString()}</p>
+                    <TickingCash value={player.cash} className="text-[10px] font-bold text-green-400" />
                   </div>
                   <div className="rounded-lg py-1 px-2" style={{ background: "rgba(0,0,0,0.3)" }}>
                     <p className="text-[8px] text-gray-500">Sujo</p>
-                    <p className="text-[10px] font-bold text-yellow-400">${player.dirty_cash.toLocaleString()}</p>
+                    <TickingCash value={player.dirty_cash} className="text-[10px] font-bold text-yellow-400" />
                   </div>
                 </div>
               </Link>
@@ -323,5 +325,29 @@ export function CrimeEmpireSidebar({ open, onClose }: Props) {
         </div>
       </aside>
     </>
+  );
+}
+
+/** Smooth-tweened cash with a brief gold flash whenever the value changes. */
+function TickingCash({ value, className }: { value: number; className?: string }) {
+  const display = useTickingNumber(value, 600);
+  const prev = useRef(value);
+  const ref = useRef<HTMLParagraphElement | null>(null);
+
+  useEffect(() => {
+    if (prev.current === value) return;
+    prev.current = value;
+    const el = ref.current;
+    if (!el) return;
+    el.classList.remove("ce-tick-number--flash");
+    // restart animation
+    void el.offsetWidth;
+    el.classList.add("ce-tick-number--flash");
+  }, [value]);
+
+  return (
+    <p ref={ref} className={`ce-tick-number ${className ?? ""}`}>
+      ${Math.round(display).toLocaleString()}
+    </p>
   );
 }

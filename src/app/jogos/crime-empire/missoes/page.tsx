@@ -684,7 +684,7 @@ export default function MissoesPage() {
 
             {/* Monthly reset info */}
             {activeTab === "monthly" && monthly.length > 0 && (
-              <div className="ce-card flex items-center gap-3 px-4 py-2.5 rounded-xl" style={{ borderColor: "rgba(251,191,36,0.15)" }}>
+              <div className="ce-card ce-card--metal-gold flex items-center gap-3 px-4 py-2.5 rounded-xl" style={{ borderColor: "rgba(251,191,36,0.15)" }}>
                 <span className="text-base flex-shrink-0">👑</span>
                 <span className="text-[10px] leading-relaxed ce-text-muted">
                   Missões de elite. Repõem a{" "}

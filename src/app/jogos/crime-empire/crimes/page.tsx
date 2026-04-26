@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/lib/auth-context";
 import { notifyPlayerUpdate } from "@/lib/crime-empire/player-context";
 import RaidEscape from "@/components/crime-empire/raid/RaidEscape";
+import { RewardPop, type RewardItem } from "@/components/crime-empire/ui/RewardPop";
 
 interface Player {
   id: string;
@@ -245,6 +246,13 @@ export default function CrimesPage() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [crimeResult, setCrimeResult] = useState<Record<string, any> | null>(null);
   const [arrestEscape, setArrestEscape] = useState<{ token: string; jailMinutes: number } | null>(null);
+  const [rewards, setRewards] = useState<RewardItem[]>([]);
+
+  const pushReward = (kind: RewardItem["kind"], text: string) => {
+    const id = `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+    const x = `${45 + Math.random() * 10}%`;
+    setRewards((prev) => [...prev, { id, kind, text, x }]);
+  };
 
   useEffect(() => {
     if (!user) { router.push("/"); return; }
@@ -283,6 +291,11 @@ export default function CrimesPage() {
       const data = await res.json();
       if (!res.ok) { alert(data.error); setSelectedCrime(null); return; }
       setCrimeResult(data);
+      if (data.success) {
+        if (data.xp_gained) pushReward("xp", `+${data.xp_gained} XP`);
+        if (data.cash_gained) pushReward("cash", `+$${Number(data.cash_gained).toLocaleString()}`);
+        if (data.clean_cash_gained) pushReward("gold", `+$${Number(data.clean_cash_gained).toLocaleString()} limpo`);
+      }
       if (data.escape_token) {
         setArrestEscape({ token: data.escape_token, jailMinutes: data.jail_time_minutes });
       }
@@ -311,6 +324,7 @@ export default function CrimesPage() {
 
   return (
     <div className="relative flex-1 text-white py-8 px-4 md:px-6" style={{ background: "#0B0B0B" }}>
+      <RewardPop items={rewards} onDone={(id) => setRewards((p) => p.filter((r) => r.id !== id))} />
       <div className="ce-noise" />
       <div className="absolute inset-0 pointer-events-none z-0"
         style={{ background: "radial-gradient(ellipse at 50% -10%, rgba(255,106,0,0.05) 0%, transparent 60%)" }} />
