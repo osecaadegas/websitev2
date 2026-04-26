@@ -278,11 +278,24 @@ function ContractBriefing({
   else if (!meetsLevel) disabledReason = `NIVEL ${contract.required_level} NECESSARIO`;
   else if (!hasStamina) disabledReason = "STAMINA INSUFICIENTE";
 
-  const imgSrc = contract.image
-    ? (contract.image === "hacker"
-        ? `/images/contracts/contrac_hacker.png`
-        : `/images/contracts/contract_${contract.image}.png`)
-    : null;
+  /* Deterministic fallback portrait when DB has no image */
+  const FALLBACK_BY_DIFF: Record<string, string[]> = {
+    easy:   ["thief", "random1", "dealer", "priest"],
+    medium: ["rich", "constructionworker", "random1", "priest"],
+    hard:   ["brute", "cop", "mafiaboss", "doctorkiller", "hacker"],
+  };
+  const hashStr = (s: string) => {
+    let h = 0;
+    for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0;
+    return Math.abs(h);
+  };
+  const fallbackPool = FALLBACK_BY_DIFF[contract.difficulty] ?? FALLBACK_BY_DIFF.medium;
+  const resolvedImage = contract.image
+    ?? fallbackPool[hashStr(contract.id) % fallbackPool.length];
+
+  const imgSrc = resolvedImage === "hacker"
+    ? `/images/contracts/contrac_hacker.png`
+    : `/images/contracts/contract_${resolvedImage}.png`;
 
   const diffSepiaColor =
     contract.difficulty === "easy"
