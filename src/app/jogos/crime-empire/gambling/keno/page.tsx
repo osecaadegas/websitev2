@@ -85,75 +85,131 @@ export default function KenoPage() {
   const revealedSet = new Set(revealedDrawn);
 
   return (
-    <div className="flex-1 text-white py-10 px-6">
-      <div className="max-w-2xl mx-auto">
-        <div className="mb-6">
-          <Link href="/jogos/crime-empire/gambling" className="text-sm text-[#888] hover:text-[#ff6a00] mb-2 inline-block">← Casino</Link>
-          <h1 className="text-4xl font-black text-purple-400">🎱 KENO</h1>
-          <p className="text-sm text-[#888]">Escolhe até 10 números (1–80). 20 serão sorteados.</p>
+    <div className="flex-1 text-white min-h-screen" style={{ background: "#08080d" }}>
+      <div className="ce-noise" />
+      <div className="absolute inset-0 pointer-events-none z-0 ce-keno-header" style={{ height: "300px" }} />
+      <div className="relative z-10 py-8 px-4 max-w-2xl mx-auto">
+
+        {/* Header */}
+        <div className="ce-page-header">
+          <Link href="/jogos/crime-empire/gambling" className="inline-flex items-center gap-1.5 ce-text-muted hover:text-white text-xs font-semibold mb-4 transition-colors">
+            ← Casino
+          </Link>
+          <div className="flex items-center gap-3 mb-2">
+            <div className="w-12 h-12 rounded-2xl flex items-center justify-center text-2xl flex-shrink-0"
+              style={{ background: "linear-gradient(145deg, rgba(168,85,247,0.2), rgba(124,58,237,0.1))", border: "1px solid rgba(168,85,247,0.3)" }}>
+              🎱
+            </div>
+            <div>
+              <p className="ce-page-eyebrow">Underground Casino</p>
+              <h1 className="text-3xl font-black text-white">KENO</h1>
+            </div>
+          </div>
+          <p className="ce-text-muted text-sm">Escolhe até 10 números (1–80). 20 serão sorteados.</p>
           {player && (
-            <p className="text-xs text-orange-400/70 mt-1">
-              ⚠️ 15% risco de prisão por ronda (7.5% Scammer) · 💎 em risco: {Math.min(player.crypto, bet).toLocaleString()} crypto
+            <p className="text-xs text-orange-400/60 mt-1.5">
+              ⚠️ 15% risco de prisão · 💎 em risco: {Math.min(player.crypto, bet).toLocaleString()} crypto
             </p>
           )}
+          <div className="ce-page-divider mt-4" style={{ background: "linear-gradient(90deg, rgba(168,85,247,0.4), rgba(168,85,247,0.1), transparent)" }} />
         </div>
 
+        {/* Balances */}
         {player && (
-          <div className="flex gap-4 mb-4 text-sm">
-            <div className="px-4 py-2 rounded-lg bg-[#1a1a1a] border border-[#333]">💵 <span className="text-green-400 font-bold">${player.dirty_cash.toLocaleString()}</span></div>
-            <div className="px-4 py-2 rounded-lg bg-[#1a1a1a] border border-[#333]">🪙 <span className="text-yellow-400 font-bold">{player.crypto.toLocaleString()}</span></div>
+          <div className="flex gap-3 mb-5">
+            <div className="ce-stat flex-1">
+              <span className="text-lg">💵</span>
+              <div>
+                <p className="ce-stat-label text-[9px]">Dinheiro Sujo</p>
+                <p className="ce-stat-value ce-text-green">${player.dirty_cash.toLocaleString()}</p>
+              </div>
+            </div>
+            <div className="ce-stat flex-1">
+              <span className="text-lg">🪙</span>
+              <div>
+                <p className="ce-stat-label text-[9px]">Crypto</p>
+                <p className="ce-stat-value ce-text-gold">{player.crypto.toLocaleString()}</p>
+              </div>
+            </div>
           </div>
         )}
 
-        {/* Picks info */}
-        <div className="flex items-center gap-3 mb-4">
-          <span className="text-sm text-[#888]">Selecionados: <span className="text-purple-400 font-bold">{picks.length}/{MAX_PICKS}</span></span>
-          {picks.length > 0 && !hasResult && <button onClick={() => setPicks([])} className="text-xs text-red-400 hover:text-red-300">Limpar</button>}
-          {hasResult && <button onClick={reset} className="text-xs text-purple-400 hover:text-purple-300 font-bold">Nova Ronda</button>}
+        {/* Pick counter */}
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <span className="ce-stat-label text-[10px]">Selecionados:</span>
+            <span className="font-black text-sm" style={{ color: picks.length >= MAX_PICKS ? "#f87171" : "#c084fc" }}>
+              {picks.length}<span className="ce-text-muted font-normal">/{MAX_PICKS}</span>
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            {picks.length > 0 && !hasResult && (
+              <button onClick={() => setPicks([])} className="ce-btn ce-btn-ghost px-3 py-1.5 text-xs rounded-lg">Limpar</button>
+            )}
+            {hasResult && (
+              <button onClick={reset} className="ce-btn ce-btn-purple px-3 py-1.5 text-xs rounded-lg">Nova Ronda</button>
+            )}
+          </div>
         </div>
 
-        {/* Number grid */}
-        <div className="grid grid-cols-10 gap-1 mb-6">
-          {Array.from({ length: 80 }, (_, i) => i + 1).map((n) => {
-            const isPicked = picksSet.has(n);
-            const isDrawn = revealedSet.has(n);
-            const isHit = isPicked && isDrawn;
-            let cls = "h-8 rounded text-xs font-bold transition-all border ";
-            if (isHit) cls += "bg-purple-600 border-purple-400 text-white scale-105";
-            else if (isPicked) cls += "bg-[#2a1a3a] border-purple-500 text-purple-300";
-            else if (isDrawn) cls += "bg-[#1a2a1a] border-green-700 text-green-400";
-            else cls += "bg-[#1a1a1a] border-[#2a2a2a] text-[#666] hover:border-purple-600 hover:text-white";
-            return (
-              <button key={n} onClick={() => togglePick(n)} className={cls} disabled={hasResult}>{n}</button>
-            );
-          })}
+        {/* Number Grid */}
+        <div className="ce-card ce-card-purple p-3 mb-5 rounded-2xl">
+          <div className="grid grid-cols-10 gap-1">
+            {Array.from({ length: 80 }, (_, i) => i + 1).map((n) => {
+              const isPicked = picksSet.has(n);
+              const isDrawn = revealedSet.has(n);
+              const isHit = isPicked && isDrawn;
+              let tileClass = "ce-keno-tile ";
+              if (isHit) tileClass += "ce-keno-tile-hit";
+              else if (isPicked) tileClass += "ce-keno-tile-picked";
+              else if (isDrawn) tileClass += "ce-keno-tile-drawn";
+              else tileClass += "ce-keno-tile-idle";
+              return (
+                <button key={n} onClick={() => togglePick(n)} className={tileClass} disabled={hasResult}>{n}</button>
+              );
+            })}
+          </div>
         </div>
 
         {/* Result */}
         {hasResult && (
-          <div className={`text-center p-4 rounded-xl mb-4 border ${payout > 0 ? "bg-purple-900/20 border-purple-500" : "bg-[#1a1a1a] border-[#333]"}`}>
-            <p className="text-lg font-bold">{hits} acerto{hits !== 1 ? "s" : ""} em {picks.length} número{picks.length !== 1 ? "s" : ""}</p>
-            {payout > 0
-              ? <p className="text-2xl font-black text-green-400 mt-1">🪙 +{payout.toLocaleString()} ({multiplier}x)</p>
-              : <p className="text-lg text-red-400 mt-1">Sem prémio desta vez!</p>}
+          <div className={`ce-card rounded-2xl p-5 mb-5 text-center ${payout > 0 ? "ce-card-purple" : ""}`}
+            style={payout > 0 ? { boxShadow: "0 0 40px rgba(168,85,247,0.2)" } : {}}>
+            <p className="ce-text-muted text-xs mb-1">{hits} acerto{hits !== 1 ? "s" : ""} em {picks.length} número{picks.length !== 1 ? "s" : ""}</p>
+            {payout > 0 ? (
+              <>
+                <p className="text-3xl font-black ce-text-purple mb-1">
+                  🪙 +{payout.toLocaleString()}
+                </p>
+                <div className="ce-badge ce-badge-purple mx-auto">{multiplier}x multiplicador</div>
+              </>
+            ) : (
+              <p className="text-xl font-black ce-text-red">Sem prémio desta vez</p>
+            )}
           </div>
         )}
 
         {/* Controls */}
-        <div className="flex gap-3">
-          <div className="flex-1">
-            <label className="text-xs text-[#888]">Aposta</label>
-            <input type="number" value={bet} onChange={(e) => setBet(Math.min(100000, Math.max(100, parseInt(e.target.value) || 100)))}
-              className="w-full px-4 py-2 rounded-lg bg-[#1a1a1a] border border-[#333] text-white mt-1" min={100} max={100000} step={100} />
-          </div>
-          <div className="flex items-end">
-            <button onClick={play} disabled={playing || picks.length === 0} onMouseEnter={loadPlayer}
-              className="px-8 py-2 rounded-lg bg-gradient-to-r from-purple-700 to-purple-600 hover:from-purple-600 hover:to-purple-500 font-bold disabled:opacity-50">
-              {playing ? "A sortear..." : "🎱 Jogar"}
+        <div className="ce-card rounded-2xl p-4">
+          <div className="flex gap-3 items-end">
+            <div className="flex-1">
+              <p className="ce-stat-label text-[10px] mb-1.5">Aposta</p>
+              <input
+                type="number" value={bet}
+                onChange={(e) => setBet(Math.min(100000, Math.max(100, parseInt(e.target.value) || 100)))}
+                className="ce-input" min={100} max={100000} step={100}
+              />
+            </div>
+            <button
+              onClick={play} disabled={playing || picks.length === 0} onMouseEnter={loadPlayer}
+              className="ce-btn ce-btn-purple px-8 py-3 rounded-xl"
+            >
+              {playing ? <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> A sortear...</> : "🎱 Jogar"}
             </button>
           </div>
         </div>
       </div>
+
       {arrestEscape && (
         <RaidEscape
           difficulty="medium"

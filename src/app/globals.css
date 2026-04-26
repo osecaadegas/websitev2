@@ -1,6 +1,6 @@
 ﻿@import "tailwindcss";
 
-/* ── Arena Design System ─────────────────────────────────────────────── */
+/* -- Arena Design System ----------------------------------------------- */
 
 @theme inline {
   --color-arena-black: #000000;
@@ -30,7 +30,7 @@
   }
 }
 
-/* ── Base ───────────────────────────────────────────────────────────── */
+/* -- Base ------------------------------------------------------------- */
 
 :root {
   --background: #000000;
@@ -61,7 +61,7 @@ body {
   color: #ffffff;
 }
 
-/* ── Arena Utility Classes ──────────────────────────────────────────── */
+/* -- Arena Utility Classes -------------------------------------------- */
 
 .arena-border {
   border: 1px solid rgba(255, 85, 0, 0.2);
@@ -118,7 +118,7 @@ body {
   box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.6);
 }
 
-/* Engraved text — deep carved Roman stone effect */
+/* Engraved text - deep carved Roman stone effect */
 .arena-engraved {
   text-shadow:
     0 1px 0 rgba(255, 255, 255, 0.06),
@@ -160,7 +160,7 @@ body {
   background-clip: text;
 }
 
-/* ── Gladiator Title System ─────────────────────────────────────────── */
+/* -- Gladiator Title System ------------------------------------------- */
 
 /* Modern clean headline — bold, tight spacing */
 .gladiator-title {
@@ -242,9 +242,9 @@ body {
     0 0 12px rgba(255, 85, 0, 0.4);
 }
 
-/* ══════════════════════════════════════════════════════════════════════
+/* ----------------------------------------------------------------------
    PAPYRUS SCROLL CASINO CARD
-   ══════════════════════════════════════════════════════════════════════ */
+   ---------------------------------------------------------------------- */
 
 :root {
   --parchment-light: #1a1a1a;
@@ -267,7 +267,7 @@ body {
   --scroll-radius: 14px;
 }
 
-/* ── Greek Key / Meander Pattern Border ─────────────────── */
+/* -- Greek Key / Meander Pattern Border ------------------- */
 .greek-key-border {
   position: relative;
 }
@@ -292,7 +292,7 @@ body {
   transition: opacity 0.4s ease, border-color 0.4s ease;
 }
 
-/* ── Scroll Body — Main Card ────────────────────────────── */
+/* -- Scroll Body — Main Card ------------------------------ */
 .papyrus-scroll {
   position: relative;
   width: 100%;
@@ -332,7 +332,7 @@ body {
               box-shadow 0.5s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-/* ── Rolled Top Edge ────────────────────────────────────── */
+/* -- Rolled Top Edge -------------------------------------- */
 .papyrus-scroll-top::before {
   content: '';
   position: absolute;
@@ -355,7 +355,7 @@ body {
     inset 0 -1px 2px rgba(255, 240, 200, 0.3);
 }
 
-/* ── Rolled Bottom Edge ─────────────────────────────────── */
+/* -- Rolled Bottom Edge ----------------------------------- */
 .papyrus-scroll-bottom::after {
   content: '';
   position: absolute;
@@ -378,7 +378,7 @@ body {
     inset 0 1px 2px rgba(255, 240, 200, 0.3);
 }
 
-/* ── Hover State — Lift + Paper Movement ────────────────── */
+/* -- Hover State — Lift + Paper Movement ------------------ */
 .papyrus-flip-container {
   perspective: 1000px;
   width: 100%;
@@ -387,7 +387,7 @@ body {
   cursor: pointer;
 }
 
-/* ── Compact card variant for Daily Session ─────────────── */
+/* -- Compact card variant for Daily Session --------------- */
 .daily-session-card .papyrus-flip-container {
   max-width: 100%;
   height: auto;
@@ -447,9 +447,9 @@ body {
   padding-bottom: 12px;
 }
 
-/* ═══════════════════════════════════════════════════════════════════
+/* -------------------------------------------------------------------
    SLOT HIGHLIGHT CARDS — Best / Worst spinning mini cards
-   ═══════════════════════════════════════════════════════════════════ */
+   ------------------------------------------------------------------- */
 .slot-highlight-card {
   display: flex;
   flex-direction: column;
@@ -499,11 +499,11 @@ body {
   white-space: nowrap;
 }
 
-/* ══════════════════════════════════════════════════════════════════
+/* ------------------------------------------------------------------
    GLADIATOR SCHEDULE — Forged Metal Cards
-   ══════════════════════════════════════════════════════════════════ */
+   ------------------------------------------------------------------ */
 
-/* ── Ember flicker keyframes ─────────────── */
+/* -- Ember flicker keyframes --------------- */
 @keyframes ember-flicker {
   0%, 100% { opacity: 0.45; }
   25%      { opacity: 0.65; }
@@ -547,7 +547,7 @@ body {
   z-index: 0;
 }
 
-/* ── Overlay ─────────────────────────────── */
+/* -- Overlay ------------------------------- */
 .gladiator-schedule__overlay {
   position: relative;
   z-index: 1;
@@ -556,16 +556,16 @@ body {
   padding: 0 0.25rem 2rem;
 }
 
-/* ── Week row — static 7 columns ─────────── */
+/* -- Week row — static 7 columns ----------- */
 .gladiator-week {
   display: flex;
   gap: 0.35rem;
   width: 100%;
 }
 
-/* ══════════════════════════════════════════════
+/* ----------------------------------------------
    FORGE CARD — Gladiator stone card
-   ══════════════════════════════════════════════ */
+   ---------------------------------------------- */
 .forge-card {
   flex: 1 1 0;
   min-width: 0;
@@ -600,7 +600,7 @@ body {
   display: none;
 }
 
-/* ── Hover ───────────────────────────────── */
+/* -- Hover --------------------------------- */
 .forge-card:hover {
   transform: translateY(-3px) scale(1.02);
   box-shadow:
@@ -608,7 +608,7 @@ body {
     0 15px 30px rgba(0, 0, 0, 0.6);
 }
 
-/* ── Today — gold border glow ────────────── */
+/* -- Today — gold border glow -------------- */
 .forge-card--today {
   border-color: rgba(255, 85, 0, 0.7);
   box-shadow:
@@ -627,7 +627,7 @@ body {
     0 15px 30px rgba(0, 0, 0, 0.6);
 }
 
-/* ── Past days — dimmed ──────────────────── */
+/* -- Past days — dimmed -------------------- */
 .forge-card--past {
   opacity: 0.62;
 }
@@ -636,7 +636,7 @@ body {
   opacity: 0.8;
 }
 
-/* ── Header ──────────────────────────────── */
+/* -- Header -------------------------------- */
 .forge-card__header {
   padding: 0.8rem 0.4rem 0.5rem;
   text-align: center;
@@ -705,7 +705,7 @@ body {
   text-shadow: 0 1px 3px rgba(0,0,0,0.8);
 }
 
-/* ── Divider — gold gradient line ────────── */
+/* -- Divider — gold gradient line ---------- */
 .forge-card__divider {
   height: 1px;
   margin: 0 1rem;
@@ -717,7 +717,7 @@ body {
   );
 }
 
-/* ── Body (stream list) ────────────────── */
+/* -- Body (stream list) ------------------ */
 .forge-card__body {
   padding: 0.5rem 0.4rem 0.6rem;
   display: flex;
@@ -728,9 +728,9 @@ body {
   z-index: 1;
 }
 
-/* ══════════════════════════════════════════════
+/* ----------------------------------------------
    FORGE SLOT — Stream entry (gladiator style)
-   ══════════════════════════════════════════════ */
+   ---------------------------------------------- */
 .forge-slot {
   position: relative;
   z-index: 1;
@@ -815,7 +815,7 @@ body {
   font-family: var(--font-display);
 }
 
-/* ── Responsive ────────────────────────────── */
+/* -- Responsive ------------------------------ */
 @media (max-width: 1024px) {
   .gladiator-schedule__overlay {
     width: 80%;
@@ -830,9 +830,9 @@ body {
   }
 }
 
-/* ══════════════════════════════════════════════════════════════════
+/* ------------------------------------------------------------------
    SWORD BUTTONS — /live clip navigation
-   ══════════════════════════════════════════════════════════════════ */
+   ------------------------------------------------------------------ */
 .sword-btn {
   position: relative;
   display: flex;
@@ -897,9 +897,9 @@ body {
   }
 }
 
-/* ══════════════════════════════════════════════════════════════════
+/* ------------------------------------------------------------------
    BONUS HUNT — Papyrus Table
-   ══════════════════════════════════════════════════════════════════ */
+   ------------------------------------------------------------------ */
 .bonus-hunt-scroll {
   max-width: 100% !important;
 }
@@ -1137,14 +1137,14 @@ body {
   color: var(--deep-red);
 }
 
-/* ── Scroll Content Container ────────────────────────────── */
+/* -- Scroll Content Container ------------------------------ */
 .scroll-content {
   position: relative;
   z-index: 1;
   padding: 28px 24px 24px;
 }
 
-/* ── Header / Title Area ────────────────────────────────── */
+/* -- Header / Title Area ---------------------------------- */
 .scroll-header {
   text-align: center;
   padding-bottom: 10px;
@@ -1197,7 +1197,7 @@ body {
   opacity: 0.8;
 }
 
-/* ── Engraved Divider ───────────────────────────────────── */
+/* -- Engraved Divider ------------------------------------- */
 .engraved-divider {
   height: 1px;
   background: linear-gradient(
@@ -1228,7 +1228,7 @@ body {
   );
 }
 
-/* ── Casino Banner / Logo Area ──────────────────────────── */
+/* -- Casino Banner / Logo Area ---------------------------- */
 .casino-banner {
   position: relative;
   margin: 10px 0;
@@ -1276,7 +1276,7 @@ body {
   text-shadow: 0 0 20px rgba(212, 160, 23, 0.3), 0 2px 4px rgba(0,0,0,0.5);
 }
 
-/* ── Rating Stars ───────────────────────────────────────── */
+/* -- Rating Stars ----------------------------------------- */
 .rating-row {
   display: flex;
   align-items: center;
@@ -1303,7 +1303,7 @@ body {
   margin-left: 4px;
 }
 
-/* ── Stat Rows ──────────────────────────────────────────── */
+/* -- Stat Rows -------------------------------------------- */
 .stat-rows {
   display: flex;
   flex-direction: column;
@@ -1363,7 +1363,7 @@ body {
   border: 1px solid rgba(255, 85, 0, 0.15);
 }
 
-/* ── Promo Section — Gold Frame Highlight ───────────────── */
+/* -- Promo Section — Gold Frame Highlight ----------------- */
 .promo-section {
   position: relative;
   margin: 10px -4px;
@@ -1452,7 +1452,7 @@ body {
   z-index: 2;
 }
 
-/* ── Promo Code — Sealed Inscription ─────────────────────── */
+/* -- Promo Code — Sealed Inscription ----------------------- */
 .promo-code-wrapper {
   display: inline-flex;
   flex-direction: row;
@@ -1493,7 +1493,7 @@ body {
   letter-spacing: 0.08em;
 }
 
-/* ── CTA Button — Golden Button ──────────────────────────── */
+/* -- CTA Button — Golden Button ---------------------------- */
 .cta-section {
   margin-top: 12px;
   text-align: center;
@@ -1570,7 +1570,7 @@ body {
   letter-spacing: 0.05em;
 }
 
-/* ── Corner Ornaments — Expanding Brackets ──────────────── */
+/* -- Corner Ornaments — Expanding Brackets ---------------- */
 .card-corner {
   position: absolute;
   width: 2em;
@@ -1606,7 +1606,7 @@ body {
   border-color: var(--gold-bright);
 }
 
-/* ── Wax Seal Accent ────────────────────────────────────── */
+/* -- Wax Seal Accent -------------------------------------- */
 .wax-seal {
   width: 24px;
   height: 24px;
@@ -1628,14 +1628,14 @@ body {
   position: relative;
 }
 .wax-seal::after {
-  content: '⚔';
+  content: '?';
   font-size: 11px;
   color: rgba(255, 200, 150, 0.5);
 }
 
-/* ═══════════════════════════════════════════════════════════════════
+/* -------------------------------------------------------------------
    WAX SEAL BADGE — Realistic wax stamp overlay
-   ═══════════════════════════════════════════════════════════════════ */
+   ------------------------------------------------------------------- */
 .wax-seal-badge {
   position: relative;
   border-radius: 50%;
@@ -1654,7 +1654,7 @@ body {
   );
 }
 
-/* ── Red variant ── */
+/* -- Red variant -- */
 .wax-seal-badge--red {
   background:
     radial-gradient(ellipse at 35% 30%, rgba(255, 120, 100, 0.25) 0%, transparent 50%),
@@ -1662,7 +1662,7 @@ body {
     radial-gradient(circle at 50% 50%, #FF4400 0%, #7a1c1c 40%, #5a0e0e 85%, #3d0808 100%);
 }
 
-/* ── Gold variant ── */
+/* -- Gold variant -- */
 .wax-seal-badge--gold {
   background:
     radial-gradient(ellipse at 35% 30%, rgba(255, 220, 140, 0.3) 0%, transparent 50%),
@@ -1670,7 +1670,7 @@ body {
     radial-gradient(circle at 50% 50%, #c9a44c 0%, #b08930 40%, #7a5f20 85%, #4a3510 100%);
 }
 
-/* ── Wax drip blobs ── */
+/* -- Wax drip blobs -- */
 .wax-seal-badge__drip {
   position: absolute;
   border-radius: 50% 50% 60% 40%;
@@ -1698,7 +1698,7 @@ body {
   border-radius: 50%;
 }
 
-/* ── Pressed inner ring ── */
+/* -- Pressed inner ring -- */
 .wax-seal-badge__ring {
   position: absolute;
   inset: 14%;
@@ -1718,7 +1718,7 @@ body {
     inset 0 -1px 1px rgba(255, 210, 120, 0.15);
 }
 
-/* ── Debossed text engraving ── */
+/* -- Debossed text engraving -- */
 .wax-seal-badge__text {
   display: flex;
   flex-direction: column;
@@ -1760,7 +1760,7 @@ body {
   color: rgba(80, 50, 15, 0.35);
 }
 
-/* ── Key Perks List ─────────────────────────────────────── */
+/* -- Key Perks List --------------------------------------- */
 .perks-list {
   display: flex;
   flex-wrap: wrap;
@@ -1782,7 +1782,7 @@ body {
   white-space: nowrap;
 }
 
-/* ── Scroll Unroll Animation on Hover ───────────────────── */
+/* -- Scroll Unroll Animation on Hover --------------------- */
 .papyrus-flip-container:hover .papyrus-scroll-top::before {
   height: 18px;
   transition: height 0.5s cubic-bezier(0.22, 1, 0.36, 1);
@@ -1792,7 +1792,7 @@ body {
   transition: height 0.5s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-/* ── Banner pulse on hover ──────────────────────────────── */
+/* -- Banner pulse on hover -------------------------------- */
 .casino-banner-inner img {
   transition: transform 0.4s ease;
 }
@@ -1804,7 +1804,7 @@ body {
   50% { transform: scale(1.03); }
 }
 
-/* ── Promo section trill on hover ───────────────────────── */
+/* -- Promo section trill on hover ------------------------- */
 .promo-section {
   transition: transform 0.3s ease;
 }
@@ -1819,7 +1819,7 @@ body {
   80% { transform: translateX(1px); }
 }
 
-/* ── Copy Toast ───────────────────────────────────────── */
+/* -- Copy Toast ----------------------------------------- */
 .copy-toast {
   position: fixed;
   bottom: 24px;
@@ -1843,7 +1843,7 @@ body {
   transform: translateX(-50%) translateY(0);
 }
 
-/* ── Responsive ─────────────────────────────────────────── */
+/* -- Responsive ------------------------------------------- */
 @media (max-width: 480px) {
   .papyrus-scroll {
     max-width: 100%;
@@ -1873,7 +1873,7 @@ body {
   }
 }
 
-/* ── Keyframes ──────────────────────────────────────────────────────── */
+/* -- Keyframes -------------------------------------------------------- */
 
 @keyframes pulse-glow {
   0%, 100% { box-shadow: 0 0 15px rgba(139, 0, 0, 0.2); }
@@ -1904,7 +1904,7 @@ body {
   animation: pulse-glow 3s ease-in-out infinite;
 }
 
-/* ── Liga dos Secas — Parchment Scroll ─────────────────── */
+/* -- Liga dos Secas — Parchment Scroll ------------------- */
 .liga-scroll-perspective {
   perspective: 1200px;
 }
@@ -2098,9 +2098,9 @@ body {
   color: var(--deep-red);
 }
 
-/* ══════════════════════════════════════════════════════════════════════
+/* ----------------------------------------------------------------------
    ARMARIA — Gladiator Armory Shop
-   ══════════════════════════════════════════════════════════════════════ */
+   ---------------------------------------------------------------------- */
 
 /* Floating embers */
 @keyframes armaria-ember-rise {
@@ -2328,9 +2328,9 @@ body {
   }
 }
 
-/* ════════════════════════════════════════════════════════════
+/* ------------------------------------------------------------
    STREAM SCHEDULE MODAL  –  scorched stone / ember / lava
-   ════════════════════════════════════════════════════════════ */
+   ------------------------------------------------------------ */
 
 @keyframes schedule-modal-in {
   from { opacity: 0; transform: scale(0.94) translateY(14px); }
@@ -2382,7 +2382,7 @@ body {
   z-index: 0;
 }
 
-/* ── Hero banner ──────────────────────────────────────────── */
+/* -- Hero banner -------------------------------------------- */
 .schedule-modal-hero {
   position: relative;
   height: 176px;
@@ -2425,7 +2425,7 @@ body {
   gap: 10px;
 }
 
-/* ── Badge / inscription ──────────────────────────────────── */
+/* -- Badge / inscription ------------------------------------ */
 .schedule-modal-badge {
   font-family: var(--font-display);
   font-size: 0.65rem;
@@ -2438,7 +2438,7 @@ body {
   border-bottom: 1px solid rgba(180,100,10,0.45);
 }
 
-/* ── Title ────────────────────────────────────────────────── */
+/* -- Title -------------------------------------------------- */
 .schedule-modal-title {
   font-family: var(--font-display);
   font-size: clamp(1.3rem, 3.5vw, 1.75rem);
@@ -2449,7 +2449,7 @@ body {
   text-shadow: 0 0 28px rgba(140,65,5,0.35), 0 2px 6px rgba(0,0,0,0.75);
 }
 
-/* ── Meta chips ───────────────────────────────────────────── */
+/* -- Meta chips --------------------------------------------- */
 .schedule-modal-meta {
   display: flex;
   flex-wrap: wrap;
@@ -2469,7 +2469,7 @@ body {
   letter-spacing: 0.04em;
 }
 
-/* ── Lava-crack divider ───────────────────────────────────── */
+/* -- Lava-crack divider ------------------------------------- */
 .schedule-modal-divider {
   height: 1px;
   background: linear-gradient(90deg,
@@ -2483,7 +2483,7 @@ body {
   box-shadow: 0 0 6px rgba(200,100,5,0.25);
 }
 
-/* ── Body ─────────────────────────────────────────────────── */
+/* -- Body --------------------------------------------------- */
 .schedule-modal-body {
   position: relative;
   z-index: 1;
@@ -2501,7 +2501,7 @@ body {
   margin-bottom: 12px;
 }
 
-/* ── Activity list (vertical) ─────────────────────────────── */
+/* -- Activity list (vertical) ------------------------------- */
 .schedule-modal-activity-list {
   display: flex;
   flex-direction: column;
@@ -2542,7 +2542,7 @@ body {
   text-transform: uppercase;
 }
 
-/* ── Description ──────────────────────────────────────────── */
+/* -- Description -------------------------------------------- */
 .schedule-modal-description {
   font-size: 0.9rem;
   color: rgba(195,182,158,0.78);
@@ -2551,7 +2551,7 @@ body {
   padding-left: 14px;
 }
 
-/* ── Action buttons ───────────────────────────────────────── */
+/* -- Action buttons ----------------------------------------- */
 .schedule-modal-actions {
   display: flex;
   gap: 10px;
@@ -2611,7 +2611,7 @@ body {
   transform: translateY(-1px);
 }
 
-/* ── Close button ─────────────────────────────────────────── */
+/* -- Close button ------------------------------------------- */
 .schedule-modal-close {
   position: absolute;
   top: 12px;
@@ -2635,7 +2635,7 @@ body {
   color: #c8841a;
 }
 
-/* ── Ember particles ──────────────────────────────────────── */
+/* -- Ember particles ---------------------------------------- */
 .schedule-modal-ember {
   position: absolute;
   width: 2px;
@@ -2647,7 +2647,7 @@ body {
   box-shadow: 0 0 3px rgba(220,100,5,0.7);
 }
 
-/* ── Responsive ───────────────────────────────────────────── */
+/* -- Responsive --------------------------------------------- */
 @media (max-width: 480px) {
   .schedule-modal-hero-content { padding: 18px 18px 14px; }
   .schedule-modal-body         { padding: 16px 18px 20px; }
@@ -2655,11 +2655,11 @@ body {
   .schedule-modal-btn-primary  { min-width: 110px; padding: 10px 14px; }
 }
 
-/* ═══════════════════════════════════════════════════════════════
+/* ---------------------------------------------------------------
    HALL OF VICTORIES — modern dark glass UI, gold accents
-═══════════════════════════════════════════════════════════════ */
+--------------------------------------------------------------- */
 
-/* ── Page hero ─────────────────────────────────────────────── */
+/* -- Page hero ----------------------------------------------- */
 .hov-hero {
   text-align: center;
   padding: 0 0 52px;
@@ -2721,7 +2721,7 @@ body {
   margin: 0 auto;
 }
 
-/* ── Top bar ────────────────────────────────────────────────── */
+/* -- Top bar -------------------------------------------------- */
 .hov-topbar {
   display: flex;
   align-items: center;
@@ -2764,7 +2764,7 @@ body {
   font-weight: 600;
 }
 
-/* ── Submit button ──────────────────────────────────────────── */
+/* -- Submit button -------------------------------------------- */
 .hov-submit-btn {
   display: inline-flex;
   align-items: center;
@@ -2794,14 +2794,14 @@ body {
   font-style: italic;
 }
 
-/* ── Grid ───────────────────────────────────────────────────── */
+/* -- Grid ----------------------------------------------------- */
 .hov-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
   gap: 20px;
 }
 
-/* ── Win card ───────────────────────────────────────────────── */
+/* -- Win card ------------------------------------------------- */
 .win-card {
   background: linear-gradient(145deg, #121212 0%, #161616 100%);
   border: none;
@@ -2822,7 +2822,7 @@ body {
     0 15px 40px rgba(0, 0, 0, 0.7);
 }
 
-/* ── Media block ────────────────────────────────────────────── */
+/* -- Media block ---------------------------------------------- */
 .win-card__media {
   position: relative;
   background: #000000;
@@ -2845,7 +2845,7 @@ body {
   backdrop-filter: blur(8px);
 }
 
-/* ── YouTube thumbnail facade ───────────────────────────────── */
+/* -- YouTube thumbnail facade --------------------------------- */
 .win-embed__thumb {
   position: relative;
   display: block;
@@ -2909,7 +2909,7 @@ body {
   fill: #ff6a00;
 }
 
-/* ── iframe / video wrapper ─────────────────────────────────── */
+/* -- iframe / video wrapper ----------------------------------- */
 .win-embed__iframe-wrap {
   position: relative;
   width: 100%;
@@ -2935,7 +2935,7 @@ body {
   background: #000;
 }
 
-/* ── Link fallback ──────────────────────────────────────────── */
+/* -- Link fallback -------------------------------------------- */
 .win-embed__link-fallback {
   display: flex;
   flex-direction: column;
@@ -2983,7 +2983,7 @@ body {
 .win-embed__cta svg { width: 12px; height: 12px; flex-shrink: 0; }
 .win-embed__ext-link { color: #ff6a00; }
 
-/* ── Body section ───────────────────────────────────────────── */
+/* -- Body section --------------------------------------------- */
 .win-card__body {
   display: flex;
   flex-direction: column;
@@ -2991,7 +2991,7 @@ body {
   gap: 14px;
 }
 
-/* ── User row ───────────────────────────────────────────────── */
+/* -- User row ------------------------------------------------- */
 .win-card__user-row {
   display: flex;
   align-items: center;
@@ -3033,7 +3033,7 @@ body {
   color: #888888;
 }
 
-/* ── Title ──────────────────────────────────────────────────── */
+/* -- Title ---------------------------------------------------- */
 .win-card__title {
   font-family: var(--font-display);
   font-size: 1rem;
@@ -3044,14 +3044,14 @@ body {
   line-height: 1.4;
 }
 
-/* ── Description ────────────────────────────────────────────── */
+/* -- Description ---------------------------------------------- */
 .win-card__description {
   font-size: 0.875rem;
   color: #888888;
   line-height: 1.6
 }
 
-/* ── Footer / honor ─────────────────────────────────────────── */
+/* -- Footer / honor ------------------------------------------- */
 .win-card__footer {
   display: flex;
   align-items: center;
@@ -3092,7 +3092,7 @@ body {
 .win-card__honor-icon { width: 15px; height: 15px; flex-shrink: 0; }
 .win-card__honor-count { font-variant-numeric: tabular-nums; }
 
-/* ── Win stats (payout + multiplier) ────────────────────────── */
+/* -- Win stats (payout + multiplier) -------------------------- */
 .win-card__stats {
   display: flex;
   align-items: flex-end;
@@ -3138,7 +3138,7 @@ body {
   margin-bottom: 4px;
 }
 
-/* ── Empty state ────────────────────────────────────────────── */
+/* -- Empty state ---------------------------------------------- */
 .hov-empty {
   text-align: center;
   padding: 90px 24px;
@@ -3171,7 +3171,7 @@ body {
   margin: 0;
 }
 
-/* ── Skeleton cards ─────────────────────────────────────────── */
+/* -- Skeleton cards ------------------------------------------- */
 .hov-skeleton {
   height: 360px;
   background: linear-gradient(90deg,
@@ -3189,7 +3189,7 @@ body {
   100% { background-position: -200% 0; }
 }
 
-/* ── Load more ──────────────────────────────────────────────── */
+/* -- Load more ------------------------------------------------ */
 .hov-loadmore {
   text-align: center;
   padding: 40px 0 0;
@@ -3233,7 +3233,7 @@ body {
   to { transform: rotate(360deg); }
 }
 
-/* ── Add Win Form modal ─────────────────────────────────────── */
+/* -- Add Win Form modal --------------------------------------- */
 .add-win-form__overlay {
   position: fixed;
   inset: 0;
@@ -3257,7 +3257,7 @@ body {
   box-shadow: 0 24px 80px rgba(0, 0, 0, 0.85);
 }
 
-/* ── Form header ────────────────────────────────────────────── */
+/* -- Form header ---------------------------------------------- */
 .add-win-form__header {
   position: relative;
   display: flex;
@@ -3293,7 +3293,7 @@ body {
   color: rgba(212, 168, 67, 0.9);
 }
 
-/* ── Form fields ────────────────────────────────────────────── */
+/* -- Form fields ---------------------------------------------- */
 .add-win-form form {
   padding: 20px 20px 22px;
   display: flex;
@@ -3347,14 +3347,14 @@ body {
   letter-spacing: 0.02em;
 }
 
-/* ── Row (two columns) ──────────────────────────────────────── */
+/* -- Row (two columns) ---------------------------------------- */
 .add-win-form__row {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 12px;
 }
 
-/* ── Number inputs with prefix/suffix ──────────────────────── */
+/* -- Number inputs with prefix/suffix ------------------------ */
 .add-win-form__number-wrap {
   position: relative;
   display: flex;
@@ -3393,7 +3393,7 @@ body {
   padding-right: 28px;
 }
 
-/* ── Provider combobox ──────────────────────────────────────── */
+/* -- Provider combobox ---------------------------------------- */
 .add-win-form__combobox { position: relative; }
 
 .add-win-form__input--combobox { padding-right: 36px; }
@@ -3452,7 +3452,7 @@ body {
   font-weight: 600;
 }
 
-/* ── Error ──────────────────────────────────────────────────── */
+/* -- Error ---------------------------------------------------- */
 .add-win-form__error {
   font-size: 0.78rem;
   color: #f08080;
@@ -3464,7 +3464,7 @@ body {
   overflow: hidden;
 }
 
-/* ── Actions ────────────────────────────────────────────────── */
+/* -- Actions -------------------------------------------------- */
 .add-win-form__actions {
   display: flex;
   gap: 10px;
@@ -3522,7 +3522,7 @@ body {
   animation: hov-spin 0.7s linear infinite;
 }
 
-/* ── Responsive ─────────────────────────────────────────────── */
+/* -- Responsive ----------------------------------------------- */
 @media (max-width: 640px) {
   .hov-grid { grid-template-columns: 1fr; }
   .hov-topbar { flex-direction: column; align-items: stretch; }
@@ -3532,9 +3532,9 @@ body {
   .add-win-form__row { grid-template-columns: 1fr; }
 }
 
-/* ═══ BRUTA DO MÊS — tabs, featured win, admin form ═══════════ */
+/* --- BRUTA DO MÊS — tabs, featured win, admin form ----------- */
 
-/* ── Tab switcher ───────────────────────────────────────────── */
+/* -- Tab switcher --------------------------------------------- */
 .hov-tabs {
   display: flex;
   gap: 4px;
@@ -3581,7 +3581,7 @@ body {
   flex-shrink: 0;
 }
 
-/* ── Featured win card (Bruta do Mês) ──────────────────────── */
+/* -- Featured win card (Bruta do Mês) ------------------------ */
 .bdm-featured {
   background: rgba(18, 14, 8, 0.95);
   border: 1px solid rgba(212, 168, 67, 0.18);
@@ -3719,7 +3719,7 @@ body {
   margin: 0;
 }
 
-/* ── Admin Bruta do Mês page styles ─────────────────────────── */
+/* -- Admin Bruta do Mês page styles --------------------------- */
 .bdm-admin-skeleton {
   height: 360px;
   background: linear-gradient(90deg,
@@ -3924,7 +3924,7 @@ body {
   animation: hov-spin 0.7s linear infinite;
 }
 
-/* ── Admin page wrapper + header ────────────────────────────── */
+/* -- Admin page wrapper + header ------------------------------ */
 .bdm-admin-page {
   padding-top: 96px;
   padding-bottom: 64px;
@@ -3965,7 +3965,7 @@ body {
   margin: 0;
 }
 
-/* ── Arena toast notification ───────────────────────────────── */
+/* -- Arena toast notification --------------------------------- */
 .bdm-toast {
   position: fixed;
   top: 80px;
@@ -4004,7 +4004,7 @@ body {
   opacity: 0.85;
 }
 
-/* ── Admin provider combobox ────────────────────────────────── */
+/* -- Admin provider combobox ---------------------------------- */
 .bdm-admin-form__combobox {
   position: relative;
 }
@@ -4068,7 +4068,7 @@ body {
   font-weight: 600;
 }
 
-/* ── Provider badge in current win preview ─────────────────── */
+/* -- Provider badge in current win preview ------------------- */
 .bdm-admin-current__provider-badge {
   display: inline-block;
   font-size: 0.65rem;
@@ -4083,7 +4083,7 @@ body {
   margin-top: 8px;
 }
 
-/* ── Responsive ─────────────────────────────────────────────── */
+/* -- Responsive ----------------------------------------------- */
 @media (max-width: 640px) {
   .hov-tabs { flex-direction: column; }
   .bdm-featured { border-radius: 12px; }
@@ -4091,9 +4091,9 @@ body {
   .bdm-admin-form-wrap { padding: 16px; }
 }
 
-/* ══════════════════════════════════════════════════════════════════════
+/* ----------------------------------------------------------------------
    CRIME EMPIRE MINIGAMES
-   ══════════════════════════════════════════════════════════════════════ */
+   ---------------------------------------------------------------------- */
 .mg-hud-row { width: min(780px, 100%); display: flex; justify-content: space-between; gap: 16px; color: #8ea0b8; font-size: 13px; margin-bottom: 18px; }
 .mg-bar { height: 10px; width: 100%; background: rgba(15,23,42,.92); border: 1px solid rgba(148,163,184,.18); border-radius: 999px; overflow: hidden; }
 .mg-bar > i { display: block; height: 100%; width: 0%; background: linear-gradient(90deg,#38bdf8,#22c55e); transition: width 90ms linear; }
@@ -4162,3 +4162,767 @@ body {
 .mg-keycap.bad { background: rgba(239,68,68,.44); color: #fee2e2; }
 .mg-panic-pad { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
 .mg-panic-pad .mg-keycap { cursor: pointer; }
+
+/* ----------------------------------------------------------------------
+   CRIME EMPIRE — Underground Design System
+   ---------------------------------------------------------------------- */
+
+/* -- Keyframe Animations ---------------------------------------------- */
+
+@keyframes ce-shine {
+  0%   { transform: translateX(-120%) skewX(-15deg); }
+  100% { transform: translateX(220%)  skewX(-15deg); }
+}
+
+@keyframes ce-glow-pulse {
+  0%, 100% { opacity: 0.5; }
+  50%       { opacity: 1; }
+}
+
+@keyframes ce-float-up {
+  0%   { opacity: 1; transform: translateY(0); }
+  100% { opacity: 0; transform: translateY(-60px); }
+}
+
+@keyframes ce-tile-reveal {
+  0%   { transform: scale(0.7) rotateY(90deg); opacity: 0; }
+  60%  { transform: scale(1.08) rotateY(0deg); opacity: 1; }
+  100% { transform: scale(1) rotateY(0deg);    opacity: 1; }
+}
+
+@keyframes ce-number-pop {
+  0%   { transform: scale(0.5); opacity: 0; }
+  60%  { transform: scale(1.25); opacity: 1; }
+  100% { transform: scale(1); }
+}
+
+@keyframes ce-card-slide-in {
+  0%   { transform: translateY(-40px) rotate(-8deg); opacity: 0; }
+  70%  { transform: translateY(4px)   rotate(1deg);  opacity: 1; }
+  100% { transform: translateY(0)     rotate(0deg);  opacity: 1; }
+}
+
+@keyframes ce-bar-fill {
+  from { transform: scaleX(0); }
+  to   { transform: scaleX(1); }
+}
+
+@keyframes ce-jail-bars {
+  0%, 100% { box-shadow: inset 4px 0 0 rgba(100,100,100,0.4), inset -4px 0 0 rgba(100,100,100,0.4); }
+  50%       { box-shadow: inset 4px 0 0 rgba(80,80,80,0.2),  inset -4px 0 0 rgba(80,80,80,0.2); }
+}
+
+@keyframes ce-pulse-red {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(239,68,68,0); }
+  50%       { box-shadow: 0 0 20px 4px rgba(239,68,68,0.3); }
+}
+
+@keyframes ce-scanline {
+  0%   { background-position: 0 0; }
+  100% { background-position: 0 100px; }
+}
+
+@keyframes ce-coin-spin {
+  0%   { transform: rotateY(0deg); }
+  100% { transform: rotateY(360deg); }
+}
+
+@keyframes ce-hit-burst {
+  0%   { transform: scale(1); box-shadow: 0 0 0 0 rgba(168,85,247,0.8); }
+  50%  { transform: scale(1.15); box-shadow: 0 0 0 12px rgba(168,85,247,0); }
+  100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(168,85,247,0); }
+}
+
+@keyframes ce-mine-shake {
+  0%, 100% { transform: translate(0,0) rotate(0deg); }
+  20%  { transform: translate(-3px, 2px) rotate(-1deg); }
+  40%  { transform: translate(3px,-2px) rotate(1deg); }
+  60%  { transform: translate(-2px, 3px) rotate(-0.5deg); }
+  80%  { transform: translate(2px,-1px) rotate(0.5deg); }
+}
+
+/* -- CE Card — Base Depth Card ---------------------------------------- */
+
+.ce-card {
+  position: relative;
+  background: linear-gradient(160deg, #151515 0%, #0e0e0e 50%, #0a0a0a 100%);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 14px;
+  box-shadow:
+    0 1px 0 rgba(255,255,255,0.04) inset,
+    0 -1px 0 rgba(0,0,0,0.8) inset,
+    0 4px 24px rgba(0,0,0,0.6),
+    0 1px 3px rgba(0,0,0,0.8);
+  overflow: hidden;
+  transition: transform 0.2s cubic-bezier(0.25,0.46,0.45,0.94),
+              box-shadow 0.2s ease,
+              border-color 0.2s ease;
+}
+
+.ce-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(160deg, rgba(255,255,255,0.03) 0%, transparent 50%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.ce-card:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    0 1px 0 rgba(255,255,255,0.06) inset,
+    0 -1px 0 rgba(0,0,0,0.8) inset,
+    0 12px 40px rgba(0,0,0,0.7),
+    0 4px 12px rgba(0,0,0,0.5);
+  border-color: rgba(255,255,255,0.1);
+}
+
+.ce-card-orange {
+  border-color: rgba(255,106,0,0.25);
+  box-shadow:
+    0 1px 0 rgba(255,150,50,0.08) inset,
+    0 -1px 0 rgba(0,0,0,0.8) inset,
+    0 0 30px rgba(255,106,0,0.08),
+    0 4px 24px rgba(0,0,0,0.7);
+}
+
+.ce-card-orange:hover {
+  border-color: rgba(255,106,0,0.5);
+  box-shadow:
+    0 1px 0 rgba(255,150,50,0.1) inset,
+    0 -1px 0 rgba(0,0,0,0.8) inset,
+    0 0 40px rgba(255,106,0,0.15),
+    0 12px 40px rgba(0,0,0,0.7);
+}
+
+.ce-card-red {
+  border-color: rgba(239,68,68,0.25);
+  box-shadow:
+    0 1px 0 rgba(239,100,100,0.08) inset,
+    0 0 30px rgba(239,68,68,0.08),
+    0 4px 24px rgba(0,0,0,0.7);
+}
+
+.ce-card-green {
+  border-color: rgba(34,197,94,0.2);
+  box-shadow:
+    0 1px 0 rgba(34,197,94,0.06) inset,
+    0 0 30px rgba(34,197,94,0.06),
+    0 4px 24px rgba(0,0,0,0.7);
+}
+
+.ce-card-purple {
+  border-color: rgba(168,85,247,0.2);
+  box-shadow:
+    0 1px 0 rgba(168,85,247,0.06) inset,
+    0 0 30px rgba(168,85,247,0.06),
+    0 4px 24px rgba(0,0,0,0.7);
+}
+
+/* -- CE Shine Sweep — light sweep on hover ---------------------------- */
+
+.ce-shine {
+  position: relative;
+  overflow: hidden;
+}
+
+.ce-shine::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.06), transparent);
+  transform: translateX(-120%) skewX(-15deg);
+  pointer-events: none;
+  z-index: 10;
+}
+
+.ce-shine:hover::after {
+  animation: ce-shine 0.65s ease;
+}
+
+/* -- CE Buttons ------------------------------------------------------- */
+
+.ce-btn {
+  position: relative;
+  overflow: hidden;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 0.875rem;
+  letter-spacing: 0.01em;
+  border: none;
+  cursor: pointer;
+  transition: transform 0.1s ease, filter 0.15s ease, opacity 0.15s ease;
+  user-select: none;
+}
+
+.ce-btn::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(255,255,255,0.10) 0%, transparent 50%);
+  pointer-events: none;
+  border-radius: inherit;
+}
+
+.ce-btn:active {
+  transform: scale(0.96) translateY(1px);
+}
+
+.ce-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.ce-btn-primary {
+  background: linear-gradient(160deg, #ff8c1a 0%, #ff6a00 50%, #e55a00 100%);
+  color: #fff;
+  box-shadow:
+    0 1px 0 rgba(255,200,100,0.25) inset,
+    0 -1px 0 rgba(0,0,0,0.4) inset,
+    0 4px 16px rgba(255,106,0,0.3),
+    0 2px 4px rgba(0,0,0,0.5);
+}
+
+.ce-btn-primary:hover:not(:disabled) {
+  filter: brightness(1.12);
+  box-shadow:
+    0 1px 0 rgba(255,200,100,0.3) inset,
+    0 -1px 0 rgba(0,0,0,0.4) inset,
+    0 6px 24px rgba(255,106,0,0.4),
+    0 2px 8px rgba(0,0,0,0.5);
+}
+
+.ce-btn-success {
+  background: linear-gradient(160deg, #22c55e 0%, #16a34a 100%);
+  color: #fff;
+  box-shadow:
+    0 1px 0 rgba(100,255,150,0.2) inset,
+    0 -1px 0 rgba(0,0,0,0.4) inset,
+    0 4px 16px rgba(34,197,94,0.2),
+    0 2px 4px rgba(0,0,0,0.5);
+}
+
+.ce-btn-success:hover:not(:disabled) {
+  filter: brightness(1.1);
+  box-shadow:
+    0 1px 0 rgba(100,255,150,0.25) inset,
+    0 6px 24px rgba(34,197,94,0.3);
+}
+
+.ce-btn-danger {
+  background: linear-gradient(160deg, #f87171 0%, #ef4444 50%, #dc2626 100%);
+  color: #fff;
+  box-shadow:
+    0 1px 0 rgba(255,180,180,0.2) inset,
+    0 -1px 0 rgba(0,0,0,0.4) inset,
+    0 4px 16px rgba(239,68,68,0.2),
+    0 2px 4px rgba(0,0,0,0.5);
+}
+
+.ce-btn-danger:hover:not(:disabled) {
+  filter: brightness(1.1);
+  box-shadow:
+    0 1px 0 rgba(255,180,180,0.25) inset,
+    0 6px 24px rgba(239,68,68,0.35);
+}
+
+.ce-btn-gold {
+  background: linear-gradient(160deg, #fbbf24 0%, #f59e0b 50%, #d97706 100%);
+  color: #000;
+  box-shadow:
+    0 1px 0 rgba(255,240,180,0.3) inset,
+    0 -1px 0 rgba(0,0,0,0.4) inset,
+    0 4px 16px rgba(251,191,36,0.2),
+    0 2px 4px rgba(0,0,0,0.5);
+}
+
+.ce-btn-gold:hover:not(:disabled) {
+  filter: brightness(1.1);
+  box-shadow:
+    0 1px 0 rgba(255,240,180,0.35) inset,
+    0 6px 24px rgba(251,191,36,0.35);
+}
+
+.ce-btn-ghost {
+  background: rgba(255,255,255,0.04);
+  color: rgba(255,255,255,0.7);
+  border: 1px solid rgba(255,255,255,0.1);
+  box-shadow: none;
+}
+
+.ce-btn-ghost:hover:not(:disabled) {
+  background: rgba(255,255,255,0.08);
+  color: #fff;
+  border-color: rgba(255,255,255,0.2);
+}
+
+.ce-btn-purple {
+  background: linear-gradient(160deg, #c084fc 0%, #a855f7 50%, #9333ea 100%);
+  color: #fff;
+  box-shadow:
+    0 1px 0 rgba(220,180,255,0.2) inset,
+    0 -1px 0 rgba(0,0,0,0.4) inset,
+    0 4px 16px rgba(168,85,247,0.25),
+    0 2px 4px rgba(0,0,0,0.5);
+}
+
+.ce-btn-purple:hover:not(:disabled) {
+  filter: brightness(1.1);
+  box-shadow:
+    0 1px 0 rgba(220,180,255,0.25) inset,
+    0 6px 24px rgba(168,85,247,0.4);
+}
+
+/* -- CE Stat Pill ---------------------------------------------------- */
+
+.ce-stat {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.07);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.ce-stat-label {
+  color: rgba(255,255,255,0.4);
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 500;
+}
+
+.ce-stat-value {
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+/* -- CE Progress Bar -------------------------------------------------- */
+
+.ce-progress-track {
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.07);
+  overflow: hidden;
+  position: relative;
+}
+
+.ce-progress-fill {
+  height: 100%;
+  border-radius: 999px;
+  transform-origin: left;
+  animation: ce-bar-fill 0.6s cubic-bezier(0.22,1,0.36,1) both;
+}
+
+.ce-progress-fill-orange {
+  background: linear-gradient(90deg, #ff6a00, #ff8c40);
+  box-shadow: 0 0 8px rgba(255,106,0,0.4);
+}
+
+.ce-progress-fill-green {
+  background: linear-gradient(90deg, #16a34a, #22c55e);
+  box-shadow: 0 0 8px rgba(34,197,94,0.4);
+}
+
+.ce-progress-fill-red {
+  background: linear-gradient(90deg, #dc2626, #ef4444);
+  box-shadow: 0 0 8px rgba(239,68,68,0.4);
+}
+
+.ce-progress-fill-purple {
+  background: linear-gradient(90deg, #7c3aed, #a855f7);
+  box-shadow: 0 0 8px rgba(168,85,247,0.4);
+}
+
+/* -- CE Page Header --------------------------------------------------- */
+
+.ce-page-header {
+  position: relative;
+  margin-bottom: 28px;
+}
+
+.ce-page-eyebrow {
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.3em;
+  color: rgba(255,106,0,0.55);
+  margin-bottom: 4px;
+}
+
+.ce-page-title {
+  font-size: clamp(1.75rem, 5vw, 2.5rem);
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: -0.02em;
+  line-height: 1.05;
+  color: #fff;
+}
+
+.ce-page-title-accent {
+  background: linear-gradient(135deg, #ff8c1a 0%, #ff6a00 50%, #e55a00 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.ce-page-divider {
+  height: 1px;
+  margin-top: 16px;
+  background: linear-gradient(90deg, rgba(255,106,0,0.4) 0%, rgba(255,106,0,0.1) 60%, transparent 100%);
+}
+
+/* -- CE Section Label ------------------------------------------------- */
+
+.ce-section-label {
+  font-size: 0.6rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.25em;
+  color: rgba(255,255,255,0.2);
+  margin-bottom: 10px;
+}
+
+/* -- CE Input -------------------------------------------------------- */
+
+.ce-input {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 10px;
+  color: #fff;
+  padding: 10px 14px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  width: 100%;
+}
+
+.ce-input:focus {
+  outline: none;
+  border-color: rgba(255,106,0,0.5);
+  box-shadow: 0 0 0 2px rgba(255,106,0,0.12);
+}
+
+/* -- CE Badge -------------------------------------------------------- */
+
+.ce-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.ce-badge-orange {
+  background: rgba(255,106,0,0.15);
+  color: #ff8c40;
+  border: 1px solid rgba(255,106,0,0.25);
+}
+
+.ce-badge-green {
+  background: rgba(34,197,94,0.12);
+  color: #4ade80;
+  border: 1px solid rgba(34,197,94,0.2);
+}
+
+.ce-badge-red {
+  background: rgba(239,68,68,0.12);
+  color: #f87171;
+  border: 1px solid rgba(239,68,68,0.2);
+}
+
+.ce-badge-gold {
+  background: rgba(251,191,36,0.12);
+  color: #fbbf24;
+  border: 1px solid rgba(251,191,36,0.2);
+}
+
+.ce-badge-purple {
+  background: rgba(168,85,247,0.12);
+  color: #c084fc;
+  border: 1px solid rgba(168,85,247,0.2);
+}
+
+.ce-badge-gray {
+  background: rgba(255,255,255,0.06);
+  color: rgba(255,255,255,0.4);
+  border: 1px solid rgba(255,255,255,0.1);
+}
+
+/* -- CE Gambling — Number Tile ---------------------------------------- */
+
+.ce-keno-tile {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 7px;
+  font-size: 0.7rem;
+  font-weight: 800;
+  border: 1.5px solid transparent;
+  transition: all 0.12s ease;
+  cursor: pointer;
+  aspect-ratio: 1;
+  overflow: hidden;
+}
+
+.ce-keno-tile-idle {
+  background: linear-gradient(145deg, #1e1e1e, #141414);
+  border-color: rgba(255,255,255,0.07);
+  color: rgba(255,255,255,0.4);
+}
+
+.ce-keno-tile-idle:hover {
+  background: linear-gradient(145deg, #2a2a2a, #1e1e1e);
+  border-color: rgba(168,85,247,0.5);
+  color: #fff;
+}
+
+.ce-keno-tile-picked {
+  background: linear-gradient(145deg, #3b1f6a, #2a1550);
+  border-color: rgba(168,85,247,0.7);
+  color: #c084fc;
+  box-shadow: 0 0 12px rgba(168,85,247,0.25), inset 0 1px 0 rgba(200,150,255,0.15);
+}
+
+.ce-keno-tile-drawn {
+  background: linear-gradient(145deg, #0d2014, #0a1810);
+  border-color: rgba(34,197,94,0.4);
+  color: rgba(74,222,128,0.6);
+}
+
+.ce-keno-tile-hit {
+  background: linear-gradient(145deg, #4c1d95, #3b0f82);
+  border-color: rgba(168,85,247,1);
+  color: #fff;
+  animation: ce-hit-burst 0.4s ease forwards;
+  box-shadow: 0 0 20px rgba(168,85,247,0.5), inset 0 1px 0 rgba(200,150,255,0.2);
+}
+
+/* -- CE Gambling — Mines Tile ----------------------------------------- */
+
+.ce-mine-tile {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  font-size: 1.5rem;
+  border: 2px solid;
+  transition: all 0.15s ease;
+  aspect-ratio: 1;
+  overflow: hidden;
+}
+
+.ce-mine-tile-hidden {
+  background: linear-gradient(145deg, #1c1c1c, #141414);
+  border-color: rgba(255,255,255,0.1);
+  cursor: pointer;
+}
+
+.ce-mine-tile-hidden::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(255,255,255,0.04) 0%, transparent 50%);
+  pointer-events: none;
+}
+
+.ce-mine-tile-hidden:hover:not(:disabled) {
+  background: linear-gradient(145deg, #252525, #1c1c1c);
+  border-color: rgba(255,106,0,0.4);
+  transform: scale(1.04);
+  box-shadow: 0 0 16px rgba(255,106,0,0.15);
+}
+
+.ce-mine-tile-safe {
+  background: linear-gradient(145deg, #0d2814, #091a0d);
+  border-color: rgba(34,197,94,0.6);
+  animation: ce-tile-reveal 0.35s cubic-bezier(0.34,1.56,0.64,1) both;
+  box-shadow: 0 0 20px rgba(34,197,94,0.2), inset 0 1px 0 rgba(100,255,150,0.1);
+  cursor: default;
+}
+
+.ce-mine-tile-mine {
+  background: linear-gradient(145deg, #2d0909, #1e0505);
+  border-color: rgba(239,68,68,0.8);
+  animation: ce-mine-shake 0.4s ease, ce-tile-reveal 0.2s ease;
+  box-shadow: 0 0 24px rgba(239,68,68,0.4), inset 0 1px 0 rgba(255,100,100,0.1);
+  cursor: default;
+}
+
+/* -- CE Playing Card -------------------------------------------------- */
+
+.ce-playing-card {
+  position: relative;
+  border-radius: 10px;
+  overflow: hidden;
+  animation: ce-card-slide-in 0.35s cubic-bezier(0.34,1.56,0.64,1) both;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.5), 0 1px 0 rgba(255,255,255,0.1) inset;
+}
+
+.ce-playing-card-back {
+  background: linear-gradient(145deg, #1a2a4a, #0d1a30);
+  border: 2px solid rgba(99,102,241,0.4);
+}
+
+.ce-playing-card-red {
+  background: linear-gradient(145deg, #fff 0%, #f8f8f8 100%);
+  border: 2px solid rgba(200,200,200,0.8);
+  color: #dc2626;
+}
+
+.ce-playing-card-black {
+  background: linear-gradient(145deg, #fff 0%, #f8f8f8 100%);
+  border: 2px solid rgba(200,200,200,0.8);
+  color: #111;
+}
+
+/* -- CE Glow Utilities ------------------------------------------------ */
+
+.ce-glow-orange { box-shadow: 0 0 20px rgba(255,106,0,0.3); }
+.ce-glow-green  { box-shadow: 0 0 20px rgba(34,197,94,0.3); }
+.ce-glow-red    { box-shadow: 0 0 20px rgba(239,68,68,0.3); }
+.ce-glow-purple { box-shadow: 0 0 20px rgba(168,85,247,0.3); }
+.ce-glow-gold   { box-shadow: 0 0 20px rgba(251,191,36,0.3); }
+
+.ce-text-orange { color: #ff8c40; }
+.ce-text-green  { color: #4ade80; }
+.ce-text-red    { color: #f87171; }
+.ce-text-purple { color: #c084fc; }
+.ce-text-gold   { color: #fbbf24; }
+.ce-text-muted  { color: rgba(255,255,255,0.35); }
+
+/* -- CE Divider -------------------------------------------------------- */
+
+.ce-divider {
+  height: 1px;
+  background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.08) 50%, transparent 100%);
+  margin: 16px 0;
+}
+
+/* -- CE Table ---------------------------------------------------------- */
+
+.ce-felt-table {
+  background:
+    radial-gradient(ellipse at 50% 20%, rgba(34,197,94,0.06) 0%, transparent 70%),
+    linear-gradient(160deg, #0a1a0a 0%, #081208 100%);
+  border: 2px solid rgba(34,197,94,0.2);
+  border-radius: 20px;
+  position: relative;
+  overflow: hidden;
+}
+
+.ce-felt-table::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(34,197,94,0.015) 3px, rgba(34,197,94,0.015) 4px),
+    repeating-linear-gradient(90deg, transparent, transparent 3px, rgba(34,197,94,0.01) 3px, rgba(34,197,94,0.01) 4px);
+  pointer-events: none;
+}
+
+/* -- CE Jail Theme ---------------------------------------------------- */
+
+.ce-jail-bg {
+  background:
+    repeating-linear-gradient(
+      90deg,
+      transparent,
+      transparent 38px,
+      rgba(80,80,80,0.07) 38px,
+      rgba(80,80,80,0.07) 42px
+    ),
+    linear-gradient(180deg, #080808 0%, #0b0b0b 100%);
+}
+
+.ce-jail-card {
+  background: linear-gradient(160deg, #111 0%, #0c0c0c 100%);
+  border: 1px solid rgba(150,150,150,0.12);
+  border-radius: 14px;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.7);
+}
+
+.ce-countdown {
+  font-variant-numeric: tabular-nums;
+  font-weight: 900;
+  letter-spacing: 0.02em;
+  line-height: 1;
+}
+
+/* -- CE Hospital Theme ------------------------------------------------ */
+
+.ce-hospital-bg {
+  background: linear-gradient(180deg, #06090c 0%, #080d12 100%);
+}
+
+.ce-hospital-card {
+  background: linear-gradient(160deg, #0d1520 0%, #0a1018 100%);
+  border: 1px solid rgba(59,130,246,0.15);
+  border-radius: 14px;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.6), 0 0 40px rgba(59,130,246,0.04);
+}
+
+/* -- CE Multiplier Display ------------------------------------------- */
+
+.ce-multiplier {
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+  background: linear-gradient(135deg, #fbbf24, #f59e0b);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  filter: drop-shadow(0 0 8px rgba(251,191,36,0.4));
+}
+
+/* -- CE Noise Overlay ------------------------------------------------- */
+
+.ce-noise {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.025;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+}
+
+/* -- CE Casino Header gradient --------------------------------------- */
+
+.ce-casino-header {
+  background:
+    radial-gradient(ellipse at 50% 0%, rgba(168,85,247,0.12) 0%, transparent 60%),
+    linear-gradient(180deg, #0d0d0d 0%, #090909 100%);
+}
+
+.ce-keno-header {
+  background:
+    radial-gradient(ellipse at 50% 0%, rgba(168,85,247,0.15) 0%, transparent 60%);
+}
+
+.ce-mines-header {
+  background:
+    radial-gradient(ellipse at 50% 0%, rgba(239,68,68,0.12) 0%, transparent 60%);
+}
+
+.ce-blackjack-header {
+  background:
+    radial-gradient(ellipse at 50% 0%, rgba(34,197,94,0.1) 0%, transparent 60%);
+}
+

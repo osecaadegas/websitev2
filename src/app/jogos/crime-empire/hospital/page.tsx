@@ -150,248 +150,144 @@ export default function HospitalPage() {
   const detoxCost = Math.max(500, addiction * 100);
 
   return (
-    <div className="flex-1 text-white py-12 px-6">
-      <div className="max-w-4xl mx-auto">
-        <h1 className="text-4xl font-black mb-4 bg-gradient-to-r from-green-600 to-green-800 bg-clip-text text-transparent">
-          🏥 Hospital
-        </h1>
-        <p className="text-[#888888] mb-8">
-          Recupera a tua saúde em troca de dinheiro limpo
-        </p>
+    <div className="flex-1 text-white min-h-screen ce-hospital-bg">
+      <div className="ce-noise" />
+      <div className="relative z-10 py-12 px-4 max-w-3xl mx-auto">
+        <div className="ce-page-header mb-8">
+          <p className="ce-page-eyebrow">Crime Empire</p>
+          <h1 className="ce-page-title">HOSPITAL <span className="ce-page-title-accent">PRISIONAL</span></h1>
+          <p className="ce-text-muted text-sm mt-1">Recupera a tua saúde em troca de dinheiro limpo</p>
+          <div className="ce-page-divider" style={{ background: "linear-gradient(90deg, rgba(34,197,94,0.4), rgba(34,197,94,0.1), transparent)" }} />
+        </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-5">
           {/* Health Status */}
-          <motion.div
-            initial={{ x: -20, opacity: 0 }}
-            animate={{ x: 0, opacity: 1 }}
-            className="p-6 rounded-2xl bg-[#121212] border-2 border-[#222222]"
-          >
-            <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
-              ❤️ Estado de Saúde
-            </h2>
-
-            {/* HP Bar */}
-            <div className="mb-6">
-              <div className="flex justify-between text-sm mb-2">
-                <span>HP Atual</span>
-                <span className="font-bold">
-                  {player.hp} / {player.max_hp}
-                </span>
+          <motion.div initial={{ x: -20, opacity: 0 }} animate={{ x: 0, opacity: 1 }}
+            className="ce-hospital-card space-y-4">
+            <h2 className="font-black text-base flex items-center gap-2">❤️ Estado de Saúde</h2>
+            <div>
+              <div className="flex justify-between items-center mb-2">
+                <span className="ce-stat-label text-[10px]">HP Atual</span>
+                <span className="font-black text-sm">{player.hp} / {player.max_hp}</span>
               </div>
-              <div className="w-full bg-[#1a1a1a] rounded-full h-8 overflow-hidden">
-                <div
-                  className={`h-8 rounded-full transition-all duration-500 ${
-                    hpPercentage > 75
-                      ? 'bg-gradient-to-r from-green-600 to-green-500'
-                      : hpPercentage > 50
-                      ? 'bg-gradient-to-r from-yellow-600 to-yellow-500'
-                      : hpPercentage > 25
-                      ? 'bg-gradient-to-r from-orange-600 to-orange-500'
-                      : 'bg-gradient-to-r from-red-600 to-red-500'
-                  }`}
-                  style={{ width: `${hpPercentage}%` }}
-                >
-                  <div className="h-full flex items-center justify-center text-sm font-bold">
-                    {hpPercentage.toFixed(0)}%
-                  </div>
+              <div className="ce-progress-track h-6 rounded-lg overflow-hidden">
+                <div className={`h-full rounded-lg transition-all duration-500 flex items-center justify-center text-xs font-black ${hpPercentage > 75 ? "ce-progress-fill-green" : hpPercentage > 25 ? "ce-progress-fill-orange" : "ce-progress-fill-red"}`}
+                  style={{ width: `${hpPercentage}%` }}>
+                  {hpPercentage.toFixed(0)}%
                 </div>
               </div>
             </div>
-
-            {/* Status Message */}
-            <div className={`p-4 rounded-lg border ${
-              isFullHealth
-                ? 'bg-green-900/20 border-green-600'
-                : hpPercentage > 50
-                ? 'bg-yellow-900/20 border-yellow-600'
-                : 'bg-red-900/20 border-red-600'
-            }`}>
-              <p className={`font-bold ${
-                isFullHealth ? 'text-green-400' : hpPercentage > 50 ? 'text-yellow-400' : 'text-red-400'
-              }`}>
-                {isFullHealth
-                  ? '✅ Estás em perfeita saúde!'
-                  : hpPercentage > 50
-                  ? '⚠️ Tens alguns ferimentos'
-                  : '🚨 Estás gravemente ferido!'}
+            <div className={`ce-card p-3 rounded-xl ${isFullHealth ? "ce-card-green" : hpPercentage > 50 ? "" : "ce-card-red"}`}>
+              <p className={`font-bold text-sm ${isFullHealth ? "ce-text-green" : hpPercentage > 50 ? "ce-text-orange" : "ce-text-red"}`}>
+                {isFullHealth ? "✅ Estás em perfeita saúde!" : hpPercentage > 50 ? "⚠️ Tens alguns ferimentos" : "🚨 Estás gravemente ferido!"}
               </p>
             </div>
-
-            {/* Player Money */}
-            <div className="mt-6 p-4 rounded-lg bg-[#1a1a1a]">
-              <div className="flex justify-between items-center">
-                <span className="text-[#888888]">Dinheiro Limpo:</span>
-                <span className="text-2xl font-bold text-green-400">
-                  ${player.cash.toLocaleString()}
-                </span>
+            <div className="ce-stat">
+              <span className="text-lg">💵</span>
+              <div>
+                <p className="ce-stat-label text-[9px]">Dinheiro Limpo</p>
+                <p className="ce-stat-value ce-text-green">${player.cash.toLocaleString()}</p>
               </div>
             </div>
           </motion.div>
 
           {/* Healing Options */}
-          <motion.div
-            initial={{ x: 20, opacity: 0 }}
-            animate={{ x: 0, opacity: 1 }}
-            className="p-6 rounded-2xl bg-[#121212] border-2 border-[#222222]"
-          >
-            <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
-              💊 Tratamento
-            </h2>
-
+          <motion.div initial={{ x: 20, opacity: 0 }} animate={{ x: 0, opacity: 1 }}
+            className="ce-hospital-card space-y-4">
+            <h2 className="font-black text-base flex items-center gap-2">💊 Tratamento</h2>
             {!isFullHealth ? (
               <>
-                {/* Full Heal Option */}
-                <div className="mb-6 p-4 rounded-xl bg-gradient-to-br from-green-900/30 to-green-800/30 border-2 border-green-600">
-                  <div className="flex justify-between items-center mb-3">
-                    <span className="font-bold text-green-400">Cura Completa</span>
-                    <span className="text-sm text-[#888888]">+{maxHealPossible} HP</span>
+                <div className="ce-card ce-card-green p-4 rounded-2xl">
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="font-black text-sm ce-text-green">Cura Completa</span>
+                    <span className="ce-badge ce-badge-green">+{maxHealPossible} HP</span>
                   </div>
                   <div className="flex justify-between items-center mb-4">
-                    <span className="text-[#888888]">Custo:</span>
-                    <span className="text-2xl font-bold text-yellow-400">
-                      ${(maxHealPossible * HP_COST_PER_POINT).toLocaleString()}
-                    </span>
+                    <span className="ce-stat-label text-[10px]">Custo</span>
+                    <span className="font-black text-xl ce-text-gold">${(maxHealPossible * HP_COST_PER_POINT).toLocaleString()}</span>
                   </div>
-                  <button
-                    onClick={() => heal(true)}
-                    disabled={healing || player.cash < maxHealPossible * HP_COST_PER_POINT}
-                    className={`w-full py-3 rounded-lg font-bold transition-all ${
-                      !healing && player.cash >= maxHealPossible * HP_COST_PER_POINT
-                        ? 'bg-gradient-to-r from-green-600 to-green-700 hover:from-green-500 hover:to-green-600 text-white'
-                        : 'bg-[#222222] text-[#555555] cursor-not-allowed'
-                    }`}
-                  >
+                  <button onClick={() => heal(true)} disabled={healing || player.cash < maxHealPossible * HP_COST_PER_POINT}
+                    className={`ce-btn w-full py-3 rounded-xl ${!healing && player.cash >= maxHealPossible * HP_COST_PER_POINT ? "ce-btn-success" : "ce-btn-ghost opacity-40 cursor-not-allowed"}`}>
                     {healing ? "A curar..." : player.cash >= maxHealPossible * HP_COST_PER_POINT ? "Curar Totalmente" : "Dinheiro Insuficiente"}
                   </button>
                 </div>
-
-                {/* Custom Heal Amount */}
-                <div className="p-4 rounded-xl bg-[#1a1a1a] border border-[#333333]">
-                  <h3 className="font-bold mb-3">Cura Personalizada</h3>
-                  
-                  <div className="mb-4">
-                    <label className="text-sm text-[#888888] mb-2 block">
-                      Quantidade de HP ({HP_COST_PER_POINT}$ por HP)
-                    </label>
-                    <input
-                      type="range"
-                      min="0"
-                      max={maxHealPossible}
-                      value={healAmount}
+                <div className="ce-card p-4 rounded-2xl space-y-3">
+                  <h3 className="font-black text-sm">Cura Personalizada</h3>
+                  <div>
+                    <label className="ce-stat-label text-[10px] mb-2 block">Quantidade de HP ({HP_COST_PER_POINT}$ por HP)</label>
+                    <input type="range" min="0" max={maxHealPossible} value={healAmount}
                       onChange={(e) => handleHealAmountChange(parseInt(e.target.value))}
-                      className="w-full"
-                    />
-                    <div className="flex justify-between text-sm mt-1">
-                      <span className="text-[#888888]">0</span>
-                      <span className="text-green-400 font-bold">+{healAmount} HP</span>
-                      <span className="text-[#888888]">{maxHealPossible}</span>
+                      className="w-full accent-orange-500" />
+                    <div className="flex justify-between text-xs mt-1">
+                      <span className="ce-text-muted">0</span>
+                      <span className="ce-text-orange font-black">+{healAmount} HP</span>
+                      <span className="ce-text-muted">{maxHealPossible}</span>
                     </div>
                   </div>
-
-                  <div className="flex justify-between items-center mb-4">
-                    <span className="text-[#888888]">Custo:</span>
-                    <span className="text-xl font-bold text-yellow-400">
-                      ${healCost.toLocaleString()}
-                    </span>
+                  <div className="flex justify-between items-center">
+                    <span className="ce-stat-label text-[10px]">Custo</span>
+                    <span className="font-black text-lg ce-text-gold">${healCost.toLocaleString()}</span>
                   </div>
-
-                  <button
-                    onClick={() => heal(false)}
-                    disabled={healing || player.cash < healCost || healAmount === 0}
-                    className={`w-full py-3 rounded-lg font-bold transition-all ${
-                      !healing && player.cash >= healCost && healAmount > 0
-                        ? 'bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white'
-                        : 'bg-[#222222] text-[#555555] cursor-not-allowed'
-                    }`}
-                  >
+                  <button onClick={() => heal(false)} disabled={healing || player.cash < healCost || healAmount === 0}
+                    className={`ce-btn w-full py-3 rounded-xl ${!healing && player.cash >= healCost && healAmount > 0 ? "ce-btn-primary" : "ce-btn-ghost opacity-40 cursor-not-allowed"}`}>
                     {healing ? "A curar..." : healAmount === 0 ? "Seleciona a quantidade" : `Curar ${healAmount} HP`}
                   </button>
                 </div>
               </>
             ) : (
-              <div className="p-8 rounded-xl bg-green-900/20 border-2 border-green-600 text-center">
-                <div className="text-5xl mb-4">✅</div>
-                <p className="text-xl font-bold text-green-400 mb-2">
-                  Estás em Perfeita Saúde!
-                </p>
-                <p className="text-sm text-[#888888]">
-                  Não precisas de tratamento
-                </p>
+              <div className="ce-card ce-card-green p-8 rounded-2xl text-center">
+                <div className="text-5xl mb-3">✅</div>
+                <p className="font-black ce-text-green text-lg mb-1">Estás em Perfeita Saúde!</p>
+                <p className="ce-text-muted text-sm">Não precisas de tratamento</p>
               </div>
             )}
-
-            {/* Info */}
-            <div className="mt-6 p-3 rounded-lg bg-blue-900/20 border border-blue-600">
-              <p className="text-xs text-blue-300">
-                💡 <strong>Nota:</strong> O tratamento usa dinheiro limpo, não dinheiro sujo. Cada ponto de HP custa ${HP_COST_PER_POINT}.
-              </p>
+            <div className="ce-card p-3 rounded-xl" style={{ borderColor: "rgba(59,130,246,0.3)", background: "rgba(59,130,246,0.06)" }}>
+              <p className="text-xs text-blue-300/80">💡 <strong>Nota:</strong> O tratamento usa dinheiro limpo. Cada HP custa ${HP_COST_PER_POINT}.</p>
             </div>
           </motion.div>
         </div>
 
-        {/* Addiction / Detox Section */}
-        <motion.div
-          initial={{ y: 20, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ delay: 0.2 }}
-          className={`mt-6 p-6 rounded-2xl border-2 ${addiction > 0 ? "bg-[#1a0a2e] border-purple-800" : "bg-[#121212] border-[#222222]"}`}
-        >
-          <h2 className="text-2xl font-bold mb-4 flex items-center gap-2">
-            💊 Vício
-          </h2>
-
-          {/* Addiction bar */}
+        {/* Addiction Section */}
+        <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.2 }}
+          className={`ce-card p-5 rounded-2xl ${addiction > 0 ? "ce-card-purple" : ""}`}
+          style={addiction > 0 ? { boxShadow: "0 0 40px rgba(168,85,247,0.1)" } : {}}>
+          <h2 className="font-black text-base flex items-center gap-2 mb-4">💊 Vício</h2>
           <div className="mb-4">
-            <div className="flex justify-between text-sm mb-2">
-              <span className="text-[#888888]">Nível de Vício</span>
-              <span className={`font-bold ${addiction === 0 ? "text-green-400" : addiction < 40 ? "text-yellow-400" : addiction < 70 ? "text-orange-400" : "text-red-400"}`}>
-                {addiction}%
-              </span>
+            <div className="flex justify-between items-center mb-2">
+              <span className="ce-stat-label text-[10px]">Nível de Vício</span>
+              <span className={`font-black text-sm ${addiction === 0 ? "ce-text-green" : addiction < 40 ? "ce-text-orange" : "ce-text-red"}`}>{addiction}%</span>
             </div>
-            <div className="w-full bg-[#1a1a1a] rounded-full h-5 overflow-hidden">
-              <div
-                className={`h-5 rounded-full transition-all duration-500 ${addiction === 0 ? "bg-green-600" : addiction < 40 ? "bg-yellow-500" : addiction < 70 ? "bg-orange-500" : "bg-red-600"}`}
-                style={{ width: `${addiction}%` }}
-              />
+            <div className="ce-progress-track h-4 rounded-full overflow-hidden">
+              <div className={`h-full rounded-full transition-all duration-500 ${addiction === 0 ? "ce-progress-fill-green" : addiction < 40 ? "ce-progress-fill-orange" : "ce-progress-fill-red"}`}
+                style={{ width: `${addiction}%` }} />
             </div>
           </div>
-
           {addiction === 0 ? (
-            <div className="p-4 rounded-lg bg-green-900/20 border border-green-700 text-green-400 font-semibold text-sm">
-              ✅ Sem vício. Os teus stats estão no máximo!
+            <div className="ce-card ce-card-green p-3 rounded-xl">
+              <p className="ce-text-green text-sm font-semibold">✅ Sem vício. Os teus stats estão no máximo!</p>
             </div>
           ) : (
             <div className="space-y-4">
-              <div className="p-4 rounded-lg bg-purple-900/20 border border-purple-700 text-sm space-y-1">
-                <p className="text-purple-300 font-bold">⚠️ Efeitos do Vício</p>
-                <p className="text-[#aaa]">Os teus stats de combate estão reduzidos em <span className="text-red-400 font-bold">{((addiction / 100) * 50).toFixed(0)}%</span> devido ao vício.</p>
-                <p className="text-[#aaa]">A tua taxa de sucesso em crimes está penalizada.</p>
+              <div className="ce-card p-4 rounded-xl" style={{ borderColor: "rgba(168,85,247,0.3)", background: "rgba(168,85,247,0.06)" }}>
+                <p className="ce-text-purple font-black text-sm mb-1">⚠️ Efeitos do Vício</p>
+                <p className="ce-text-muted text-xs">Stats reduzidos em <span className="ce-text-red font-black">{((addiction / 100) * 50).toFixed(0)}%</span>. Taxa de sucesso em crimes penalizada.</p>
               </div>
-
-              <div className="p-4 rounded-xl bg-gradient-to-br from-purple-900/30 to-purple-800/30 border-2 border-purple-600">
-                <div className="flex justify-between items-center mb-3">
-                  <span className="font-bold text-purple-300">Desintoxicação Completa</span>
-                  <span className="text-xs text-[#888]">Vício → 0%</span>
+              <div className="ce-card ce-card-purple p-4 rounded-2xl">
+                <div className="flex justify-between items-center mb-2">
+                  <span className="font-black text-sm ce-text-purple">Desintoxicação Completa</span>
+                  <span className="ce-badge ce-badge-purple">Vício → 0%</span>
                 </div>
                 <div className="flex justify-between items-center mb-4">
-                  <span className="text-[#888]">Custo:</span>
-                  <span className="text-2xl font-black text-yellow-400">${detoxCost.toLocaleString()}</span>
+                  <span className="ce-stat-label text-[10px]">Custo</span>
+                  <span className="font-black text-2xl ce-text-gold">${detoxCost.toLocaleString()}</span>
                 </div>
-                <button
-                  onClick={cureAddiction}
-                  disabled={curing || player.cash < detoxCost}
-                  className={`w-full py-3 rounded-lg font-bold transition-all ${
-                    !curing && player.cash >= detoxCost
-                      ? "bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-500 hover:to-purple-600 text-white"
-                      : "bg-[#222] text-[#555] cursor-not-allowed"
-                  }`}
-                >
+                <button onClick={cureAddiction} disabled={curing || player.cash < detoxCost}
+                  className={`ce-btn w-full py-3 rounded-xl ${!curing && player.cash >= detoxCost ? "ce-btn-purple" : "ce-btn-ghost opacity-40 cursor-not-allowed"}`}>
                   {curing ? "A desintoxicar..." : player.cash >= detoxCost ? "💉 Desintoxicar" : "Dinheiro Insuficiente"}
                 </button>
               </div>
-
               {cureMsg && (
-                <div className={`p-3 rounded-lg text-sm font-semibold ${cureMsg.startsWith("❌") ? "bg-red-900/30 border border-red-700 text-red-400" : "bg-green-900/30 border border-green-700 text-green-400"}`}>
+                <div className={`p-3 rounded-lg text-sm font-semibold ${cureMsg.startsWith("❌") ? "ce-card ce-card-red" : "ce-card ce-card-green"}`}>
                   {cureMsg}
                 </div>
               )}

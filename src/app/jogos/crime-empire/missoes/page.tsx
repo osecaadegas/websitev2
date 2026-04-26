@@ -650,51 +650,15 @@ export default function MissoesPage() {
   };
 
   return (
-    <div
-      className="min-h-screen text-white"
-      style={{ background: "linear-gradient(135deg, #0d0d0d 0%, #0f0a00 100%)" }}
-    >
-      {/* Grid overlay */}
-      <div
-        className="fixed inset-0 pointer-events-none z-0"
-        style={{
-          backgroundImage:
-            "linear-gradient(rgba(255,255,255,0.01) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.01) 1px, transparent 1px)",
-          backgroundSize: "48px 48px",
-        }}
-      />
-
+    <div className="min-h-screen text-white" style={{ background: "#0a0804" }}>
+      <div className="ce-noise" />
       {/* Header */}
-      <div
-        className="relative z-10 border-b"
-        style={{
-          background: "linear-gradient(180deg, rgba(14,8,4,0.99), rgba(9,5,2,0.97))",
-          borderColor: "rgba(180,130,40,0.08)",
-        }}
-      >
+      <div className="relative z-10 border-b" style={{ borderColor: "rgba(180,130,40,0.08)", background: "linear-gradient(180deg, rgba(14,8,4,0.99), rgba(9,5,2,0.97))" }}>
         <div className="max-w-2xl mx-auto px-4 py-5">
-          <div className="flex items-center gap-3">
-            <div
-              className="w-9 h-9 rounded-xl flex items-center justify-center text-xl flex-shrink-0"
-              style={{
-                background: "rgba(249,115,22,0.08)",
-                border: "1px solid rgba(249,115,22,0.15)",
-                boxShadow: "inset 0 1px 0 rgba(255,255,255,0.04)",
-              }}
-            >
-              🎯
-            </div>
-            <div>
-              <h1
-                className="text-lg font-black tracking-[0.12em] uppercase leading-none"
-                style={{ color: "#ddc870", fontFamily: "Georgia, serif" }}
-              >
-                Centro de Operações
-              </h1>
-              <p className="text-[9px] tracking-[0.3em] mt-0.5" style={{ color: "rgba(160,120,40,0.35)" }}>
-                MISSÕES ACTIVAS
-              </p>
-            </div>
+          <div className="ce-page-header mb-0">
+            <p className="ce-page-eyebrow">Crime Empire</p>
+            <h1 className="ce-page-title">CENTRO DE <span className="ce-page-title-accent">OPERAÇÕES</span></h1>
+            <div className="ce-page-divider" style={{ background: "linear-gradient(90deg, rgba(255,106,0,0.4), rgba(255,106,0,0.1), transparent)" }} />
           </div>
         </div>
       </div>
@@ -704,13 +668,8 @@ export default function MissoesPage() {
       <div className="relative z-10 max-w-2xl mx-auto px-4 py-5 space-y-5">
         {loading ? (
           <div className="flex flex-col items-center justify-center py-28 gap-4">
-            <div
-              className="w-8 h-8 rounded-full border-2 border-t-transparent animate-spin"
-              style={{ borderColor: "rgba(249,115,22,0.3)", borderTopColor: "transparent" }}
-            />
-            <span className="text-[9px] tracking-[0.35em]" style={{ color: "rgba(160,120,40,0.3)" }}>
-              A CARREGAR INTEL...
-            </span>
+            <div className="w-8 h-8 rounded-full border-2 animate-spin" style={{ borderColor: "rgba(249,115,22,0.3)", borderTopColor: "#ff6a00" }} />
+            <span className="ce-page-eyebrow">A CARREGAR INTEL...</span>
           </div>
         ) : (
           <>
@@ -725,18 +684,11 @@ export default function MissoesPage() {
 
             {/* Monthly reset info */}
             {activeTab === "monthly" && monthly.length > 0 && (
-              <div
-                className="flex items-center gap-3 px-4 py-2.5 rounded-xl"
-                style={{
-                  background: "rgba(251,191,36,0.04)",
-                  border: "1px solid rgba(251,191,36,0.1)",
-                  color: "rgba(251,191,36,0.45)",
-                }}
-              >
+              <div className="ce-card flex items-center gap-3 px-4 py-2.5 rounded-xl" style={{ borderColor: "rgba(251,191,36,0.15)" }}>
                 <span className="text-base flex-shrink-0">👑</span>
-                <span className="text-[10px] leading-relaxed">
+                <span className="text-[10px] leading-relaxed ce-text-muted">
                   Missões de elite. Repõem a{" "}
-                  <strong style={{ color: "rgba(251,191,36,0.85)" }}>{nextMonthLabel()}</strong>.{" "}
+                  <strong className="ce-text-gold">{nextMonthLabel()}</strong>.{" "}
                   Recompensas incluem{" "}
                   <strong style={{ color: "rgba(34,211,238,0.85)" }}>💎 crypto</strong>.
                 </span>
@@ -745,19 +697,10 @@ export default function MissoesPage() {
 
             {/* Mission list */}
             {tabMissions[activeTab].length === 0 ? (
-              <div
-                className="flex flex-col items-center justify-center py-20 rounded-xl"
-                style={{ background: "rgba(10,7,3,0.5)", border: "1px solid rgba(255,255,255,0.03)" }}
-              >
+              <div className="ce-card flex flex-col items-center justify-center py-20 rounded-xl">
                 <span className="text-4xl mb-3" style={{ opacity: 0.12 }}>📭</span>
-                <p className="text-[9px] tracking-[0.3em] mb-4" style={{ color: "rgba(160,120,40,0.3)" }}>
-                  SEM MISSÕES ATRIBUÍDAS
-                </p>
-                <button
-                  onClick={fetchMissions}
-                  className="text-[9px] font-black tracking-[0.2em] px-4 py-2 rounded-lg transition-all hover:opacity-80"
-                  style={{ color: "rgba(160,120,40,0.45)", border: "1px solid rgba(160,120,40,0.12)" }}
-                >
+                <p className="ce-page-eyebrow mb-4">SEM MISSÕES ATRIBUÍDAS</p>
+                <button onClick={fetchMissions} className="ce-btn ce-btn-ghost text-[9px] tracking-[0.2em] px-4 py-2">
                   ACTUALIZAR
                 </button>
               </div>

@@ -123,76 +123,126 @@ export default function MinesPage() {
   if (loading) return <div className="flex-1 flex items-center justify-center text-white">A carregar...</div>;
 
   return (
-    <div className="flex-1 text-white py-10 px-6">
-      <div className="max-w-xl mx-auto">
-        <div className="mb-6">
-          <Link href="/jogos/crime-empire/gambling" className="text-sm text-[#888] hover:text-[#ff6a00] mb-2 inline-block">← Casino</Link>
-          <h1 className="text-4xl font-black text-red-400">💣 MINES</h1>
+    <div className="flex-1 text-white min-h-screen" style={{ background: "#0a0808" }}>
+      <div className="ce-noise" />
+      <div className="absolute inset-0 pointer-events-none z-0 ce-mines-header" style={{ height: "300px" }} />
+      <div className="relative z-10 py-8 px-4 max-w-xl mx-auto">
+
+        {/* Header */}
+        <div className="ce-page-header">
+          <Link href="/jogos/crime-empire/gambling" className="inline-flex items-center gap-1.5 ce-text-muted hover:text-white text-xs font-semibold mb-4 transition-colors">
+            ← Casino
+          </Link>
+          <div className="flex items-center gap-3 mb-2">
+            <div className="w-12 h-12 rounded-2xl flex items-center justify-center text-2xl flex-shrink-0"
+              style={{ background: "linear-gradient(145deg, rgba(239,68,68,0.2), rgba(185,28,28,0.1))", border: "1px solid rgba(239,68,68,0.3)" }}>
+              💣
+            </div>
+            <div>
+              <p className="ce-page-eyebrow">Underground Casino</p>
+              <h1 className="text-3xl font-black text-white">MINES</h1>
+            </div>
+          </div>
+          <div className="ce-page-divider mt-3" style={{ background: "linear-gradient(90deg, rgba(239,68,68,0.4), rgba(239,68,68,0.1), transparent)" }} />
         </div>
 
+        {/* Balances */}
         {player && (
-          <div className="flex gap-4 mb-6 text-sm">
-            <div className="px-4 py-2 rounded-lg bg-[#1a1a1a] border border-[#333]">💵 <span className="text-green-400 font-bold">${player.dirty_cash.toLocaleString()}</span></div>
-            <div className="px-4 py-2 rounded-lg bg-[#1a1a1a] border border-[#333]">🪙 <span className="text-yellow-400 font-bold">{player.crypto.toLocaleString()}</span></div>
+          <div className="flex gap-3 mb-5">
+            <div className="ce-stat flex-1">
+              <span className="text-lg">💵</span>
+              <div>
+                <p className="ce-stat-label text-[9px]">Dinheiro Sujo</p>
+                <p className="ce-stat-value ce-text-green">${player.dirty_cash.toLocaleString()}</p>
+              </div>
+            </div>
+            <div className="ce-stat flex-1">
+              <span className="text-lg">🪙</span>
+              <div>
+                <p className="ce-stat-label text-[9px]">Crypto</p>
+                <p className="ce-stat-value ce-text-gold">{player.crypto.toLocaleString()}</p>
+              </div>
+            </div>
           </div>
         )}
 
-        {/* Multiplier display */}
+        {/* Active game stats */}
         {status === "active" && (
-          <div className="mb-4 p-4 rounded-xl bg-[#1a1a1a] border border-[#333] flex justify-between items-center">
+          <div className="ce-card ce-card-green rounded-2xl p-4 mb-5 flex items-center justify-between gap-3"
+            style={{ boxShadow: "0 0 40px rgba(34,197,94,0.1)" }}>
             <div>
-              <p className="text-xs text-[#888]">Multiplicador</p>
-              <p className="text-2xl font-black text-yellow-400">{currentMultiplier}x</p>
+              <p className="ce-stat-label text-[9px]">Multiplicador</p>
+              <p className="ce-multiplier text-3xl">{currentMultiplier}x</p>
             </div>
-            <div className="text-right">
-              <p className="text-xs text-[#888]">Cashout disponível</p>
-              <p className="text-2xl font-black text-green-400">🪙{currentPayout.toLocaleString()}</p>
+            <div className="h-10 w-px bg-white/10" />
+            <div>
+              <p className="ce-stat-label text-[9px]">Cashout disponível</p>
+              <p className="text-2xl font-black ce-text-gold">🪙{currentPayout.toLocaleString()}</p>
             </div>
-            <button onClick={cashout} disabled={acting || revealedCount === 0} className="px-5 py-3 rounded-lg bg-green-700 hover:bg-green-600 font-bold disabled:opacity-40">
+            <button onClick={cashout} disabled={acting || revealedCount === 0}
+              className="ce-btn ce-btn-success px-5 py-3 rounded-xl text-sm">
               💰 Cashout
             </button>
           </div>
         )}
 
-        {/* Result */}
-        {gameResult === "mine" && <div className="mb-4 text-center text-2xl font-black text-red-400">💥 BOOM! Perdeste tudo!</div>}
-        {gameResult === "cashout" && <div className="mb-4 text-center text-2xl font-black text-green-400">✅ Cashout! 🪙+{currentPayout.toLocaleString()} ({currentMultiplier}x)</div>}
+        {/* Game result */}
+        {gameResult === "mine" && (
+          <div className="ce-card ce-card-red rounded-2xl p-4 mb-5 text-center" style={{ boxShadow: "0 0 40px rgba(239,68,68,0.15)" }}>
+            <p className="text-2xl font-black ce-text-red">💥 BOOM! Perdeste tudo!</p>
+          </div>
+        )}
+        {gameResult === "cashout" && (
+          <div className="ce-card ce-card-green rounded-2xl p-4 mb-5 text-center" style={{ boxShadow: "0 0 40px rgba(34,197,94,0.15)" }}>
+            <p className="text-2xl font-black ce-text-green">✅ Cashout!</p>
+            <p className="ce-text-gold font-black text-lg mt-1">🪙 +{currentPayout.toLocaleString()} <span className="ce-text-muted text-sm font-normal">({currentMultiplier}x)</span></p>
+          </div>
+        )}
 
-        {/* Grid */}
-        <div className="grid grid-cols-5 gap-2 mb-6">
+        {/* Mines Grid */}
+        <div className="grid grid-cols-5 gap-2 mb-5">
           {Array.from({ length: 25 }).map((_, i) => {
             const state = revealed[i];
-            let bg = "bg-[#222] hover:bg-[#2a2a2a] border-[#333] cursor-pointer";
-            let icon = "❓";
-            if (state === "safe") { bg = "bg-green-900/40 border-green-600/60 cursor-default"; icon = "💎"; }
-            if (state === "mine") { bg = "bg-red-900/60 border-red-600/60 cursor-default"; icon = "💣"; }
+            let tileClass = "ce-mine-tile ";
+            let icon = "";
+            if (state === "safe") { tileClass += "ce-mine-tile-safe"; icon = "💎"; }
+            else if (state === "mine") { tileClass += "ce-mine-tile-mine"; icon = "💣"; }
+            else { tileClass += "ce-mine-tile-hidden"; icon = ""; }
             return (
               <button key={i} onClick={() => revealTile(i)}
-                className={`h-14 rounded-lg border-2 text-2xl transition-all ${bg} ${status !== "active" || state !== null ? "cursor-default" : ""}`}
+                className={tileClass}
+                style={{ height: "clamp(48px, 16vw, 72px)" }}
                 disabled={status !== "active" || state !== null || acting}
-              >{icon}</button>
+              >
+                {state ? icon : (
+                  <span className="text-white/10 text-xl font-black select-none">?</span>
+                )}
+              </button>
             );
           })}
         </div>
 
         {/* Controls */}
-        {status === "idle" || status === "finished" ? (
-          <div className="space-y-3">
-            {status === "finished" && <button onClick={reset} className="w-full py-3 rounded-lg bg-[#1a1a1a] border border-[#333] font-bold hover:bg-[#222]">Novo Jogo</button>}
+        {(status === "idle" || status === "finished") && (
+          <div className="ce-card rounded-2xl p-4 space-y-3">
+            {status === "finished" && (
+              <button onClick={reset} className="ce-btn ce-btn-ghost w-full py-3 rounded-xl">Novo Jogo</button>
+            )}
             {status === "idle" && (
               <>
                 <div className="flex gap-3">
                   <div className="flex-1">
-                    <label className="text-xs text-[#888]">Aposta</label>
-                    <input type="number" value={bet} onChange={(e) => setBet(Math.min(100000, Math.max(100, parseInt(e.target.value) || 100)))}
-                      className="w-full px-4 py-2 rounded-lg bg-[#1a1a1a] border border-[#333] text-white mt-1" min={100} max={100000} step={100} />
+                    <p className="ce-stat-label text-[10px] mb-1.5">Aposta</p>
+                    <input type="number" value={bet}
+                      onChange={(e) => setBet(Math.min(100000, Math.max(100, parseInt(e.target.value) || 100)))}
+                      className="ce-input" min={100} max={100000} step={100} />
                   </div>
                   <div>
-                    <label className="text-xs text-[#888]">Minas</label>
-                    <div className="flex gap-1 mt-1 flex-wrap">
+                    <p className="ce-stat-label text-[10px] mb-1.5">Minas</p>
+                    <div className="flex gap-1 flex-wrap">
                       {MINE_PRESETS.map((m) => (
                         <button key={m} onClick={() => setMineCount(m)}
-                          className={`px-2 py-1 rounded text-sm font-bold border ${mineCount === m ? "bg-red-700 border-red-500" : "bg-[#1a1a1a] border-[#333] hover:border-red-500"}`}>
+                          className={`ce-btn rounded-lg px-2.5 py-2 text-xs ${mineCount === m ? "ce-btn-danger" : "ce-btn-ghost"}`}>
                           {m}
                         </button>
                       ))}
@@ -201,17 +251,17 @@ export default function MinesPage() {
                 </div>
                 {fee > 0 && <p className="text-xs text-orange-400">+ taxa casino: ${fee.toLocaleString()}</p>}
                 {player && (
-                  <p className="text-xs text-orange-400/70">
-                    ⚠️ 15% risco de prisão por jogo (7.5% Scammer) · 💎 em risco: {Math.min(player.crypto, bet).toLocaleString()} crypto
+                  <p className="text-xs text-orange-400/60">
+                    ⚠️ 15% risco de prisão · 💎 em risco: {Math.min(player.crypto, bet).toLocaleString()} crypto
                   </p>
                 )}
-                <button onClick={startGame} disabled={acting} className="w-full py-3 rounded-lg bg-gradient-to-r from-red-700 to-red-600 hover:from-red-600 hover:to-red-500 font-bold disabled:opacity-50">
-                  {acting ? "A iniciar..." : "💣 Iniciar"}
+                <button onClick={startGame} disabled={acting} className="ce-btn ce-btn-danger w-full py-3 rounded-xl">
+                  {acting ? <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> A iniciar...</> : "💣 Iniciar"}
                 </button>
               </>
             )}
           </div>
-        ) : null}
+        )}
       </div>
       {arrestEscape && (
         <RaidEscape

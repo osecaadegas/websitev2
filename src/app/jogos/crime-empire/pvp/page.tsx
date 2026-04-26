@@ -203,94 +203,86 @@ export default function PvPPage() {
   const pvpDisabled = settings && !settings.pvp_enabled;
 
   return (
-    <div className="flex-1 text-white py-8 px-4 lg:px-6">
+    <div className="flex-1 text-white min-h-screen" style={{ background: "#0a0808" }}>
+      <div className="ce-noise" />
+      <div className="relative z-10 py-8 px-4 lg:px-6">
       <div className="max-w-[1400px] mx-auto">
         {/* Header */}
-        <div className="flex items-center justify-between mb-2">
-          <div>
-            <h1 className="text-4xl font-black bg-gradient-to-r from-red-500 to-[#ff6a00] bg-clip-text text-transparent">
-              ⚔️ PvP Arena
-            </h1>
-            <p className="text-[#666] text-sm mt-1">Destrói os teus inimigos e rouba-lhes o dinheiro</p>
+        <div className="ce-page-header mb-4">
+          <p className="ce-page-eyebrow">Crime Empire</p>
+          <div className="flex items-center justify-between">
+            <h1 className="ce-page-title">PVP <span className="ce-page-title-accent" style={{ color: "#ef4444" }}>ARENA</span></h1>
+            {settings && (
+              <div className="flex flex-col items-end gap-1">
+                {pvpDisabled ? (
+                  <span className="ce-badge ce-badge-red">⛔ PvP Desativado</span>
+                ) : (
+                  <span className="ce-badge ce-badge-green">✅ PvP Ativo</span>
+                )}
+                <span className="ce-text-muted text-[10px]">
+                  Saque: {settings.min_loot_percent}–{settings.max_loot_percent}% · Cooldown: {settings.cooldown_minutes}min
+                </span>
+              </div>
+            )}
           </div>
-          {settings && (
-            <div className="flex flex-col items-end gap-1">
-              {pvpDisabled ? (
-                <span className="px-3 py-1 rounded-full bg-red-900/30 border border-red-700 text-red-400 text-xs font-bold">⛔ PvP Desativado</span>
-              ) : (
-                <span className="px-3 py-1 rounded-full bg-green-900/30 border border-green-700 text-green-400 text-xs font-bold">✅ PvP Ativo</span>
-              )}
-              <span className="text-xs text-[#555]">
-                Saque: {settings.min_loot_percent}–{settings.max_loot_percent}% · Cooldown: {settings.cooldown_minutes}min
-              </span>
-            </div>
-          )}
+          <div className="ce-page-divider" style={{ background: "linear-gradient(90deg, rgba(239,68,68,0.4), rgba(239,68,68,0.1), transparent)" }} />
         </div>
 
         {/* Cooldown banner */}
         {cooldownSecs > 0 && (
-          <div className="mb-4 p-3 rounded-xl bg-yellow-900/20 border border-yellow-700/50 text-yellow-400 text-sm font-semibold">
+          <div className="ce-card ce-card-orange mb-4 p-3 rounded-xl ce-text-gold font-semibold text-sm">
             ⏳ Próximo ataque disponível em:{" "}
             {Math.floor(cooldownSecs / 60)}:{String(cooldownSecs % 60).padStart(2, "0")}
           </div>
         )}
 
         {/* 3-column grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mt-4">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           {/* ── LEFT: Player List ── */}
           <div className="flex flex-col gap-3">
-            <div className="p-4 rounded-xl bg-[#121212] border border-[#222]">
+            <div className="ce-card p-4 rounded-xl">
               <div className="flex items-center justify-between mb-3">
-                <h2 className="font-bold text-white text-sm">🎯 Jogadores ({filtered.length})</h2>
+                <h2 className="font-black text-sm">🎯 Jogadores ({filtered.length})</h2>
               </div>
               <input
                 type="text"
                 placeholder="Procurar jogador ou classe…"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="w-full px-3 py-2 rounded-lg bg-[#1a1a1a] border border-[#2a2a2a] text-sm text-white placeholder-[#555] focus:outline-none focus:border-[#ff6a00] mb-3"
+                className="ce-input w-full px-3 py-2 rounded-lg text-sm mb-3"
               />
               <div className="space-y-2 max-h-[600px] overflow-y-auto pr-1">
                 {filtered.length === 0 && (
-                  <p className="text-[#444] text-sm text-center py-4">Nenhum jogador encontrado</p>
+                  <p className="ce-text-muted text-sm text-center py-4">Nenhum jogador encontrado</p>
                 )}
                 {filtered.map((p) => {
                   const hpPct = Math.round((p.hp / p.max_hp) * 100);
                   const isAttacking = attacking === p.id;
                   const canAttack = !pvpDisabled && cooldownSecs === 0 && !attacking;
                   return (
-                    <div key={p.id} className="flex items-center gap-2 p-2.5 rounded-lg bg-[#1a1a1a] border border-[#222] hover:border-[#333] transition-all">
+                    <div key={p.id} className="ce-card flex items-center gap-2 p-2.5 rounded-lg hover:border-[#333] transition-all">
                       <Avatar url={p.avatar_url} name={p.display_name || p.username} size={9} />
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-1.5">
-                          <span className="text-sm font-bold text-white truncate">{p.display_name || p.username}</span>
+                          <span className="text-sm font-black truncate">{p.display_name || p.username}</span>
                           {p.prestige_level > 0 && (
-                            <span className="text-xs text-yellow-400 shrink-0">⭐{p.prestige_level}</span>
+                            <span className="ce-badge ce-badge-gold text-[9px] shrink-0">⭐{p.prestige_level}</span>
                           )}
                         </div>
                         <div className="flex items-center gap-2 mt-0.5">
-                          <span className={`text-xs font-medium ${CLASS_COLOR[p.class] ?? "text-[#888]"}`}>
+                          <span className={`text-xs font-medium ${CLASS_COLOR[p.class] ?? "ce-text-muted"}`}>
                             {CLASS_LABELS[p.class] ?? p.class}
                           </span>
-                          <span className="text-xs text-[#555]">Nv.{p.level}</span>
+                          <span className="ce-text-muted text-xs">Nv.{p.level}</span>
                         </div>
-                        <div className="mt-1.5 w-full bg-[#111] rounded-full h-1.5">
-                          <div
-                            className={`h-1.5 rounded-full ${hpPct > 60 ? "bg-green-500" : hpPct > 30 ? "bg-yellow-500" : "bg-red-600"}`}
-                            style={{ width: `${hpPct}%` }}
-                          />
+                        <div className="ce-progress-track mt-1.5 h-1.5 rounded-full overflow-hidden">
+                          <div className={`h-1.5 rounded-full ${hpPct > 60 ? "ce-progress-fill-green" : hpPct > 30 ? "ce-progress-fill-orange" : "ce-progress-fill-red"}`}
+                            style={{ width: `${hpPct}%` }} />
                         </div>
-                        <span className="text-[10px] text-[#444]">{p.hp}/{p.max_hp} HP · Visto {timeAgo(p.last_login)}</span>
+                        <span className="ce-text-muted text-[10px]">{p.hp}/{p.max_hp} HP · Visto {timeAgo(p.last_login)}</span>
                       </div>
-                      <button
-                        onClick={() => attack(p.id)}
-                        disabled={!canAttack || isAttacking}
-                        className={`shrink-0 px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                          canAttack && !isAttacking
-                            ? "bg-red-600 hover:bg-red-500 text-white hover:scale-105"
-                            : "bg-[#222] text-[#444] cursor-not-allowed"
-                        }`}
-                      >
+                      <button onClick={() => attack(p.id)} disabled={!canAttack || isAttacking}
+                        className={`ce-btn shrink-0 px-2.5 py-1.5 rounded-lg text-xs ${canAttack && !isAttacking ? "ce-btn-danger" : "ce-btn-ghost opacity-40 cursor-not-allowed"}`}>
                         {isAttacking ? "⚔️…" : "ATACAR"}
                       </button>
                     </div>
@@ -300,10 +292,10 @@ export default function PvPPage() {
             </div>
 
             {/* Combat formula info */}
-            <div className="p-3 rounded-xl bg-[#0e0e0e] border border-[#1e1e1e]">
-              <p className="text-xs text-[#555] font-bold mb-2">FÓRMULA DE COMBATE</p>
-              <div className="space-y-1 text-xs text-[#444]">
-                <p><span className="text-red-400 font-bold">Brutamontes</span> — +50% Poder em PvP</p>
+            <div className="ce-card p-3 rounded-xl">
+              <p className="ce-section-label mb-2">FÓRMULA DE COMBATE</p>
+              <div className="space-y-1 text-xs ce-text-muted">
+                <p><span className="ce-text-red font-black">Brutamontes</span> — +50% Poder em PvP</p>
                 <p>Score = Poder×3 + Intel×1.5 + Carisma×0.5</p>
                 <p>+ Nível×10 + Prestige×50</p>
                 <p>Vício alto penaliza até -50%</p>
@@ -314,11 +306,11 @@ export default function PvPPage() {
           </div>
 
           {/* ── CENTER: Battle History ── */}
-          <div className="p-4 rounded-xl bg-[#121212] border border-[#222] flex flex-col">
-            <h2 className="font-bold text-white text-sm mb-3">💀 Historial de Batalhas</h2>
+          <div className="ce-card p-4 rounded-xl flex flex-col">
+            <h2 className="font-black text-sm mb-3">💀 Historial de Batalhas</h2>
             <div className="space-y-2 overflow-y-auto flex-1 max-h-[680px] pr-1">
               {battles.length === 0 && (
-                <p className="text-[#444] text-sm text-center py-8">
+                <p className="ce-text-muted text-sm text-center py-8">
                   Ainda não há batalhas. Parte para o ataque!
                 </p>
               )}
@@ -326,44 +318,33 @@ export default function PvPPage() {
                 const attackerWon = b.winner_id === b.attacker_id;
                 const iInvolved = b.attacker_id === selfId || b.defender_id === selfId;
                 return (
-                  <div
-                    key={b.id}
-                    className={`p-3 rounded-lg border text-xs transition-all ${
-                      iInvolved
-                        ? "bg-[#1e1510] border-[#ff6a00]/30"
-                        : "bg-[#1a1a1a] border-[#222]"
-                    }`}
-                  >
+                  <div key={b.id} className={`ce-card p-3 rounded-lg text-xs transition-all ${iInvolved ? "ce-card-orange" : ""}`}>
                     <div className="flex items-center gap-2">
                       <div className="flex items-center gap-1.5 flex-1 min-w-0">
                         <Avatar url={b.attacker_avatar} name={b.attacker_name} size={7} />
-                        <span className={`font-bold truncate ${attackerWon ? "text-green-400" : "text-red-400"}`}>
+                        <span className={`font-black truncate ${attackerWon ? "ce-text-green" : "ce-text-red"}`}>
                           {b.attacker_name}
                         </span>
                       </div>
-                      <span className="text-[#333] shrink-0 font-black text-[10px]">⚔️</span>
+                      <span className="ce-text-muted shrink-0 font-black text-[10px]">⚔️</span>
                       <div className="flex items-center gap-1.5 flex-1 min-w-0 justify-end">
-                        <span className={`font-bold truncate ${!attackerWon ? "text-green-400" : "text-red-400"}`}>
+                        <span className={`font-black truncate ${!attackerWon ? "ce-text-green" : "ce-text-red"}`}>
                           {b.defender_name}
                         </span>
                         <Avatar url={b.defender_avatar} name={b.defender_name} size={7} />
                       </div>
                     </div>
-                    <div className="flex justify-between text-[#555] mt-1 text-[10px]">
+                    <div className="flex justify-between ce-text-muted mt-1 text-[10px]">
                       <span>{b.attacker_score} pts</span>
                       <span>{b.defender_score} pts</span>
                     </div>
                     <div className="mt-1.5 flex items-center justify-between">
-                      <span className="text-green-400 font-bold">
-                        🏆 {attackerWon ? b.attacker_name : b.defender_name}
-                      </span>
+                      <span className="ce-text-green font-black">🏆 {attackerWon ? b.attacker_name : b.defender_name}</span>
                       {b.loot_amount > 0 && (
-                        <span className="text-yellow-400 font-semibold">
-                          {b.loot_amount.toLocaleString()} {b.loot_type === "cash" ? "💰" : "₿"}
-                        </span>
+                        <span className="ce-text-gold font-semibold">{b.loot_amount.toLocaleString()} {b.loot_type === "cash" ? "💰" : "₿"}</span>
                       )}
                     </div>
-                    <div className="text-[#333] mt-1 text-[10px]">{timeAgo(b.created_at)}</div>
+                    <div className="ce-text-muted mt-1 text-[10px]">{timeAgo(b.created_at)}</div>
                   </div>
                 );
               })}
@@ -371,13 +352,11 @@ export default function PvPPage() {
           </div>
 
           {/* ── RIGHT: Chat ── */}
-          <div className="p-4 rounded-xl bg-[#121212] border border-[#222] flex flex-col">
-            <h2 className="font-bold text-white text-sm mb-3">💬 Chat da Arena</h2>
+          <div className="ce-card p-4 rounded-xl flex flex-col">
+            <h2 className="font-black text-sm mb-3">💬 Chat da Arena</h2>
             <div className="flex-1 overflow-y-auto space-y-2 max-h-[600px] pr-1 mb-3">
               {chat.length === 0 && (
-                <p className="text-[#444] text-sm text-center py-8">
-                  Ninguém falou ainda. Sê o primeiro!
-                </p>
+                <p className="ce-text-muted text-sm text-center py-8">Ninguém falou ainda. Sê o primeiro!</p>
               )}
               {chat.map((msg) => {
                 const isMe = msg.player_id === selfId;
@@ -387,17 +366,11 @@ export default function PvPPage() {
                       <Avatar url={msg.avatar_url} name={msg.player_name} size={7} />
                     </div>
                     <div className={`max-w-[75%] flex flex-col ${isMe ? "items-end" : "items-start"}`}>
-                      <span className="text-[10px] text-[#444] mb-0.5 px-1">{msg.player_name}</span>
-                      <div
-                        className={`px-3 py-2 rounded-xl text-xs text-white break-words ${
-                          isMe
-                            ? "bg-[#ff6a00]/20 border border-[#ff6a00]/30"
-                            : "bg-[#1e1e1e] border border-[#2a2a2a]"
-                        }`}
-                      >
+                      <span className="ce-text-muted text-[10px] mb-0.5 px-1">{msg.player_name}</span>
+                      <div className={`px-3 py-2 rounded-xl text-xs break-words ${isMe ? "ce-card ce-card-orange" : "ce-card"}`}>
                         {msg.message}
                       </div>
-                      <span className="text-[9px] text-[#333] mt-0.5 px-1">{timeAgo(msg.created_at)}</span>
+                      <span className="ce-text-muted text-[9px] mt-0.5 px-1">{timeAgo(msg.created_at)}</span>
                     </div>
                   </div>
                 );
@@ -405,79 +378,52 @@ export default function PvPPage() {
               <div ref={chatBottomRef} />
             </div>
             <form onSubmit={sendChat} className="flex gap-2">
-              <input
-                type="text"
-                value={chatInput}
-                onChange={(e) => setChatInput(e.target.value)}
-                placeholder="Escreve uma mensagem…"
-                maxLength={200}
-                className="flex-1 px-3 py-2 rounded-lg bg-[#1a1a1a] border border-[#2a2a2a] text-sm text-white placeholder-[#555] focus:outline-none focus:border-[#ff6a00]"
-              />
-              <button
-                type="submit"
-                disabled={sendingChat || !chatInput.trim()}
-                className="px-4 py-2 rounded-lg bg-[#ff6a00] hover:bg-[#ff8533] text-white text-sm font-bold transition-all disabled:opacity-40 disabled:cursor-not-allowed"
-              >
+              <input type="text" value={chatInput} onChange={(e) => setChatInput(e.target.value)}
+                placeholder="Escreve uma mensagem…" maxLength={200} className="ce-input flex-1 px-3 py-2 rounded-lg text-sm" />
+              <button type="submit" disabled={sendingChat || !chatInput.trim()}
+                className="ce-btn ce-btn-primary px-4 py-2 rounded-lg text-sm disabled:opacity-40 disabled:cursor-not-allowed">
                 ➤
               </button>
             </form>
           </div>
         </div>
       </div>
+      </div>
 
       {/* Battle Result Modal */}
       {result && (
-        <div
-          className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4"
-          onClick={() => setResult(null)}
-        >
-          <div
-            className={`bg-[#1a1a1a] border-2 rounded-2xl p-8 max-w-sm w-full text-center ${
-              result.attackerWon ? "border-green-500" : "border-red-600"
-            }`}
-            onClick={(e) => e.stopPropagation()}
-          >
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4" onClick={() => setResult(null)}>
+          <div className={`ce-card rounded-2xl p-8 max-w-sm w-full text-center ${result.attackerWon ? "ce-card-green" : "ce-card-red"}`}
+            style={{ boxShadow: result.attackerWon ? "0 0 60px rgba(34,197,94,0.15)" : "0 0 60px rgba(239,68,68,0.15)" }}
+            onClick={(e) => e.stopPropagation()}>
             <div className="text-6xl mb-4">{result.attackerWon ? "🏆" : "💀"}</div>
-            <h2 className={`text-3xl font-black mb-2 ${result.attackerWon ? "text-green-400" : "text-red-400"}`}>
+            <h2 className={`text-3xl font-black mb-2 ${result.attackerWon ? "ce-text-green" : "ce-text-red"}`}>
               {result.attackerWon ? "VITÓRIA!" : "DERROTA!"}
             </h2>
-            <p className="text-[#888] text-sm mb-4">
-              {result.attackerWon
-                ? `Destruíste ${result.loserName}!`
-                : `${result.winnerName} destruiu-te!`}
+            <p className="ce-text-muted text-sm mb-4">
+              {result.attackerWon ? `Destruíste ${result.loserName}!` : `${result.winnerName} destruiu-te!`}
             </p>
             <div className="flex justify-center gap-6 mb-4 text-sm">
               <div className="text-center">
-                <p className="text-[#555] text-xs mb-1">Teu Score</p>
-                <p className="font-bold text-white">{result.atkScore}</p>
+                <p className="ce-stat-label text-xs mb-1">Teu Score</p>
+                <p className="font-black">{result.atkScore}</p>
               </div>
-              <div className="text-[#333] font-bold self-center">VS</div>
+              <div className="ce-text-muted font-black self-center">VS</div>
               <div className="text-center">
-                <p className="text-[#555] text-xs mb-1">Score Deles</p>
-                <p className="font-bold text-white">{result.defScore}</p>
+                <p className="ce-stat-label text-xs mb-1">Score Deles</p>
+                <p className="font-black">{result.defScore}</p>
               </div>
             </div>
             {result.lootAmount > 0 && (
-              <div
-                className={`p-3 rounded-xl mb-4 ${
-                  result.attackerWon
-                    ? "bg-green-900/20 border border-green-700"
-                    : "bg-red-900/20 border border-red-700"
-                }`}
-              >
-                <p className={`font-bold text-sm ${result.attackerWon ? "text-green-400" : "text-red-400"}`}>
+              <div className={`ce-card p-3 rounded-xl mb-4 ${result.attackerWon ? "ce-card-green" : "ce-card-red"}`}>
+                <p className={`font-black text-sm ${result.attackerWon ? "ce-text-green" : "ce-text-red"}`}>
                   {result.attackerWon ? "+" : "-"}{result.lootAmount.toLocaleString()}{" "}
                   {result.lootType === "cash" ? "💰 Dinheiro Limpo" : "₿ Crypto"}
                 </p>
-                {!result.attackerWon && (
-                  <p className="text-xs text-[#888] mt-1">Foste para o hospital 🏥</p>
-                )}
+                {!result.attackerWon && <p className="ce-text-muted text-xs mt-1">Foste para o hospital 🏥</p>}
               </div>
             )}
-            <button
-              onClick={() => setResult(null)}
-              className="w-full px-6 py-3 rounded-xl bg-[#222] hover:bg-[#2a2a2a] border border-[#333] font-bold transition-all"
-            >
+            <button onClick={() => setResult(null)} className="ce-btn ce-btn-ghost w-full px-6 py-3 rounded-xl font-black">
               Fechar
             </button>
           </div>

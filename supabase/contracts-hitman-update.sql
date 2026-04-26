@@ -6,8 +6,9 @@
 -- 4. Create hitman_contracts table
 -- ============================================================
 
--- ─── 1. Image column ─────────────────────────────────────────
-ALTER TABLE contract_targets ADD COLUMN IF NOT EXISTS image TEXT;
+-- ─── 1. Add missing columns ──────────────────────────────────
+ALTER TABLE contract_targets ADD COLUMN IF NOT EXISTS image     TEXT;
+ALTER TABLE contract_targets ADD COLUMN IF NOT EXISTS xp_reward INTEGER NOT NULL DEFAULT 0;
 
 -- Set image slugs for Level 1
 UPDATE contract_targets SET image = 'thief'             WHERE name = 'Pombo Correio';
@@ -36,7 +37,18 @@ UPDATE contract_targets SET required_level = 16 WHERE name = 'A Notária';
 UPDATE contract_targets SET required_level = 20 WHERE name = 'Doutor Nulo';
 UPDATE contract_targets SET required_level = 25 WHERE name = 'O Arquiteto';
 
--- ─── 3. Level 4 contracts (Elite) ────────────────────────────
+-- ─── 3. Ensure unique constraint on name ────────────────────
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint
+    WHERE conname = 'contract_targets_name_key'
+      AND conrelid = 'contract_targets'::regclass
+  ) THEN
+    ALTER TABLE contract_targets ADD CONSTRAINT contract_targets_name_key UNIQUE (name);
+  END IF;
+END $$;
+
+-- ─── 4. Level 4 contracts (Elite) ────────────────────────────
 INSERT INTO contract_targets
   (name, description, difficulty, roadmap_level, required_level,
    stamina_cost, base_success_rate, hitman_bonus, arrest_chance,
@@ -73,7 +85,7 @@ ON CONFLICT (name) DO UPDATE SET
   difficulty    = EXCLUDED.difficulty,
   image         = EXCLUDED.image;
 
--- ─── 4. Level 5 contracts (Endgame) ──────────────────────────
+-- ─── 5. Level 5 contracts (Endgame) ──────────────────────────
 INSERT INTO contract_targets
   (name, description, difficulty, roadmap_level, required_level,
    stamina_cost, base_success_rate, hitman_bonus, arrest_chance,
@@ -110,7 +122,7 @@ ON CONFLICT (name) DO UPDATE SET
   difficulty    = EXCLUDED.difficulty,
   image         = EXCLUDED.image;
 
--- ─── 5. hitman_contracts table ────────────────────────────────
+-- ─── 6. hitman_contracts table ────────────────────────────────
 CREATE TABLE IF NOT EXISTS hitman_contracts (
   id                  UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
   requester_id        UUID        NOT NULL REFERENCES crime_players(id) ON DELETE CASCADE,
