@@ -679,10 +679,10 @@ export async function updateLoginStreak(playerId: string): Promise<{
     })
     .eq("player_id", playerId);
 
-  // Passive XP: daily login streak reward (capped at 30-day streak → 3000 XP/day, bucket cap 1500/h).
+  // Passive engagement bonus — small daily nudge, not a farm. Bucket caps at 600/h.
   try {
     const { grantXP } = await import("@/lib/crime-empire/xp");
-    await grantXP(playerId, 100 * Math.min(newStreak, 30), "passive");
+    await grantXP(playerId, 25 * Math.min(newStreak, 30), "passive");
   } catch { /* swallow — streak update must not fail because of XP grant */ }
 
   return {

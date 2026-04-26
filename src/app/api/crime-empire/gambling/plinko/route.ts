@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { supabase } from "@/lib/supabase";
 import { generateEscapeToken } from "@/lib/crime-empire/arrest-helpers";
-import { grantXP } from "@/lib/crime-empire/xp";
 
 export const dynamic = "force-dynamic";
 
@@ -105,9 +104,8 @@ export async function POST(req: NextRequest) {
     player_id: player.id, game_type: "plinko", bet_amount: bet, payout, profit: payout - bet,
   });
 
-  // Casino v2: tiny bet-scaled XP, hard-capped via 'casino' bucket (600 XP/h global).
-  const xpEarned = Math.max(0, Math.min(25, Math.floor(bet * 0.0002)));
-  if (xpEarned > 0) await grantXP(player.id, xpEarned, "casino");
+  // v3: casino is entertainment only — zero XP.
+  const xpEarned = 0;
 
   // Crypto at risk = bet amount (capped by wallet), not 15% of total wallet.
   // This prevents the exploit of emptying your wallet before gambling to avoid arrest penalties.

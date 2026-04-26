@@ -13,11 +13,10 @@ function brothelTierMultiplier(purchasePrice: number): number {
   return Math.pow(ref / 50000, 0.45);
 }
 
-// Cost-scaled progression rewards for management actions.
-// Floors guarantee a minimum tick so cheap actions still feel rewarding.
-// Higher-level players get a damped reward so $50k purchases don't carry endgame.
-function xpFromCost(cost: number, floor = 2, level = 1): number {
-  const raw = Math.max(floor, Math.floor(cost / 4000));
+// v3: brothels are economic, not progression. XP per management action is
+// a small tick — the real reward is income flow.
+function xpFromCost(cost: number, floor = 1, level = 1): number {
+  const raw = Math.max(floor, Math.floor(cost / 12000));
   const damp = Math.max(0.5, 1.5 - 0.01 * level);
   return Math.floor(raw * damp);
 }
@@ -445,9 +444,8 @@ export async function POST(req: NextRequest) {
         total_earned: pb.total_earned + collected,
       }).eq("id", playerBrothelId);
 
-      // XP + Respect — brothel collect v2: cap raw, divide by 400, tier-mult applied,
-      // capped at 2500 per collect.
-      const xpEarned = Math.min(2500, Math.max(5, Math.floor(Math.min(collected, 200000) / 400 * tierMult)));
+      // v3: brothel collect is economic-side XP — small, not progression.
+      const xpEarned = Math.min(600, Math.max(2, Math.floor(Math.min(collected, 200000) / 1200 * tierMult)));
       await grantXP(player.id, xpEarned, "brothel");
       await grantRespect(player.id, Math.max(1, Math.floor(collected / 5000)));
 

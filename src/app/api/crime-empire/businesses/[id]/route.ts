@@ -381,8 +381,8 @@ async function handleCollect(pb: any, player: any, pbId: string) {
       await grantDrugItem(player.id, pb.business.drug_output_item_id, drugQty);
     }
     await supabase.from("player_businesses").update({ last_collection: now.toISOString(), heat: newHeat, last_heat_update: now.toISOString() }).eq("id", pbId);
-    // Business v2 — drug production: 8 XP per unit, capped at 1600/action.
-    await grantXP(player.id, Math.min(1600, Math.floor(Math.min(drugQty, 200) * 8)), "business");
+    // v3: business is economic, not progression — small XP tick.
+    await grantXP(player.id, Math.min(400, Math.floor(Math.min(drugQty, 200) * 2)), "business");
     let newEvent = null;
     if (def) newEvent = await maybeSpawnEvent(pb, def, player.id, pbId, newHeat);
     return NextResponse.json({ success: true, drug_qty: drugQty, heat: newHeat, raided: false, salary_cost: salaryCost, salary_paid: salaryPaid, new_event: newEvent });
@@ -438,8 +438,8 @@ async function handleCollect(pb: any, player: any, pbId: string) {
       real_coin_id: coinInfo.realId, bought_price: currentPrice, quantity, dirty_cash_invested: farmedValue, source: "farmed",
     });
     await supabase.from("player_businesses").update({ last_collection: now.toISOString(), heat: newHeat, last_heat_update: now.toISOString() }).eq("id", pbId);
-    // Business v2 — farm: cap raw value, divide by 80, capped at 1500/action.
-    await grantXP(player.id, Math.min(1500, Math.max(5, Math.floor(Math.min(farmedValue, 100000) / 80))), "business");
+    // v3: business is economic, not progression — small XP tick.
+    await grantXP(player.id, Math.min(400, Math.max(2, Math.floor(Math.min(farmedValue, 100000) / 300))), "business");
     let newEvent = null;
     if (def) newEvent = await maybeSpawnEvent(pb, def, player.id, pbId, newHeat);
     return NextResponse.json({ success: true, farmed_value: farmedValue, quantity, coin_name: coinInfo.displayName, coin_symbol: coinInfo.symbol, current_price: currentPrice, heat: newHeat, raided: false, new_event: newEvent });
@@ -470,8 +470,8 @@ async function handleCollect(pb: any, player: any, pbId: string) {
     last_heat_update: now.toISOString(),
   }).eq("id", pbId);
 
-  // XP — cash collect: cap raw earnings, divide by 80, capped at 1500/action.
-  await grantXP(player.id, Math.min(1500, Math.max(5, Math.floor(Math.min(earned, 100000) / 80))), "business");
+  // v3: business is economic, not progression — small XP tick.
+  await grantXP(player.id, Math.min(400, Math.max(2, Math.floor(Math.min(earned, 100000) / 300))), "business");
 
   // Random event check
   let newEvent = null;
@@ -557,8 +557,8 @@ async function handleLaunder(pb: any, body: any, player: any, pbId: string) {
       .eq("id", pbId);
   }
 
-  // Business v2 — launder: cap raw clean amount, divide by 150, capped at 1500/action.
-  await grantXP(player.id, Math.min(1500, Math.max(5, Math.floor(Math.min(clean, 200000) / 150))), "business");
+  // v3: laundering is economic, not progression — small XP tick.
+  await grantXP(player.id, Math.min(400, Math.max(2, Math.floor(Math.min(clean, 200000) / 600))), "business");
 
   return NextResponse.json({
     success: true,
@@ -679,7 +679,7 @@ async function handleRaidResult(pb: any, body: any, player: any) {
     // Escape: reduce heat, grant XP
     const newHeat = Math.max(0, currentHeat - 35);
     await supabase.from("player_businesses").update({ heat: newHeat, last_heat_update: new Date().toISOString() }).eq("id", pb.id);
-    await grantXP(player.id, 50, "business");
+    await grantXP(player.id, 15, "business");
     return NextResponse.json({ success: true, message: `Escapaste! Calor reduzido para ${newHeat.toFixed(0)}%. +50 XP` });
   } else {
     // Arrested: type-specific seizure + jail

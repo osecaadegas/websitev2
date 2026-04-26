@@ -2,16 +2,24 @@ import { supabase } from "@/lib/supabase";
 import { getXPMultiplier } from "@/lib/crime-empire/system-settings";
 
 /* ──────────────────────────────────────────────────────────────
- * XP CURVE v2  —  smooth power curve, no bands, no cliffs.
+ * XP CURVE v3  —  smooth power curve, structural source weighting.
  *
  *   xpForLevel(L) = floor(60 * L^1.85)
  *
- * Total XP to L120 ≈ 19.06M. Designed against a global 120k XP/h
- * cap (see HOURLY_CAP) so even full-cap play needs ~14 days minimum.
+ * Total XP to L120 ≈ 19.06M.
  *
- * Anti-exploit: per-source hourly buckets + diminishing returns
- * past 70% in <30 min + global hourly ceiling. State stored in
- * crime_players.xp_buckets (JSONB).
+ * Design philosophy (v3):
+ *   1. Crime / missions / streets are the PRIMARY XP loop (≈80% of progression).
+ *   2. Businesses & brothels grant a small XP tick on collect; their real
+ *      value is income, not progression. (≈20%.)
+ *   3. PvP grants modest XP; competitive layer.
+ *   4. Casino grants ZERO XP. It is entertainment / gambling only.
+ *   5. Passive (login streak) is a small daily engagement bonus, not an
+ *      AFK farm. The heartbeat ticker has been removed.
+ *
+ * Anti-exploit: per-source hourly buckets + global ceiling. Caps are
+ * structural — they shape the meta, not just punish abuse. State stored
+ * in crime_players.xp_buckets (JSONB).
  * ──────────────────────────────────────────────────────────────*/
 
 const XP_CURVE_BASE = 60;
@@ -37,17 +45,20 @@ export type XPSource =
   | "casino"
   | "passive";
 
+// v3 weighting: crime/missions/streets dominate; businesses/brothels are
+// economic side-XP; pvp is competitive; casino is zero (entertainment only);
+// passive is a small daily engagement nudge.
 const HOURLY_CAP: Record<XPSource, number> = {
-  crime:    60_000,
-  street:   35_000,
-  contract: 20_000,
-  hitman:   12_000,
-  pvp:       8_000,
-  mission:  30_000,
-  brothel:  12_000,
-  business: 18_000,
-  casino:      600, // hard ceiling — casino is entertainment, not progression
-  passive:   1_500,
+  crime:    60_000, // primary loop
+  street:   35_000, // primary loop (drug sales)
+  mission:  30_000, // boosted-crime objectives
+  contract: 20_000, // primary loop variant
+  business: 6_000,  // economic, not progression
+  brothel:  4_000,  // economic, not progression
+  hitman:   12_000, // competitive
+  pvp:      8_000,  // competitive
+  passive:  600,    // engagement bonus only (login streak)
+  casino:   0,      // entertainment only — zero XP, structural
 };
 
 const GLOBAL_HOURLY_CAP = 120_000;
@@ -100,12 +111,6 @@ export async function grantXP(
   // Apply admin multiplier first.
   let granted = Math.round(xpEarned * multiplier);
   granted = Math.min(granted, remainingSrc, remainingGlobal);
-
-  // Diminishing returns: past 70% of source bucket in <30 min → 50% pay-out.
-  const minutesIn = (now - new Date(srcBucket.window_start).getTime()) / 60_000;
-  if (minutesIn < 30 && srcBucket.spent / HOURLY_CAP[source] > 0.7) {
-    granted = Math.floor(granted * 0.5);
-  }
 
   if (granted <= 0) {
     // Persist updated buckets so windows roll correctly even on full caps.

@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { supabase } from "@/lib/supabase";
 import { generateEscapeToken } from "@/lib/crime-empire/arrest-helpers";
-import { grantXP } from "@/lib/crime-empire/xp";
 import { trackMissionEvent } from "@/lib/crime-empire/missions";
 
 export const dynamic = "force-dynamic";
@@ -175,9 +174,7 @@ export async function POST(req: NextRequest) {
 
     await supabase.from("crime_players").update({ dirty_cash: player.dirty_cash - totalCost }).eq("id", player.id);
     void trackMissionEvent(player.id, "onCasinoPlay", 1);
-    // E8: XP for placing a bet — v2 casino bucket (cap 600/h).
-    const bjXP = Math.max(0, Math.min(25, Math.floor(bet * 0.0002)));
-    if (bjXP > 0) await grantXP(player.id, bjXP, "casino");
+    // v3: casino is entertainment only — zero XP.
 
     let status = "active";
     let result: string | null = null;

@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { supabase } from "@/lib/supabase";
 import { generateEscapeToken } from "@/lib/crime-empire/arrest-helpers";
-import { grantXP } from "@/lib/crime-empire/xp";
 
 export const dynamic = "force-dynamic";
 
@@ -146,9 +145,7 @@ export async function POST(req: NextRequest) {
 
     // Deduct money only after session is confirmed created
     await supabase.from("crime_players").update({ dirty_cash: player.dirty_cash - totalCost }).eq("id", player.id);
-    // E8: XP for starting a mines game — v2 casino bucket (cap 600/h).
-    const minesXP = Math.max(0, Math.min(25, Math.floor(bet * 0.0002)));
-    if (minesXP > 0) await grantXP(player.id, minesXP, "casino");
+    // v3: casino is entertainment only — zero XP.
 
     return NextResponse.json({ success: true, sessionId: session.id, fee, revealed, currentMultiplier: 1, currentPayout: Math.floor(bet / 2) });
   }
