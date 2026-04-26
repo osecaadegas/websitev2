@@ -9,7 +9,7 @@
  *  - updateLoginStreak   — called on player login/session start
  */
 
-import { supabase } from "@/lib/supabase";
+import { supabaseAdmin as supabase } from "@/lib/supabase-server";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
