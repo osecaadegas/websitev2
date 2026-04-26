@@ -5235,3 +5235,69 @@ body {
   outline-offset: 2px;
 }
 
+/* ─────────────────────────────────────────────────────────────────── */
+/* CE Retrofit Layer — modernizes RAW Tailwind cards inside the game  */
+/* shell, without needing per-page edits. Targets dark `bg-[#0xx]` or */
+/* `bg-[#1xx]` containers that also use a `border` class.             */
+/* ─────────────────────────────────────────────────────────────────── */
+
+[data-ce-shell="true"] div[class*="bg-[#0"][class*="border"]:not([class*="ce-card"]):not([class*="ce-no-retrofit"]),
+[data-ce-shell="true"] div[class*="bg-[#1"][class*="border"]:not([class*="ce-card"]):not([class*="ce-no-retrofit"]) {
+  position: relative;
+  background-image: linear-gradient(160deg, #161a22 0%, #0f1218 50%, #0a0c12 100%) !important;
+  border-color: rgba(160,180,210,0.10) !important;
+  box-shadow:
+    0 1px 0 rgba(180,200,225,0.05) inset,
+    0 -1px 0 rgba(0,0,0,0.85) inset,
+    0 4px 18px rgba(0,0,0,0.55),
+    0 1px 3px rgba(0,0,0,0.7);
+}
+
+[data-ce-shell="true"] div[class*="bg-[#0"][class*="border"]:not([class*="ce-card"]):not([class*="ce-no-retrofit"])::before,
+[data-ce-shell="true"] div[class*="bg-[#1"][class*="border"]:not([class*="ce-card"]):not([class*="ce-no-retrofit"])::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  padding: 1.5px;
+  border-radius: inherit;
+  background: linear-gradient(
+    180deg,
+    rgba(190,215,240,0.55) 0%,
+    rgba(110,140,180,0.18) 30%,
+    rgba(35,50,75,0.6) 80%,
+    rgba(15,22,38,0.85) 100%
+  );
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+          mask-composite: exclude;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Skip retrofit for buttons, inputs, and tiny chips */
+[data-ce-shell="true"] button[class*="bg-[#0"]::before,
+[data-ce-shell="true"] button[class*="bg-[#1"]::before,
+[data-ce-shell="true"] input[class*="bg-[#0"]::before,
+[data-ce-shell="true"] input[class*="bg-[#1"]::before,
+[data-ce-shell="true"] select[class*="bg-[#0"]::before,
+[data-ce-shell="true"] select[class*="bg-[#1"]::before,
+[data-ce-shell="true"] span[class*="bg-[#0"]::before,
+[data-ce-shell="true"] span[class*="bg-[#1"]::before { content: none !important; }
+
+/* Brown/yellow/amber/orange-dark bg tokens get nudged toward orange  */
+/* (anything matching common "amber/yellow-900/950" tailwind tokens)  */
+[data-ce-shell="true"] [class*="bg-amber-9"],
+[data-ce-shell="true"] [class*="bg-yellow-9"],
+[data-ce-shell="true"] [class*="bg-orange-9"] {
+  background-color: rgba(120, 60, 15, 0.35) !important;
+  border-color: rgba(255, 130, 40, 0.45) !important;
+}
+
+/* Brown/grey muddy text → orange or steel-blue */
+[data-ce-shell="true"] [class*="text-amber-7"],
+[data-ce-shell="true"] [class*="text-yellow-7"] {
+  color: #ff8a3d !important;
+}
+

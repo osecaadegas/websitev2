@@ -50,7 +50,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         {isInGame && <LevelUpOverlay />}
 
         {/* Push content below navbar + right of sidebar */}
-        <main className="relative z-10 flex-1 pt-16 lg:pl-56 flex flex-col">{children}</main>
+        <main className="relative z-10 flex-1 pt-16 lg:pl-56 flex flex-col" data-ce-shell={isInGame ? "true" : undefined}>{children}</main>
 
         <div className="relative z-10 lg:pl-56">
           <Footer />
