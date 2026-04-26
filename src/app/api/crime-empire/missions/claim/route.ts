@@ -36,7 +36,8 @@ export async function POST(req: NextRequest) {
 
   return NextResponse.json({
     success: true,
-    xp_earned: result.xp,
-    cash_earned: result.cash,
+    xp_earned:     result.xp,
+    cash_earned:   result.cash,
+    crypto_earned: result.crypto,
   });
 }

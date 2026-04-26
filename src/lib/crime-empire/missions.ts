@@ -27,10 +27,12 @@ export interface MissionDefinition {
   weight: number;
   daily_eligible: boolean;
   weekly_eligible: boolean;
+  monthly_eligible: boolean;
   bonus_target: number | null;
   bonus_multiplier: number;
   xp_reward: number;
   cash_reward: number;
+  crypto_reward: number;
   item_reward_pool: string | null;
 }
 
@@ -38,7 +40,7 @@ export interface PlayerMission {
   id: string;
   player_id: string;
   mission_id: string;
-  type: "daily" | "weekly";
+  type: "daily" | "weekly" | "monthly";
   assigned_at: string;
   expires_at: string;
   progress: number;
@@ -48,6 +50,7 @@ export interface PlayerMission {
   claimed_at: string | null;
   xp_awarded: number;
   cash_awarded: number;
+  crypto_awarded: number;
   definition: MissionDefinition;
 }
 
@@ -97,6 +100,17 @@ function nextWeeklyResetISO(): string {
 function startOfTodayUTC(): string {
   const now = new Date();
   return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate())).toISOString();
+}
+
+function nextMonthlyResetISO(): string {
+  const now = new Date();
+  const next = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1));
+  return next.toISOString();
+}
+
+function startOfThisMonthUTC(): string {
+  const now = new Date();
+  return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)).toISOString();
 }
 
 function startOfThisWeekUTC(): string {
@@ -190,6 +204,59 @@ async function checkRateLimit(
     window_start: now.toISOString(),
   });
   return true;
+}
+
+// ─── assignMonthlyMissions ───────────────────────────────────────────────────
+
+/**
+ * Assigns 3 monthly missions for the current calendar month.
+ * Idempotent — skips if player already has monthly missions this month.
+ */
+export async function assignMonthlyMissions(playerId: string): Promise<void> {
+  const monthStart = startOfThisMonthUTC();
+
+  const { data: existing } = await supabase
+    .from("player_missions")
+    .select("id")
+    .eq("player_id", playerId)
+    .eq("type", "monthly")
+    .gte("assigned_at", monthStart)
+    .limit(1);
+
+  if ((existing ?? []).length > 0) return;
+
+  const { data: player } = await supabase
+    .from("crime_players")
+    .select("level")
+    .eq("id", playerId)
+    .single();
+
+  if (!player) return;
+  const tier = getTier(player.level);
+
+  const { data: pool } = await supabase
+    .from("mission_definitions")
+    .select("*")
+    .eq("monthly_eligible", true)
+    .lte("tier_min", tier)
+    .gte("tier_max", tier);
+
+  if (!pool || pool.length === 0) return;
+
+  const selected = weightedSample(pool as MissionDefinition[], Math.min(3, pool.length));
+  const expiresAt = nextMonthlyResetISO();
+
+  const rows = selected.map((m) => ({
+    player_id: playerId,
+    mission_id: m.id,
+    type: "monthly",
+    expires_at: expiresAt,
+    progress: 0,
+    bonus_progress: 0,
+    status: "active",
+  }));
+
+  await supabase.from("player_missions").insert(rows);
 }
 
 // ─── assignDailyMissions ─────────────────────────────────────────────────────
@@ -328,18 +395,21 @@ export async function assignWeeklyMissions(playerId: string): Promise<void> {
 export async function getPlayerMissions(playerId: string): Promise<{
   daily: PlayerMission[];
   weekly: PlayerMission[];
+  monthly: PlayerMission[];
   streak: { current_streak: number; longest_streak: number; streak_shields: number } | null;
 }> {
   // Auto-assign if needed
   await Promise.all([
     assignDailyMissions(playerId),
     assignWeeklyMissions(playerId),
+    assignMonthlyMissions(playerId),
   ]);
 
   const todayStart  = startOfTodayUTC();
   const weekStart   = startOfThisWeekUTC();
+  const monthStart  = startOfThisMonthUTC();
 
-  const [dailyRes, weeklyRes, streakRes] = await Promise.all([
+  const [dailyRes, weeklyRes, monthlyRes, streakRes] = await Promise.all([
     supabase
       .from("player_missions")
       .select("*, definition:mission_definitions(*)")
@@ -355,6 +425,13 @@ export async function getPlayerMissions(playerId: string): Promise<{
       .gte("assigned_at", weekStart)
       .order("assigned_at", { ascending: true }),
     supabase
+      .from("player_missions")
+      .select("*, definition:mission_definitions(*)")
+      .eq("player_id", playerId)
+      .eq("type", "monthly")
+      .gte("assigned_at", monthStart)
+      .order("assigned_at", { ascending: true }),
+    supabase
       .from("player_streaks")
       .select("current_streak, longest_streak, streak_shields")
       .eq("player_id", playerId)
@@ -362,9 +439,10 @@ export async function getPlayerMissions(playerId: string): Promise<{
   ]);
 
   return {
-    daily:  (dailyRes.data  ?? []) as unknown as PlayerMission[],
-    weekly: (weeklyRes.data ?? []) as unknown as PlayerMission[],
-    streak: streakRes.data ?? null,
+    daily:   (dailyRes.data   ?? []) as unknown as PlayerMission[],
+    weekly:  (weeklyRes.data  ?? []) as unknown as PlayerMission[],
+    monthly: (monthlyRes.data ?? []) as unknown as PlayerMission[],
+    streak:  streakRes.data ?? null,
   };
 }
 
@@ -468,7 +546,7 @@ export async function trackMissionEvent(
 export async function claimMissionReward(
   playerId: string,
   missionInstanceId: string
-): Promise<{ xp: number; cash: number; error?: string }> {
+): Promise<{ xp: number; cash: number; crypto: number; error?: string }> {
   // Fetch the mission
   const { data: mission } = await supabase
     .from("player_missions")
@@ -477,29 +555,30 @@ export async function claimMissionReward(
     .eq("player_id", playerId)
     .single();
 
-  if (!mission) return { xp: 0, cash: 0, error: "Missão não encontrada" };
+  if (!mission) return { xp: 0, cash: 0, crypto: 0, error: "Missão não encontrada" };
   const m = mission as unknown as PlayerMission;
 
-  if (m.status !== "completed") return { xp: 0, cash: 0, error: m.status === "claimed" ? "Recompensa já reclamada" : "Missão ainda não concluída" };
+  if (m.status !== "completed") return { xp: 0, cash: 0, crypto: 0, error: m.status === "claimed" ? "Recompensa já reclamada" : "Missão ainda não concluída" };
 
   // Get player level for scaling
   const { data: player } = await supabase
     .from("crime_players")
-    .select("level, cash")
+    .select("level, cash, crypto")
     .eq("id", playerId)
     .single();
 
-  if (!player) return { xp: 0, cash: 0, error: "Jogador não encontrado" };
+  if (!player) return { xp: 0, cash: 0, crypto: 0, error: "Jogador não encontrado" };
   const tier = getTier(player.level);
   const def  = m.definition;
 
-  const xp   = scaleXP(def.xp_reward, tier, def.difficulty);
-  const cash = scaleCash(def.cash_reward, tier, def.difficulty, player.level);
+  const xp     = scaleXP(def.xp_reward, tier, def.difficulty);
+  const cash   = scaleCash(def.cash_reward, tier, def.difficulty, player.level);
+  const crypto = m.type === "monthly" ? (def.crypto_reward ?? 0) : 0;
 
   // Mark as claimed
   await supabase
     .from("player_missions")
-    .update({ status: "claimed", claimed_at: new Date().toISOString(), xp_awarded: xp, cash_awarded: cash })
+    .update({ status: "claimed", claimed_at: new Date().toISOString(), xp_awarded: xp, cash_awarded: cash, crypto_awarded: crypto })
     .eq("id", missionInstanceId);
 
   // Grant rewards
@@ -514,7 +593,14 @@ export async function claimMissionReward(
     })(),
   ]);
 
-  return { xp, cash };
+  if (crypto > 0) {
+    await supabase
+      .from("crime_players")
+      .update({ crypto: (player.crypto ?? 0) + crypto })
+      .eq("id", playerId);
+  }
+
+  return { xp, cash, crypto };
 }
 
 // ─── updateLoginStreak ────────────────────────────────────────────────────────

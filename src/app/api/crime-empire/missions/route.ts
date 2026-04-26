@@ -27,11 +27,12 @@ export async function GET() {
   // Update login streak (idempotent for same-day calls)
   const streak = await updateLoginStreak(player.id);
 
-  const { daily, weekly } = await getPlayerMissions(player.id);
+  const { daily, weekly, monthly } = await getPlayerMissions(player.id);
 
   return NextResponse.json({
     daily,
     weekly,
+    monthly,
     streak,
     player: { id: player.id, level: player.level },
   });

@@ -18,12 +18,13 @@ interface MissionDefinition {
   event_trigger: string;
   xp_reward: number;
   cash_reward: number;
+  crypto_reward: number;
 }
 
 interface PlayerMission {
   id: string;
   mission_id: string;
-  type: "daily" | "weekly";
+  type: "daily" | "weekly" | "monthly";
   progress: number;
   bonus_progress: number;
   status: "active" | "completed" | "claimed";
@@ -31,6 +32,7 @@ interface PlayerMission {
   claimed_at: string | null;
   xp_awarded: number;
   cash_awarded: number;
+  crypto_awarded: number;
   definition: MissionDefinition;
 }
 
@@ -164,13 +166,18 @@ function MissionCard({
 
         {/* Rewards */}
         <div className="flex items-center justify-between">
-          <div className="flex gap-3">
+          <div className="flex flex-wrap gap-3">
             <span className="text-[10px]" style={{ color: "rgba(200,160,80,0.6)" }}>
               🟡 <span className="text-amber-400/90 font-semibold">+{def.xp_reward} XP</span>
             </span>
             <span className="text-[10px]" style={{ color: "rgba(200,160,80,0.6)" }}>
               💵 <span className="text-green-400/90 font-semibold">${def.cash_reward.toLocaleString()}</span>
             </span>
+            {def.crypto_reward > 0 && (
+              <span className="text-[10px]" style={{ color: "rgba(200,160,80,0.6)" }}>
+                💎 <span className="font-bold" style={{ color: "#a78bfa" }}>+{def.crypto_reward} crypto</span>
+              </span>
+            )}
           </div>
 
           {/* Claim button */}
@@ -238,6 +245,7 @@ export default function MissoesPage() {
 
   const [daily,   setDaily]   = useState<PlayerMission[]>([]);
   const [weekly,  setWeekly]  = useState<PlayerMission[]>([]);
+  const [monthly, setMonthly] = useState<PlayerMission[]>([]);
   const [streak,  setStreak]  = useState<StreakInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [toast,   setToast]   = useState<{ msg: string; ok: boolean } | null>(null);
@@ -258,8 +266,9 @@ export default function MissoesPage() {
         showToast(data.error ?? "Erro ao carregar missões", false);
         return;
       }
-      setDaily(data.daily  ?? []);
-      setWeekly(data.weekly ?? []);
+      setDaily(data.daily   ?? []);
+      setWeekly(data.weekly  ?? []);
+      setMonthly(data.monthly ?? []);
       setStreak(data.streak ?? null);
     } catch {
       showToast("Erro de ligação", false);
@@ -286,7 +295,10 @@ export default function MissoesPage() {
         showToast(data.error ?? "Erro ao reclamar recompensa", false);
         return;
       }
-      showToast(`+${data.xp_earned} XP e $${data.cash_earned?.toLocaleString()} ganhos!`, true);
+      showToast(
+        `+${data.xp_earned} XP  •  $${data.cash_earned?.toLocaleString()}${data.crypto_earned > 0 ? `  •  💎 +${data.crypto_earned} crypto` : ""}`,
+        true
+      );
       // Refresh missions list
       await fetchMissions();
     } catch {
@@ -298,8 +310,9 @@ export default function MissoesPage() {
 
   const noiseSvg = "data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='1'/%3E%3C/svg%3E";
 
-  const dailyCompleted  = daily.filter((m) => m.status !== "active").length;
-  const weeklyCompleted = weekly.filter((m) => m.status !== "active").length;
+  const dailyCompleted   = daily.filter((m) => m.status !== "active").length;
+  const weeklyCompleted  = weekly.filter((m) => m.status !== "active").length;
+  const monthlyCompleted = monthly.filter((m) => m.status !== "active").length;
 
   return (
     <div
@@ -331,7 +344,7 @@ export default function MissoesPage() {
             </h1>
           </div>
           <p className="text-xs tracking-wider" style={{ color: "rgba(200,160,80,0.5)" }}>
-            Completa missões diárias e semanais para ganhar XP e dinheiro
+            Completa missões diárias, semanais e mensais para ganhar XP, dinheiro e crypto
           </p>
         </div>
       </div>
@@ -432,6 +445,67 @@ export default function MissoesPage() {
               ) : (
                 <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                   {weekly.map((m) => (
+                    <MissionCard
+                      key={m.id}
+                      mission={m}
+                      onClaim={handleClaim}
+                      claiming={claiming}
+                    />
+                  ))}
+                </div>
+              )}
+            </section>
+
+            {/* Monthly Missions */}
+            <section>
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-3">
+                  <div
+                    className="w-1 h-6 rounded-full"
+                    style={{ background: "linear-gradient(180deg, #d97706, #fbbf24)" }}
+                  />
+                  <h2
+                    className="text-base font-black tracking-widest uppercase"
+                    style={{ color: "#e8c97a", fontFamily: "Georgia, serif" }}
+                  >
+                    👑 Missões Mensais
+                  </h2>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span
+                    className="text-[10px] font-bold px-2 py-0.5 rounded"
+                    style={{ color: "#a78bfa", background: "rgba(167,139,250,0.1)", border: "1px solid rgba(167,139,250,0.2)" }}
+                  >
+                    💎 crypto
+                  </span>
+                  <span
+                    className="text-xs font-bold px-2 py-1 rounded"
+                    style={{ color: "#fbbf24", background: "rgba(251,191,36,0.08)", border: "1px solid rgba(251,191,36,0.2)" }}
+                  >
+                    {monthlyCompleted}/{monthly.length}
+                  </span>
+                </div>
+              </div>
+
+              <div
+                className="mb-4 px-4 py-2 rounded-lg text-[11px]"
+                style={{ background: "rgba(167,139,250,0.06)", border: "1px solid rgba(167,139,250,0.15)", color: "rgba(200,160,80,0.55)" }}
+              >
+                📅 Missões mensais repõem no primeiro dia do próximo mês. Recompensas incluem grandes quantidades de XP, dinheiro — e um drop de 💎 crypto.
+              </div>
+
+              {monthly.length === 0 ? (
+                <div
+                  className="text-center py-10 rounded-xl"
+                  style={{ background: "rgba(12,10,6,0.6)", border: "1px solid rgba(251,191,36,0.1)" }}
+                >
+                  <p className="text-sm" style={{ color: "rgba(200,160,80,0.4)" }}>
+                    Sem missões mensais atribuídas. Actualiza a página.
+                  </p>
+                </div>
+              ) : (
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                  {monthly.map((m) => (
                     <MissionCard
                       key={m.id}
                       mission={m}
