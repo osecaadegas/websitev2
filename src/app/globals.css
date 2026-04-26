@@ -4982,7 +4982,7 @@ body {
   content: '';
   position: absolute;
   inset: 0;
-  padding: 1px;
+  padding: 2px;
   border-radius: inherit;
   -webkit-mask:
     linear-gradient(#000 0 0) content-box,
@@ -4993,54 +4993,114 @@ body {
   z-index: 2;
 }
 
+/* Inner ambient glow + sheen ring on every metallic card */
+.ce-card--metal-gold::after,
+.ce-card--metal-blood::after,
+.ce-card--metal-acid::after,
+.ce-card--metal-violet::after,
+.ce-card--metal-steel::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: 1;
+  opacity: 0.85;
+}
+
 .ce-card--metal-steel::before {
   background: linear-gradient(
     180deg,
-    rgba(255,255,255,0.22) 0%,
-    rgba(255,255,255,0.05) 25%,
-    rgba(0,0,0,0.45) 75%,
-    rgba(0,0,0,0.65) 100%
+    rgba(255,255,255,0.7) 0%,
+    rgba(180,200,220,0.35) 25%,
+    rgba(40,50,60,0.7) 75%,
+    rgba(10,15,25,0.95) 100%
   );
+}
+.ce-card--metal-steel::after {
+  background:
+    radial-gradient(ellipse at top, rgba(180,200,230,0.18) 0%, transparent 55%),
+    linear-gradient(180deg, transparent 60%, rgba(120,140,170,0.08) 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.18),
+    inset 0 -1px 0 rgba(0,0,0,0.5),
+    0 0 30px rgba(120,140,170,0.18);
 }
 
 .ce-card--metal-gold::before {
   background: linear-gradient(
     180deg,
-    rgba(255,220,130,0.55) 0%,
-    rgba(251,191,36,0.18) 30%,
-    rgba(120,80,10,0.5) 80%,
-    rgba(60,40,5,0.7) 100%
+    rgba(255,235,160,0.95) 0%,
+    rgba(251,191,36,0.55) 30%,
+    rgba(140,90,15,0.85) 80%,
+    rgba(70,45,8,0.95) 100%
   );
+}
+.ce-card--metal-gold::after {
+  background:
+    radial-gradient(ellipse at top, rgba(251,191,36,0.18) 0%, transparent 55%),
+    linear-gradient(180deg, transparent 50%, rgba(120,80,10,0.12) 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255,235,160,0.3),
+    inset 0 -1px 0 rgba(60,40,5,0.6),
+    0 0 36px rgba(251,191,36,0.22);
 }
 
 .ce-card--metal-blood::before {
   background: linear-gradient(
     180deg,
-    rgba(255,140,140,0.45) 0%,
-    rgba(239,68,68,0.15) 30%,
-    rgba(120,20,20,0.55) 80%,
-    rgba(60,10,10,0.7) 100%
+    rgba(255,160,160,0.9) 0%,
+    rgba(239,68,68,0.55) 30%,
+    rgba(140,25,25,0.85) 80%,
+    rgba(70,12,12,0.95) 100%
   );
+}
+.ce-card--metal-blood::after {
+  background:
+    radial-gradient(ellipse at top, rgba(239,68,68,0.2) 0%, transparent 55%),
+    linear-gradient(180deg, transparent 50%, rgba(120,20,20,0.14) 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255,180,180,0.28),
+    inset 0 -1px 0 rgba(60,10,10,0.65),
+    0 0 36px rgba(239,68,68,0.25);
 }
 
 .ce-card--metal-acid::before {
   background: linear-gradient(
     180deg,
-    rgba(170,255,160,0.45) 0%,
-    rgba(34,197,94,0.15) 30%,
-    rgba(20,90,40,0.55) 80%,
-    rgba(10,40,20,0.7) 100%
+    rgba(180,255,170,0.9) 0%,
+    rgba(34,197,94,0.55) 30%,
+    rgba(25,100,45,0.85) 80%,
+    rgba(12,45,22,0.95) 100%
   );
+}
+.ce-card--metal-acid::after {
+  background:
+    radial-gradient(ellipse at top, rgba(34,197,94,0.18) 0%, transparent 55%),
+    linear-gradient(180deg, transparent 50%, rgba(20,90,40,0.14) 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(180,255,180,0.28),
+    inset 0 -1px 0 rgba(10,40,20,0.65),
+    0 0 36px rgba(34,197,94,0.22);
 }
 
 .ce-card--metal-violet::before {
   background: linear-gradient(
     180deg,
-    rgba(220,180,255,0.5) 0%,
-    rgba(168,85,247,0.18) 30%,
-    rgba(80,30,140,0.55) 80%,
-    rgba(40,15,70,0.7) 100%
+    rgba(230,190,255,0.9) 0%,
+    rgba(168,85,247,0.55) 30%,
+    rgba(95,35,160,0.85) 80%,
+    rgba(45,18,80,0.95) 100%
   );
+}
+.ce-card--metal-violet::after {
+  background:
+    radial-gradient(ellipse at top, rgba(168,85,247,0.2) 0%, transparent 55%),
+    linear-gradient(180deg, transparent 50%, rgba(80,30,140,0.14) 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(230,190,255,0.3),
+    inset 0 -1px 0 rgba(40,15,70,0.65),
+    0 0 36px rgba(168,85,247,0.25);
 }
 
 /* --- Refined sheen — auto-applied to primary CTAs ------------------ */
@@ -5117,11 +5177,16 @@ body {
   position: absolute;
   pointer-events: none;
   font-weight: 900;
-  font-size: 0.85rem;
+  font-size: 1.5rem;
   letter-spacing: 0.02em;
-  animation: ce-reward-rise 0.95s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation: ce-reward-rise 1.4s cubic-bezier(0.22, 1, 0.36, 1) forwards;
   z-index: 100;
-  text-shadow: 0 2px 8px rgba(0,0,0,0.7);
+  text-shadow:
+    0 0 12px currentColor,
+    0 2px 10px rgba(0,0,0,0.85),
+    0 0 2px rgba(0,0,0,0.9);
+  filter: drop-shadow(0 0 6px currentColor);
+  white-space: nowrap;
 }
 
 .ce-reward-pop--xp { color: #c084fc; }
@@ -5130,9 +5195,10 @@ body {
 .ce-reward-pop--damage { color: #f87171; }
 
 @keyframes ce-reward-rise {
-  0%   { transform: translate(-50%, 0) scale(0.6); opacity: 0; }
-  15%  { transform: translate(-50%, -8px) scale(1.15); opacity: 1; }
-  100% { transform: translate(-50%, -56px) scale(1); opacity: 0; }
+  0%   { transform: translate(-50%, 0) scale(0.4); opacity: 0; }
+  12%  { transform: translate(-50%, -14px) scale(1.35); opacity: 1; }
+  25%  { transform: translate(-50%, -30px) scale(1); opacity: 1; }
+  100% { transform: translate(-50%, -160px) scale(0.95); opacity: 0; }
 }
 
 /* --- Press feedback for any clickable .ce-card -------------------- */

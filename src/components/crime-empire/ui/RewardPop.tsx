@@ -57,7 +57,7 @@ function Pop({ item, onDone }: { item: RewardItem; onDone?: (id: string) => void
     const t = setTimeout(() => {
       setMounted(false);
       onDone?.(item.id);
-    }, 950);
+    }, 1400);
     return () => clearTimeout(t);
   }, [item.id, onDone]);
 
