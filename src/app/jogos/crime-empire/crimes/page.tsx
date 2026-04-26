@@ -92,7 +92,7 @@ function FeaturedCrime({
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4 }}
-      className="relative overflow-hidden rounded-2xl mb-6 ce-shine"
+      className="relative overflow-hidden rounded-2xl mb-6 ce-shine ce-card--metal-blood"
       style={{
         background: "linear-gradient(145deg, #131313 0%, #0f0f0f 60%, #0c0800 100%)",
         border: "1px solid rgba(255,106,0,0.3)",

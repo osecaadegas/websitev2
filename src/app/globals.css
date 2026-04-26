@@ -4926,3 +4926,231 @@ body {
     radial-gradient(ellipse at 50% 0%, rgba(34,197,94,0.1) 0%, transparent 60%);
 }
 
+
+/* ================================================================== */
+/* CE v2026 Polish Layer — additive, non-breaking                     */
+/* Enhances existing .ce-card / .ce-btn-* with metallic edges,        */
+/* refined light sweeps, and gold-standard CTA feedback.              */
+/* ================================================================== */
+
+/* --- Metallic edge treatment (opt-in via .ce-card--metal) ---------- */
+
+.ce-card--metal {
+  background:
+    /* subtle inner sheen */
+    linear-gradient(180deg, rgba(255,255,255,0.035) 0%, transparent 35%, transparent 65%, rgba(0,0,0,0.25) 100%),
+    linear-gradient(160deg, #181818 0%, #101010 55%, #080808 100%);
+}
+
+.ce-card--metal::before {
+  /* Brushed metal border — top-edge bright, bottom-edge dark */
+  content: '';
+  position: absolute;
+  inset: 0;
+  padding: 1px;
+  border-radius: inherit;
+  background: linear-gradient(
+    180deg,
+    rgba(255,255,255,0.18) 0%,
+    rgba(255,255,255,0.04) 25%,
+    rgba(0,0,0,0.4) 75%,
+    rgba(0,0,0,0.6) 100%
+  );
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+          mask-composite: exclude;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Self-contained variants — apply .ce-card--metal-X alone (no need to also add .ce-card--metal) */
+.ce-card--metal-gold,
+.ce-card--metal-blood,
+.ce-card--metal-acid,
+.ce-card--metal-violet,
+.ce-card--metal-steel {
+  position: relative;
+}
+
+.ce-card--metal-gold::before,
+.ce-card--metal-blood::before,
+.ce-card--metal-acid::before,
+.ce-card--metal-violet::before,
+.ce-card--metal-steel::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  padding: 1px;
+  border-radius: inherit;
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+          mask-composite: exclude;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.ce-card--metal-steel::before {
+  background: linear-gradient(
+    180deg,
+    rgba(255,255,255,0.22) 0%,
+    rgba(255,255,255,0.05) 25%,
+    rgba(0,0,0,0.45) 75%,
+    rgba(0,0,0,0.65) 100%
+  );
+}
+
+.ce-card--metal-gold::before {
+  background: linear-gradient(
+    180deg,
+    rgba(255,220,130,0.55) 0%,
+    rgba(251,191,36,0.18) 30%,
+    rgba(120,80,10,0.5) 80%,
+    rgba(60,40,5,0.7) 100%
+  );
+}
+
+.ce-card--metal-blood::before {
+  background: linear-gradient(
+    180deg,
+    rgba(255,140,140,0.45) 0%,
+    rgba(239,68,68,0.15) 30%,
+    rgba(120,20,20,0.55) 80%,
+    rgba(60,10,10,0.7) 100%
+  );
+}
+
+.ce-card--metal-acid::before {
+  background: linear-gradient(
+    180deg,
+    rgba(170,255,160,0.45) 0%,
+    rgba(34,197,94,0.15) 30%,
+    rgba(20,90,40,0.55) 80%,
+    rgba(10,40,20,0.7) 100%
+  );
+}
+
+.ce-card--metal-violet::before {
+  background: linear-gradient(
+    180deg,
+    rgba(220,180,255,0.5) 0%,
+    rgba(168,85,247,0.18) 30%,
+    rgba(80,30,140,0.55) 80%,
+    rgba(40,15,70,0.7) 100%
+  );
+}
+
+/* --- Refined sheen — auto-applied to primary CTAs ------------------ */
+/* Replaces fragile transform-skew sweep with a softer linear pass.   */
+
+.ce-btn-primary,
+.ce-btn-gold,
+.ce-btn-success,
+.ce-btn-danger,
+.ce-btn-purple {
+  position: relative;
+}
+
+.ce-btn-primary::after,
+.ce-btn-gold::after,
+.ce-btn-success::after,
+.ce-btn-danger::after,
+.ce-btn-purple::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -60%;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(
+    100deg,
+    transparent 0%,
+    rgba(255,255,255,0.18) 50%,
+    transparent 100%
+  );
+  transform: skewX(-18deg);
+  pointer-events: none;
+  border-radius: inherit;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.ce-btn-primary:hover:not(:disabled)::after,
+.ce-btn-gold:hover:not(:disabled)::after,
+.ce-btn-success:hover:not(:disabled)::after,
+.ce-btn-danger:hover:not(:disabled)::after,
+.ce-btn-purple:hover:not(:disabled)::after {
+  animation: ce-btn-sweep 0.85s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+@keyframes ce-btn-sweep {
+  0%   { left: -60%; opacity: 0; }
+  20%  { opacity: 1; }
+  80%  { opacity: 1; }
+  100% { left: 110%; opacity: 0; }
+}
+
+/* --- Ticking number — for animated stat counters ------------------- */
+
+.ce-tick-number {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum';
+  display: inline-block;
+  will-change: contents;
+}
+
+.ce-tick-number--flash {
+  animation: ce-tick-flash 0.5s ease-out;
+}
+
+@keyframes ce-tick-flash {
+  0%   { color: #ffd166; text-shadow: 0 0 8px rgba(255,209,102,0.6); }
+  100% { color: inherit; text-shadow: none; }
+}
+
+/* --- Reward pop — for XP / cash gain feedback ---------------------- */
+
+.ce-reward-pop {
+  position: absolute;
+  pointer-events: none;
+  font-weight: 900;
+  font-size: 0.85rem;
+  letter-spacing: 0.02em;
+  animation: ce-reward-rise 0.95s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  z-index: 100;
+  text-shadow: 0 2px 8px rgba(0,0,0,0.7);
+}
+
+.ce-reward-pop--xp { color: #c084fc; }
+.ce-reward-pop--cash { color: #4ade80; }
+.ce-reward-pop--gold { color: #fbbf24; }
+.ce-reward-pop--damage { color: #f87171; }
+
+@keyframes ce-reward-rise {
+  0%   { transform: translate(-50%, 0) scale(0.6); opacity: 0; }
+  15%  { transform: translate(-50%, -8px) scale(1.15); opacity: 1; }
+  100% { transform: translate(-50%, -56px) scale(1); opacity: 0; }
+}
+
+/* --- Press feedback for any clickable .ce-card -------------------- */
+
+.ce-card--clickable {
+  cursor: pointer;
+}
+
+.ce-card--clickable:active {
+  transform: translateY(0) scale(0.985);
+  transition-duration: 0.06s;
+}
+
+/* --- Focus ring (accessibility) ----------------------------------- */
+
+.ce-btn:focus-visible,
+.ce-card--clickable:focus-visible {
+  outline: 2px solid rgba(255,140,40,0.6);
+  outline-offset: 2px;
+}
+
