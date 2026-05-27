@@ -8,6 +8,11 @@ type EventPayload = {
   page_url: string;
   offer_id?: string;
   metadata?: Record<string, unknown>;
+  // Client-side enrichment (captured once and sent on first pageview/event)
+  screen_width?: number;
+  screen_height?: number;
+  timezone?: string;
+  language?: string;
 };
 
 let queue: EventPayload[] = [];
@@ -59,6 +64,19 @@ function scheduleFlush() {
 }
 
 /**
+ * Collect client-side enrichment data (screen, timezone, language).
+ * Only called in browser context.
+ */
+function getClientEnrichment(): Pick<EventPayload, "screen_width" | "screen_height" | "timezone" | "language"> {
+  return {
+    screen_width: window.screen?.width ?? undefined,
+    screen_height: window.screen?.height ?? undefined,
+    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone ?? undefined,
+    language: navigator.language ?? undefined,
+  };
+}
+
+/**
  * Track a custom event.
  * Respects GDPR consent — does nothing if analytics not accepted.
  */
@@ -100,6 +118,7 @@ export function trackPageView() {
   queue.push({
     event_type: "pageview",
     page_url: window.location.pathname,
+    ...getClientEnrichment(),
   });
 
   scheduleFlush();

@@ -2,34 +2,54 @@
 
 export interface GeoData {
   country: string | null;
+  country_code: string | null;
   city: string | null;
   region: string | null;
   isp: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  timezone: string | null;
+  zip: string | null;
 }
 
-const EMPTY_GEO: GeoData = { country: null, city: null, region: null, isp: null };
+const EMPTY_GEO: GeoData = {
+  country: null,
+  country_code: null,
+  city: null,
+  region: null,
+  isp: null,
+  latitude: null,
+  longitude: null,
+  timezone: null,
+  zip: null,
+};
+
+// ip-api.com supports both IPv4 and IPv6 natively.
+// IPv6 loopback addresses to skip.
+const LOOPBACK = new Set(["127.0.0.1", "::1", "::ffff:127.0.0.1", "localhost"]);
 
 /**
  * Resolve IP → geo data. Checks cache first, then calls ip-api.com (free tier).
- * Falls back gracefully if lookup fails.
+ * Supports IPv4 and IPv6. Falls back gracefully if lookup fails.
  */
 export async function resolveGeo(ip: string): Promise<GeoData> {
-  if (!ip || ip === "127.0.0.1" || ip === "::1") return EMPTY_GEO;
+  if (!ip || LOOPBACK.has(ip)) return EMPTY_GEO;
 
   // 1. Check cache
   const { data: cached } = await supabase
     .from("geo_cache")
-    .select("country, city, region, isp")
+    .select("country, country_code, city, region, isp, latitude, longitude, timezone, zip")
     .eq("ip_address", ip)
     .single();
 
   if (cached) return cached as GeoData;
 
-  // 2. Call ip-api.com (free, no key needed, 45 req/min)
+  // 2. Call ip-api.com — supports IPv4 + IPv6, no API key required (45 req/min free)
   try {
-    const res = await fetch(`http://ip-api.com/json/${encodeURIComponent(ip)}?fields=status,country,city,regionName,isp`, {
-      signal: AbortSignal.timeout(3000),
-    });
+    const res = await fetch(
+      `http://ip-api.com/json/${encodeURIComponent(ip)}?fields=status,country,countryCode,city,regionName,isp,lat,lon,timezone,zip`,
+      { signal: AbortSignal.timeout(4000) }
+    );
 
     if (!res.ok) return EMPTY_GEO;
 
@@ -38,9 +58,14 @@ export async function resolveGeo(ip: string): Promise<GeoData> {
 
     const geo: GeoData = {
       country: json.country || null,
+      country_code: json.countryCode || null,
       city: json.city || null,
       region: json.regionName || null,
       isp: json.isp || null,
+      latitude: json.lat ?? null,
+      longitude: json.lon ?? null,
+      timezone: json.timezone || null,
+      zip: json.zip || null,
     };
 
     // 3. Cache the result

@@ -3,6 +3,7 @@ import { cookies, headers } from "next/headers";
 import { supabase } from "@/lib/supabase";
 import { resolveGeo, classifyReferrer } from "@/lib/analytics/geo";
 import { detectFraud } from "@/lib/analytics/fraud";
+import { parseUserAgent } from "@/lib/analytics/device";
 
 /**
  * POST /api/track/event — Track a user event (click, pageview, conversion, etc.)
@@ -11,16 +12,31 @@ import { detectFraud } from "@/lib/analytics/fraud";
  *   event_type: "pageview" | "click" | "offer_click" | "external_link" | "conversion" | "button_click",
  *   page_url: string,
  *   offer_id?: string,
- *   metadata?: Record<string, unknown>
+ *   metadata?: Record<string, unknown>,
+ *   screen_width?: number,
+ *   screen_height?: number,
+ *   timezone?: string,   // client IANA timezone (e.g. "Europe/Lisbon")
+ *   language?: string,   // browser language (e.g. "pt-PT")
  * }
  *
- * Server automatically captures: IP, session, geo, timestamp
+ * Server automatically captures: IP (v4+v6), session, geo (country/city/lat/lon/zip/timezone),
+ * device type, browser, OS, Accept-Language, user_agent, referrer.
+ * For logged-in users: links user_id + email.
  * Runs fraud detection before storing.
  */
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { event_type, page_url, offer_id, metadata = {} } = body;
+    const {
+      event_type,
+      page_url,
+      offer_id,
+      metadata = {},
+      screen_width,
+      screen_height,
+      timezone: clientTimezone,
+      language: clientLanguage,
+    } = body;
 
     // Validate event_type
     const validTypes = ["pageview", "click", "offer_click", "external_link", "conversion", "button_click"];
@@ -28,24 +44,41 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Invalid event_type" }, { status: 400 });
     }
 
-    // Get IP from headers (Vercel/CF/nginx)
     const headerStore = await headers();
+
+    // ── IP extraction (IPv4 + IPv6) ───────────────────────────────────────────
+    // cf-connecting-ip is the most trustworthy when behind Cloudflare.
+    // x-forwarded-for is standard for most other proxies (take first non-private hop).
     const ip =
+      headerStore.get("cf-connecting-ip")?.trim() ||
       headerStore.get("x-forwarded-for")?.split(",")[0]?.trim() ||
-      headerStore.get("x-real-ip") ||
-      headerStore.get("cf-connecting-ip") ||
+      headerStore.get("x-real-ip")?.trim() ||
       "unknown";
 
-    // Get or create session
-    const cookieStore = await cookies();
-    let sessionToken = cookieStore.get("arena_session")?.value;
+    // ── Accept-Language ───────────────────────────────────────────────────────
+    // Use client-reported language first (most accurate), fall back to header.
+    const acceptLanguage = headerStore.get("accept-language") || null;
+    const language =
+      clientLanguage ||
+      (acceptLanguage ? acceptLanguage.split(",")[0]?.split(";")[0]?.trim() : null) ||
+      null;
+
+    // ── User-agent & device parsing ───────────────────────────────────────────
+    const userAgent = headerStore.get("user-agent") || null;
+    const device = parseUserAgent(userAgent);
+
     const referrer = headerStore.get("referer") || null;
 
-    // Resolve geo data
+    // ── Geo lookup (supports IPv4 + IPv6 via ip-api.com) ─────────────────────
     const geo = await resolveGeo(ip);
 
-    // Get user_id if logged in
+    // Prefer IP-derived timezone if client didn't send one
+    const timezone = clientTimezone || geo.timezone || null;
+
+    // ── Identify logged-in user ───────────────────────────────────────────────
     let userId: string | null = null;
+    let userEmail: string | null = null;
+    const cookieStore = await cookies();
     const sessionCookie = cookieStore.get("twitch_session")?.value;
     if (sessionCookie) {
       try {
@@ -53,17 +86,19 @@ export async function POST(request: Request) {
         if (session.id) {
           const { data: user } = await supabase
             .from("users")
-            .select("id")
+            .select("id, email")
             .eq("twitch_id", session.id)
             .single();
           userId = user?.id || null;
+          userEmail = user?.email || null;
         }
       } catch {
         // ignore parse errors
       }
     }
 
-    // Ensure session exists in DB
+    // ── Session management ────────────────────────────────────────────────────
+    let sessionToken = cookieStore.get("arena_session")?.value;
     let sessionId: string | null = null;
 
     if (sessionToken) {
@@ -75,15 +110,18 @@ export async function POST(request: Request) {
 
       if (existingSession) {
         sessionId = existingSession.id;
-        // Update last_seen and link user if newly logged in
+
+        // Update last_seen and backfill any enrichment that was missing
         const updateData: Record<string, unknown> = { last_seen_at: new Date().toISOString() };
         if (userId) updateData.user_id = userId;
+        if (userEmail) updateData.user_email = userEmail;
+
         await supabase.from("analytics_sessions").update(updateData).eq("id", sessionId);
       }
     }
 
     if (!sessionId) {
-      // Create new session
+      // Create new session with full enrichment
       sessionToken = crypto.randomUUID();
       const referrerSource = classifyReferrer(referrer);
 
@@ -92,12 +130,29 @@ export async function POST(request: Request) {
         .insert({
           session_token: sessionToken,
           user_id: userId,
+          user_email: userEmail,
           ip_address: ip,
-          user_agent: headerStore.get("user-agent") || null,
+          user_agent: userAgent,
+          // Device
+          device_type: device.device_type,
+          browser: device.browser,
+          os: device.os,
+          // Screen (client-reported)
+          screen_width: typeof screen_width === "number" ? screen_width : null,
+          screen_height: typeof screen_height === "number" ? screen_height : null,
+          // Locale
+          language,
+          timezone,
+          // Geo
           country: geo.country,
+          country_code: geo.country_code,
           city: geo.city,
           region: geo.region,
           isp: geo.isp,
+          latitude: geo.latitude,
+          longitude: geo.longitude,
+          zip: geo.zip,
+          // Referrer
           referrer,
           referrer_source: referrerSource,
         })
@@ -111,7 +166,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Failed to create session" }, { status: 500 });
     }
 
-    // Run fraud detection
+    // ── Fraud detection ───────────────────────────────────────────────────────
     const fraud = await detectFraud({
       sessionId,
       ipAddress: ip,
@@ -120,7 +175,7 @@ export async function POST(request: Request) {
       eventType: event_type,
     });
 
-    // Store event
+    // ── Store event ───────────────────────────────────────────────────────────
     await supabase.from("analytics_events").insert({
       session_id: sessionId,
       user_id: userId,
@@ -134,7 +189,7 @@ export async function POST(request: Request) {
       is_suspicious: fraud.isSuspicious,
     });
 
-    // If suspicious, mark session too
+    // Mark session suspicious if detected
     if (fraud.isSuspicious) {
       await supabase
         .from("analytics_sessions")
@@ -142,11 +197,8 @@ export async function POST(request: Request) {
         .eq("id", sessionId);
     }
 
-    // Set session cookie if new
-    const response = NextResponse.json({
-      ok: true,
-      suspicious: fraud.isSuspicious,
-    });
+    // ── Return + set session cookie ───────────────────────────────────────────
+    const response = NextResponse.json({ ok: true, suspicious: fraud.isSuspicious });
 
     if (!cookieStore.get("arena_session")?.value && sessionToken) {
       response.cookies.set("arena_session", sessionToken, {
