@@ -33,6 +33,7 @@ export async function detectFraud(params: {
   userId?: string | null;
   offerId?: string | null;
   eventType: string;
+  gpuFingerprint?: string | null;
 }): Promise<FraudCheckResult> {
   const config = await getConfig();
   const reasons: string[] = [];
@@ -41,6 +42,8 @@ export async function detectFraud(params: {
   const maxClicksPer10s = config["max_clicks_per_10s"] ?? 10;
   const maxSameOfferPerHour = config["max_same_offer_clicks_per_hour"] ?? 5;
   const maxSessionsPerIpPerHour = config["max_sessions_per_ip_per_hour"] ?? 10;
+  const maxUsersPerIp24h = config["max_users_per_ip_24h"] ?? 3;
+  const maxUsersPerGpu7d = config["max_users_per_gpu_7d"] ?? 2;
 
   // 1. Too many clicks in 10 seconds from this session
   if (params.eventType !== "pageview") {
@@ -102,6 +105,40 @@ export async function detectFraud(params: {
   if ((totalEvents ?? 0) > 5 && (pageviews ?? 0) === 0) {
     reasons.push(`No pageviews with ${totalEvents} events — bot-like behavior`);
     riskScore += 20;
+  }
+
+  // 5. Multiple distinct logged-in users from the same IP in the last 24h
+  if (params.userId) {
+    const oneDayAgo = new Date(Date.now() - 86_400_000).toISOString();
+    const { data: ipUsers } = await supabase
+      .from("analytics_sessions")
+      .select("user_id")
+      .eq("ip_address", params.ipAddress)
+      .not("user_id", "is", null)
+      .gte("created_at", oneDayAgo);
+
+    const distinctIpUsers = new Set((ipUsers ?? []).map((r) => r.user_id)).size;
+    if (distinctIpUsers >= maxUsersPerIp24h) {
+      reasons.push(`Multi-account IP: ${distinctIpUsers} distinct users from same IP in 24h (threshold: ${maxUsersPerIp24h})`);
+      riskScore += 35;
+    }
+  }
+
+  // 6. Multiple distinct logged-in users sharing the same GPU fingerprint in the last 7 days
+  if (params.userId && params.gpuFingerprint) {
+    const sevenDaysAgo = new Date(Date.now() - 7 * 86_400_000).toISOString();
+    const { data: gpuUsers } = await supabase
+      .from("analytics_sessions")
+      .select("user_id")
+      .eq("gpu_fingerprint", params.gpuFingerprint)
+      .not("user_id", "is", null)
+      .gte("created_at", sevenDaysAgo);
+
+    const distinctGpuUsers = new Set((gpuUsers ?? []).map((r) => r.user_id)).size;
+    if (distinctGpuUsers >= maxUsersPerGpu7d) {
+      reasons.push(`Multi-account GPU: ${distinctGpuUsers} distinct users on same GPU in 7 days (threshold: ${maxUsersPerGpu7d})`);
+      riskScore += 40;
+    }
   }
 
   // Cap at 100

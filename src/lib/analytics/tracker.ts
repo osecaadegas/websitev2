@@ -13,6 +13,7 @@ type EventPayload = {
   screen_height?: number;
   timezone?: string;
   language?: string;
+  gpu_fingerprint?: string;
 };
 
 let queue: EventPayload[] = [];
@@ -64,15 +65,37 @@ function scheduleFlush() {
 }
 
 /**
+ * Read WebGL GPU renderer string for device fingerprinting.
+ * Returns null if WebGL is unavailable or blocked (privacy mode).
+ */
+function getGpuFingerprint(): string | undefined {
+  try {
+    const canvas = document.createElement("canvas");
+    const gl =
+      (canvas.getContext("webgl") as WebGLRenderingContext | null) ||
+      (canvas.getContext("experimental-webgl") as WebGLRenderingContext | null);
+    if (!gl) return undefined;
+    const ext = gl.getExtension("WEBGL_debug_renderer_info");
+    if (!ext) return undefined;
+    const vendor = gl.getParameter(ext.UNMASKED_VENDOR_WEBGL) as string;
+    const renderer = gl.getParameter(ext.UNMASKED_RENDERER_WEBGL) as string;
+    return `${vendor}::${renderer}`;
+  } catch {
+    return undefined;
+  }
+}
+
+/**
  * Collect client-side enrichment data (screen, timezone, language).
  * Only called in browser context.
  */
-function getClientEnrichment(): Pick<EventPayload, "screen_width" | "screen_height" | "timezone" | "language"> {
+function getClientEnrichment(): Pick<EventPayload, "screen_width" | "screen_height" | "timezone" | "language" | "gpu_fingerprint"> {
   return {
     screen_width: window.screen?.width ?? undefined,
     screen_height: window.screen?.height ?? undefined,
     timezone: Intl.DateTimeFormat().resolvedOptions().timeZone ?? undefined,
     language: navigator.language ?? undefined,
+    gpu_fingerprint: getGpuFingerprint(),
   };
 }
 

@@ -224,6 +224,7 @@ create table if not exists analytics_sessions (
   isp text,
   referrer text,
   referrer_source text check (referrer_source in ('direct', 'twitch', 'social', 'search', 'other')),
+  gpu_fingerprint    text,
   is_suspicious boolean not null default false,
   created_at timestamptz not null default now(),
   last_seen_at timestamptz not null default now()
@@ -234,6 +235,7 @@ create index idx_analytics_sessions_user on analytics_sessions(user_id);
 create index idx_analytics_sessions_ip on analytics_sessions(ip_address);
 create index idx_analytics_sessions_created on analytics_sessions(created_at desc);
 create index idx_analytics_sessions_country on analytics_sessions(country);
+create index idx_analytics_sessions_gpu on analytics_sessions(gpu_fingerprint) where gpu_fingerprint is not null;
 
 create table if not exists analytics_events (
   id uuid primary key default gen_random_uuid(),
@@ -295,6 +297,8 @@ insert into fraud_config (key, value, description) values
   ('max_clicks_per_10s', 10, 'Max clicks allowed in 10 seconds per session'),
   ('max_same_offer_clicks_per_hour', 5, 'Max clicks on same offer per hour'),
   ('max_sessions_per_ip_per_hour', 10, 'Max new sessions from same IP in 1 hour'),
+  ('max_users_per_ip_24h', 3, 'Max distinct logged-in users from same IP in 24 hours'),
+  ('max_users_per_gpu_7d', 2, 'Max distinct logged-in users sharing same GPU fingerprint in 7 days'),
   ('risk_threshold_flag', 50, 'Risk score to auto-flag as suspicious'),
   ('risk_threshold_block', 80, 'Risk score to block session')
 on conflict (key) do nothing;

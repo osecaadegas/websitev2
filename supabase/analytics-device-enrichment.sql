@@ -20,11 +20,21 @@ alter table analytics_sessions
   add column if not exists longitude     double precision,
   add column if not exists zip           text;
 
+alter table analytics_sessions
+  add column if not exists gpu_fingerprint text;
+
 -- Useful indexes for dashboard queries
 create index if not exists idx_analytics_sessions_device   on analytics_sessions(device_type);
 create index if not exists idx_analytics_sessions_browser  on analytics_sessions(browser);
 create index if not exists idx_analytics_sessions_os       on analytics_sessions(os);
 create index if not exists idx_analytics_sessions_language on analytics_sessions(language);
+create index if not exists idx_analytics_sessions_gpu      on analytics_sessions(gpu_fingerprint) where gpu_fingerprint is not null;
+
+-- New fraud_config thresholds (idempotent)
+insert into fraud_config (key, value, description) values
+  ('max_users_per_ip_24h', 3, 'Max distinct logged-in users from same IP in 24 hours'),
+  ('max_users_per_gpu_7d', 2, 'Max distinct logged-in users sharing same GPU fingerprint in 7 days')
+on conflict (key) do nothing;
 
 -- ── geo_cache ────────────────────────────────────────────────
 alter table geo_cache
