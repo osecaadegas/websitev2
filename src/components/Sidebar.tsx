@@ -56,23 +56,7 @@ const SECONDARY_LINKS: NavItem[] = [
     minRole: "configurador",
     children: [
       { href: "/admin/settings", label: "Definições" },
-      { href: "/admin/outros/daily-session", label: "Sessão do Dia" },
       { href: "/admin/outros/bonus-hunt", label: "Bonus Hunt" },
-      {
-        href: "/admin/analitics",
-        label: "Analitics",
-        children: [
-          { href: "/admin/analitics", label: "Visão Geral" },
-          { href: "/admin/analitics/utilizadores", label: "Utilizadores" },
-          { href: "/admin/analitics/ofertas", label: "Ofertas" },
-          { href: "/admin/analitics/tempo-real", label: "Tempo Real" },
-          { href: "/admin/analitics/trafego", label: "Tráfego" },
-          { href: "/admin/analitics/geo", label: "Geo" },
-          { href: "/admin/analitics/fraude", label: "Fraude" },
-        ],
-      },
-      { href: "/admin/outros/calendario", label: "Calendário" },
-      { href: "/admin/outros/bruta-do-mes", label: "Bruta do Mês" },
       {
         href: "/admin/outros",
         label: "Outros",
@@ -94,7 +78,20 @@ const SECONDARY_LINKS: NavItem[] = [
       },
     ],
   },
-  { href: "/moderador", label: "Moderador Area", minRole: "moderador" },
+  {
+    href: "/admin/analitics",
+    label: "Analítics",
+    minRole: "configurador",
+    children: [
+      { href: "/admin/analitics", label: "Visão Geral" },
+      { href: "/admin/analitics/utilizadores", label: "Utilizadores" },
+      { href: "/admin/analitics/ofertas", label: "Ofertas" },
+      { href: "/admin/analitics/tempo-real", label: "Tempo Real" },
+      { href: "/admin/analitics/trafego", label: "Tráfego" },
+      { href: "/admin/analitics/geo", label: "Geo" },
+      { href: "/admin/analitics/fraude", label: "Fraude" },
+    ],
+  },
 ];
 
 /* ── Icons per route ────────────────────────────────────────────── */
