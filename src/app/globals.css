@@ -3,9 +3,9 @@
 /* -- Arena Design System ----------------------------------------------- */
 
 @theme inline {
-  --color-arena-black: #000000;
-  --color-arena-charcoal: #1a1a1a;
-  --color-arena-dark: #0a0a0a;
+  --color-arena-black: #0d0d0e;
+  --color-arena-charcoal: #1c1c1e;
+  --color-arena-dark: #101012;
   --color-arena-neon: #FF5500;
   --color-arena-neon-bright: #FF6600;
   --color-arena-neon-light: #FF7700;
@@ -13,8 +13,9 @@
   --color-arena-orange-glow: #FF6600;
   --color-arena-orange-bright: #FF8800;
   --color-arena-ember: #FF5500;
-  --color-arena-steel: #2a2a2a;
-  --color-arena-iron: #1a1a1a;
+  --color-arena-gold: #FF5500;
+  --color-arena-steel: #2c2c2e;
+  --color-arena-iron: #1c1c1e;
   --color-arena-smoke: #999999;
   --color-arena-ash: #666666;
   --color-arena-white: #ffffff;
@@ -33,14 +34,14 @@
 /* -- Base ------------------------------------------------------------- */
 
 :root {
-  --background: #000000;
+  --background: #0d0d0e;
   --foreground: #ffffff;
   color-scheme: dark;
 }
 
 * {
   scrollbar-width: thin;
-  scrollbar-color: #1a1a1a #000000;
+  scrollbar-color: #2c2c2e #0d0d0e;
 }
 
 html {
@@ -49,7 +50,13 @@ html {
 }
 
 body {
-  background: var(--background);
+  background:
+    radial-gradient(
+      ellipse 130% 45% at 50% 0%,
+      rgba(255, 85, 0, 0.05) 0%,
+      transparent 65%
+    ),
+    var(--background);
   color: var(--foreground);
   font-family: var(--font-ui);
   font-weight: 300;
@@ -247,11 +254,11 @@ body {
    ---------------------------------------------------------------------- */
 
 :root {
-  --parchment-light: #1a1a1a;
-  --parchment-mid: #0f0f0f;
-  --parchment-dark: #0a0a0a;
+  --parchment-light: #1c1c1e;
+  --parchment-mid: #131315;
+  --parchment-dark: #0d0d0e;
   --parchment-edge: #FF5500;
-  --scroll-shadow: #000000;
+  --scroll-shadow: #050506;
   --ink-dark: #ffffff;
   --ink-mid: #cccccc;
   --ink-light: #999999;
@@ -261,9 +268,9 @@ body {
   --gold-light: #FF7700;
   --deep-red: #FF5500;
   --deep-red-light: #FF6600;
-  --stone-dark: #000000;
-  --stone-mid: #0a0a0a;
-  --stone-light: #1a1a1a;
+  --stone-dark: #0d0d0e;
+  --stone-mid: #101012;
+  --stone-light: #1c1c1e;
   --scroll-radius: 14px;
 }
 
