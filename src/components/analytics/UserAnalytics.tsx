@@ -113,7 +113,8 @@ export default function UserAnalytics() {
     }
 
     const { data } = await query;
-    setSessions((data as SessionRow[]) ?? []);
+    const sessionRows = Array.isArray(data) ? (data as unknown as SessionRow[]) : [];
+    setSessions(sessionRows);
     setLoading(false);
   }, [page, search]);
 
@@ -141,10 +142,16 @@ export default function UserAnalytics() {
     ]);
 
     if (eventsRes.status === "fulfilled") {
-      setTimeline((eventsRes.value.data as EventRow[]) ?? []);
+      const eventRows = Array.isArray(eventsRes.value.data)
+        ? (eventsRes.value.data as unknown as EventRow[])
+        : [];
+      setTimeline(eventRows);
     }
     if (fraudRes.status === "fulfilled") {
-      setFraudLogs((fraudRes.value.data as FraudLogRow[]) ?? []);
+      const fraudRows = Array.isArray(fraudRes.value.data)
+        ? (fraudRes.value.data as unknown as FraudLogRow[])
+        : [];
+      setFraudLogs(fraudRows);
     }
 
     setDetailLoading(false);
