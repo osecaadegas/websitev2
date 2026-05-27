@@ -31,7 +31,6 @@ const MAIN_LINKS: NavItem[] = [
     label: "Stream",
     children: [
       { href: "/live", label: "Live" },
-      { href: "/daily-session", label: "Sessão do Dia" },
       { href: "/destaques", label: "Destaques" },
       { href: "/bonus-hunt", label: "Bonus Hunt" },
       { href: "/calendario", label: "Calendário" },
@@ -43,8 +42,6 @@ const MAIN_LINKS: NavItem[] = [
     children: [
       { href: "/roda-diaria", label: "Roda Diária" },
       { href: "/giveaways", label: "Giveaways" },
-      { href: "/liga-dos-secas", label: "Liga dos Secas" },
-      { href: "/hall-of-victories", label: "Bruta do Mês" },
       { href: "/adivinha-o-resultado", label: "Adivinha o Resultado" },
     ],
   },
