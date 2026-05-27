@@ -36,22 +36,13 @@ const MAIN_LINKS: NavItem[] = [
       { href: "/calendario", label: "Calendário" },
     ],
   },
-  {
-    href: "/comunidade",
-    label: "Comunidade",
-    children: [
-      { href: "/roda-diaria", label: "Roda Diária" },
-      { href: "/giveaways", label: "Giveaways" },
-      { href: "/adivinha-o-resultado", label: "Adivinha o Resultado" },
-    ],
-  },
   { href: "/loja", label: "Loja" },
   { href: "/sobre", label: "Sobre" },
 ];
 
 const SECONDARY_LINKS: NavItem[] = [
   {
-    href: "/admin",
+    href: "/admin/settings",
     label: "Admin Area",
     minRole: "configurador",
     children: [

@@ -86,10 +86,10 @@ export default function JogosPage() {
           </motion.div>
 
           <Link
-            href="/comunidade"
+            href="/"
             className="inline-flex items-center gap-2 mt-6 text-[#ff6a00] hover:text-[#ff8533] transition-colors text-sm"
           >
-            ← Voltar à Comunidade
+            ← Voltar ao início
           </Link>
         </div>
 

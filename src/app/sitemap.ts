@@ -8,7 +8,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
     "/ofertas",
     "/destaques",
     "/stream",
-    "/comunidade",
     "/liga-dos-secas",
     "/loja",
   ];

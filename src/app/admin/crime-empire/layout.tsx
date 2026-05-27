@@ -22,7 +22,7 @@ export default function CrimeEmpireAdminLayout({ children }: { children: React.R
       <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Top breadcrumb */}
         <div className="flex items-center gap-2 text-sm text-[#555] mb-6">
-          <Link href="/admin" className="hover:text-[#ff6a00] transition-colors">Admin</Link>
+          <Link href="/admin/analitics" className="hover:text-[#ff6a00] transition-colors">Admin</Link>
           <span>/</span>
           <span className="text-[#888]">Crime Empire</span>
         </div>
