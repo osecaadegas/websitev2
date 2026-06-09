@@ -41,9 +41,18 @@ export const metadata: Metadata = {
     title: SITE_NAME,
     description: SITE_DESCRIPTION,
     images: [{ url: "/images/og-image.jpg", width: 1200, height: 630, alt: SITE_NAME }],
+    videos: [
+      {
+        url: `${SITE_URL}/hero.mp4`,
+        secureUrl: `${SITE_URL}/hero.mp4`,
+        type: "video/mp4",
+        width: 1920,
+        height: 1080,
+      },
+    ],
   },
   twitter: {
-    card: "summary_large_image",
+    card: "player",
     title: SITE_NAME,
     description: SITE_DESCRIPTION,
     images: ["/images/og-image.jpg"],
