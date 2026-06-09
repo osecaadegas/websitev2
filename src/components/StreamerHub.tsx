@@ -82,10 +82,9 @@ export function StreamerHub() {
     setActiveClip(clips[(idx - 1 + clips.length) % clips.length]);
   }, [clips, activeClip]);
 
-  /* ── Twitch.Player with quality control — handles live + clips ── */
+  /* ── Twitch.Player for LIVE only (quality control) ─────────── */
   useEffect(() => {
-    if (loading || !hostname || hostname === "localhost") return;
-    if (!isLive && !activeClip) return; // nothing to play yet
+    if (loading || !isLive || !hostname || hostname === "localhost") return;
 
     const container = playerContainerRef.current;
     if (!container) return;
@@ -95,24 +94,19 @@ export function StreamerHub() {
       container.innerHTML = "";
       twitchPlayerRef.current = null;
 
-      // Twitch.Player needs a real DOM id, not a ref
       const wrapperId = `twitch-player-${Date.now()}`;
       const wrapper = document.createElement("div");
       wrapper.id = wrapperId;
       wrapper.style.cssText = "width:100%;height:100%";
       container.appendChild(wrapper);
 
-      const playerOpts = {
+      const player = new window.Twitch.Player(wrapperId, {
+        channel: TWITCH_CHANNEL,
         width: "100%",
         height: "100%",
         autoplay: true,
         parent: [hostname],
-        ...(isLive
-          ? { channel: TWITCH_CHANNEL }
-          : { clip: activeClip!.id }),
-      };
-
-      const player = new window.Twitch.Player(wrapperId, playerOpts);
+      });
       twitchPlayerRef.current = player;
 
       let qualitySet = false;
@@ -128,7 +122,6 @@ export function StreamerHub() {
         } catch { /* not available yet */ }
       };
 
-      // Try on READY, then again on each PLAY (guard prevents repeated sets)
       player.addEventListener(window.Twitch.Player.READY, trySetQuality);
       player.addEventListener(window.Twitch.Player.PLAY, trySetQuality);
     }
@@ -152,7 +145,7 @@ export function StreamerHub() {
       if (container) container.innerHTML = "";
       twitchPlayerRef.current = null;
     };
-  }, [isLive, loading, hostname, activeClip]);
+  }, [isLive, loading, hostname]);
 
   return (
     <section
@@ -187,15 +180,35 @@ export function StreamerHub() {
           <div className={`grid grid-cols-1 gap-4 ${isLive ? "lg:grid-cols-[1fr_380px]" : "max-w-5xl mx-auto"}`}>
             {/* Stream / Clip player */}
             <div className="relative w-full aspect-video bg-arena-black rounded-2xl overflow-hidden arena-border-crimson metal-frame-glow shadow-2xl shadow-black/60">
-              {/* Twitch.Player container — live + clips, quality-controlled */}
-              {!loading && (isLive || activeClip) && (
+              {/* Live: Twitch.Player with quality control */}
+              {isLive && !loading && (
                 <div
                   ref={playerContainerRef}
                   className="absolute inset-0 w-full h-full z-10"
                 />
               )}
 
-              {/* Fallback: loading or offline with no clips yet */}
+              {/* Offline clip: iframe embed (Twitch clips API has no quality control) */}
+              {!isLive && !loading && activeClip && (
+                <>
+                  <iframe
+                    key={activeClip.id}
+                    src={`https://clips.twitch.tv/embed?clip=${activeClip.id}&parent=${hostname}&autoplay=true&muted=false`}
+                    className="absolute inset-0 w-full h-full z-10"
+                    allow="autoplay; encrypted-media"
+                    allowFullScreen
+                    title={activeClip.title}
+                  />
+                  <div className="absolute bottom-0 left-0 right-0 z-20 bg-gradient-to-t from-black/90 via-black/50 to-transparent p-4">
+                    <p className="text-white text-sm font-medium truncate">{activeClip.title}</p>
+                    <p className="text-arena-smoke text-xs">
+                      Clipped by {activeClip.creator_name} · {activeClip.view_count.toLocaleString()} views
+                    </p>
+                  </div>
+                </>
+              )}
+
+              {/* Fallback: loading or offline with no clips */}
               {(loading || (!isLive && !activeClip)) && (
                 <iframe
                   src={`https://player.twitch.tv/?channel=${TWITCH_CHANNEL}&parent=${hostname}`}
@@ -203,20 +216,6 @@ export function StreamerHub() {
                   allowFullScreen
                   title={`${TWITCH_CHANNEL} channel`}
                 />
-              )}
-
-              {/* Offline clip info overlay */}
-              {!isLive && !loading && activeClip && (
-                <div className="absolute bottom-0 left-0 right-0 z-20 bg-gradient-to-t from-black/90 via-black/50 to-transparent p-4">
-                  <div className="min-w-0">
-                    <p className="text-white text-sm font-medium truncate">
-                      {activeClip.title}
-                    </p>
-                    <p className="text-arena-smoke text-xs">
-                      Clipped by {activeClip.creator_name} · {activeClip.view_count.toLocaleString()} views
-                    </p>
-                  </div>
-                </div>
               )}
             </div>
 
