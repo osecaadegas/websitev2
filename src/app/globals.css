@@ -523,6 +523,58 @@ body {
   50%      { opacity: 1; }
 }
 
+/* ═══════════════════════════════════════════════════════════════
+   OFFER CARD BORDER ANIMATIONS
+   CSS-first, GPU-accelerated (transform only). No layout shifts.
+   ═══════════════════════════════════════════════════════════════ */
+
+@keyframes offer-electric-spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+@keyframes offer-fire-spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+@keyframes offer-glow-pulse-electric {
+  0%, 100% { opacity: 0.7; }
+  50%       { opacity: 1; }
+}
+
+@keyframes offer-glow-pulse-fire {
+  0%, 100% { opacity: 0.6; transform: scale(1); }
+  33%       { opacity: 1;   transform: scale(1.01); }
+  66%       { opacity: 0.8; transform: scale(0.99); }
+}
+
+/* Spinner classes — apply to the spinning inner div */
+.offer-spin-electric {
+  animation: offer-electric-spin 2.8s linear infinite;
+}
+.offer-spin-fire {
+  animation: offer-fire-spin 2.4s linear infinite;
+}
+
+/* Outer glow wrapper pulses */
+.offer-glow-electric {
+  animation: offer-glow-pulse-electric 2s ease-in-out infinite;
+}
+.offer-glow-fire {
+  animation: offer-glow-pulse-fire 1.8s ease-in-out infinite;
+}
+
+/* Kill all card animations when user prefers reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .offer-spin-electric,
+  .offer-spin-fire,
+  .offer-glow-electric,
+  .offer-glow-fire {
+    animation: none !important;
+  }
+}
+
 .gladiator-schedule {
   position: relative;
   width: 100%;
