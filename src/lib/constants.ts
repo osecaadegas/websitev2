@@ -3,7 +3,7 @@
 export const SITE_NAME = "SecaHub";
 export const SITE_DESCRIPTION =
   "A tua comunidade de casino streaming e entretenimento";
-export const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://websitev2-zeta-nine.vercel.app";
+export const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://secahub.com";
 export const TWITCH_CHANNEL = process.env.NEXT_PUBLIC_TWITCH_CHANNEL || "secaadegas";
 
 export const NAV_LINKS = [

@@ -4,7 +4,6 @@ import type { MetadataRoute } from "next";
 export default function sitemap(): MetadataRoute.Sitemap {
   const routes = [
     "",
-    "/sobre",
     "/ofertas",
     "/destaques",
     "/stream",
