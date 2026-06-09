@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
-import type { CasinoOfferRow } from "@/lib/supabase";
+import type { CasinoOfferRow, WelcomeBonusStage } from "@/lib/supabase";
 import { trackOfferClick } from "@/lib/analytics/tracker";
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -25,9 +25,17 @@ export interface CasinoOffer {
   code: string;
   cashback?: string;
   withdraw_time: string;
+  max_withdrawal?: string;
   license: string;
   established: string;
+  live_support?: string;
+  total_games?: string;
+  languages?: string;
+  game_providers?: string[];
   notes: string[];
+  welcome_bonus_stages?: WelcomeBonusStage[];
+  vip_program?: string;
+  details?: string;
   affiliate_url: string;
   rating: number;
   is_exclusive?: boolean;
@@ -256,8 +264,20 @@ export function OfferCard({ offer }: { offer: CasinoOffer }) {
   const [flipped, setFlipped] = useState(false);
   const [copied, setCopied] = useState(false);
   const [backPage, setBackPage] = useState(0);
-  const hasNotes = (offer.notes?.length ?? 0) > 0;
-  const totalBackPages = hasNotes ? 2 : 1;
+
+  /* Build the dynamic slide list — only include slides that have data */
+  const hasBonus   = (offer.welcome_bonus_stages?.filter(s => hv(s.pct)).length ?? 0) > 0;
+  const hasCasino  = hv(offer.max_withdrawal) || hv(offer.live_support) || hv(offer.total_games) || hv(offer.languages) || (offer.game_providers?.length ?? 0) > 0;
+  const hasTerms   = (offer.notes?.length ?? 0) > 0 || hv(offer.vip_program) || hv(offer.details);
+
+  const slides: { key: string; label: string }[] = [
+    { key: "info",   label: "INFO" },
+    ...(hasBonus  ? [{ key: "bonus",  label: "BÓNUS"  }] : []),
+    ...(hasCasino ? [{ key: "casino", label: "CASINO" }] : []),
+    ...(hasTerms  ? [{ key: "terms",  label: "TERMOS" }] : []),
+  ];
+  const totalBackPages = slides.length;
+  const currentSlideKey = slides[Math.min(backPage, totalBackPages - 1)]?.key ?? "info";
 
   const externalUrl = offer.affiliate_url?.startsWith("http")
     ? offer.affiliate_url
@@ -606,15 +626,38 @@ export function OfferCard({ offer }: { offer: CasinoOffer }) {
             )}
           </div>
 
-          {/* Paginated back body */}
+          {/* ── Tab nav (only when >1 slide) ──────────────────────── */}
+          {totalBackPages > 1 && (
+            <div style={{ display: "flex", borderBottom: "1px solid rgba(255,85,0,0.08)", padding: "0 12px" }}>
+              {slides.map((s, i) => (
+                <button
+                  key={s.key}
+                  onClick={(e) => { e.stopPropagation(); setBackPage(i); }}
+                  style={{
+                    flex: 1, padding: "9px 4px 8px", border: "none", cursor: "pointer",
+                    background: "transparent", outline: "none",
+                    fontSize: "0.6rem", fontWeight: 800, letterSpacing: "0.09em",
+                    textTransform: "uppercase",
+                    color: i === backPage ? "#FF5500" : "rgba(255,255,255,0.3)",
+                    borderBottom: `2px solid ${i === backPage ? "#FF5500" : "transparent"}`,
+                    transition: "color 0.2s, border-color 0.2s",
+                  }}
+                >
+                  {s.label}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {/* ── Slide content ─────────────────────────────────────── */}
           <div style={{ flex: 1, position: "relative", minHeight: 0 }}>
 
-            {/* ── Slide 0 : Info ─────────────────────────────────── */}
+            {/* INFO slide */}
             <div style={{
               position: "absolute", inset: 0, padding: "14px 16px", overflowY: "auto",
-              opacity: backPage === 0 ? 1 : 0,
-              pointerEvents: backPage === 0 ? "auto" : "none",
-              transition: "opacity 0.25s ease",
+              opacity: currentSlideKey === "info" ? 1 : 0,
+              pointerEvents: currentSlideKey === "info" ? "auto" : "none",
+              transition: "opacity 0.22s ease",
             }}>
               <p style={{ margin: "0 0 3px", fontSize: "0.58rem", fontWeight: 700, color: "rgba(255,85,0,0.6)", textTransform: "uppercase", letterSpacing: "0.12em" }}>
                 {offer.is_exclusive !== false ? "✦ OFERTA EXCLUSIVA ✦" : "WELCOME BONUS"}
@@ -645,39 +688,128 @@ export function OfferCard({ offer }: { offer: CasinoOffer }) {
               )}
             </div>
 
-            {/* ── Slide 1 : Notes / Terms ────────────────────────── */}
-            {hasNotes && (
+            {/* BÓNUS slide — welcome bonus stages */}
+            {hasBonus && (
               <div style={{
                 position: "absolute", inset: 0, padding: "14px 16px", overflowY: "auto",
-                opacity: backPage === 1 ? 1 : 0,
-                pointerEvents: backPage === 1 ? "auto" : "none",
-                transition: "opacity 0.25s ease",
+                opacity: currentSlideKey === "bonus" ? 1 : 0,
+                pointerEvents: currentSlideKey === "bonus" ? "auto" : "none",
+                transition: "opacity 0.22s ease",
+              }}>
+                <p style={{ margin: "0 0 12px", fontSize: "0.58rem", fontWeight: 700, color: "rgba(255,85,0,0.6)", textTransform: "uppercase", letterSpacing: "0.12em" }}>
+                  BREAKDOWN DO WELCOME BONUS
+                </p>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 7 }}>
+                  {offer.welcome_bonus_stages!.filter(s => hv(s.pct)).map((stage) => (
+                    <div key={stage.label} style={{
+                      background: "rgba(255,85,0,0.05)",
+                      border: "1px solid rgba(255,85,0,0.15)",
+                      borderRadius: 8, padding: "10px 11px",
+                    }}>
+                      <p style={{ margin: "0 0 4px", fontSize: "0.55rem", fontWeight: 800, color: "rgba(255,85,0,0.7)", textTransform: "uppercase", letterSpacing: "0.1em" }}>
+                        {stage.label} DEPÓSITO
+                      </p>
+                      <p style={{ margin: 0, fontSize: "1.15rem", fontWeight: 900, color: "#fff", lineHeight: 1 }}>{stage.pct}</p>
+                      {hv(stage.fs) && (
+                        <p style={{ margin: "3px 0 0", fontSize: "0.7rem", fontWeight: 700, color: "#FF5500" }}>+ {stage.fs}</p>
+                      )}
+                      <p style={{ margin: "5px 0 0", fontSize: "0.6rem", color: "#555", fontWeight: 600 }}>
+                        MIN: {stage.min}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* CASINO slide — detailed stats */}
+            {hasCasino && (
+              <div style={{
+                position: "absolute", inset: 0, padding: "14px 16px", overflowY: "auto",
+                opacity: currentSlideKey === "casino" ? 1 : 0,
+                pointerEvents: currentSlideKey === "casino" ? "auto" : "none",
+                transition: "opacity 0.22s ease",
               }}>
                 <p style={{ margin: "0 0 10px", fontSize: "0.58rem", fontWeight: 700, color: "rgba(255,85,0,0.6)", textTransform: "uppercase", letterSpacing: "0.12em" }}>
-                  DETALHES & TERMOS
+                  DETALHES DO CASINO
                 </p>
-                {offer.notes.map((note, i) => (
-                  <p key={i} style={{ margin: "6px 0", fontSize: "0.73rem", color: "rgba(255,255,255,0.55)", lineHeight: 1.6, display: "flex", gap: 7 }}>
-                    <span style={{ color: "#FF5500", flexShrink: 0 }}>•</span>
-                    <span>{note}</span>
-                  </p>
-                ))}
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(130px, 1fr))", gap: 5, marginBottom: 12 }}>
+                  {[
+                    { icon: "↑", label: "Max Levant.",   value: offer.max_withdrawal },
+                    { icon: "🎧", label: "Suporte 24/7",  value: offer.live_support },
+                    { icon: "🎮", label: "Total Jogos",   value: offer.total_games },
+                    { icon: "🌐", label: "Idiomas",       value: offer.languages },
+                  ].filter(s => hv(s.value)).map((s) => (
+                    <StatCell key={s.label} icon={s.icon} label={s.label} value={s.value} />
+                  ))}
+                </div>
+                {(offer.game_providers?.length ?? 0) > 0 && (
+                  <div>
+                    <p style={{ margin: "0 0 7px", fontSize: "0.56rem", fontWeight: 700, color: "#555", textTransform: "uppercase", letterSpacing: "0.08em" }}>PROVIDERS</p>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+                      {offer.game_providers!.slice(0, 10).map((p) => (
+                        <span key={p} style={{ padding: "3px 7px", borderRadius: 4, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.09)", fontSize: "0.62rem", color: "#888", fontWeight: 600 }}>
+                          {p}
+                        </span>
+                      ))}
+                      {offer.game_providers!.length > 10 && (
+                        <span style={{ padding: "3px 7px", borderRadius: 4, fontSize: "0.62rem", color: "#555", fontWeight: 600 }}>
+                          +{offer.game_providers!.length - 10} mais
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* TERMOS slide — VIP + notes + terms */}
+            {hasTerms && (
+              <div style={{
+                position: "absolute", inset: 0, padding: "14px 16px", overflowY: "auto",
+                opacity: currentSlideKey === "terms" ? 1 : 0,
+                pointerEvents: currentSlideKey === "terms" ? "auto" : "none",
+                transition: "opacity 0.22s ease",
+              }}>
+                {hv(offer.vip_program) && (
+                  <div style={{ marginBottom: 12 }}>
+                    <p style={{ margin: "0 0 7px", fontSize: "0.58rem", fontWeight: 700, color: "rgba(255,85,0,0.6)", textTransform: "uppercase", letterSpacing: "0.12em" }}>
+                      ★ PROGRAMA VIP
+                    </p>
+                    {offer.vip_program!.split("\n").map((line, i) => (
+                      <p key={i} style={{ margin: "4px 0", fontSize: "0.72rem", color: "rgba(255,255,255,0.55)", lineHeight: 1.55, display: "flex", gap: 6 }}>
+                        <span style={{ color: "#FF5500", flexShrink: 0 }}>•</span>
+                        <span>{line}</span>
+                      </p>
+                    ))}
+                  </div>
+                )}
+                {(offer.notes?.length ?? 0) > 0 && (
+                  <div style={{ marginBottom: 12 }}>
+                    <p style={{ margin: "0 0 7px", fontSize: "0.58rem", fontWeight: 700, color: "rgba(255,85,0,0.6)", textTransform: "uppercase", letterSpacing: "0.12em" }}>
+                      NOTAS
+                    </p>
+                    {offer.notes.map((note, i) => (
+                      <p key={i} style={{ margin: "4px 0", fontSize: "0.72rem", color: "rgba(255,255,255,0.55)", lineHeight: 1.55, display: "flex", gap: 6 }}>
+                        <span style={{ color: "#FF5500", flexShrink: 0 }}>•</span>
+                        <span>{note}</span>
+                      </p>
+                    ))}
+                  </div>
+                )}
+                {hv(offer.details) && (
+                  <div>
+                    <p style={{ margin: "0 0 7px", fontSize: "0.58rem", fontWeight: 700, color: "#444", textTransform: "uppercase", letterSpacing: "0.12em" }}>
+                      TERMOS & CONDIÇÕES
+                    </p>
+                    <p style={{ margin: 0, fontSize: "0.67rem", color: "rgba(255,255,255,0.35)", lineHeight: 1.6 }}>
+                      {offer.details}
+                    </p>
+                  </div>
+                )}
               </div>
             )}
           </div>
-
-          {/* Pagination dots */}
-          {totalBackPages > 1 && (
-            <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 6, padding: "6px 0 2px" }}>
-              {Array.from({ length: totalBackPages }, (_, i) => (
-                <button
-                  key={i}
-                  onClick={(e) => { e.stopPropagation(); setBackPage(i); }}
-                  style={{ width: i === backPage ? 18 : 6, height: 6, borderRadius: 3, background: i === backPage ? "#FF5500" : "rgba(255,255,255,0.2)", border: "none", cursor: "pointer", padding: 0, transition: "all 0.25s ease" }}
-                />
-              ))}
-            </div>
-          )}
 
           {/* Back footer */}
           <div style={{
@@ -735,16 +867,24 @@ export function OfferCards({ emptyClassName = "" }: { emptyClassName?: string })
             min_deposit:     r.min_deposit,
             code:            r.code,
             cashback:        r.cashback        ?? undefined,
-            withdraw_time:   r.withdraw_time,
-            license:         r.license,
-            established:     r.established,
-            notes:           r.notes           ?? [],
-            affiliate_url:   r.affiliate_url,
-            rating:          r.rating          ?? 4.5,
-            is_exclusive:    r.is_exclusive    ?? true,
-            payment_methods: r.payment_methods ?? [],
-            kyc_required:    r.kyc_required    != null ? r.kyc_required : undefined,
-            vpn_friendly:    r.vpn_friendly    != null ? r.vpn_friendly : undefined,
+            withdraw_time:          r.withdraw_time,
+            max_withdrawal:         r.max_withdrawal       ?? undefined,
+            license:                r.license,
+            established:            r.established,
+            live_support:           r.live_support         ?? undefined,
+            total_games:            r.total_games          ?? undefined,
+            languages:              r.languages            ?? undefined,
+            game_providers:         r.game_providers       ?? undefined,
+            notes:                  r.notes                ?? [],
+            welcome_bonus_stages:   r.welcome_bonus_stages ?? undefined,
+            vip_program:            r.vip_program          ?? undefined,
+            details:                r.details              ?? undefined,
+            affiliate_url:          r.affiliate_url,
+            rating:                 r.rating               ?? 4.5,
+            is_exclusive:           r.is_exclusive         ?? true,
+            payment_methods:        r.payment_methods      ?? [],
+            kyc_required:           r.kyc_required         != null ? r.kyc_required : undefined,
+            vpn_friendly:           r.vpn_friendly         != null ? r.vpn_friendly : undefined,
           }))
         );
       }

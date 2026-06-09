@@ -2,10 +2,10 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
-import type { CasinoOfferRow } from "@/lib/supabase";
+import type { CasinoOfferRow, WelcomeBonusStage } from "@/lib/supabase";
 
 /* ═══════════════════════════════════════════════════════════════════
-   EMPTY OFFER TEMPLATE
+   CONSTANTS
    ═══════════════════════════════════════════════════════════════════ */
 
 const PAYMENT_OPTIONS = [
@@ -15,11 +15,18 @@ const PAYMENT_OPTIONS = [
   "Apple Pay", "Google Pay", "Bank", "Crypto",
 ];
 
+const DEFAULT_STAGES: WelcomeBonusStage[] = [
+  { label: "1ST", pct: "", fs: "", min: "" },
+  { label: "2ND", pct: "", fs: "", min: "" },
+  { label: "3RD", pct: "", fs: "", min: "" },
+  { label: "4TH", pct: "", fs: "", min: "" },
+];
+
 const EMPTY_OFFER: Omit<CasinoOfferRow, "id" | "created_at" | "updated_at"> = {
   slug: "",
   name: "",
   logo_url: null,
-  logo_bg: "#666666",
+  logo_bg: "#1a1a2e",
   banner_url: null,
   badge: null,
   tags: [],
@@ -30,9 +37,17 @@ const EMPTY_OFFER: Omit<CasinoOfferRow, "id" | "created_at" | "updated_at"> = {
   code: "",
   cashback: null,
   withdraw_time: "Up to 48h",
+  max_withdrawal: null,
   license: "Curaçao",
   established: "2023",
+  live_support: null,
+  total_games: null,
+  languages: null,
+  game_providers: [],
   notes: [],
+  welcome_bonus_stages: null,
+  vip_program: null,
+  details: null,
   affiliate_url: "",
   rating: 4.5,
   is_exclusive: true,
@@ -272,6 +287,44 @@ export default function ParceriasPage() {
 }
 
 /* ═══════════════════════════════════════════════════════════════════
+   WELCOME BONUS STAGE EDITOR
+   ═══════════════════════════════════════════════════════════════════ */
+
+interface StageEditorProps {
+  stages: WelcomeBonusStage[];
+  onChange: (stages: WelcomeBonusStage[]) => void;
+}
+
+function WelcomeBonusStageEditor({ stages, onChange }: StageEditorProps) {
+  const ic = "bg-arena-charcoal border border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-white placeholder:text-arena-ash/40 focus:outline-none focus:border-arena-gold/40 transition-colors w-full";
+  const setStage = (i: number, key: keyof WelcomeBonusStage, val: string) => {
+    const next = stages.map((s, idx) => idx === i ? { ...s, [key]: val } : s);
+    onChange(next);
+  };
+  return (
+    <div className="space-y-2">
+      {stages.map((s, i) => (
+        <div key={s.label} className="grid grid-cols-4 gap-2 items-center p-2.5 rounded-lg bg-white/[0.02] border border-white/8">
+          <div className="text-[10px] font-black text-arena-gold uppercase tracking-wider text-center">{s.label}</div>
+          <div>
+            <div className="text-[9px] text-arena-ash mb-1 uppercase tracking-wider">% Bónus</div>
+            <input className={ic} value={s.pct} onChange={e => setStage(i, "pct", e.target.value)} placeholder="120%" />
+          </div>
+          <div>
+            <div className="text-[9px] text-arena-ash mb-1 uppercase tracking-wider">Free Spins</div>
+            <input className={ic} value={s.fs ?? ""} onChange={e => setStage(i, "fs", e.target.value)} placeholder="100 FS" />
+          </div>
+          <div>
+            <div className="text-[9px] text-arena-ash mb-1 uppercase tracking-wider">Min. Dep.</div>
+            <input className={ic} value={s.min} onChange={e => setStage(i, "min", e.target.value)} placeholder="5€" />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════════
    OFFER FORM
    ═══════════════════════════════════════════════════════════════════ */
 
@@ -283,34 +336,61 @@ interface OfferFormProps {
 }
 
 function OfferForm({ initial, onSave, saving, nextOrder }: OfferFormProps) {
+  const isNew = !("id" in initial);
+
   const [form, setForm] = useState({
-    slug: initial.slug,
-    name: initial.name,
-    logo_bg: initial.logo_bg,
-    banner_url: initial.banner_url ?? "",
-    badge: initial.badge ?? "",
-    tags: initial.tags.join(", "),
-    headline: initial.headline,
-    bonus_value: initial.bonus_value,
-    free_spins: initial.free_spins,
-    min_deposit: initial.min_deposit,
-    code: initial.code,
-    cashback: initial.cashback ?? "",
-    withdraw_time: initial.withdraw_time,
-    license: initial.license,
-    established: initial.established,
-    notes: initial.notes.join("\n"),
-    affiliate_url: initial.affiliate_url,
-    rating: (initial as any).rating ?? 4.5,
-    is_exclusive: initial.is_exclusive ?? true,
-    payment_methods: initial.payment_methods ?? [],
-    kyc_required: initial.kyc_required ?? true,
-    vpn_friendly: initial.vpn_friendly ?? false,
-    visible: initial.visible,
-    sort_order: initial.sort_order || nextOrder,
+    /* identity */
+    slug:           initial.slug,
+    name:           initial.name,
+    logo_url:       initial.logo_url ?? "",
+    logo_bg:        initial.logo_bg,
+    banner_url:     initial.banner_url ?? "",
+    affiliate_url:  initial.affiliate_url,
+    /* display */
+    badge:          initial.badge ?? "",
+    tags:           initial.tags.join(", "),
+    rating:         (initial as any).rating ?? 4.5,
+    /* bonus stats */
+    headline:       initial.headline,
+    bonus_value:    initial.bonus_value,
+    free_spins:     initial.free_spins,
+    min_deposit:    initial.min_deposit,
+    code:           initial.code,
+    cashback:       initial.cashback ?? "",
+    /* casino details */
+    withdraw_time:  initial.withdraw_time,
+    max_withdrawal: (initial as any).max_withdrawal ?? "",
+    license:        initial.license,
+    established:    initial.established,
+    live_support:   (initial as any).live_support ?? "",
+    total_games:    (initial as any).total_games ?? "",
+    languages:      (initial as any).languages ?? "",
+    game_providers: ((initial as any).game_providers ?? []).join("\n"),
+    /* rich content */
+    welcome_bonus_stages: (() => {
+      const wbs = (initial as any).welcome_bonus_stages;
+      if (Array.isArray(wbs) && wbs.length > 0) {
+        const filled = [...wbs];
+        while (filled.length < 4) filled.push({ label: `${filled.length + 1}${["ST","ND","RD","TH"][filled.length] ?? "TH"}`, pct: "", fs: "", min: "" });
+        return filled as WelcomeBonusStage[];
+      }
+      return DEFAULT_STAGES.map(s => ({ ...s }));
+    })(),
+    notes:          initial.notes.join("\n"),
+    vip_program:    (initial as any).vip_program ?? "",
+    details:        (initial as any).details ?? "",
+    /* payment */
+    payment_methods: initial.payment_methods ?? [] as string[],
+    /* flags */
+    kyc_required:   initial.kyc_required ?? true,
+    vpn_friendly:   initial.vpn_friendly ?? false,
+    is_exclusive:   initial.is_exclusive ?? true,
+    visible:        initial.visible,
+    /* order — kept as string so user can freely edit the field */
+    sort_order_str: String(isNew ? nextOrder : initial.sort_order),
   });
 
-  const set = (key: string, value: unknown) => setForm((p) => ({ ...p, [key]: value }));
+  const set = (key: string, value: unknown) => setForm(p => ({ ...p, [key]: value }));
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -318,184 +398,198 @@ function OfferForm({ initial, onSave, saving, nextOrder }: OfferFormProps) {
       alert("Slug, Nome e Headline são obrigatórios.");
       return;
     }
+    const filledStages = form.welcome_bonus_stages.filter(s => s.pct.trim() !== "");
     onSave({
-      slug: form.slug.toLowerCase().replace(/[^a-z0-9-]/g, ""),
-      name: form.name,
-      logo_url: initial.logo_url ?? null,
-      logo_bg: form.logo_bg,
-      banner_url: form.banner_url || null,
-      badge: (form.badge as "NEW" | "HOT" | "ELITE") || null,
-      tags: form.tags.split(",").map((t) => t.trim()).filter(Boolean),
-      headline: form.headline,
-      bonus_value: form.bonus_value,
-      free_spins: form.free_spins,
-      min_deposit: form.min_deposit,
-      code: form.code,
-      cashback: form.cashback || null,
-      withdraw_time: form.withdraw_time,
-      license: form.license,
-      established: form.established,
-      notes: form.notes.split("\n").filter(Boolean),
-      affiliate_url: form.affiliate_url,
-      rating: form.rating,
-      is_exclusive: form.is_exclusive,
+      slug:           form.slug.toLowerCase().replace(/[^a-z0-9-]/g, ""),
+      name:           form.name,
+      logo_url:       form.logo_url || null,
+      logo_bg:        form.logo_bg,
+      banner_url:     form.banner_url || null,
+      affiliate_url:  form.affiliate_url,
+      badge:          (form.badge as "NEW" | "HOT" | "ELITE") || null,
+      tags:           form.tags.split(",").map(t => t.trim()).filter(Boolean),
+      rating:         form.rating as number,
+      headline:       form.headline,
+      bonus_value:    form.bonus_value,
+      free_spins:     form.free_spins,
+      min_deposit:    form.min_deposit,
+      code:           form.code,
+      cashback:       form.cashback || null,
+      withdraw_time:  form.withdraw_time,
+      max_withdrawal: form.max_withdrawal || null,
+      license:        form.license,
+      established:    form.established,
+      live_support:   form.live_support || null,
+      total_games:    form.total_games || null,
+      languages:      form.languages || null,
+      game_providers: (form.game_providers as string).split("\n").map(p => p.trim()).filter(Boolean),
+      notes:          (form.notes as string).split("\n").filter(Boolean),
+      welcome_bonus_stages: filledStages.length > 0 ? filledStages : null,
+      vip_program:    form.vip_program || null,
+      details:        form.details || null,
       payment_methods: form.payment_methods as string[],
-      kyc_required: form.kyc_required as boolean,
-      vpn_friendly: form.vpn_friendly as boolean,
-      visible: form.visible,
-      sort_order: form.sort_order,
+      kyc_required:   form.kyc_required as boolean,
+      vpn_friendly:   form.vpn_friendly as boolean,
+      is_exclusive:   form.is_exclusive as boolean,
+      visible:        form.visible as boolean,
+      sort_order:     parseInt(form.sort_order_str as string) || 0,
     });
   };
 
-  const inputCls = "w-full bg-arena-charcoal border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder:text-arena-ash/50 focus:outline-none focus:border-arena-gold/40 transition-colors";
-  const labelCls = "block text-[11px] uppercase tracking-wider text-arena-ash mb-1";
+  const ic = "w-full bg-arena-charcoal border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder:text-arena-ash/50 focus:outline-none focus:border-arena-gold/40 transition-colors";
+  const lc = "block text-[11px] uppercase tracking-wider text-arena-ash mb-1";
+  const sc = "text-[11px] uppercase tracking-wider text-arena-ash font-bold pb-2 mb-4 border-b border-white/8";
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-5">
-      {/* Row: Name + Slug */}
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <label className={labelCls}>Nome *</label>
-          <input className={inputCls} value={form.name} onChange={(e) => {
-            set("name", e.target.value);
-            if (!("id" in initial)) set("slug", e.target.value.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, ""));
-          }} placeholder="Casino Name" required />
-        </div>
-        <div>
-          <label className={labelCls}>Slug *</label>
-          <input className={inputCls} value={form.slug} onChange={(e) => set("slug", e.target.value)} placeholder="casino-name" required />
-        </div>
-      </div>
+    <form onSubmit={handleSubmit} className="space-y-8">
 
-      {/* Headline */}
+      {/* ── SECTION: Identidade ──────────────────────────────────── */}
       <div>
-        <label className={labelCls}>Headline *</label>
-        <input className={inputCls} value={form.headline} onChange={(e) => set("headline", e.target.value)} placeholder="400% Bonus up to €2200 & 350FS" required />
-      </div>
-
-      {/* Row: Bonus + Free Spins + Min Deposit + Code */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <div>
-          <label className={labelCls}>Bonus Value</label>
-          <input className={inputCls} value={form.bonus_value} onChange={(e) => set("bonus_value", e.target.value)} placeholder="550%" />
+        <p className={sc}>▸ Identidade</p>
+        <div className="grid grid-cols-2 gap-4 mb-4">
+          <div>
+            <label className={lc}>Nome *</label>
+            <input className={ic} value={form.name} onChange={e => {
+              set("name", e.target.value);
+              if (isNew) set("slug", e.target.value.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, ""));
+            }} placeholder="Casino Name" required />
+          </div>
+          <div>
+            <label className={lc}>Slug *</label>
+            <input className={ic} value={form.slug} onChange={e => set("slug", e.target.value)} placeholder="casino-name" required />
+          </div>
         </div>
-        <div>
-          <label className={labelCls}>Free Spins</label>
-          <input className={inputCls} value={form.free_spins} onChange={(e) => set("free_spins", e.target.value)} placeholder="Up to 75" />
-        </div>
-        <div>
-          <label className={labelCls}>Min. Depósito</label>
-          <input className={inputCls} value={form.min_deposit} onChange={(e) => set("min_deposit", e.target.value)} placeholder="20€" />
-        </div>
-        <div>
-          <label className={labelCls}>Código</label>
-          <input className={inputCls} value={form.code} onChange={(e) => set("code", e.target.value)} placeholder="Seca" />
-        </div>
-      </div>
-
-      {/* Row: Cashback + Withdraw + License + Established */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <div>
-          <label className={labelCls}>Cashback</label>
-          <input className={inputCls} value={form.cashback} onChange={(e) => set("cashback", e.target.value)} placeholder="35%" />
-        </div>
-        <div>
-          <label className={labelCls}>Tempo Levantamento</label>
-          <input className={inputCls} value={form.withdraw_time} onChange={(e) => set("withdraw_time", e.target.value)} placeholder="Up to 48h" />
-        </div>
-        <div>
-          <label className={labelCls}>Licença</label>
-          <input className={inputCls} value={form.license} onChange={(e) => set("license", e.target.value)} placeholder="Curaçao" />
-        </div>
-        <div>
-          <label className={labelCls}>Fundado</label>
-          <input className={inputCls} value={form.established} onChange={(e) => set("established", e.target.value)} placeholder="2023" />
-        </div>
-      </div>
-
-      {/* Row: Badge + Tags + Logo BG */}
-      <div className="grid grid-cols-3 gap-4">
-        <div>
-          <label className={labelCls}>Badge</label>
-          <select className={inputCls} value={form.badge} onChange={(e) => set("badge", e.target.value)}>
-            <option value="">Nenhum</option>
-            <option value="NEW">NEW</option>
-            <option value="HOT">HOT</option>
-            <option value="ELITE">ELITE</option>
-          </select>
-        </div>
-        <div>
-          <label className={labelCls}>Rating (0-5)</label>
-          <div className="flex items-center gap-3">
-            <input type="range" min="0" max="5" step="0.5" value={form.rating} onChange={(e) => set("rating", parseFloat(e.target.value))} className="flex-1 accent-arena-gold" />
-            <span className="text-white text-sm font-bold w-8">{form.rating}</span>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
+          <div>
+            <label className={lc}>Logo URL</label>
+            <input className={ic} value={form.logo_url} onChange={e => set("logo_url", e.target.value)} placeholder="/images/logos/casino.png" />
+          </div>
+          <div>
+            <label className={lc}>Banner URL</label>
+            <input className={ic} value={form.banner_url} onChange={e => set("banner_url", e.target.value)} placeholder="/images/banners/casino.jpg" />
+          </div>
+          <div>
+            <label className={lc}>Link Afiliado</label>
+            <input className={ic} value={form.affiliate_url} onChange={e => set("affiliate_url", e.target.value)} placeholder="https://..." />
           </div>
         </div>
         <div>
-          <label className={labelCls}>Cor do Logo</label>
-          <div className="flex gap-2 items-center">
-            <input type="color" value={form.logo_bg} onChange={(e) => set("logo_bg", e.target.value)} className="w-10 h-10 rounded border border-white/10 cursor-pointer bg-transparent" />
-            <input className={inputCls} value={form.logo_bg} onChange={(e) => set("logo_bg", e.target.value)} placeholder="#c026d3" />
+          <label className={lc}>Headline *</label>
+          <input className={ic} value={form.headline} onChange={e => set("headline", e.target.value)} placeholder="400% Bonus up to €2200 & 350FS" required />
+        </div>
+      </div>
+
+      {/* ── SECTION: Apresentação ────────────────────────────────── */}
+      <div>
+        <p className={sc}>▸ Apresentação</p>
+        <div className="grid grid-cols-3 gap-4">
+          <div>
+            <label className={lc}>Badge</label>
+            <select className={ic} value={form.badge} onChange={e => set("badge", e.target.value)}>
+              <option value="">Nenhum</option>
+              <option value="NEW">🟢 NEW</option>
+              <option value="HOT">🔴 HOT</option>
+              <option value="ELITE">⭐ ELITE</option>
+            </select>
+          </div>
+          <div>
+            <label className={lc}>Tags (vírgula)</label>
+            <input className={ic} value={form.tags} onChange={e => set("tags", e.target.value)} placeholder="FREE SPINS, MB WAY" />
+          </div>
+          <div>
+            <label className={lc}>Cor do Logo BG</label>
+            <div className="flex gap-2 items-center">
+              <input type="color" value={form.logo_bg} onChange={e => set("logo_bg", e.target.value)} className="w-10 h-10 rounded border border-white/10 cursor-pointer bg-transparent shrink-0" />
+              <input className={ic} value={form.logo_bg} onChange={e => set("logo_bg", e.target.value)} placeholder="#1a1a2e" />
+            </div>
           </div>
         </div>
-      </div>
-
-      {/* URLs */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div>
-          <label className={labelCls}>Tags (separadas por vírgula)</label>
-          <input className={inputCls} value={form.tags} onChange={(e) => set("tags", e.target.value)} placeholder="FREE SPINS, MB" />
-        </div>
-        <div>
-          <label className={labelCls}>Banner URL</label>
-          <input className={inputCls} value={form.banner_url} onChange={(e) => set("banner_url", e.target.value)} placeholder="/images/banner.jpg" />
-        </div>
-        <div>
-          <label className={labelCls}>Link Afiliado</label>
-          <input className={inputCls} value={form.affiliate_url} onChange={(e) => set("affiliate_url", e.target.value)} placeholder="" />
+        <div className="mt-4">
+          <label className={lc}>Rating (0–5) — {form.rating}</label>
+          <input type="range" min="0" max="5" step="0.5" value={form.rating as number} onChange={e => set("rating", parseFloat(e.target.value))} className="w-full accent-arena-gold" />
+          <div className="flex justify-between text-[10px] text-arena-ash/50 mt-0.5"><span>0</span><span>5</span></div>
         </div>
       </div>
 
-      {/* Notes */}
+      {/* ── SECTION: Estatísticas do Bónus ───────────────────────── */}
       <div>
-        <label className={labelCls}>Notas (uma por linha)</label>
-        <textarea className={`${inputCls} min-h-[80px]`} value={form.notes} onChange={(e) => set("notes", e.target.value)} placeholder={"24/7 Live Support\nPromotion details..."} />
+        <p className={sc}>▸ Estatísticas do Bónus</p>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-4">
+          <div><label className={lc}>Bónus</label><input className={ic} value={form.bonus_value} onChange={e => set("bonus_value", e.target.value)} placeholder="550%" /></div>
+          <div><label className={lc}>Free Spins</label><input className={ic} value={form.free_spins} onChange={e => set("free_spins", e.target.value)} placeholder="Up to 75" /></div>
+          <div><label className={lc}>Min. Depósito</label><input className={ic} value={form.min_deposit} onChange={e => set("min_deposit", e.target.value)} placeholder="20€" /></div>
+          <div><label className={lc}>Código Promo</label><input className={ic} value={form.code} onChange={e => set("code", e.target.value)} placeholder="SECA" /></div>
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          <div><label className={lc}>Cashback</label><input className={ic} value={form.cashback} onChange={e => set("cashback", e.target.value)} placeholder="35%" /></div>
+          <div><label className={lc}>Tempo Levant.</label><input className={ic} value={form.withdraw_time} onChange={e => set("withdraw_time", e.target.value)} placeholder="Up to 48h" /></div>
+          <div><label className={lc}>Max Levant.</label><input className={ic} value={form.max_withdrawal} onChange={e => set("max_withdrawal", e.target.value)} placeholder="€5,000/week" /></div>
+          <div><label className={lc}>Cashback %</label><input className={ic} value={form.cashback} onChange={e => set("cashback", e.target.value)} placeholder="30%" /></div>
+        </div>
       </div>
 
-      {/* Payment methods */}
+      {/* ── SECTION: Detalhes do Casino ──────────────────────────── */}
       <div>
-        <label className={labelCls}>Métodos de Pagamento</label>
-        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2 mt-1">
-          {PAYMENT_OPTIONS.map((opt) => {
+        <p className={sc}>▸ Detalhes do Casino</p>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-4">
+          <div><label className={lc}>Licença</label><input className={ic} value={form.license} onChange={e => set("license", e.target.value)} placeholder="Curaçao" /></div>
+          <div><label className={lc}>Fundado</label><input className={ic} value={form.established} onChange={e => set("established", e.target.value)} placeholder="2023" /></div>
+          <div><label className={lc}>Suporte Live</label><input className={ic} value={form.live_support} onChange={e => set("live_support", e.target.value)} placeholder="24/7" /></div>
+          <div><label className={lc}>Total de Jogos</label><input className={ic} value={form.total_games} onChange={e => set("total_games", e.target.value)} placeholder="5000+" /></div>
+        </div>
+        <div className="mb-4">
+          <label className={lc}>Idiomas Disponíveis</label>
+          <input className={ic} value={form.languages} onChange={e => set("languages", e.target.value)} placeholder="PT, EN, ES, FR" />
+        </div>
+        <div>
+          <label className={lc}>Game Providers (um por linha)</label>
+          <textarea className={`${ic} min-h-[80px]`} value={form.game_providers} onChange={e => set("game_providers", e.target.value)} placeholder={"Pragmatic Play\nNoLimit City\nEvolution\nPlay'n GO"} />
+        </div>
+      </div>
+
+      {/* ── SECTION: Welcome Bonus Stages ────────────────────────── */}
+      <div>
+        <p className={sc}>▸ Welcome Bonus — Breakdown por Depósito</p>
+        <p className="text-[11px] text-arena-ash mb-3">Preenche os depósitos com conteúdo. Deixa vazio para não mostrar no cartão.</p>
+        <WelcomeBonusStageEditor
+          stages={form.welcome_bonus_stages as WelcomeBonusStage[]}
+          onChange={stages => set("welcome_bonus_stages", stages)}
+        />
+      </div>
+
+      {/* ── SECTION: Conteúdo Rico ───────────────────────────────── */}
+      <div>
+        <p className={sc}>▸ Conteúdo Rico</p>
+        <div className="mb-4">
+          <label className={lc}>Notas / Destaques (uma por linha)</label>
+          <textarea className={`${ic} min-h-[80px]`} value={form.notes} onChange={e => set("notes", e.target.value)} placeholder={"Suporte 24/7\nMegaways slots disponíveis"} />
+        </div>
+        <div className="mb-4">
+          <label className={lc}>Programa VIP (uma bullet por linha)</label>
+          <textarea className={`${ic} min-h-[80px]`} value={form.vip_program} onChange={e => set("vip_program", e.target.value)} placeholder={"5 níveis VIP\nCashback dedicado\nManager pessoal"} />
+        </div>
+        <div>
+          <label className={lc}>Detalhes & Termos</label>
+          <textarea className={`${ic} min-h-[100px]`} value={form.details} onChange={e => set("details", e.target.value)} placeholder="Wagering 35x. Válido para novos jogadores. Depósito mínimo €20..." />
+        </div>
+      </div>
+
+      {/* ── SECTION: Métodos de Pagamento ────────────────────────── */}
+      <div>
+        <p className={sc}>▸ Métodos de Pagamento</p>
+        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
+          {PAYMENT_OPTIONS.map(opt => {
             const selected = (form.payment_methods as string[]).includes(opt);
             return (
-              <label
-                key={opt}
-                className={`flex items-center gap-2 px-3 py-2 rounded-lg border cursor-pointer transition-all text-xs font-medium select-none ${
-                  selected
-                    ? "border-arena-gold/60 bg-arena-gold/10 text-arena-gold"
-                    : "border-white/10 bg-white/[0.02] text-arena-ash hover:border-white/20 hover:text-arena-smoke"
-                }`}
-              >
-                <input
-                  type="checkbox"
-                  className="sr-only"
-                  checked={selected}
-                  onChange={(e) => {
-                    const arr = [...(form.payment_methods as string[])];
-                    if (e.target.checked) arr.push(opt);
-                    else { const i = arr.indexOf(opt); if (i > -1) arr.splice(i, 1); }
-                    set("payment_methods", arr);
-                  }}
-                />
-                <span className={`w-3.5 h-3.5 rounded flex-shrink-0 border flex items-center justify-center transition-colors ${
-                  selected ? "bg-arena-gold border-arena-gold" : "border-white/20"
-                }`}>
-                  {selected && (
-                    <svg className="w-2.5 h-2.5 text-black" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/>
-                    </svg>
-                  )}
+              <label key={opt} className={`flex items-center gap-2 px-3 py-2 rounded-lg border cursor-pointer transition-all text-xs font-medium select-none ${selected ? "border-arena-gold/60 bg-arena-gold/10 text-arena-gold" : "border-white/10 bg-white/[0.02] text-arena-ash hover:border-white/20 hover:text-arena-smoke"}`}>
+                <input type="checkbox" className="sr-only" checked={selected} onChange={e => {
+                  const arr = [...(form.payment_methods as string[])];
+                  if (e.target.checked) arr.push(opt);
+                  else { const i = arr.indexOf(opt); if (i > -1) arr.splice(i, 1); }
+                  set("payment_methods", arr);
+                }} />
+                <span className={`w-3.5 h-3.5 rounded flex-shrink-0 border flex items-center justify-center transition-colors ${selected ? "bg-arena-gold border-arena-gold" : "border-white/20"}`}>
+                  {selected && <svg className="w-2.5 h-2.5 text-black" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/></svg>}
                 </span>
                 {opt}
               </label>
@@ -504,38 +598,40 @@ function OfferForm({ initial, onSave, saving, nextOrder }: OfferFormProps) {
         </div>
       </div>
 
-      {/* Visibility + Exclusive + KYC + VPN + Order */}
-      <div className="flex items-center gap-6 flex-wrap">
-        <label className="flex items-center gap-2 cursor-pointer">
-          <input type="checkbox" checked={form.visible as boolean} onChange={(e) => set("visible", e.target.checked)} className="w-4 h-4 accent-arena-gold" />
-          <span className="text-sm text-arena-smoke">Visível no site</span>
-        </label>
-        <label className="flex items-center gap-2 cursor-pointer">
-          <input type="checkbox" checked={form.is_exclusive as boolean} onChange={(e) => set("is_exclusive", e.target.checked)} className="w-4 h-4 accent-arena-gold" />
-          <span className="text-sm text-arena-smoke">Oferta Exclusiva</span>
-        </label>
-        <label className="flex items-center gap-2 cursor-pointer">
-          <input type="checkbox" checked={form.kyc_required as boolean} onChange={(e) => set("kyc_required", e.target.checked)} className="w-4 h-4 accent-red-500" />
-          <span className="text-sm text-arena-smoke">Requer KYC</span>
-        </label>
-        <label className="flex items-center gap-2 cursor-pointer">
-          <input type="checkbox" checked={form.vpn_friendly as boolean} onChange={(e) => set("vpn_friendly", e.target.checked)} className="w-4 h-4 accent-green-500" />
-          <span className="text-sm text-arena-smoke">VPN Friendly</span>
-        </label>
-        <div className="flex items-center gap-2">
-          <label className="text-[11px] uppercase tracking-wider text-arena-ash">Ordem:</label>
-          <input type="number" className={`${inputCls} w-20`} value={form.sort_order as number} onChange={(e) => set("sort_order", parseInt(e.target.value) || 0)} />
+      {/* ── SECTION: Opções & Configuração ───────────────────────── */}
+      <div>
+        <p className={sc}>▸ Opções & Configuração</p>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-4">
+          {([
+            { key: "visible",     label: "Visível no site",   color: "accent-arena-gold" },
+            { key: "is_exclusive",label: "Oferta Exclusiva",  color: "accent-arena-gold" },
+            { key: "kyc_required",label: "Requer KYC",        color: "accent-red-500"   },
+            { key: "vpn_friendly",label: "VPN Friendly",      color: "accent-green-500" },
+          ] as const).map(({ key, label, color }) => (
+            <label key={key} className="flex items-center gap-2.5 p-3 rounded-lg bg-white/[0.02] border border-white/8 cursor-pointer hover:border-white/15 transition-colors">
+              <input type="checkbox" checked={form[key] as boolean} onChange={e => set(key, e.target.checked)} className={`w-4 h-4 ${color} shrink-0`} />
+              <span className="text-sm text-arena-smoke">{label}</span>
+            </label>
+          ))}
+        </div>
+        <div className="flex items-center gap-3">
+          <label className={`${lc} mb-0 shrink-0`}>Ordem / Ranking</label>
+          <input
+            type="text"
+            inputMode="numeric"
+            className={`${ic} w-28`}
+            value={form.sort_order_str}
+            onChange={e => set("sort_order_str", e.target.value.replace(/[^0-9]/g, ""))}
+            placeholder={String(nextOrder)}
+          />
+          <p className="text-[10px] text-arena-ash">Número mais baixo = aparece primeiro na lista</p>
         </div>
       </div>
 
-      {/* Submit */}
-      <div className="flex gap-3 pt-2">
-        <button
-          type="submit"
-          disabled={saving}
-          className="px-8 py-3 rounded-xl bg-gradient-to-b from-arena-crimson to-arena-blood text-white text-sm font-bold uppercase tracking-wider border border-arena-red/40 hover:from-arena-red hover:to-arena-crimson transition-all disabled:opacity-50"
-        >
-          {saving ? "A guardar..." : "id" in initial ? "Guardar Alterações" : "Criar Oferta"}
+      {/* ── Submit ───────────────────────────────────────────────── */}
+      <div className="flex gap-3 pt-2 border-t border-white/8">
+        <button type="submit" disabled={saving} className="px-8 py-3 rounded-xl bg-gradient-to-b from-arena-crimson to-arena-blood text-white text-sm font-bold uppercase tracking-wider border border-arena-red/40 hover:from-arena-red hover:to-arena-crimson transition-all disabled:opacity-50">
+          {saving ? "A guardar..." : isNew ? "Criar Oferta" : "Guardar Alterações"}
         </button>
       </div>
     </form>

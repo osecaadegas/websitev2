@@ -121,6 +121,13 @@ export interface UserRow {
   updated_at: string;
 }
 
+export interface WelcomeBonusStage {
+  label: string;  // "1ST", "2ND", "3RD", "4TH"
+  pct: string;    // "120%"
+  fs?: string;    // "100 FS"
+  min: string;    // "5€"
+}
+
 export interface CasinoOfferRow {
   id: string;
   slug: string;
@@ -137,9 +144,17 @@ export interface CasinoOfferRow {
   code: string;
   cashback: string | null;
   withdraw_time: string;
+  max_withdrawal: string | null;
   license: string;
   established: string;
+  live_support: string | null;
+  total_games: string | null;
+  languages: string | null;
+  game_providers: string[] | null;
   notes: string[];
+  welcome_bonus_stages: WelcomeBonusStage[] | null;
+  vip_program: string | null;
+  details: string | null;
   affiliate_url: string;
   rating: number;
   is_exclusive: boolean;
