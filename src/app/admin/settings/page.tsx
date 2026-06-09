@@ -6,7 +6,7 @@ import { useEffect, useState, useCallback, useRef } from "react";
 import { EFFECT_OPTIONS } from "@/components/PageEffects";
 import type { PageSetting } from "@/hooks/usePageSettings";
 
-type Tab = "image" | "effects";
+type Tab = "image" | "effects" | "access";
 
 /* ── Reusable slider ──────────────────────────────────────── */
 function Slider({
@@ -222,6 +222,150 @@ function DragPreview({
   );
 }
 
+/* ── Mobile Drag Preview (9:16 portrait) ──────────────────── */
+function MobileDragPreview({
+  bgImage,
+  bgPosX,
+  bgPosY,
+  bgZoom,
+  bgColor,
+  bgBrightness,
+  bgSaturation,
+  bgContrast,
+  overlayOpacity,
+  onPositionChange,
+  onPositionCommit,
+  onZoomChange,
+  onZoomCommit,
+}: {
+  bgImage: string | null;
+  bgPosX: number;
+  bgPosY: number;
+  bgZoom: number;
+  bgColor: string;
+  bgBrightness: number;
+  bgSaturation: number;
+  bgContrast: number;
+  overlayOpacity: number;
+  onPositionChange: (x: number, y: number) => void;
+  onPositionCommit: (x: number, y: number) => void;
+  onZoomChange: (zoom: number) => void;
+  onZoomCommit: (zoom: number) => void;
+}) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const isDragging = useRef(false);
+  const startPos = useRef({ x: 0, y: 0 });
+  const startBgPos = useRef({ x: bgPosX, y: bgPosY });
+
+  const handlePointerDown = (e: React.PointerEvent) => {
+    if (!containerRef.current) return;
+    isDragging.current = true;
+    startPos.current = { x: e.clientX, y: e.clientY };
+    startBgPos.current = { x: bgPosX, y: bgPosY };
+    containerRef.current.setPointerCapture(e.pointerId);
+    containerRef.current.style.cursor = "grabbing";
+  };
+
+  const handlePointerMove = (e: React.PointerEvent) => {
+    if (!isDragging.current || !containerRef.current) return;
+    const rect = containerRef.current.getBoundingClientRect();
+    const dx = e.clientX - startPos.current.x;
+    const dy = e.clientY - startPos.current.y;
+    const pctX = (dx / rect.width) * -100;
+    const pctY = (dy / rect.height) * -100;
+    const newX = Math.min(100, Math.max(0, startBgPos.current.x + pctX));
+    const newY = Math.min(100, Math.max(0, startBgPos.current.y + pctY));
+    onPositionChange(Math.round(newX), Math.round(newY));
+  };
+
+  const handlePointerUp = () => {
+    if (!isDragging.current) return;
+    isDragging.current = false;
+    if (containerRef.current) containerRef.current.style.cursor = "grab";
+    onPositionCommit(bgPosX, bgPosY);
+  };
+
+  const handleWheel = (e: React.WheelEvent) => {
+    e.preventDefault();
+    const delta = e.deltaY > 0 ? -5 : 5;
+    const newZoom = Math.min(200, Math.max(50, bgZoom + delta));
+    onZoomChange(newZoom);
+    onZoomCommit(newZoom);
+  };
+
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center justify-between">
+        <label className="text-[11px] font-medium text-arena-smoke/70 uppercase tracking-wider">
+          Pré-visualização Mobile (arrasta para posicionar, scroll para zoom)
+        </label>
+        <span className="text-[10px] text-arena-smoke/40 tabular-nums">
+          X:{bgPosX}% Y:{bgPosY}% Z:{bgZoom}%
+        </span>
+      </div>
+      {/* Centred portrait phone mockup */}
+      <div className="flex justify-center">
+        <div
+          ref={containerRef}
+          onPointerDown={handlePointerDown}
+          onPointerMove={handlePointerMove}
+          onPointerUp={handlePointerUp}
+          onPointerCancel={handlePointerUp}
+          onWheel={handleWheel}
+          className="relative rounded-[18px] overflow-hidden border-2 border-blue-400/30 select-none touch-none shadow-lg"
+          style={{ width: 140, height: 248, cursor: "grab" }}
+        >
+          <div className="absolute inset-0" style={{ backgroundColor: bgColor }} />
+          {bgImage && (
+            <div
+              className="absolute inset-0"
+              style={{
+                backgroundImage: `url('${bgImage}')`,
+                backgroundSize: `${bgZoom}%`,
+                backgroundPosition: `${bgPosX}% ${bgPosY}%`,
+                backgroundRepeat: "no-repeat",
+                filter: `brightness(${bgBrightness}) saturate(${bgSaturation}) contrast(${bgContrast})`,
+              }}
+            />
+          )}
+          <div className="absolute inset-0" style={{ backgroundColor: `rgba(0,0,0,${overlayOpacity})` }} />
+          {/* Phone UI wireframe */}
+          <div className="absolute inset-0 pointer-events-none">
+            {/* Status bar */}
+            <div className="absolute top-0 left-0 right-0 h-[8%] bg-black/50 flex items-center justify-center">
+              <div className="w-10 h-1 rounded-full bg-black/80 mt-1" />
+            </div>
+            {/* Navbar */}
+            <div className="absolute top-[8%] left-0 right-0 h-[10%] bg-black/60 border-b border-arena-gold/20 flex items-center px-2">
+              <div className="w-2 h-2 rounded-full bg-arena-gold/40 mr-1" />
+              <div className="w-8 h-1 rounded-full bg-white/20" />
+              <div className="ml-auto w-3 h-3 rounded bg-white/10" />
+            </div>
+            {/* Content */}
+            <div className="absolute top-[22%] left-[8%] right-[8%] flex flex-col gap-1.5">
+              <div className="w-3/4 h-1.5 rounded-full bg-white/20" />
+              <div className="w-1/2 h-1 rounded-full bg-white/10" />
+              <div className="mt-1 grid grid-cols-2 gap-1">
+                <div className="aspect-square rounded bg-white/[0.06] border border-white/5" />
+                <div className="aspect-square rounded bg-white/[0.06] border border-white/5" />
+              </div>
+            </div>
+            {/* Bottom bar */}
+            <div className="absolute bottom-0 left-0 right-0 h-[8%] bg-black/50 flex items-center justify-center">
+              <div className="w-16 h-1 rounded-full bg-white/20" />
+            </div>
+          </div>
+          {!bgImage && (
+            <div className="absolute inset-0 flex items-center justify-center">
+              <span className="text-arena-smoke/30 text-[10px]">Sem imagem</span>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* ── Per-page settings card ───────────────────────────────── */
 function PageSettingsCard({
   page,
@@ -240,7 +384,7 @@ function PageSettingsCard({
   saving: string | null;
   setSettings: React.Dispatch<React.SetStateAction<PageSetting[]>>;
   saveField: (id: string, updates: Partial<PageSetting>) => Promise<void>;
-  triggerUpload: (id: string, slug: string, field: "background_image" | "hero_image") => void;
+  triggerUpload: (id: string, slug: string, field: "background_image" | "hero_image" | "mobile_background_image") => void;
 }) {
   const [activeTab, setActiveTab] = useState<Tab>("image");
 
@@ -253,6 +397,7 @@ function PageSettingsCard({
   const tabs: { key: Tab; label: string; icon: string }[] = [
     { key: "image", label: "Imagem & Posição", icon: "🖼️" },
     { key: "effects", label: "Efeitos & Filtros", icon: "✨" },
+    { key: "access", label: "Visibilidade & Acesso", icon: "🔒" },
   ];
 
   return (
@@ -331,6 +476,127 @@ function PageSettingsCard({
               )}
             </div>
 
+            {/* Hero text inputs (only for home page) */}
+            {isHome && (
+              <div className="space-y-3 p-4 rounded-lg border border-white/10 bg-white/[0.02]">
+                <h4 className="text-xs font-semibold text-arena-gold uppercase tracking-wider">
+                  Texto do Hero (Landing)
+                </h4>
+                
+                {/* Hero Title */}
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-medium text-arena-smoke/70 uppercase tracking-wider">
+                    Título Principal
+                  </label>
+                  <input
+                    type="text"
+                    value={page.hero_title ?? ""}
+                    placeholder="ENTER THE ARENA"
+                    onChange={(e) => updateLocal("hero_title", e.target.value)}
+                    onBlur={(e) => saveField(page.id, { hero_title: e.target.value } as Partial<PageSetting>)}
+                    className="w-full px-3 py-2 rounded-md bg-black/40 border border-white/10 text-white placeholder:text-arena-smoke/30 focus:outline-none focus:border-arena-gold/50 transition-colors text-sm"
+                  />
+                </div>
+
+                {/* Hero Description */}
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-medium text-arena-smoke/70 uppercase tracking-wider">
+                    Descrição
+                  </label>
+                  <textarea
+                    value={page.hero_description ?? ""}
+                    placeholder="A brutal cinematic iGaming coliseum..."
+                    onChange={(e) => updateLocal("hero_description", e.target.value)}
+                    onBlur={(e) => saveField(page.id, { hero_description: e.target.value } as Partial<PageSetting>)}
+                    rows={3}
+                    className="w-full px-3 py-2 rounded-md bg-black/40 border border-white/10 text-white placeholder:text-arena-smoke/30 focus:outline-none focus:border-arena-gold/50 transition-colors text-sm resize-none"
+                  />
+                </div>
+
+                {/* Font Size Controls */}
+                <div className="grid grid-cols-2 gap-3 pt-2">
+                  <Slider
+                    label="Tamanho do Título"
+                    value={page.hero_title_size ?? 1.0}
+                    min={0.5}
+                    max={2.0}
+                    step={0.05}
+                    format={(v) => `${(v * 100).toFixed(0)}%`}
+                    onChange={(v) => updateLocal("hero_title_size", v)}
+                    onCommit={(v) => saveField(page.id, { hero_title_size: v } as Partial<PageSetting>)}
+                  />
+                  <Slider
+                    label="Tamanho da Descrição"
+                    value={page.hero_description_size ?? 1.0}
+                    min={0.5}
+                    max={2.0}
+                    step={0.05}
+                    format={(v) => `${(v * 100).toFixed(0)}%`}
+                    onChange={(v) => updateLocal("hero_description_size", v)}
+                    onCommit={(v) => saveField(page.id, { hero_description_size: v } as Partial<PageSetting>)}
+                  />
+                </div>
+
+                {/* Text Alignment */}
+                <div className="space-y-1.5 pt-2">
+                  <label className="text-[11px] font-medium text-arena-smoke/70 uppercase tracking-wider">
+                    Alinhamento do Texto
+                  </label>
+                  <select
+                    value={page.hero_text_align ?? "left"}
+                    onChange={(e) => {
+                      const value = e.target.value as "left" | "center" | "right";
+                      updateLocal("hero_text_align", value);
+                      saveField(page.id, { hero_text_align: value } as Partial<PageSetting>);
+                    }}
+                    className="w-full px-3 py-2 rounded-md bg-black/40 border border-white/10 text-white focus:outline-none focus:border-arena-gold/50 transition-colors text-sm"
+                  >
+                    <option value="left">Esquerda</option>
+                    <option value="center">Centro</option>
+                    <option value="right">Direita</option>
+                  </select>
+                </div>
+
+                {/* Position and Width Controls */}
+                <div className="grid grid-cols-2 gap-3 pt-2">
+                  <Slider
+                    label="Posição Horizontal"
+                    value={page.hero_position_x ?? 6}
+                    min={0}
+                    max={100}
+                    step={1}
+                    format={(v) => `${v}%`}
+                    onChange={(v) => updateLocal("hero_position_x", v)}
+                    onCommit={(v) => saveField(page.id, { hero_position_x: v } as Partial<PageSetting>)}
+                  />
+                  <Slider
+                    label="Posição Vertical"
+                    value={page.hero_position_y ?? 32}
+                    min={0}
+                    max={100}
+                    step={1}
+                    format={(v) => `${v}%`}
+                    onChange={(v) => updateLocal("hero_position_y", v)}
+                    onCommit={(v) => saveField(page.id, { hero_position_y: v } as Partial<PageSetting>)}
+                  />
+                </div>
+
+                {/* Max Width */}
+                <div className="pt-2">
+                  <Slider
+                    label="Largura Máxima do Texto"
+                    value={page.hero_max_width ?? 768}
+                    min={300}
+                    max={1920}
+                    step={50}
+                    format={(v) => `${v}px`}
+                    onChange={(v) => updateLocal("hero_max_width", v)}
+                    onCommit={(v) => saveField(page.id, { hero_max_width: v } as Partial<PageSetting>)}
+                  />
+                </div>
+              </div>
+            )}
+
             {/* Color picker for gap fill */}
             <div className="flex items-center gap-3">
               <label className="text-[11px] font-medium text-arena-smoke/70 uppercase tracking-wider whitespace-nowrap">
@@ -372,6 +638,56 @@ function PageSettingsCard({
               onChange={(v) => updateLocal("bg_zoom", v)}
               onCommit={(v) => saveField(page.id, { bg_zoom: v } as Partial<PageSetting>)}
             />
+
+            {/* ── Mobile image section ───────────────────── */}
+            <div className="mt-2 rounded-xl border border-blue-400/20 bg-blue-500/[0.04] overflow-hidden">
+              <div className="flex items-center gap-2 px-4 py-2.5 border-b border-blue-400/10">
+                <span className="text-lg">📱</span>
+                <div>
+                  <h4 className="text-xs font-semibold text-blue-300 uppercase tracking-wider">Imagem Mobile</h4>
+                  <p className="text-[11px] text-arena-smoke/50 mt-0.5">Substitui a imagem de fundo em ecrãs pequenos (&lt;768px). Deixa vazio para usar a imagem de desktop.</p>
+                </div>
+              </div>
+              <div className="p-4 space-y-4">
+                <ImageField
+                  label="Imagem Mobile"
+                  value={page.mobile_background_image ?? null}
+                  isUploading={isPageUploading && uploadTarget?.field === "mobile_background_image"}
+                  onUpload={() => triggerUpload(page.id, page.page_slug, "mobile_background_image")}
+                  onClear={() => saveField(page.id, { mobile_background_image: "" } as Partial<PageSetting>)}
+                  onSelectPreset={(url) => saveField(page.id, { mobile_background_image: url } as Partial<PageSetting>)}
+                />
+
+                {page.mobile_background_image && (
+                  <>
+                    {/* Mobile portrait drag preview */}
+                    <MobileDragPreview
+                      bgImage={page.mobile_background_image}
+                      bgPosX={page.mobile_bg_position_x ?? 50}
+                      bgPosY={page.mobile_bg_position_y ?? 50}
+                      bgZoom={page.mobile_bg_zoom ?? 100}
+                      bgColor={page.bg_color ?? "#000000"}
+                      bgBrightness={page.bg_brightness ?? 0.35}
+                      bgSaturation={page.bg_saturation ?? 0.7}
+                      bgContrast={page.bg_contrast ?? 0.95}
+                      overlayOpacity={page.overlay_opacity ?? 0.6}
+                      onPositionChange={(x, y) => { updateLocal("mobile_bg_position_x", x); updateLocal("mobile_bg_position_y", y); }}
+                      onPositionCommit={(x, y) => saveField(page.id, { mobile_bg_position_x: x, mobile_bg_position_y: y } as Partial<PageSetting>)}
+                      onZoomChange={(z) => updateLocal("mobile_bg_zoom", z)}
+                      onZoomCommit={(z) => saveField(page.id, { mobile_bg_zoom: z } as Partial<PageSetting>)}
+                    />
+                    <Slider
+                      label="Zoom Mobile"
+                      value={page.mobile_bg_zoom ?? 100}
+                      min={50} max={200} step={5}
+                      format={(v) => `${v}%`}
+                      onChange={(v) => updateLocal("mobile_bg_zoom", v)}
+                      onCommit={(v) => saveField(page.id, { mobile_bg_zoom: v } as Partial<PageSetting>)}
+                    />
+                  </>
+                )}
+              </div>
+            </div>
           </div>
         )}
 
@@ -447,6 +763,82 @@ function PageSettingsCard({
           </div>
         )}
 
+        {activeTab === "access" && (
+          <div className="space-y-4">
+            {/* Page Active Toggle */}
+            <div className="space-y-2 p-4 rounded-lg border border-white/10 bg-white/[0.02]">
+              <div className="flex items-center justify-between">
+                <div className="space-y-1">
+                  <label className="text-[11px] font-medium text-arena-smoke/70 uppercase tracking-wider">
+                    Estado da Página
+                  </label>
+                  <p className="text-[10px] text-arena-smoke/40">
+                    Desativar a página esconde-a de todos os utilizadores
+                  </p>
+                </div>
+                <button
+                  onClick={() => saveField(page.id, { is_active: !page.is_active } as Partial<PageSetting>)}
+                  disabled={saving === page.id}
+                  className={`relative w-14 h-7 rounded-full transition-colors ${
+                    page.is_active ? "bg-green-500" : "bg-red-500/50"
+                  } ${saving === page.id ? "opacity-50" : ""}`}
+                >
+                  <div
+                    className={`absolute top-1 left-1 w-5 h-5 bg-white rounded-full transition-transform ${
+                      page.is_active ? "translate-x-7" : "translate-x-0"
+                    }`}
+                  />
+                </button>
+              </div>
+              <div className={`text-[10px] font-medium ${
+                page.is_active ? "text-green-400" : "text-red-400"
+              }`}>
+                {page.is_active ? "✓ Página Ativa" : "✗ Página Desativada"}
+              </div>
+            </div>
+
+            {/* Minimum Role Required */}
+            <div className="space-y-2 p-4 rounded-lg border border-white/10 bg-white/[0.02]">
+              <label className="text-[11px] font-medium text-arena-smoke/70 uppercase tracking-wider">
+                Nível Mínimo de Acesso
+              </label>
+              <p className="text-[10px] text-arena-smoke/40 mb-3">
+                Define o cargo mínimo necessário para visualizar esta página
+              </p>
+              <select
+                value={page.min_role ?? "viewer"}
+                onChange={(e) => {
+                  const value = e.target.value as "viewer" | "moderador" | "configurador" | "admin";
+                  saveField(page.id, { min_role: value } as Partial<PageSetting>);
+                }}
+                disabled={saving === page.id}
+                className="w-full px-3 py-2 rounded-md bg-black/40 border border-white/10 text-white focus:outline-none focus:border-arena-gold/50 transition-colors text-sm"
+              >
+                <option value="viewer">👁️ Viewer (Todos)</option>
+                <option value="moderador">🛡️ Moderador</option>
+                <option value="configurador">⚙️ Configurador</option>
+                <option value="admin">🔑 Admin</option>
+              </select>
+              <div className="text-[10px] text-arena-smoke/40 mt-2">
+                {page.min_role === "viewer" && "Página visível para todos os utilizadores"}
+                {page.min_role === "moderador" && "Página visível apenas para Moderadores, Configuradores e Admins"}
+                {page.min_role === "configurador" && "Página visível apenas para Configuradores e Admins"}
+                {page.min_role === "admin" && "Página visível apenas para Admins"}
+              </div>
+            </div>
+
+            {/* Info Box */}
+            <div className="p-4 rounded-lg border border-blue-500/20 bg-blue-500/5">
+              <div className="flex gap-2">
+                <span className="text-blue-400 text-sm">ℹ️</span>
+                <div className="text-[11px] text-blue-300/70 leading-relaxed">
+                  <strong className="text-blue-300">Nota:</strong> Se a página estiver desativada, nenhum utilizador conseguirá aceder, independentemente do seu cargo. As definições de acesso por cargo só se aplicam quando a página está ativa.
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {saving === page.id && (
           <div className="text-xs text-arena-gold animate-pulse mt-3">A guardar...</div>
         )}
@@ -463,11 +855,12 @@ export default function AdminSettingsPage() {
   const [saving, setSaving] = useState<string | null>(null);
   const [uploading, setUploading] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
+  const [currentPageIndex, setCurrentPageIndex] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploadTarget, setUploadTarget] = useState<{
     id: string;
     slug: string;
-    field: "background_image" | "hero_image";
+    field: "background_image" | "hero_image" | "mobile_background_image";
   } | null>(null);
 
   const showToast = useCallback((msg: string) => {
@@ -483,6 +876,25 @@ export default function AdminSettingsPage() {
       .catch(() => showToast("Erro ao carregar definições"))
       .finally(() => setLoading(false));
   }, [showToast]);
+
+  /* ── Keyboard navigation ────────────────────────────────── */
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Only allow keyboard nav when not focused in an input
+      if (["INPUT", "TEXTAREA", "SELECT"].includes((e.target as HTMLElement).tagName)) return;
+
+      if (e.key === "ArrowLeft" && currentPageIndex > 0) {
+        e.preventDefault();
+        setCurrentPageIndex((prev) => prev - 1);
+      } else if (e.key === "ArrowRight" && currentPageIndex < settings.length - 1) {
+        e.preventDefault();
+        setCurrentPageIndex((prev) => prev + 1);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [currentPageIndex, settings.length]);
 
   /* ── Save a field ───────────────────────────────────────── */
   const saveField = useCallback(
@@ -544,7 +956,7 @@ export default function AdminSettingsPage() {
     [uploadTarget, saveField, showToast]
   );
 
-  const triggerUpload = (id: string, slug: string, field: "background_image" | "hero_image") => {
+  const triggerUpload = (id: string, slug: string, field: "background_image" | "hero_image" | "mobile_background_image") => {
     setUploadTarget({ id, slug, field });
     setTimeout(() => fileInputRef.current?.click(), 50);
   };
@@ -561,7 +973,7 @@ export default function AdminSettingsPage() {
   if (!user || !hasRole(user.role, "configurador")) {
     return (
       <div className="pt-24 pb-16 min-h-screen flex items-center justify-center">
-        <div className="text-red-400 text-lg">Acesso negado</div>
+        <div className="text-red-400 text-lg">Acesso negado - Apenas configuradores e administradores</div>
       </div>
     );
   }
@@ -595,27 +1007,78 @@ export default function AdminSettingsPage() {
 
         {loading ? (
           <div className="text-arena-smoke animate-pulse">A carregar páginas...</div>
+        ) : settings.length === 0 ? (
+          <div className="text-arena-smoke/60">Nenhuma página encontrada</div>
         ) : (
-          <div className="space-y-3">
-            {settings.map((page) => (
-              <PageSettingsCard
-                key={page.id}
-                page={page}
-                isHome={page.page_slug === "home"}
-                isPageUploading={uploading === page.id}
-                uploadTarget={uploadTarget}
-                saving={saving}
-                setSettings={setSettings}
-                saveField={saveField}
-                triggerUpload={triggerUpload}
-              />
-            ))}
-          </div>
+          <>
+            {/* Page Navigation */}
+            <div className="flex items-center gap-4 mb-6">
+              {/* Previous Button */}
+              <button
+                onClick={() => setCurrentPageIndex((prev) => Math.max(0, prev - 1))}
+                disabled={currentPageIndex === 0}
+                className="flex items-center gap-2 px-4 py-2 rounded-lg border border-white/10 bg-white/[0.03] hover:bg-white/[0.06] disabled:opacity-30 disabled:cursor-not-allowed transition-all group"
+              >
+                <svg className="w-4 h-4 text-arena-gold group-disabled:text-arena-smoke/30" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+                </svg>
+                <span className="text-sm font-medium text-arena-smoke group-disabled:text-arena-smoke/30">Anterior</span>
+              </button>
+
+              {/* Page Selector Dropdown */}
+              <div className="flex-1 relative">
+                <select
+                  value={currentPageIndex}
+                  onChange={(e) => setCurrentPageIndex(Number(e.target.value))}
+                  className="w-full px-4 py-2.5 rounded-lg border border-white/10 bg-black/40 text-arena-gold font-medium text-sm appearance-none cursor-pointer hover:border-arena-gold/40 focus:outline-none focus:border-arena-gold/60 transition-all"
+                >
+                  {settings.map((page, index) => (
+                    <option key={page.id} value={index} className="bg-black text-white">
+                      {page.page_name} {page.page_slug === "home" ? "🏛️" : ""}
+                    </option>
+                  ))}
+                </select>
+                <svg className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-arena-gold/60 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                </svg>
+              </div>
+
+              {/* Page Counter */}
+              <div className="px-4 py-2 rounded-lg border border-white/10 bg-white/[0.02] text-arena-smoke/70 text-sm font-medium tabular-nums whitespace-nowrap">
+                {currentPageIndex + 1} / {settings.length}
+              </div>
+
+              {/* Next Button */}
+              <button
+                onClick={() => setCurrentPageIndex((prev) => Math.min(settings.length - 1, prev + 1))}
+                disabled={currentPageIndex === settings.length - 1}
+                className="flex items-center gap-2 px-4 py-2 rounded-lg border border-white/10 bg-white/[0.03] hover:bg-white/[0.06] disabled:opacity-30 disabled:cursor-not-allowed transition-all group"
+              >
+                <span className="text-sm font-medium text-arena-smoke group-disabled:text-arena-smoke/30">Próxima</span>
+                <svg className="w-4 h-4 text-arena-gold group-disabled:text-arena-smoke/30" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Current Page Card */}
+            <PageSettingsCard
+              key={settings[currentPageIndex].id}
+              page={settings[currentPageIndex]}
+              isHome={settings[currentPageIndex].page_slug === "home"}
+              isPageUploading={uploading === settings[currentPageIndex].id}
+              uploadTarget={uploadTarget}
+              saving={saving}
+              setSettings={setSettings}
+              saveField={saveField}
+              triggerUpload={triggerUpload}
+            />
+          </>
         )}
 
         {/* Toast */}
         {toast && (
-          <div className="fixed bottom-6 right-6 z-50 px-4 py-2 rounded-lg bg-arena-gold/90 text-black font-medium text-sm shadow-lg animate-[fadeIn_0.2s_ease-out]">
+          <div className="fixed right-6 z-50 px-4 py-2 rounded-lg bg-arena-gold/90 text-black font-medium text-sm shadow-lg animate-[fadeIn_0.2s_ease-out]" style={{ bottom: "calc(1.5rem + env(safe-area-inset-bottom, 0px))" }}>
             {toast}
           </div>
         )}
@@ -624,73 +1087,7 @@ export default function AdminSettingsPage() {
   );
 }
 
-/* ── Preset images from /public/images/pages/ ──────────────── */
-const PRESET_IMAGES = [
-  { name: "Arena Gladiador", file: "/images/pages/gladiator-arena.jpg" },
-  { name: "Retrato Gladiador", file: "/images/pages/gladiator-portrait.jpg" },
-  { name: "Hero Gladiador", file: "/images/pages/hero-gladiator.jpg" },
-  { name: "Guerreiro", file: "/images/pages/warrior-illustration.jpg" },
-  { name: "Arena", file: "/images/pages/arena-gladiator.jpg" },
-  { name: "Murmillo", file: "/images/pages/murmillo-murmillon-gladiator.jpg" },
-  { name: "Provocator", file: "/images/pages/provocator-provokator.jpg" },
-  { name: "Elmo Bronze", file: "/images/pages/helmet-bronze.jpg" },
-  { name: "Elmo Grunge", file: "/images/pages/helmet-grunge.jpg" },
-  { name: "Elmo Still Life", file: "/images/pages/helmet-still-life.jpg" },
-  { name: "Elmo Soldado", file: "/images/pages/imgi_1_soldier-helmet-still-life_23-2151648773.jpg" },
-  { name: "Elmo Vintage", file: "/images/pages/vintage-style-soldier-helmet-still-life.jpg" },
-  { name: "Stream", file: "/images/pages/Stream.jpg" },
-  { name: "Liga dos Secas", file: "/images/pages/brutusleague.png" },
-  { name: "Roda", file: "/images/pages/wheel-bg.jpg" },
-  { name: "Sessão", file: "/images/pages/session.jpg" },
-  { name: "Loja", file: "/images/pages/store.jpg" },
-  { name: "Ofertas", file: "/images/pages/offers.jpg" },
-  { name: "Armas Medieval", file: "/images/pages/imgi_87_medieval-weapons-display-stockcake.jpg" },
-  { name: "Arsenal Medieval", file: "/images/pages/imgi_136_medieval-arsenal-collection-stockcake.jpg" },
-  { name: "Steel & Shadow", file: "/images/pages/imgi_132_steel-and-shadow-stockcake.jpg" },
-  { name: "Coliseu I", file: "/images/pages/imgi_4_947087.jpg" },
-  { name: "Coliseu II", file: "/images/pages/imgi_15_947098.jpg" },
-  { name: "Coliseu III", file: "/images/pages/imgi_30_947112.jpg" },
-  { name: "Coliseu Arquitectura", file: "/images/pages/Colosseum Roman Architecture Wallpaper HD.jpg" },
-  { name: "Gladiador I", file: "/images/pages/imgi_260_1000_F_728430557_wVTjNVRC4Q4eGHPSN0iIX64N2Aawi3H0.jpg" },
-  { name: "OG Warrior", file: "/images/pages/og-image-warrior.jpg" },
-  { name: "Gladiador Escuro", file: "/images/pages/imgi_14_gladiator-dark-background_380677-3381.jpg" },
-  { name: "Armadura e Sangue", file: "/images/pages/imgi_30_armadura-e-sangue.jpg" },
-  { name: "Guerreiro Romano", file: "/images/pages/imgi_37_portrait-ancient-roman-empire-warrior_23-2150912847.jpg" },
-  { name: "Espartano Chamas", file: "/images/pages/imgi_39_spartan-warrior-profile-fiery-abstract-background_1291474-454.jpg" },
-  { name: "Espartano Escudo", file: "/images/pages/imgi_3_spartan-warrior-armor-with-spear-shield_1410957-70845.jpg" },
-  { name: "Relevo Grego", file: "/images/pages/imgi_36_3d-relief-ancient-greek-warrior-wallpaper_935212-68019.jpg" },
-  { name: "Mitologia Grega", file: "/images/pages/imgi_117_best-greek-mythology-1fnmbxkxuv89pzu5.jpg" },
-  { name: "Teatro Digital", file: "/images/pages/digital-art-style-theatre-stage.jpg" },
-  { name: "Duelo Coliseu", file: "/images/pages/fight-two-roman-gladiators-coliseum-realistic-representation-roman-combat_334978-3123.avif" },
-  { name: "Gladiador Arena Flat", file: "/images/pages/imgi_9_gladiator-arena-flat-design-side-view-ancient-rome-theme-animation-colored-pastel_1317319-6307.jpg" },
-  { name: "Soldado Pngtree", file: "/images/pages/pngtree-roman-soldier-or-gladiator-with-sword-and-shield-png-image_13325190.png" },
-  { name: "Guerreiro Thekoswog", file: "/images/pages/imgi_157_thekoswog-24-1.jpg" },
-  { name: "Fundo Arena", file: "/images/pages/imgi_2_3a8a1154fd2b39299fd2719e82d456f3.jpg" },
-  { name: "Painel Bronze", file: "/images/pages/imgi_41_dd514f15d99f5902b7100d330a792d93.jpg" },
-  { name: "Colosso I", file: "/images/pages/imgi_56_9c69fc6ca5b77af30bb63cbb8dd2231a.jpg" },
-  { name: "Colosso II", file: "/images/pages/imgi_67_4821232.jpg" },
-  { name: "Fundo Dourado", file: "/images/pages/imgi_68_f0797cefee6de5310877f69cb1285d76.jpg" },
-  { name: "Papiro Dourado", file: "/images/pages/imgi_74_7d3b8e673c1bbb01bdbf517a5190e73f.jpg" },
-  { name: "Guerreiro Webp", file: "/images/pages/imgi_77_63e7dad8157374372beb843b393b98dd.webp" },
-  { name: "Cena Batalha", file: "/images/pages/imgi_80_78df98f0a1d661fd17fe1d38983d6ec4.jpg" },
-  { name: "Estátua Pensador", file: "/images/pages/imgi_126_8a4a57a111c0f35611117dae3563f7fb.jpg" },
-  { name: "Armadura III", file: "/images/pages/imgi_142_13fa70a77585a63396f0779f6cb5bb80.jpg" },
-  { name: "Símbolo Arena", file: "/images/pages/imgi_427_1000_F_73200159_7kreTVxUV1M4QScBZnkfAxhb3D8OypWw.webp" },
-  { name: "Banner F566", file: "/images/pages/1000_F_566266457_eTnI7xp45QMRts1qXNLaDueyzYPY4Pyy.jpg" },
-  { name: "Cena Coliseu", file: "/images/pages/c2331c35964167.570aa5f5e4596.jpg" },
-  { name: "Background I", file: "/images/pages/022c94b23facf3f76846ed803933de8a.jpg" },
-  { name: "Background II", file: "/images/pages/9e9c5cdcf23a0b028b8e7aa351680c73_7beb59b5b268dcad46f2b49c2c97212c.jpg" },
-  { name: "Background III", file: "/images/pages/16a99f32-4b85-4bfb-8288-ea0a436891e8.webp" },
-  { name: "Ícone I", file: "/images/pages/imgi_102_5553c28e84bd606a5fec3950554d554f.png" },
-  { name: "Ícone II", file: "/images/pages/imgi_57_ffe9b755108bd488fd89120fc8e10d53.png" },
-  { name: "Ícone III", file: "/images/pages/imgi_60_c221ef036a99708ec7b1b7b22a52faf4.webp" },
-  { name: "Ícone IV", file: "/images/pages/imgi_63_be594c712dd691e88f6a4828dd3664c1.png" },
-  { name: "Ícone V", file: "/images/pages/imgi_85_19f46f48f3fbbdd659d163cfc42b7c97.png" },
-  { name: "Logo H", file: "/images/pages/logo_h-07.png" },
-  { name: "Imagem 1", file: "/images/pages/1.jpg" },
-  { name: "Imagem 2", file: "/images/pages/2.jpg" },
-  { name: "Imagem 3", file: "/images/pages/3.jpg" },
-];
+/* ── Preset images now loaded dynamically from /api/preset-images ─ */
 
 /* ── Image field with preset gallery + upload ──────────────── */
 function ImageField({
@@ -709,6 +1106,18 @@ function ImageField({
   onSelectPreset: (url: string) => void;
 }) {
   const [showGallery, setShowGallery] = useState(false);
+  const [presets, setPresets] = useState<{ file: string; name: string }[]>([]);
+  const [presetsLoading, setPresetsLoading] = useState(false);
+
+  useEffect(() => {
+    if (!showGallery || presets.length > 0) return;
+    setPresetsLoading(true);
+    fetch("/api/preset-images", { cache: "no-store" })
+      .then((r) => r.json())
+      .then((j) => { if (Array.isArray(j.images)) setPresets(j.images); })
+      .catch(() => {})
+      .finally(() => setPresetsLoading(false));
+  }, [showGallery, presets.length]);
 
   return (
     <div className="space-y-2">
@@ -783,8 +1192,13 @@ function ImageField({
             </div>
 
             <div className="overflow-y-auto max-h-[55vh] p-4">
+              {presetsLoading && presets.length === 0 ? (
+                <div className="text-center text-arena-smoke/60 text-sm py-8">A carregar imagens…</div>
+              ) : presets.length === 0 ? (
+                <div className="text-center text-arena-smoke/60 text-sm py-8">Nenhuma imagem encontrada.</div>
+              ) : (
               <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3">
-                {PRESET_IMAGES.map((img) => {
+                {presets.map((img) => {
                   const isSelected = value === img.file;
                   return (
                     <button
@@ -796,7 +1210,17 @@ function ImageField({
                           : "border-white/10 hover:border-arena-gold/50"
                       }`}
                     >
-                      <img src={img.file} alt={img.name} className="w-full h-full object-cover" loading="lazy" />
+                      <img
+                        src={img.file}
+                        alt={img.name}
+                        className="w-full h-full object-cover bg-black/30"
+                        loading="lazy"
+                        onError={(e) => {
+                          const el = e.currentTarget as HTMLImageElement;
+                          el.style.opacity = "0.2";
+                          el.alt = "(falhou)";
+                        }}
+                      />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                       <span className="absolute bottom-0 left-0 right-0 text-[10px] text-white font-medium px-1.5 py-1 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity truncate text-center">
                         {img.name}
@@ -810,6 +1234,7 @@ function ImageField({
                   );
                 })}
               </div>
+              )}
             </div>
 
             <div className="px-5 py-4 border-t border-white/10 flex items-center justify-between">

@@ -78,7 +78,35 @@ export async function PUT(request: Request) {
   if (!admin) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
 
   const body = await request.json();
-  const { id, background_image, hero_image, effect, effect_intensity, overlay_opacity, bg_brightness, bg_saturation, bg_contrast, bg_position_x, bg_position_y, bg_zoom, bg_color } = body;
+  const {
+    id,
+    background_image,
+    hero_image,
+    hero_title,
+    hero_description,
+    hero_title_size,
+    hero_description_size,
+    hero_text_align,
+    hero_position_x,
+    hero_position_y,
+    hero_max_width,
+    effect,
+    effect_intensity,
+    overlay_opacity,
+    bg_brightness,
+    bg_saturation,
+    bg_contrast,
+    bg_position_x,
+    bg_position_y,
+    bg_zoom,
+    bg_color,
+    mobile_background_image,
+    mobile_bg_position_x,
+    mobile_bg_position_y,
+    mobile_bg_zoom,
+    is_active,
+    min_role,
+  } = body;
 
   if (!id) {
     return NextResponse.json({ error: "ID is required" }, { status: 400 });
@@ -89,9 +117,22 @@ export async function PUT(request: Request) {
     return NextResponse.json({ error: "Invalid effect" }, { status: 400 });
   }
 
+  const validRoles = ["viewer", "moderador", "configurador", "admin"];
+  if (min_role && !validRoles.includes(min_role)) {
+    return NextResponse.json({ error: "Invalid role" }, { status: 400 });
+  }
+
   const updates: Record<string, unknown> = { updated_at: new Date().toISOString() };
   if (background_image !== undefined) updates.background_image = background_image || null;
   if (hero_image !== undefined) updates.hero_image = hero_image || null;
+  if (hero_title !== undefined) updates.hero_title = hero_title || null;
+  if (hero_description !== undefined) updates.hero_description = hero_description || null;
+  if (hero_title_size !== undefined) updates.hero_title_size = Math.min(2, Math.max(0.5, Number(hero_title_size)));
+  if (hero_description_size !== undefined) updates.hero_description_size = Math.min(2, Math.max(0.5, Number(hero_description_size)));
+  if (hero_text_align !== undefined) updates.hero_text_align = ["left", "center", "right"].includes(hero_text_align) ? hero_text_align : "left";
+  if (hero_position_x !== undefined) updates.hero_position_x = Math.min(100, Math.max(0, Math.round(Number(hero_position_x))));
+  if (hero_position_y !== undefined) updates.hero_position_y = Math.min(100, Math.max(0, Math.round(Number(hero_position_y))));
+  if (hero_max_width !== undefined) updates.hero_max_width = Math.min(1920, Math.max(300, Math.round(Number(hero_max_width))));
   if (effect !== undefined) updates.effect = effect;
   if (effect_intensity !== undefined) updates.effect_intensity = Math.min(2, Math.max(0, Number(effect_intensity)));
   if (overlay_opacity !== undefined) updates.overlay_opacity = Math.min(1, Math.max(0, Number(overlay_opacity)));
@@ -102,6 +143,12 @@ export async function PUT(request: Request) {
   if (bg_position_y !== undefined) updates.bg_position_y = Math.min(100, Math.max(0, Math.round(Number(bg_position_y))));
   if (bg_zoom !== undefined) updates.bg_zoom = Math.min(200, Math.max(50, Number(bg_zoom)));
   if (bg_color !== undefined) updates.bg_color = typeof bg_color === "string" ? bg_color.slice(0, 7) : "#000000";
+  if (mobile_background_image !== undefined) updates.mobile_background_image = mobile_background_image || null;
+  if (mobile_bg_position_x !== undefined) updates.mobile_bg_position_x = Math.min(100, Math.max(0, Math.round(Number(mobile_bg_position_x))));
+  if (mobile_bg_position_y !== undefined) updates.mobile_bg_position_y = Math.min(100, Math.max(0, Math.round(Number(mobile_bg_position_y))));
+  if (mobile_bg_zoom !== undefined) updates.mobile_bg_zoom = Math.min(200, Math.max(50, Number(mobile_bg_zoom)));
+  if (is_active !== undefined) updates.is_active = Boolean(is_active);
+  if (min_role !== undefined) updates.min_role = min_role;
 
   const { data, error } = await supabase
     .from("page_settings")
