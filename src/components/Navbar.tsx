@@ -26,8 +26,6 @@ export function Navbar({ onMenuToggle }: NavbarProps) {
 
   /* ── Page title map ─────────────────────────── */
   const PAGE_TITLES: Record<string, string> = {
-    "/calendario": "Calendário",
-    "/sobre": "Sobre Nós",
     "/contactos": "Contactos",
     "/comunidade": "Comunidade",
     "/giveaways": "Giveaways",

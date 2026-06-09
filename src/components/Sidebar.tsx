@@ -33,11 +33,9 @@ const MAIN_LINKS: NavItem[] = [
       { href: "/live", label: "Live" },
       { href: "/destaques", label: "Destaques" },
       { href: "/bonus-hunt", label: "Bonus Hunt" },
-      { href: "/calendario", label: "Calendário" },
     ],
   },
   { href: "/loja", label: "Loja" },
-  { href: "/sobre", label: "Sobre" },
 ];
 
 const SECONDARY_LINKS: NavItem[] = [
@@ -63,7 +61,6 @@ const SECONDARY_LINKS: NavItem[] = [
           },
           { href: "/admin/outros/giveaways", label: "Giveaways" },
           { href: "/admin/outros/daily-wheel", label: "Daily Wheel" },
-          { href: "/admin/outros/liga", label: "Liga dos Secas" },
           { href: "/admin/utilizadores", label: "Utilizadores" },
         ],
       },
@@ -87,11 +84,7 @@ const SECONDARY_LINKS: NavItem[] = [
 
 /* ── Icons per route ────────────────────────────────────────────── */
 const ICONS: Record<string, React.ReactNode> = {
-  "/sobre": (
-    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.6}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M12 2a10 10 0 100 20 10 10 0 000-20z" />
-    </svg>
-  ),
+
   "/ofertas": (
     <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.6}>
       <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7" />
@@ -138,11 +131,7 @@ const ICONS: Record<string, React.ReactNode> = {
       <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
     </svg>
   ),
-  "/calendario": (
-    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.6}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-    </svg>
-  ),
+
   "/jogos/crime-empire/dashboard": (
     <Image
       src="/images/crime_empire/crime_empire_logo.png"

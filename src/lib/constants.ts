@@ -7,7 +7,6 @@ export const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://websitev2-z
 export const TWITCH_CHANNEL = process.env.NEXT_PUBLIC_TWITCH_CHANNEL || "secaadegas";
 
 export const NAV_LINKS = [
-  { href: "/sobre", label: "Sobre" },
   { href: "/ofertas", label: "Ofertas" },
   { href: "/destaques", label: "Destaques" },
   { href: "/stream", label: "Stream" },
