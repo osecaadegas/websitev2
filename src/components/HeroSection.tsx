@@ -1,36 +1,35 @@
 ﻿"use client";
 
-import { useRef } from "react";
-import { useReducedMotion } from "framer-motion";
-
-/**
- * HERO SECTION — Full-screen cinematic entry point.
- *
- * Left-aligned content at the bottom, full-bleed image
- * with GSAP slow-zoom and ambient glow.
- * Hero image and effects come from admin settings (Definições).
- * Uses Supabase Realtime so admin changes appear instantly.
- */
+import { useEffect, useRef } from "react";
 
 /* ── Hero ────────────────────────────────────────── */
 export function HeroSection() {
-  const heroRef = useRef<HTMLElement | null>(null);
-  const reduceMotion = useReducedMotion();
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+
+  // Programmatically play to bypass any browser autoplay policy
+  useEffect(() => {
+    const vid = videoRef.current;
+    if (!vid) return;
+    vid.muted = true;
+    vid.play().catch(() => {
+      // Autoplay blocked — retry on first user interaction
+      const resume = () => { vid.play().catch(() => {}); document.removeEventListener("click", resume); };
+      document.addEventListener("click", resume);
+    });
+  }, []);
 
   return (
-    <section ref={heroRef} className="relative min-h-[100svh] overflow-hidden border-b border-white/[0.08]">
-      {/* Video background */}
-      <div className="absolute inset-0">
-        <video
-          className="h-full w-full object-cover"
-          src="/hero.mp4"
-          autoPlay
-          muted
-          loop
-          playsInline
-          preload="auto"
-        />
-      </div>
+    <section className="relative w-full h-[100svh] overflow-hidden border-b border-white/[0.08]">
+      <video
+        ref={videoRef}
+        className="absolute inset-0 h-full w-full object-cover"
+        src="/hero.mp4"
+        autoPlay
+        muted
+        loop
+        playsInline
+        preload="auto"
+      />
     </section>
   );
 }
