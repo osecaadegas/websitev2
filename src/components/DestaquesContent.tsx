@@ -38,6 +38,7 @@ const TABS: { value: ContentType; label: string }[] = [
 ];
 
 const REFRESH_INTERVAL = 120_000; // 2 minutes
+const ITEMS_PER_PAGE = 6;
 
 function formatDuration(seconds: number): string {
   const m = Math.floor(seconds / 60);
@@ -249,6 +250,7 @@ export function DestaquesContent() {
   const [loading, setLoading] = useState(true);
   const [fallback, setFallback] = useState(false);
   const [countdown, setCountdown] = useState(REFRESH_INTERVAL / 1000);
+  const [page, setPage] = useState(1);
 
   const fetchContent = useCallback(async (type: ContentType) => {
     try {
@@ -263,9 +265,15 @@ export function DestaquesContent() {
       }
 
       if (type === "clips") {
-        setClips(data.clips || []);
+        const sorted = (data.clips || []).slice().sort(
+          (a: TwitchClip, b: TwitchClip) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        );
+        setClips(sorted);
       } else {
-        setVideos(data.videos || []);
+        const sorted = (data.videos || []).slice().sort(
+          (a: TwitchVideo, b: TwitchVideo) => new Date(b.published_at).getTime() - new Date(a.published_at).getTime()
+        );
+        setVideos(sorted);
       }
 
       setLastUpdated(data.lastUpdated || new Date().toISOString());
@@ -279,6 +287,7 @@ export function DestaquesContent() {
   /* Fetch on tab change + periodic refresh */
   useEffect(() => {
     setLoading(true);
+    setPage(1);
     fetchContent(activeTab);
     const interval = setInterval(() => fetchContent(activeTab), REFRESH_INTERVAL);
     return () => clearInterval(interval);
@@ -293,6 +302,8 @@ export function DestaquesContent() {
   }, []);
 
   const currentItems = activeTab === "clips" ? clips : videos;
+  const totalPages = Math.max(1, Math.ceil(currentItems.length / ITEMS_PER_PAGE));
+  const pageItems = currentItems.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE);
 
   return (
     <div>
@@ -322,8 +333,7 @@ export function DestaquesContent() {
               <span className="text-white font-bold">{currentItems.length}</span>{" "}
               {activeTab === "clips" ? "clips" : "vídeos"}
             </span>
-          </div>
-        </div>
+          </div>        </div>
 
         {lastUpdated && (
           <div className="text-xs text-[#888888]">
@@ -373,7 +383,7 @@ export function DestaquesContent() {
       {!loading && currentItems.length > 0 && (
         <AnimatePresence mode="wait">
           <motion.div
-            key={activeTab}
+            key={`${activeTab}-${page}`}
             className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -381,10 +391,49 @@ export function DestaquesContent() {
             transition={{ duration: 0.2 }}
           >
             {activeTab === "clips"
-              ? clips.map((clip) => <ClipCard key={clip.id} clip={clip} />)
-              : videos.map((video) => <VideoCard key={video.id} video={video} />)}
+              ? (pageItems as TwitchClip[]).map((clip) => <ClipCard key={clip.id} clip={clip} />)
+              : (pageItems as TwitchVideo[]).map((video) => <VideoCard key={video.id} video={video} />)}
           </motion.div>
         </AnimatePresence>
+      )}
+
+      {/* Pagination */}
+      {!loading && totalPages > 1 && (
+        <div className="flex items-center justify-center gap-3 mt-10">
+          <button
+            onClick={() => { setPage((p) => Math.max(1, p - 1)); window.scrollTo({ top: 0, behavior: "smooth" }); }}
+            disabled={page === 1}
+            className="flex items-center gap-2 px-5 py-2.5 rounded-xl border border-white/10 bg-white/[0.03] hover:bg-white/[0.07] disabled:opacity-30 disabled:cursor-not-allowed text-sm text-[#aaa] hover:text-white transition-all"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" /></svg>
+            Anterior
+          </button>
+
+          <div className="flex items-center gap-1.5">
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+              <button
+                key={p}
+                onClick={() => { setPage(p); window.scrollTo({ top: 0, behavior: "smooth" }); }}
+                className={`w-9 h-9 rounded-lg text-sm font-semibold transition-all ${
+                  p === page
+                    ? "bg-[#ff6a00] text-white shadow-[0_0_12px_rgba(255,106,0,0.4)]"
+                    : "border border-white/10 bg-white/[0.03] text-[#888] hover:text-white hover:bg-white/[0.07]"
+                }`}
+              >
+                {p}
+              </button>
+            ))}
+          </div>
+
+          <button
+            onClick={() => { setPage((p) => Math.min(totalPages, p + 1)); window.scrollTo({ top: 0, behavior: "smooth" }); }}
+            disabled={page === totalPages}
+            className="flex items-center gap-2 px-5 py-2.5 rounded-xl border border-white/10 bg-white/[0.03] hover:bg-white/[0.07] disabled:opacity-30 disabled:cursor-not-allowed text-sm text-[#aaa] hover:text-white transition-all"
+          >
+            Seguinte
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
+          </button>
+        </div>
       )}
 
       {/* Empty state */}

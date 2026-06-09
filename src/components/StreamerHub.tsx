@@ -1,10 +1,18 @@
 ﻿"use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { motion } from "framer-motion";
 import { useTwitchStatus } from "@/hooks/useTwitchStatus";
 import { TWITCH_CHANNEL } from "@/lib/constants";
 import { ScrollReveal } from "@/components/ui/ScrollReveal";
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
+declare global {
+  interface Window {
+    Twitch?: any;
+    _twitchScriptLoaded?: boolean;
+  }
+}
 
 interface TwitchClip {
   id: string;
@@ -23,6 +31,8 @@ export function StreamerHub() {
   const [hostname, setHostname] = useState("localhost");
   const [clips, setClips] = useState<TwitchClip[]>([]);
   const [activeClip, setActiveClip] = useState<TwitchClip | null>(null);
+  const liveContainerRef = useRef<HTMLDivElement>(null);
+  const twitchEmbedRef = useRef<any>(null);
 
   useEffect(() => {
     setHostname(window.location.hostname);
@@ -72,6 +82,66 @@ export function StreamerHub() {
     setActiveClip(clips[(idx - 1 + clips.length) % clips.length]);
   }, [clips, activeClip]);
 
+  /* ── Twitch JS Embed with quality control ─────────────────── */
+  useEffect(() => {
+    if (!isLive || loading || !hostname || hostname === "localhost") return;
+    const container = liveContainerRef.current;
+    if (!container) return;
+
+    function initEmbed() {
+      if (!window.Twitch || !container) return;
+      // Destroy previous embed if any
+      container.innerHTML = "";
+      twitchEmbedRef.current = null;
+
+      const embed = new window.Twitch.Embed(container, {
+        channel: TWITCH_CHANNEL,
+        width: "100%",
+        height: "100%",
+        layout: "video",
+        autoplay: true,
+        theme: "dark",
+        parent: [hostname],
+      });
+
+      embed.addEventListener(window.Twitch.Embed.VIDEO_READY, () => {
+        const player = embed.getPlayer();
+        try {
+          const qualities: Array<{ name: string }> = player.getQualities();
+          const preferred =
+            qualities.find((q) => /^1080/.test(q.name)) ||
+            qualities.find((q) => /^720/.test(q.name));
+          if (preferred) player.setQuality(preferred.name);
+        } catch {
+          // getQualities may not be available yet; player stays on auto
+        }
+      });
+
+      twitchEmbedRef.current = embed;
+    }
+
+    if (window.Twitch) {
+      initEmbed();
+    } else if (!window._twitchScriptLoaded) {
+      window._twitchScriptLoaded = true;
+      const script = document.createElement("script");
+      script.src = "https://player.twitch.tv/js/embed/v1.js";
+      script.onload = initEmbed;
+      document.head.appendChild(script);
+    } else {
+      // Script tag already injected but not yet loaded — poll until ready
+      const poll = setInterval(() => {
+        if (window.Twitch) { clearInterval(poll); initEmbed(); }
+      }, 100);
+      return () => clearInterval(poll);
+    }
+
+    return () => {
+      if (container) container.innerHTML = "";
+      twitchEmbedRef.current = null;
+    };
+  }, [isLive, loading, hostname]);
+
   return (
     <section
       id="stream"
@@ -105,7 +175,15 @@ export function StreamerHub() {
           <div className={`grid grid-cols-1 gap-4 ${isLive ? "lg:grid-cols-[1fr_380px]" : "max-w-5xl mx-auto"}`}>
             {/* Stream / Clip player */}
             <div className="relative w-full aspect-video bg-arena-black rounded-2xl overflow-hidden arena-border-crimson metal-frame-glow shadow-2xl shadow-black/60">
-              {(isLive || loading) && (
+              {/* Live: Twitch JS Embed (quality-controlled) */}
+              {isLive && !loading && (
+                <div
+                  ref={liveContainerRef}
+                  className="absolute inset-0 w-full h-full z-10"
+                />
+              )}
+              {/* Loading state: fallback iframe while status resolves */}
+              {loading && (
                 <iframe
                   src={`https://player.twitch.tv/?channel=${TWITCH_CHANNEL}&parent=${hostname}`}
                   className="absolute inset-0 w-full h-full z-10"
