@@ -567,6 +567,7 @@ export default function DailySessionContent() {
                       notes: session.casino.notes,
                       affiliate_url: session.casino.affiliate_url,
                       rating: session.casino.rating ?? 4.5,
+                      payment_methods: session.casino.payment_methods ?? [],
                     }} />
                   ) : (
                     <div className="papyrus-scroll greek-key-border papyrus-scroll-top papyrus-scroll-bottom">
