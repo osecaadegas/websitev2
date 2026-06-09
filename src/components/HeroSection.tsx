@@ -12,14 +12,24 @@ export function HeroSection() {
     if (!vid) return;
     vid.muted = true;
     vid.play().catch(() => {
-      // Autoplay blocked — retry on first user interaction
       const resume = () => { vid.play().catch(() => {}); document.removeEventListener("click", resume); };
       document.addEventListener("click", resume);
     });
   }, []);
 
   return (
-    <section className="relative w-full h-[100svh] overflow-hidden border-b border-white/[0.08]">
+    /*
+     * Break out of <main>'s pt-16 (navbar) and lg:pl-56 (sidebar) offsets
+     * so the video fills the full viewport edge-to-edge.
+     */
+    <section
+      className="
+        relative overflow-hidden
+        -mt-16 lg:-ml-56
+        w-screen h-screen
+        border-b border-white/[0.08]
+      "
+    >
       <video
         ref={videoRef}
         className="absolute inset-0 h-full w-full object-cover"
