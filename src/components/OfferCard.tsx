@@ -118,97 +118,78 @@ function Stars({ rating }: { rating: number }) {
 
 /* ═══════════════════════════════════════════════════════════════════
    ANIMATED BORDER
-   Technique: overflow:hidden wrapper → rotating 200%×200% conic div
-   → inner mask restores the card bg. GPU-accelerated via transform.
-   CSS animation classes defined in globals.css for prefers-reduced-motion.
+   Lives OUTSIDE and BEHIND the card surface via z-index layering.
+   The card itself sits at z-index:1 on top of the border ring.
+   No overflow clipping on the card is needed.
    ═══════════════════════════════════════════════════════════════════ */
 
 function AnimatedBorder({ badge }: { badge: "NEW" | "HOT" | "ELITE" }) {
-  const isNew  = badge === "NEW";
-  const isHot  = badge === "HOT";
+  const isNew = badge === "NEW";
+  const isHot = badge === "HOT";
 
-  /* Electric — cyan/white/blue arcs */
   const electricGradient = `conic-gradient(
     from 0deg,
-    transparent      0%,
-    transparent      22%,
-    #007aff          34%,
-    #00cfff          42%,
-    #ffffff          46%,
-    #00cfff          50%,
-    #007aff          57%,
-    transparent      65%,
-    transparent      78%,
-    #0055cc          87%,
-    #00cfff          93%,
-    transparent      100%
+    transparent 0%,   transparent 22%,
+    #007aff 34%,      #00cfff 42%,
+    #ffffff 46%,      #00cfff 50%,
+    #007aff 57%,      transparent 65%,
+    transparent 78%,  #0055cc 87%,
+    #00cfff 93%,      transparent 100%
   )`;
 
-  /* Fire — deep red → orange → amber sweep */
   const fireGradient = `conic-gradient(
     from 0deg,
-    transparent      0%,
-    #7f1d1d          12%,
-    #dc2626          20%,
-    #f97316          28%,
-    #fbbf24          33%,
-    #f97316          38%,
-    #dc2626          46%,
-    transparent      55%,
-    transparent      70%,
-    #b91c1c          80%,
-    #f97316          88%,
-    #fbbf24          93%,
-    #dc2626          97%,
-    transparent      100%
+    transparent 0%,   #7f1d1d 12%,
+    #dc2626 20%,      #f97316 28%,
+    #fbbf24 33%,      #f97316 38%,
+    #dc2626 46%,      transparent 55%,
+    transparent 70%,  #b91c1c 80%,
+    #f97316 88%,      #fbbf24 93%,
+    #dc2626 97%,      transparent 100%
   )`;
 
-  const gradient   = isNew ? electricGradient : isHot ? fireGradient : electricGradient;
-  const spinClass  = isNew ? "offer-spin-electric" : "offer-spin-fire";
-  const glowClass  = isNew ? "offer-glow-electric" : "offer-glow-fire";
+  const gradient  = isNew ? electricGradient : isHot ? fireGradient : electricGradient;
+  const spinClass = isNew ? "offer-spin-electric" : "offer-spin-fire";
+  const glowClass = isNew ? "offer-glow-electric" : "offer-glow-fire";
 
-  /* Outer glow shadow */
   const glowShadow = isNew
-    ? "0 0 18px rgba(0,180,255,0.5), 0 0 40px rgba(0,100,255,0.25), 0 0 2px rgba(255,255,255,0.4)"
-    : isHot
-    ? "0 0 20px rgba(239,68,68,0.55), 0 0 44px rgba(251,146,60,0.3), 0 0 2px rgba(251,191,36,0.3)"
-    : "0 0 20px rgba(255,85,0,0.5)";
+    ? "0 0 18px rgba(0,180,255,0.55), 0 0 42px rgba(0,100,255,0.25)"
+    : "0 0 20px rgba(239,68,68,0.55), 0 0 44px rgba(251,146,60,0.28)";
 
   return (
+    /* Outer glow ring — absolutely positioned, lives BEHIND the card */
     <div
       aria-hidden="true"
       className={glowClass}
       style={{
-        position: "absolute",
-        inset: "-2px",
-        borderRadius: "14px",
-        overflow: "hidden",
-        zIndex: 0,
+        position:      "absolute",
+        inset:         "-3px",
+        borderRadius:  "15px",
+        overflow:      "hidden",
+        zIndex:        0,          /* behind everything */
         pointerEvents: "none",
-        boxShadow: glowShadow,
+        boxShadow:     glowShadow,
       }}
     >
-      {/* Spinning gradient ring */}
+      {/* Spinning gradient */}
       <div
         className={spinClass}
         style={{
           position: "absolute",
-          width: "200%",
-          height: "200%",
-          top: "-50%",
-          left: "-50%",
+          width:    "200%",
+          height:   "200%",
+          top:      "-50%",
+          left:     "-50%",
           background: gradient,
         }}
       />
-      {/* Center fill — matches card background */}
-      <div
-        style={{
-          position: "absolute",
-          inset: "2px",
-          borderRadius: "12px",
-          background: "#101012",
-        }}
-      />
+      {/* Dark centre cutout — reveals only the 3px ring */}
+      <div style={{
+        position:     "absolute",
+        inset:        "3px",
+        borderRadius: "13px",
+        background:   "#101012",
+      }} />
     </div>
   );
 }
@@ -265,7 +246,7 @@ export function OfferCard({ offer }: { offer: CasinoOffer }) {
     { icon: "💸", label: "Cashback",     value: offer.cashback ?? undefined },
   ].filter((s) => hv(s.value));
 
-  /* Shared card surface style */
+  /* Shared card surface style — z-index:1 ensures it sits above the AnimatedBorder ring */
   const surface: React.CSSProperties = {
     backfaceVisibility:        "hidden",
     WebkitBackfaceVisibility:  "hidden",
@@ -274,6 +255,8 @@ export function OfferCard({ offer }: { offer: CasinoOffer }) {
     background:                "#101012",
     border:                    "1px solid rgba(255,85,0,0.1)",
     boxShadow:                 "0 8px 40px rgba(0,0,0,0.6)",
+    position:                  "relative",
+    zIndex:                    1,
   };
 
   /* ── CLAIM button ─────────────────────────────────────────────── */
@@ -337,14 +320,10 @@ export function OfferCard({ offer }: { offer: CasinoOffer }) {
         {/* ══════════════════════════════
             FRONT FACE
             ══════════════════════════════ */}
-        <div style={surface}>
+        {/* Animated border sits at z:0 behind the surface (z:1) */}
+        {hasAnim && badge && <AnimatedBorder badge={badge} />}
 
-          {/* Animated border wrapper (only for NEW/HOT) */}
-          {hasAnim && badge && (
-            <div style={{ position: "absolute", inset: 0, borderRadius: 12, overflow: "visible", pointerEvents: "none", zIndex: 0 }}>
-              <AnimatedBorder badge={badge} />
-            </div>
-          )}
+        <div style={{ ...surface, minHeight: 480 }}>
 
           {/* ── Banner ───────────────────────────────────────────── */}
           <div style={{
@@ -479,6 +458,11 @@ export function OfferCard({ offer }: { offer: CasinoOffer }) {
         {/* ══════════════════════════════
             BACK FACE
             ══════════════════════════════ */}
+        {/* Border ring for back — same z:0 behind surface */}
+        <div style={{ position: "absolute", inset: 0, transform: "rotateY(180deg)", zIndex: 0, borderRadius: 12, pointerEvents: "none" }}>
+          {hasAnim && badge && <AnimatedBorder badge={badge} />}
+        </div>
+
         <div style={{
           ...surface,
           position:       "absolute",
@@ -486,21 +470,14 @@ export function OfferCard({ offer }: { offer: CasinoOffer }) {
           transform:      "rotateY(180deg)",
           display:        "flex",
           flexDirection:  "column",
+          minHeight:      480,
         }}>
-
-          {/* Animated border on back too */}
-          {hasAnim && badge && (
-            <div style={{ position: "absolute", inset: 0, borderRadius: 12, overflow: "visible", pointerEvents: "none", zIndex: 0 }}>
-              <AnimatedBorder badge={badge} />
-            </div>
-          )}
 
           {/* Back header */}
           <div style={{
             padding: "14px 16px 12px",
             borderBottom: "1px solid rgba(255,85,0,0.08)",
             display: "flex", alignItems: "center", justifyContent: "space-between",
-            position: "relative", zIndex: 1,
           }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
               {hv(offer.logo_url) ? (
@@ -537,7 +514,7 @@ export function OfferCard({ offer }: { offer: CasinoOffer }) {
           </div>
 
           {/* Scrollable back body */}
-          <div style={{ flex: 1, overflowY: "auto", padding: "14px 16px", position: "relative", zIndex: 1 }}>
+          <div style={{ flex: 1, overflowY: "auto", padding: "14px 16px" }}>
 
             {/* Exclusive / Welcome label */}
             <p style={{ margin: "0 0 3px", fontSize: "0.58rem", fontWeight: 700, color: "rgba(255,85,0,0.6)", textTransform: "uppercase", letterSpacing: "0.12em" }}>
@@ -616,7 +593,6 @@ export function OfferCard({ offer }: { offer: CasinoOffer }) {
             padding: "12px 16px",
             borderTop: "1px solid rgba(255,85,0,0.08)",
             display: "flex", gap: 8,
-            position: "relative", zIndex: 1,
           }}>
             <button onClick={handleClaim} style={{ ...claimBtn, fontSize: "0.76rem" }}>
               CLAIM OFFER →
@@ -626,7 +602,7 @@ export function OfferCard({ offer }: { offer: CasinoOffer }) {
             </button>
           </div>
 
-          <p style={{ textAlign: "center", fontSize: "0.5rem", color: "rgba(255,255,255,0.18)", padding: "4px 0 8px", position: "relative", zIndex: 1 }}>
+          <p style={{ textAlign: "center", fontSize: "0.5rem", color: "rgba(255,255,255,0.18)", padding: "4px 0 8px" }}>
             18+ · T&Cs Aplicáveis · Joga com responsabilidade
           </p>
         </div>
