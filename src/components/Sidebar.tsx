@@ -133,13 +133,9 @@ const ICONS: Record<string, React.ReactNode> = {
   ),
 
   "/jogos/crime-empire/dashboard": (
-    <Image
-      src="/images/crime_empire/crime_empire_logo.png"
-      alt="Crime Empire"
-      width={20}
-      height={20}
-      className="w-5 h-5 object-contain"
-    />
+    <svg viewBox="0 0 20 20" fill="currentColor" className="w-5 h-5">
+      <path d="M10 2a7 7 0 0 0-7 7c0 2.1.93 3.98 2.4 5.27V16a1 1 0 0 0 1 1h7a1 1 0 0 0 1-1v-1.73A7 7 0 0 0 10 2zm-2 12v1H7v-1H6v-1.5a1 1 0 0 1 .55-.9A5 5 0 1 1 14 9a5 5 0 0 1-3.55 4.76 1 1 0 0 1 .55.74V14h-1v1H9v-1H8zm0-5a1 1 0 1 0 0-2 1 1 0 0 0 0 2zm4 0a1 1 0 1 0 0-2 1 1 0 0 0 0 2z"/>
+    </svg>
   ),
 };
 
@@ -362,18 +358,41 @@ export function Sidebar({ open, onClose }: SidebarProps) {
         {/* Main links — split to insert CE logo after Loja */}
         {MAIN_LINKS.slice(0, MAIN_LINKS.findIndex(l => l.href === "/loja") + 1).map(renderNavItem)}
 
-        {/* Crime Empire logo button */}
+        {/* Crime Empire entry */}
         <Link
           href="/jogos/crime-empire/dashboard"
           onClick={onClose}
-          className="block w-full"
+          className={`group flex items-center gap-3 w-full px-3 py-2.5 rounded-lg transition-all duration-200 ${
+            pathname.startsWith("/jogos/crime-empire")
+              ? "bg-red-950/40 text-red-400"
+              : "text-arena-smoke hover:text-red-400 hover:bg-red-950/20"
+          }`}
         >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src="/images/crime_empire/crime_empire_logo-removebg-preview.png"
-            alt="Crime Empire"
-            className="w-1/2 h-auto object-contain hover:opacity-90 transition-opacity duration-200"
-          />
+          {/* Skull icon */}
+          <span className="flex-shrink-0 w-5 h-5 flex items-center justify-center">
+            <svg viewBox="0 0 20 20" fill="currentColor" className="w-5 h-5 opacity-80 group-hover:opacity-100 transition-opacity">
+              <path d="M10 2a7 7 0 0 0-7 7c0 2.1.93 3.98 2.4 5.27V16a1 1 0 0 0 1 1h7a1 1 0 0 0 1-1v-1.73A7 7 0 0 0 10 2zm-2 12v1H7v-1H6v-1.5a1 1 0 0 1 .55-.9A5 5 0 1 1 14 9a5 5 0 0 1-3.55 4.76 1 1 0 0 1 .55.74V14h-1v1H9v-1H8zm0-5a1 1 0 1 0 0-2 1 1 0 0 0 0 2zm4 0a1 1 0 1 0 0-2 1 1 0 0 0 0 2z"/>
+            </svg>
+          </span>
+
+          {/* Wordmark SVG — no background, fits sidebar width */}
+          <svg
+            viewBox="0 0 130 22"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+            className="flex-1 h-[18px]"
+            aria-label="Crime Empire"
+          >
+            <text
+              x="0" y="16"
+              fontFamily="'Arial Black', 'Impact', sans-serif"
+              fontSize="10"
+              fontWeight="900"
+              letterSpacing="1.5"
+              fill="currentColor"
+              opacity="0.9"
+            >CRIME EMPIRE</text>
+          </svg>
         </Link>
 
         {MAIN_LINKS.slice(MAIN_LINKS.findIndex(l => l.href === "/loja") + 1).map(renderNavItem)}
