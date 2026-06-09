@@ -39,6 +39,13 @@ interface ClickEvent {
     referrer: string | null;
     referrer_source: string | null;
     is_suspicious: boolean;
+    device_type: string | null;
+    browser: string | null;
+    os: string | null;
+    screen_width: number | null;
+    screen_height: number | null;
+    language: string | null;
+    timezone: string | null;
     users: {
       display_name: string;
       login: string;
@@ -514,8 +521,12 @@ function OfferClickLog({ period }: { period: string }) {
                       <DetailItem label="Região" value={session?.region || "—"} />
                       <DetailItem label="ISP" value={session?.isp || "—"} />
                       <DetailItem label="Origem" value={referrerLabel(session?.referrer_source || null)} />
-                      <DetailItem label="Browser" value={getBrowser(session?.user_agent || null)} />
-                      <DetailItem label="Dispositivo" value={getDevice(session?.user_agent || null)} />
+                      <DetailItem label="Browser" value={session?.browser || getBrowser(session?.user_agent || null)} />
+                      <DetailItem label="Dispositivo" value={session?.device_type || getDevice(session?.user_agent || null)} />
+                      <DetailItem label="OS" value={session?.os || "—"} />
+                      <DetailItem label="Ecrã" value={session?.screen_width && session?.screen_height ? `${session.screen_width}×${session.screen_height}` : "—"} />
+                      <DetailItem label="Idioma" value={session?.language || "—"} />
+                      <DetailItem label="Timezone" value={session?.timezone || "—"} />
                       <DetailItem label="Oferta" value={offer?.name || "—"} />
                       <DetailItem label="Slug" value={offer?.slug || "—"} />
                       <DetailItem

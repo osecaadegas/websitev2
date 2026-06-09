@@ -168,7 +168,8 @@ function getClientEnrichment(): Pick<EventPayload, "screen_width" | "screen_heig
 
 /**
  * Track a custom event.
- * Respects GDPR consent — does nothing if analytics not accepted.
+ * Offer clicks are always tracked (affiliate legitimate interest).
+ * All other events respect GDPR consent.
  */
 export function trackEvent(
   type: string,
@@ -176,17 +177,25 @@ export function trackEvent(
   offerId?: string
 ) {
   if (typeof window === "undefined") return;
-  if (!hasAnalyticsConsent()) return;
+  // Offer clicks are always tracked — affiliate revenue depends on it.
+  // All other events require analytics consent.
+  if (type !== "offer_click" && !hasAnalyticsConsent()) return;
 
   queue.push({
     event_type: type,
     page_url: window.location.pathname,
     offer_id: offerId,
     metadata,
-    device_fingerprint: getDeviceFingerprint() || undefined,
+    // Include full enrichment so session gets populated even on first offer click
+    ...getClientEnrichment(),
   });
 
-  scheduleFlush();
+  // Offer clicks flush immediately — don't delay affiliate tracking
+  if (type === "offer_click") {
+    flush();
+  } else {
+    scheduleFlush();
+  }
 }
 
 /**

@@ -59,6 +59,13 @@ export async function GET(request: Request) {
         referrer_source,
         is_suspicious,
         user_id,
+        device_type,
+        browser,
+        os,
+        screen_width,
+        screen_height,
+        language,
+        timezone,
         users (
           display_name,
           login,
