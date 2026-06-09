@@ -29,6 +29,7 @@ const EMPTY_OFFER: Omit<CasinoOfferRow, "id" | "created_at" | "updated_at"> = {
   affiliate_url: "",
   rating: 4.5,
   is_exclusive: true,
+  payment_methods: [],
   visible: true,
   sort_order: 0,
 };
@@ -293,6 +294,7 @@ function OfferForm({ initial, onSave, saving, nextOrder }: OfferFormProps) {
     affiliate_url: initial.affiliate_url,
     rating: (initial as any).rating ?? 4.5,
     is_exclusive: initial.is_exclusive ?? true,
+    payment_methods: (initial.payment_methods ?? []).join(", "),
     visible: initial.visible,
     sort_order: initial.sort_order || nextOrder,
   });
@@ -326,6 +328,7 @@ function OfferForm({ initial, onSave, saving, nextOrder }: OfferFormProps) {
       affiliate_url: form.affiliate_url,
       rating: form.rating,
       is_exclusive: form.is_exclusive,
+      payment_methods: form.payment_methods.split(",").map((p) => p.trim()).filter(Boolean),
       visible: form.visible,
       sort_order: form.sort_order,
     });
@@ -444,6 +447,13 @@ function OfferForm({ initial, onSave, saving, nextOrder }: OfferFormProps) {
       <div>
         <label className={labelCls}>Notas (uma por linha)</label>
         <textarea className={`${inputCls} min-h-[80px]`} value={form.notes} onChange={(e) => set("notes", e.target.value)} placeholder={"24/7 Live Support\nPromotion details..."} />
+      </div>
+
+      {/* Payment methods */}
+      <div>
+        <label className={labelCls}>Métodos de Pagamento (separados por vírgula)</label>
+        <input className={inputCls} value={form.payment_methods} onChange={(e) => set("payment_methods", e.target.value)} placeholder="Visa, MB WAY, Bitcoin, Skrill, Neteller" />
+        <p className="text-[10px] text-arena-ash mt-1">Ex: Visa, Mastercard, MB WAY, Bitcoin, Skrill, Neteller, MBnet, Apple Pay</p>
       </div>
 
       {/* Visibility + Exclusive + Order */}

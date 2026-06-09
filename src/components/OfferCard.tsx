@@ -31,235 +31,336 @@ export interface CasinoOffer {
   affiliate_url: string;
   rating: number;
   is_exclusive?: boolean;
+  payment_methods: string[];
 }
 
-/* ── Star Rating Component ──────────────────────────────── */
-function StarRating({ rating }: { rating: number }) {
-  const fullStars = Math.floor(rating);
-  const hasHalf = rating - fullStars >= 0.5;
+/* ── Badge colours ─────────────────────────────────────────────── */
+const BADGE_STYLE: Record<string, { bg: string; text: string }> = {
+  HOT:    { bg: "#ef4444", text: "#fff" },
+  NEW:    { bg: "#22c55e", text: "#fff" },
+  ELITE:  { bg: "#eab308", text: "#000" },
+};
 
+/* ── Payment method icon abbreviation ─────────────────────────── */
+function PaymentChip({ label }: { label: string }) {
   return (
-    <div className="rating-row">
-      {Array.from({ length: 5 }, (_, i) => (
-        <svg key={i} className="star-icon" viewBox="0 0 24 24">
-          {i < fullStars ? (
-            <path
-              className="star-filled"
-              d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"
-            />
-          ) : i === fullStars && hasHalf ? (
-            <>
-              <defs>
-                <linearGradient id={`halfGrad-${i}`}>
-                  <stop offset="50%" stopColor="#d4a017" />
-                  <stop offset="50%" stopColor="rgba(139,105,20,0.2)" />
-                </linearGradient>
-              </defs>
-              <path
-                fill={`url(#halfGrad-${i})`}
-                d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"
-              />
-            </>
-          ) : (
-            <path
-              className="star-empty"
-              d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"
-            />
-          )}
-        </svg>
-      ))}
-      <span className="rating-number">{rating.toFixed(1)}</span>
+    <span
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: "2px 7px",
+        borderRadius: "4px",
+        background: "rgba(255,255,255,0.07)",
+        border: "1px solid rgba(255,255,255,0.13)",
+        fontSize: "0.65rem",
+        fontWeight: 600,
+        color: "#ccc",
+        letterSpacing: "0.02em",
+        whiteSpace: "nowrap",
+      }}
+    >
+      {label}
+    </span>
+  );
+}
+
+/* ── Stat pill ─────────────────────────────────────────────────── */
+function StatCell({ icon, label, value }: { icon: string; label: string; value: string }) {
+  return (
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        gap: "3px",
+        padding: "8px 6px",
+        background: "rgba(255,255,255,0.04)",
+        borderRadius: "6px",
+        border: "1px solid rgba(255,255,255,0.07)",
+      }}
+    >
+      <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+        <span style={{ fontSize: "0.7rem", opacity: 0.6 }}>{icon}</span>
+        <span style={{ fontSize: "0.58rem", color: "#888", textTransform: "uppercase", letterSpacing: "0.06em", fontWeight: 600 }}>
+          {label}
+        </span>
+      </div>
+      <span style={{ fontSize: "0.78rem", fontWeight: 700, color: "#fff", paddingLeft: "2px" }}>
+        {value || "—"}
+      </span>
     </div>
   );
 }
 
-/* ── Corner Ornament SVG ────────────────────────────────── */
-function CornerOrnament({ className }: { className: string }) {
-  return <div className={`card-corner ${className}`} />;
+/* ── Star rating ───────────────────────────────────────────────── */
+function Stars({ rating }: { rating: number }) {
+  return (
+    <div style={{ display: "flex", gap: "2px", alignItems: "center" }}>
+      {Array.from({ length: 5 }, (_, i) => (
+        <svg key={i} width="12" height="12" viewBox="0 0 24 24">
+          <path
+            d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"
+            fill={i < Math.round(rating) ? "#f59e0b" : "rgba(255,255,255,0.15)"}
+          />
+        </svg>
+      ))}
+      <span style={{ fontSize: "0.7rem", color: "#f59e0b", marginLeft: "4px", fontWeight: 700 }}>
+        {rating.toFixed(1)}
+      </span>
+    </div>
+  );
 }
 
 /* ═══════════════════════════════════════════════════════════════════
-   PAPYRUS SCROLL CARD COMPONENT
+   MAIN CARD
    ═══════════════════════════════════════════════════════════════════ */
 
 export function OfferCard({ offer }: { offer: CasinoOffer }) {
-  const [copied, setCopied] = useState(false);
   const [flipped, setFlipped] = useState(false);
+  const [copied, setCopied] = useState(false);
 
-  const handleCopyCode = useCallback((e: React.MouseEvent | React.KeyboardEvent) => {
+  const externalUrl = offer.affiliate_url?.startsWith("http")
+    ? offer.affiliate_url
+    : `https://${offer.affiliate_url || "#"}`;
+
+  const handleClaim = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
-    navigator.clipboard?.writeText(offer.code).then(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    });
-  }, [offer.code]);
-
-  // Build perks from tags
-  const perks = offer.tags.length > 0 ? offer.tags : ["🎰 Slots", "⚡ Instant Play", "🛡 SSL"];
-
-  const externalUrl = offer.affiliate_url.startsWith("http") ? offer.affiliate_url : `https://${offer.affiliate_url}`;
-
-  const handleOfferClick = useCallback(() => {
     trackOfferClick(offer.id, offer.name);
-    window.open(externalUrl, '_blank', 'noopener,noreferrer');
+    window.open(externalUrl, "_blank", "noopener,noreferrer");
   }, [offer.id, offer.name, externalUrl]);
 
+  const handleCopy = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (offer.code) {
+      navigator.clipboard?.writeText(offer.code).then(() => {
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      });
+    }
+  }, [offer.code]);
+
+  const badgeStyle = offer.badge ? BADGE_STYLE[offer.badge] : null;
+
   return (
-    <div className="papyrus-flip-container" onClick={handleOfferClick}>
-      <div className={`papyrus-flip-inner ${flipped ? "papyrus-flipped" : ""}`}>
+    <div style={{ perspective: "1000px", width: "100%", maxWidth: "480px" }}>
+      <div
+        style={{
+          position: "relative",
+          transition: "transform 0.55s cubic-bezier(0.4,0.2,0.2,1)",
+          transformStyle: "preserve-3d",
+          transform: flipped ? "rotateY(180deg)" : "rotateY(0deg)",
+          borderRadius: "12px",
+        }}
+      >
 
         {/* ═══ FRONT ═══ */}
-        <div className="papyrus-flip-face papyrus-flip-front relative">
-          <div className="papyrus-scroll greek-key-border papyrus-scroll-top papyrus-scroll-bottom">
-            <CornerOrnament className="top-left" />
-            <CornerOrnament className="top-right" />
-            <CornerOrnament className="bottom-left" />
-            <CornerOrnament className="bottom-right" />
-            <div className="scroll-content">
+        <div
+          style={{
+            backfaceVisibility: "hidden",
+            WebkitBackfaceVisibility: "hidden",
+            borderRadius: "12px",
+            overflow: "hidden",
+            background: "#0f1923",
+            border: "1px solid rgba(255,255,255,0.08)",
+            boxShadow: "0 8px 32px rgba(0,0,0,0.5)",
+          }}
+        >
+          {/* Banner image */}
+          <div
+            style={{
+              position: "relative",
+              width: "100%",
+              aspectRatio: "16/7",
+              overflow: "hidden",
+              background: offer.logo_bg || "#1a1a2e",
+            }}
+          >
+            {offer.banner_url && (
+              <img
+                src={offer.banner_url}
+                alt={offer.name}
+                style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }}
+              />
+            )}
+            <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to right, rgba(0,0,0,0.78) 0%, rgba(0,0,0,0.28) 55%, rgba(0,0,0,0.12) 100%)" }} />
 
-              {/* Banner */}
-              <div className="casino-banner">
-                <div className="casino-banner-inner">
-                  {offer.banner_url ? (
-                    <img
-                      src={offer.banner_url}
-                      alt={offer.name}
-                      style={{ width: "100%", height: "100%", objectFit: "cover", position: "absolute", inset: 0 }}
-                    />
-                  ) : null}
-                  
-                  {/* Modern Badge Overlay */}
-                  {offer.badge && offer.badge !== "ELITE" && (
-                    <div style={{
-                      position: "absolute",
-                      top: "8px",
-                      left: "8px",
-                      zIndex: 10,
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "6px",
-                      padding: "4px 10px",
-                      borderRadius: "4px",
-                      fontSize: "0.7rem",
-                      fontWeight: 700,
-                      textTransform: "uppercase",
-                      letterSpacing: "0.5px",
-                      boxShadow: "0 2px 8px rgba(0,0,0,0.3)",
-                      background: "rgba(0, 0, 0, 0.7)",
-                      color: "#fff",
-                    }}>
-                      <span style={{ fontSize: "0.9rem" }}>
-                        {offer.badge === "HOT" ? "🔥" : "⭐"}
-                      </span>
-                      <span>{offer.badge}</span>
-                    </div>
-                  )}
-                </div>
+            {/* Badge — top left */}
+            {offer.badge && badgeStyle && (
+              <div style={{ position: "absolute", top: 10, left: 10, zIndex: 5 }}>
+                <span style={{ background: badgeStyle.bg, color: badgeStyle.text, fontSize: "0.62rem", fontWeight: 800, padding: "3px 8px", borderRadius: "4px", letterSpacing: "0.08em", textTransform: "uppercase" }}>
+                  {offer.badge}
+                </span>
               </div>
+            )}
 
-              {/* Promo Section */}
-              <div className="promo-section">
-                <p className="promo-label">✦ Oferta{offer.is_exclusive !== false ? " Exclusiva" : ""} ✦</p>
-                <p className="promo-bonus">
-                  {offer.headline}
-                  <span className="promo-bonus-accent">{offer.bonus_value}</span>
-                </p>
-                <p className="promo-detail">
-                  {offer.free_spins !== "—" ? `+ ${offer.free_spins} Free Spins` : ""}
-                  {offer.cashback ? ` · ${offer.cashback} Cashback` : ""}
-                </p>
-
-                {offer.code && offer.code !== "—" ? (
-                  <div className="promo-code-wrapper" onClick={handleCopyCode} role="button" tabIndex={0} onKeyDown={(e) => e.key === "Enter" && handleCopyCode(e)}>
-                    <span className="promo-code-label">Código:</span>
-                    <span className="promo-code-value">{offer.code}</span>
-                  </div>
-                ) : (
-                  <div className="promo-code-wrapper" style={{ visibility: 'hidden' }}>
-                    <span className="promo-code-label">Código:</span>
-                    <span className="promo-code-value">&nbsp;</span>
-                  </div>
-                )}
+            {/* Extra tags */}
+            {offer.tags.length > 0 && (
+              <div style={{ position: "absolute", top: offer.badge ? 34 : 10, left: 10, zIndex: 5, display: "flex", gap: 4, flexWrap: "wrap", maxWidth: "60%" }}>
+                {offer.tags.map((tag) => (
+                  <span key={tag} style={{ background: "rgba(0,0,0,0.65)", border: "1px solid rgba(255,255,255,0.2)", color: "#ddd", fontSize: "0.58rem", fontWeight: 600, padding: "2px 7px", borderRadius: "3px", letterSpacing: "0.05em", textTransform: "uppercase" }}>
+                    {tag}
+                  </span>
+                ))}
               </div>
+            )}
 
-              {/* CTA */}
-              <div className="cta-section">
-                <a href={externalUrl} target="_blank" rel="noopener noreferrer" onClick={(e) => { e.stopPropagation(); trackOfferClick(offer.id, offer.name); }}>
-                  <button className="cta-button">⚔ Resgatar Bónus ⚔</button>
-                </a>
-                <p className="cta-subtext">18+ · T&Cs Aplicáveis · Joga com responsabilidade</p>
+            {/* Logo — top right */}
+            {offer.logo_url && (
+              <div style={{ position: "absolute", top: 10, right: 10, zIndex: 5, background: "rgba(0,0,0,0.55)", borderRadius: 8, padding: "5px 8px", backdropFilter: "blur(4px)", border: "1px solid rgba(255,255,255,0.1)" }}>
+                <img src={offer.logo_url} alt={offer.name} style={{ height: 28, maxWidth: 90, objectFit: "contain" }} />
               </div>
+            )}
 
-              {/* Flip hint */}
-              <p className="flip-hint" onClick={(e) => { e.stopPropagation(); setFlipped(true); }}>Toca para ver detalhes ↻</p>
+            {/* Overlay text */}
+            <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, padding: "14px 14px 12px", zIndex: 4 }}>
+              <p style={{ margin: 0, fontSize: "0.6rem", fontWeight: 700, color: "rgba(255,255,255,0.7)", textTransform: "uppercase", letterSpacing: "0.12em", lineHeight: 1, marginBottom: 2 }}>CLAIM THE</p>
+              <p style={{ margin: 0, fontSize: "0.72rem", fontWeight: 800, color: "#fff", textTransform: "uppercase", letterSpacing: "0.08em", lineHeight: 1.1, marginBottom: 4 }}>{offer.name.toUpperCase()} BOOST</p>
+              <p style={{ margin: 0, fontSize: "clamp(1.6rem,5vw,2.2rem)", fontWeight: 900, color: "#fff", lineHeight: 1, textShadow: "0 2px 12px rgba(0,0,0,0.6)" }}>{offer.bonus_value}</p>
+              {offer.free_spins && offer.free_spins !== "—" && offer.free_spins !== "" && (
+                <p style={{ margin: "2px 0 0", fontSize: "0.78rem", fontWeight: 700, color: "rgba(255,255,255,0.9)", textTransform: "uppercase", letterSpacing: "0.05em" }}>UP TO {offer.free_spins} FREE SPINS</p>
+              )}
             </div>
+
+            {/* +18 T&C APPLY */}
+            <div style={{ position: "absolute", bottom: 8, right: 10, zIndex: 5, fontSize: "0.52rem", color: "rgba(255,255,255,0.4)", letterSpacing: "0.04em", fontWeight: 500 }}>
+              +18 T&C APPLY
+            </div>
+          </div>
+
+          {/* Buttons */}
+          <div style={{ display: "flex", gap: 8, padding: "12px 12px 8px" }}>
+            <button
+              onClick={handleClaim}
+              style={{ flex: 1, padding: "9px 12px", borderRadius: 6, background: "linear-gradient(135deg,#22c55e,#16a34a)", color: "#fff", fontWeight: 800, fontSize: "0.75rem", textTransform: "uppercase", letterSpacing: "0.07em", border: "none", cursor: "pointer", boxShadow: "0 2px 12px rgba(34,197,94,0.35)" }}
+            >CLAIM OFFER</button>
+            <button
+              onClick={(e) => { e.stopPropagation(); setFlipped(true); }}
+              style={{ padding: "9px 14px", borderRadius: 6, background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.15)", color: "#ddd", fontWeight: 700, fontSize: "0.75rem", textTransform: "uppercase", letterSpacing: "0.05em", cursor: "pointer", whiteSpace: "nowrap" }}
+            >MORE INFO ›</button>
+          </div>
+
+          {/* Payment methods */}
+          {offer.payment_methods?.length > 0 && (
+            <div style={{ display: "flex", gap: 5, flexWrap: "wrap", padding: "0 12px 10px", alignItems: "center" }}>
+              {offer.payment_methods.map((pm) => <PaymentChip key={pm} label={pm} />)}
+              <span style={{ fontSize: "0.55rem", color: "#444", marginLeft: 2 }}>+18 T&C APPLY</span>
+            </div>
+          )}
+
+          {/* Stats grid */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 6, padding: "6px 12px 14px" }}>
+            <StatCell icon="⊙" label="Min Deposit" value={offer.min_deposit} />
+            <StatCell icon="🎁" label="Bonus" value={offer.bonus_value} />
+            <StatCell icon="✨" label="Free Spins" value={offer.free_spins} />
+            <StatCell icon="⏱" label="Withdraw" value={offer.withdraw_time} />
+            <StatCell icon="⊘" label="License" value={offer.license} />
+            <StatCell icon="⊡" label="Code" value={offer.code && offer.code !== "—" ? offer.code : "—"} />
           </div>
         </div>
 
         {/* ═══ BACK ═══ */}
-        <div className="papyrus-flip-face papyrus-flip-back">
-          <div className="papyrus-scroll greek-key-border papyrus-scroll-top papyrus-scroll-bottom">
-            <CornerOrnament className="top-left" />
-            <CornerOrnament className="top-right" />
-            <CornerOrnament className="bottom-left" />
-            <CornerOrnament className="bottom-right" />
-            <div className="scroll-content">
-              {/* Rating */}
-              <StarRating rating={offer.rating ?? 4.5} />
-
-              {/* Stat Rows — stacked label/value */}
-              <div className="stat-rows">
-                <div className="stat-row-stacked">
-                  <span className="stat-label">Licença</span>
-                  <span className="stat-value">{offer.license}</span>
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            backfaceVisibility: "hidden",
+            WebkitBackfaceVisibility: "hidden",
+            transform: "rotateY(180deg)",
+            borderRadius: 12,
+            overflow: "hidden",
+            background: "#0f1923",
+            border: "1px solid rgba(255,255,255,0.08)",
+            boxShadow: "0 8px 32px rgba(0,0,0,0.5)",
+            display: "flex",
+            flexDirection: "column",
+          }}
+        >
+          {/* Back header */}
+          <div style={{ padding: "14px 16px 12px", borderBottom: "1px solid rgba(255,255,255,0.07)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              {offer.logo_url ? (
+                <img src={offer.logo_url} alt={offer.name} style={{ height: 32, maxWidth: 80, objectFit: "contain" }} />
+              ) : (
+                <div style={{ width: 40, height: 40, borderRadius: 8, background: offer.logo_bg, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, color: "#fff", fontSize: "1rem" }}>
+                  {offer.name.charAt(0)}
                 </div>
-                <div className="stat-row-stacked">
-                  <span className="stat-label">Levantamento</span>
-                  <span className="stat-value">{offer.withdraw_time}</span>
-                </div>
-                <div className="stat-row-stacked">
-                  <span className="stat-label">Depósito Mín.</span>
-                  <span className="stat-value">{offer.min_deposit}</span>
-                </div>
+              )}
+              <div>
+                <p style={{ margin: 0, fontWeight: 800, color: "#fff", fontSize: "0.9rem" }}>{offer.name}</p>
+                <Stars rating={offer.rating ?? 4.5} />
               </div>
+            </div>
+            {offer.badge && badgeStyle && (
+              <span style={{ background: badgeStyle.bg, color: badgeStyle.text, fontSize: "0.6rem", fontWeight: 800, padding: "3px 8px", borderRadius: 4, letterSpacing: "0.08em", textTransform: "uppercase" }}>{offer.badge}</span>
+            )}
+          </div>
 
-              {/* Engraved Divider */}
-              <div className="engraved-divider" />
+          {/* Back body */}
+          <div style={{ flex: 1, overflowY: "auto", padding: "14px 16px" }}>
+            <p style={{ margin: "0 0 2px", fontSize: "0.6rem", fontWeight: 700, color: "rgba(255,255,255,0.45)", textTransform: "uppercase", letterSpacing: "0.1em" }}>
+              {offer.is_exclusive !== false ? "✦ OFERTA EXCLUSIVA ✦" : "WELCOME BONUS"}
+            </p>
+            <p style={{ margin: "0 0 14px", fontSize: "clamp(0.95rem,3.5vw,1.25rem)", fontWeight: 900, color: "#fff", lineHeight: 1.2 }}>{offer.headline}</p>
 
-              {/* Perks */}
-              <div className="perks-list">
-                {perks.map((perk) => (
-                  <span key={perk} className="perk-tag">{perk}</span>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, marginBottom: 12 }}>
+              <StatCell icon="⊙" label="Min Deposit" value={offer.min_deposit} />
+              <StatCell icon="🎁" label="Bonus" value={offer.bonus_value} />
+              <StatCell icon="✨" label="Free Spins" value={offer.free_spins} />
+              <StatCell icon="⏱" label="Withdraw" value={offer.withdraw_time} />
+              <StatCell icon="⊘" label="License" value={offer.license} />
+              <StatCell icon="📅" label="Fundado" value={offer.established} />
+              {offer.cashback && <StatCell icon="💸" label="Cashback" value={offer.cashback} />}
+            </div>
+
+            {offer.code && offer.code !== "—" && (
+              <div
+                onClick={handleCopy}
+                style={{ display: "flex", alignItems: "center", gap: 8, background: "rgba(255,255,255,0.06)", border: "1px dashed rgba(255,255,255,0.2)", borderRadius: 6, padding: "8px 12px", cursor: "pointer", marginBottom: 12 }}
+              >
+                <span style={{ fontSize: "0.6rem", color: "#888", textTransform: "uppercase", letterSpacing: "0.08em", fontWeight: 600 }}>CÓDIGO:</span>
+                <span style={{ fontSize: "0.85rem", fontWeight: 800, color: "#fff", letterSpacing: "0.05em" }}>{offer.code}</span>
+                <span style={{ marginLeft: "auto", fontSize: "0.65rem", color: "#666" }}>{copied ? "✓ COPIADO" : "COPIAR"}</span>
+              </div>
+            )}
+
+            {offer.notes?.length > 0 && (
+              <div style={{ marginBottom: 10 }}>
+                {offer.notes.map((note, i) => (
+                  <p key={i} style={{ margin: "3px 0", fontSize: "0.72rem", color: "rgba(255,255,255,0.5)", lineHeight: 1.4 }}>• {note}</p>
                 ))}
               </div>
+            )}
 
-              {/* Wax Seal */}
-              <div style={{ margin: "8px 0" }}>
-                <div className="wax-seal" />
+            {offer.payment_methods?.length > 0 && (
+              <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
+                {offer.payment_methods.map((pm) => <PaymentChip key={pm} label={pm} />)}
               </div>
-
-              {/* CTA */}
-              <div className="cta-section">
-                <a href={externalUrl} target="_blank" rel="noopener noreferrer" onClick={(e) => { e.stopPropagation(); trackOfferClick(offer.id, offer.name); }}>
-                  <button className="cta-button">⚔ Resgatar Bónus ⚔</button>
-                </a>
-              </div>
-
-              {/* Flip hint */}
-              <p className="flip-hint" onClick={(e) => { e.stopPropagation(); setFlipped(false); }}>Toca para voltar ↻</p>
-            </div>
+            )}
           </div>
+
+          {/* Back footer */}
+          <div style={{ padding: "12px 16px", borderTop: "1px solid rgba(255,255,255,0.07)", display: "flex", gap: 8 }}>
+            <button
+              onClick={handleClaim}
+              style={{ flex: 1, padding: 10, borderRadius: 6, background: "linear-gradient(135deg,#22c55e,#16a34a)", color: "#fff", fontWeight: 800, fontSize: "0.78rem", textTransform: "uppercase", letterSpacing: "0.07em", border: "none", cursor: "pointer", boxShadow: "0 2px 12px rgba(34,197,94,0.35)" }}
+            >CLAIM OFFER →</button>
+            <button
+              onClick={(e) => { e.stopPropagation(); setFlipped(false); }}
+              style={{ padding: "10px 14px", borderRadius: 6, background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.12)", color: "#aaa", fontWeight: 700, fontSize: "0.75rem", cursor: "pointer" }}
+            >← BACK</button>
+          </div>
+
+          <p style={{ textAlign: "center", fontSize: "0.52rem", color: "rgba(255,255,255,0.22)", padding: "4px 0 8px" }}>18+ · T&Cs Aplicáveis · Joga com responsabilidade</p>
         </div>
 
-      </div>
-
-      {/* Copy Toast */}
-      <div className={`copy-toast ${copied ? "visible" : ""}`}>
-        ✦ Código promocional copiado ✦
       </div>
     </div>
   );
 }
+
+/* ═══════════════════════════════════════════════════════════════════
+   OFFER LIST
+   ═══════════════════════════════════════════════════════════════════ */
 
 export function OfferCards({ emptyClassName = "" }: { emptyClassName?: string }) {
   const [offers, setOffers] = useState<CasinoOffer[]>([]);
@@ -282,7 +383,7 @@ export function OfferCards({ emptyClassName = "" }: { emptyClassName?: string })
             logo_bg: r.logo_bg,
             banner_url: r.banner_url ?? undefined,
             badge: r.badge ?? undefined,
-            tags: r.tags,
+            tags: r.tags ?? [],
             headline: r.headline,
             bonus_value: r.bonus_value,
             free_spins: r.free_spins,
@@ -292,10 +393,11 @@ export function OfferCards({ emptyClassName = "" }: { emptyClassName?: string })
             withdraw_time: r.withdraw_time,
             license: r.license,
             established: r.established,
-            notes: r.notes,
+            notes: r.notes ?? [],
             affiliate_url: r.affiliate_url,
             rating: r.rating ?? 4.5,
             is_exclusive: r.is_exclusive ?? true,
+            payment_methods: r.payment_methods ?? [],
           }))
         );
       }
@@ -303,11 +405,7 @@ export function OfferCards({ emptyClassName = "" }: { emptyClassName?: string })
     })();
   }, []);
 
-  if (loading) {
-    return (
-      <div className="text-center text-arena-ash py-12">A carregar ofertas...</div>
-    );
-  }
+  if (loading) return <div className="text-center text-arena-ash py-12">A carregar ofertas...</div>;
 
   if (offers.length === 0) {
     return (
