@@ -1,5 +1,6 @@
 ﻿import type { Metadata } from "next";
 import { Inter } from "next/font/google";
+import Script from "next/script";
 import "./globals.css";
 import { AppShell } from "@/components/AppShell";
 import { SITE_NAME, SITE_DESCRIPTION, SITE_URL } from "@/lib/constants";
@@ -91,6 +92,25 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col bg-arena-black text-arena-white">
         <AppShell>{children}</AppShell>
+        {process.env.NEXT_PUBLIC_CHATBOT_ID && (
+          <Script
+            id="chatbase-init"
+            strategy="afterInteractive"
+            dangerouslySetInnerHTML={{
+              __html: `(function(){
+  if(!window.chatbase||window.chatbase("getState")!=="initialized"){
+    window.chatbase=(...args)=>{if(!window.chatbase.q){window.chatbase.q=[]}window.chatbase.q.push(args)};
+    window.chatbase=new Proxy(window.chatbase,{get(t,p){if(p==="q")return t.q;return(...a)=>t(p,...a)}});
+  }
+  var s=document.createElement("script");
+  s.src="https://www.chatbase.co/embed.min.js";
+  s.id="${process.env.NEXT_PUBLIC_CHATBOT_ID}";
+  s.defer=true;
+  document.body.appendChild(s);
+})();`,
+            }}
+          />
+        )}
       </body>
     </html>
   );
