@@ -34,6 +34,7 @@ export async function detectFraud(params: {
   offerId?: string | null;
   eventType: string;
   gpuFingerprint?: string | null;
+  deviceFingerprint?: string | null;
 }): Promise<FraudCheckResult> {
   const config = await getConfig();
   const reasons: string[] = [];
@@ -44,6 +45,7 @@ export async function detectFraud(params: {
   const maxSessionsPerIpPerHour = config["max_sessions_per_ip_per_hour"] ?? 10;
   const maxUsersPerIp24h = config["max_users_per_ip_24h"] ?? 3;
   const maxUsersPerGpu7d = config["max_users_per_gpu_7d"] ?? 2;
+  const maxUsersPerDevice7d = config["max_users_per_device_7d"] ?? 2;
 
   // 1. Too many clicks in 10 seconds from this session
   if (params.eventType !== "pageview") {
@@ -138,6 +140,26 @@ export async function detectFraud(params: {
     if (distinctGpuUsers >= maxUsersPerGpu7d) {
       reasons.push(`Multi-account GPU: ${distinctGpuUsers} distinct users on same GPU in 7 days (threshold: ${maxUsersPerGpu7d})`);
       riskScore += 40;
+    }
+  }
+
+  // 7. Same device fingerprint used by multiple accounts to click /ofertas links (mobile fraud)
+  if (params.deviceFingerprint && params.eventType === "offer_click") {
+    const sevenDaysAgo = new Date(Date.now() - 7 * 86_400_000).toISOString();
+    const { data: deviceSessions } = await supabase
+      .from("analytics_sessions")
+      .select("user_id")
+      .eq("device_fingerprint", params.deviceFingerprint)
+      .not("user_id", "is", null)
+      .gte("created_at", sevenDaysAgo);
+
+    const distinctDeviceUsers = new Set((deviceSessions ?? []).map((r) => r.user_id));
+    // Include current userId if present
+    if (params.userId) distinctDeviceUsers.add(params.userId);
+
+    if (distinctDeviceUsers.size >= maxUsersPerDevice7d) {
+      reasons.push(`Mobile multi-account: ${distinctDeviceUsers.size} distinct accounts used same device to click /ofertas in 7 days (threshold: ${maxUsersPerDevice7d})`);
+      riskScore += 55;
     }
   }
 

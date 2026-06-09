@@ -37,6 +37,7 @@ export async function POST(request: Request) {
       timezone: clientTimezone,
       language: clientLanguage,
       gpu_fingerprint,
+      device_fingerprint,
     } = body;
 
     // Validate event_type
@@ -117,6 +118,7 @@ export async function POST(request: Request) {
         if (userId) updateData.user_id = userId;
         if (userEmail) updateData.user_email = userEmail;
         if (gpu_fingerprint && typeof gpu_fingerprint === "string") updateData.gpu_fingerprint = gpu_fingerprint;
+        if (device_fingerprint && typeof device_fingerprint === "string") updateData.device_fingerprint = device_fingerprint;
 
         await supabase.from("analytics_sessions").update(updateData).eq("id", sessionId);
       }
@@ -147,6 +149,8 @@ export async function POST(request: Request) {
           timezone,
           // GPU fingerprint
           gpu_fingerprint: (gpu_fingerprint && typeof gpu_fingerprint === "string") ? gpu_fingerprint : null,
+          // Device fingerprint (canvas + screen + touch, survives cookie clearing)
+          device_fingerprint: (device_fingerprint && typeof device_fingerprint === "string") ? device_fingerprint : null,
           // Geo
           country: geo.country,
           country_code: geo.country_code,
@@ -178,6 +182,7 @@ export async function POST(request: Request) {
       offerId: offer_id || null,
       eventType: event_type,
       gpuFingerprint: (gpu_fingerprint && typeof gpu_fingerprint === "string") ? gpu_fingerprint : null,
+      deviceFingerprint: (device_fingerprint && typeof device_fingerprint === "string") ? device_fingerprint : null,
     });
 
     // ── Store event ───────────────────────────────────────────────────────────

@@ -14,6 +14,7 @@ type EventPayload = {
   timezone?: string;
   language?: string;
   gpu_fingerprint?: string;
+  device_fingerprint?: string;
 };
 
 let queue: EventPayload[] = [];
@@ -86,16 +87,82 @@ function getGpuFingerprint(): string | undefined {
 }
 
 /**
+ * Generate a stable canvas fingerprint string.
+ * Draws text + shapes and hashes the pixel data — highly stable across sessions
+ * on the same device/browser, even after cookie clearing.
+ */
+function getCanvasFingerprint(): string {
+  try {
+    const canvas = document.createElement("canvas");
+    canvas.width = 220;
+    canvas.height = 30;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return "";
+    ctx.textBaseline = "alphabetic";
+    ctx.fillStyle = "#f60";
+    ctx.fillRect(0, 0, 100, 30);
+    ctx.fillStyle = "#069";
+    ctx.font = "11pt Arial";
+    ctx.fillText("SecaHub👾🎰", 2, 20);
+    ctx.fillStyle = "rgba(102,204,0,0.7)";
+    ctx.font = "18pt Arial";
+    ctx.fillText("SecaHub👾🎰", 4, 26);
+    return canvas.toDataURL().slice(-80); // last 80 chars are the unique part
+  } catch {
+    return "";
+  }
+}
+
+/**
+ * Generate or retrieve a persistent device fingerprint stored in localStorage.
+ * Combines canvas, screen, touch, pixel ratio and platform signals.
+ * Survives cookie clearing — tied to the device/browser profile.
+ */
+const DEVICE_FP_KEY = "__arena_dfp";
+
+function getDeviceFingerprint(): string {
+  try {
+    const existing = localStorage.getItem(DEVICE_FP_KEY);
+    if (existing) return existing;
+
+    const components = [
+      getCanvasFingerprint(),
+      String(window.screen.width),
+      String(window.screen.height),
+      String(window.screen.colorDepth),
+      String(window.devicePixelRatio ?? 1),
+      String(navigator.maxTouchPoints ?? 0),
+      navigator.platform ?? "",
+      navigator.hardwareConcurrency != null ? String(navigator.hardwareConcurrency) : "",
+      Intl.DateTimeFormat().resolvedOptions().timeZone ?? "",
+    ].join("|");
+
+    // Simple djb2-style hash to a hex string
+    let hash = 5381;
+    for (let i = 0; i < components.length; i++) {
+      hash = ((hash << 5) + hash) ^ components.charCodeAt(i);
+      hash = hash & hash; // Convert to 32-bit integer
+    }
+    const fp = (hash >>> 0).toString(16).padStart(8, "0");
+    localStorage.setItem(DEVICE_FP_KEY, fp);
+    return fp;
+  } catch {
+    return "";
+  }
+}
+
+/**
  * Collect client-side enrichment data (screen, timezone, language).
  * Only called in browser context.
  */
-function getClientEnrichment(): Pick<EventPayload, "screen_width" | "screen_height" | "timezone" | "language" | "gpu_fingerprint"> {
+function getClientEnrichment(): Pick<EventPayload, "screen_width" | "screen_height" | "timezone" | "language" | "gpu_fingerprint" | "device_fingerprint"> {
   return {
     screen_width: window.screen?.width ?? undefined,
     screen_height: window.screen?.height ?? undefined,
     timezone: Intl.DateTimeFormat().resolvedOptions().timeZone ?? undefined,
     language: navigator.language ?? undefined,
     gpu_fingerprint: getGpuFingerprint(),
+    device_fingerprint: getDeviceFingerprint() || undefined,
   };
 }
 
@@ -116,6 +183,7 @@ export function trackEvent(
     page_url: window.location.pathname,
     offer_id: offerId,
     metadata,
+    device_fingerprint: getDeviceFingerprint() || undefined,
   });
 
   scheduleFlush();
