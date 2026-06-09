@@ -19,17 +19,11 @@ export function HeroSection() {
 
   return (
     /*
-     * Break out of <main>'s pt-16 (navbar) and lg:pl-56 (sidebar) offsets
-     * so the video fills the full viewport edge-to-edge.
+     * Fill the content area exactly — no overflow into navbar, sidebar or footer.
+     * pt-0 because <main> already applies pt-16 (navbar height).
+     * Width is naturally correct because <main> applies lg:pl-56 (sidebar width).
      */
-    <section
-      className="
-        relative overflow-hidden
-        -mt-16 lg:-ml-56
-        w-screen h-screen
-        border-b border-white/[0.08]
-      "
-    >
+    <section className="relative w-full h-[calc(100vh-4rem)] overflow-hidden border-b border-white/[0.08]">
       <video
         ref={videoRef}
         className="absolute inset-0 h-full w-full object-cover"

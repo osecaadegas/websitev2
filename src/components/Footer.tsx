@@ -4,7 +4,7 @@ import { NAV_LINKS, SITE_NAME } from "@/lib/constants";
 
 export function Footer() {
   return (
-    <footer className="bg-black border-t border-arena-neon/10">
+    <footer className="bg-arena-black border-t border-arena-neon/10">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {/* Top row: logo + nav links */}
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
