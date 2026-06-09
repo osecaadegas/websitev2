@@ -144,6 +144,8 @@ export interface CasinoOfferRow {
   rating: number;
   is_exclusive: boolean;
   payment_methods: string[];
+  kyc_required: boolean | null;
+  vpn_friendly: boolean | null;
   visible: boolean;
   sort_order: number;
   created_at: string;

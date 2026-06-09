@@ -8,6 +8,13 @@ import type { CasinoOfferRow } from "@/lib/supabase";
    EMPTY OFFER TEMPLATE
    ═══════════════════════════════════════════════════════════════════ */
 
+const PAYMENT_OPTIONS = [
+  "Visa", "Mastercard", "MB WAY", "MBnet",
+  "Bitcoin", "Ethereum", "USDT",
+  "Skrill", "Neteller", "Paysafecard",
+  "Apple Pay", "Google Pay", "Bank", "Crypto",
+];
+
 const EMPTY_OFFER: Omit<CasinoOfferRow, "id" | "created_at" | "updated_at"> = {
   slug: "",
   name: "",
@@ -30,6 +37,8 @@ const EMPTY_OFFER: Omit<CasinoOfferRow, "id" | "created_at" | "updated_at"> = {
   rating: 4.5,
   is_exclusive: true,
   payment_methods: [],
+  kyc_required: true,
+  vpn_friendly: false,
   visible: true,
   sort_order: 0,
 };
@@ -294,12 +303,14 @@ function OfferForm({ initial, onSave, saving, nextOrder }: OfferFormProps) {
     affiliate_url: initial.affiliate_url,
     rating: (initial as any).rating ?? 4.5,
     is_exclusive: initial.is_exclusive ?? true,
-    payment_methods: (initial.payment_methods ?? []).join(", "),
+    payment_methods: initial.payment_methods ?? [],
+    kyc_required: initial.kyc_required ?? true,
+    vpn_friendly: initial.vpn_friendly ?? false,
     visible: initial.visible,
     sort_order: initial.sort_order || nextOrder,
   });
 
-  const set = (key: string, value: string | boolean | number) => setForm((p) => ({ ...p, [key]: value }));
+  const set = (key: string, value: unknown) => setForm((p) => ({ ...p, [key]: value }));
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -328,7 +339,9 @@ function OfferForm({ initial, onSave, saving, nextOrder }: OfferFormProps) {
       affiliate_url: form.affiliate_url,
       rating: form.rating,
       is_exclusive: form.is_exclusive,
-      payment_methods: form.payment_methods.split(",").map((p) => p.trim()).filter(Boolean),
+      payment_methods: form.payment_methods as string[],
+      kyc_required: form.kyc_required as boolean,
+      vpn_friendly: form.vpn_friendly as boolean,
       visible: form.visible,
       sort_order: form.sort_order,
     });
@@ -451,24 +464,67 @@ function OfferForm({ initial, onSave, saving, nextOrder }: OfferFormProps) {
 
       {/* Payment methods */}
       <div>
-        <label className={labelCls}>Métodos de Pagamento (separados por vírgula)</label>
-        <input className={inputCls} value={form.payment_methods} onChange={(e) => set("payment_methods", e.target.value)} placeholder="Visa, MB WAY, Bitcoin, Skrill, Neteller" />
-        <p className="text-[10px] text-arena-ash mt-1">Ex: Visa, Mastercard, MB WAY, Bitcoin, Skrill, Neteller, MBnet, Apple Pay</p>
+        <label className={labelCls}>Métodos de Pagamento</label>
+        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2 mt-1">
+          {PAYMENT_OPTIONS.map((opt) => {
+            const selected = (form.payment_methods as string[]).includes(opt);
+            return (
+              <label
+                key={opt}
+                className={`flex items-center gap-2 px-3 py-2 rounded-lg border cursor-pointer transition-all text-xs font-medium select-none ${
+                  selected
+                    ? "border-arena-gold/60 bg-arena-gold/10 text-arena-gold"
+                    : "border-white/10 bg-white/[0.02] text-arena-ash hover:border-white/20 hover:text-arena-smoke"
+                }`}
+              >
+                <input
+                  type="checkbox"
+                  className="sr-only"
+                  checked={selected}
+                  onChange={(e) => {
+                    const arr = [...(form.payment_methods as string[])];
+                    if (e.target.checked) arr.push(opt);
+                    else { const i = arr.indexOf(opt); if (i > -1) arr.splice(i, 1); }
+                    set("payment_methods", arr);
+                  }}
+                />
+                <span className={`w-3.5 h-3.5 rounded flex-shrink-0 border flex items-center justify-center transition-colors ${
+                  selected ? "bg-arena-gold border-arena-gold" : "border-white/20"
+                }`}>
+                  {selected && (
+                    <svg className="w-2.5 h-2.5 text-black" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/>
+                    </svg>
+                  )}
+                </span>
+                {opt}
+              </label>
+            );
+          })}
+        </div>
       </div>
 
-      {/* Visibility + Exclusive + Order */}
+      {/* Visibility + Exclusive + KYC + VPN + Order */}
       <div className="flex items-center gap-6 flex-wrap">
         <label className="flex items-center gap-2 cursor-pointer">
-          <input type="checkbox" checked={form.visible} onChange={(e) => set("visible", e.target.checked)} className="w-4 h-4 accent-arena-gold" />
+          <input type="checkbox" checked={form.visible as boolean} onChange={(e) => set("visible", e.target.checked)} className="w-4 h-4 accent-arena-gold" />
           <span className="text-sm text-arena-smoke">Visível no site</span>
         </label>
         <label className="flex items-center gap-2 cursor-pointer">
-          <input type="checkbox" checked={form.is_exclusive} onChange={(e) => set("is_exclusive", e.target.checked)} className="w-4 h-4 accent-arena-gold" />
+          <input type="checkbox" checked={form.is_exclusive as boolean} onChange={(e) => set("is_exclusive", e.target.checked)} className="w-4 h-4 accent-arena-gold" />
           <span className="text-sm text-arena-smoke">Oferta Exclusiva</span>
+        </label>
+        <label className="flex items-center gap-2 cursor-pointer">
+          <input type="checkbox" checked={form.kyc_required as boolean} onChange={(e) => set("kyc_required", e.target.checked)} className="w-4 h-4 accent-red-500" />
+          <span className="text-sm text-arena-smoke">Requer KYC</span>
+        </label>
+        <label className="flex items-center gap-2 cursor-pointer">
+          <input type="checkbox" checked={form.vpn_friendly as boolean} onChange={(e) => set("vpn_friendly", e.target.checked)} className="w-4 h-4 accent-green-500" />
+          <span className="text-sm text-arena-smoke">VPN Friendly</span>
         </label>
         <div className="flex items-center gap-2">
           <label className="text-[11px] uppercase tracking-wider text-arena-ash">Ordem:</label>
-          <input type="number" className={`${inputCls} w-20`} value={form.sort_order} onChange={(e) => set("sort_order", parseInt(e.target.value) || 0)} />
+          <input type="number" className={`${inputCls} w-20`} value={form.sort_order as number} onChange={(e) => set("sort_order", parseInt(e.target.value) || 0)} />
         </div>
       </div>
 

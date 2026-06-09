@@ -32,6 +32,8 @@ export interface CasinoOffer {
   rating: number;
   is_exclusive?: boolean;
   payment_methods: string[];
+  kyc_required?: boolean;
+  vpn_friendly?: boolean;
 }
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -81,7 +83,7 @@ function StatCell({ icon, label, value }: { icon: string; label: string; value: 
   );
 }
 
-/** Payment chip — arena steel style. */
+/** Payment chip — fallback for unknown methods. */
 function PaymentChip({ label }: { label: string }) {
   return (
     <span style={{
@@ -95,6 +97,58 @@ function PaymentChip({ label }: { label: string }) {
       {label}
     </span>
   );
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   PAYMENT METHOD LOGOS
+   ═══════════════════════════════════════════════════════════════════ */
+
+function PaymentLogo({ method }: { method: string }) {
+  const key = method.toLowerCase().replace(/[\s\-_.]/g, "");
+  const w: React.CSSProperties = { display: "inline-flex", borderRadius: 4, overflow: "hidden", lineHeight: 0, flexShrink: 0 };
+  switch (key) {
+    case "visa":
+      return <span title={method} style={w}><svg viewBox="0 0 40 24" width="40" height="24"><rect width="40" height="24" rx="3" fill="#1A1F71"/><text x="20" y="17" textAnchor="middle" fill="#fff" fontSize="11" fontWeight="800" fontStyle="italic" fontFamily="Arial,sans-serif" letterSpacing="1">VISA</text></svg></span>;
+    case "mastercard":
+      return <span title={method} style={w}><svg viewBox="0 0 40 24" width="40" height="24"><rect width="40" height="24" rx="3" fill="#1c1c1e"/><circle cx="15" cy="12" r="8" fill="#EB001B" opacity="0.92"/><circle cx="25" cy="12" r="8" fill="#F79E1B" opacity="0.92"/><ellipse cx="20" cy="12" rx="3.2" ry="8" fill="#FF5F00" opacity="0.88"/></svg></span>;
+    case "mbway":
+    case "mbway2":
+      return <span title={method} style={w}><svg viewBox="0 0 40 24" width="40" height="24"><rect width="40" height="24" rx="3" fill="#007B40"/><text x="20" y="17" textAnchor="middle" fill="#fff" fontSize="8.5" fontWeight="900" fontFamily="Arial,sans-serif" letterSpacing="0.5">MB WAY</text></svg></span>;
+    case "mb":
+      return <span title={method} style={w}><svg viewBox="0 0 40 24" width="40" height="24"><rect width="40" height="24" rx="3" fill="#005EA3"/><text x="20" y="17" textAnchor="middle" fill="#fff" fontSize="12" fontWeight="900" fontFamily="Arial,sans-serif">MB</text></svg></span>;
+    case "mbnet":
+      return <span title={method} style={w}><svg viewBox="0 0 40 24" width="40" height="24"><rect width="40" height="24" rx="3" fill="#005EA3"/><text x="20" y="17" textAnchor="middle" fill="#fff" fontSize="9" fontWeight="900" fontFamily="Arial,sans-serif">MBNET</text></svg></span>;
+    case "bitcoin":
+    case "btc":
+      return <span title={method} style={w}><svg viewBox="0 0 40 24" width="40" height="24"><rect width="40" height="24" rx="3" fill="#F7931A"/><text x="20" y="17" textAnchor="middle" fill="#fff" fontSize="14" fontWeight="900" fontFamily="Arial,sans-serif">₿</text></svg></span>;
+    case "ethereum":
+    case "eth":
+      return <span title={method} style={w}><svg viewBox="0 0 40 24" width="40" height="24"><rect width="40" height="24" rx="3" fill="#627EEA"/><text x="20" y="17" textAnchor="middle" fill="#fff" fontSize="13" fontWeight="700" fontFamily="Arial,sans-serif">Ξ</text></svg></span>;
+    case "usdt":
+    case "tether":
+      return <span title={method} style={w}><svg viewBox="0 0 40 24" width="40" height="24"><rect width="40" height="24" rx="3" fill="#26A17B"/><text x="20" y="17" textAnchor="middle" fill="#fff" fontSize="9" fontWeight="900" fontFamily="Arial,sans-serif" letterSpacing="0.5">USDT</text></svg></span>;
+    case "skrill":
+      return <span title={method} style={w}><svg viewBox="0 0 40 24" width="40" height="24"><rect width="40" height="24" rx="3" fill="#862165"/><text x="20" y="17" textAnchor="middle" fill="#fff" fontSize="9" fontWeight="900" fontFamily="Arial,sans-serif" letterSpacing="0.5">SKRILL</text></svg></span>;
+    case "neteller":
+      return <span title={method} style={w}><svg viewBox="0 0 40 24" width="40" height="24"><rect width="40" height="24" rx="3" fill="#0F2A5A"/><text x="20" y="17" textAnchor="middle" fill="#fff" fontSize="7.5" fontWeight="900" fontFamily="Arial,sans-serif" letterSpacing="0.3">NETELLER</text></svg></span>;
+    case "paysafe":
+    case "paysafecard":
+      return <span title={method} style={w}><svg viewBox="0 0 40 24" width="40" height="24"><rect width="40" height="24" rx="3" fill="#003082"/><text x="20" y="17" textAnchor="middle" fill="#fff" fontSize="7.5" fontWeight="900" fontFamily="Arial,sans-serif" letterSpacing="0.3">PAYSAFE</text></svg></span>;
+    case "applepay":
+    case "applepay2":
+      return <span title={method} style={w}><svg viewBox="0 0 40 24" width="40" height="24"><rect width="40" height="24" rx="3" fill="#000"/><text x="20" y="16.5" textAnchor="middle" fill="#fff" fontSize="7.5" fontWeight="600" fontFamily="-apple-system,Arial,sans-serif" letterSpacing="0.2">Apple Pay</text></svg></span>;
+    case "googlepay":
+    case "gpay":
+      return <span title={method} style={w}><svg viewBox="0 0 40 24" width="40" height="24"><rect width="40" height="24" rx="3" fill="#fff" stroke="#e0e0e0" strokeWidth="0.5"/><text x="20" y="16.5" textAnchor="middle" fill="#333" fontSize="8" fontWeight="700" fontFamily="Arial,sans-serif" letterSpacing="0.2">G Pay</text></svg></span>;
+    case "bank":
+    case "banktransfer":
+    case "transferência":
+      return <span title={method} style={w}><svg viewBox="0 0 40 24" width="40" height="24"><rect width="40" height="24" rx="3" fill="#2d3748"/><text x="20" y="16.5" textAnchor="middle" fill="#a0aec0" fontSize="7.5" fontWeight="700" fontFamily="Arial,sans-serif" letterSpacing="0.3">BANK</text></svg></span>;
+    case "crypto":
+      return <span title={method} style={w}><svg viewBox="0 0 40 24" width="40" height="24"><rect width="40" height="24" rx="3" fill="#1a1a2e"/><text x="20" y="16.5" textAnchor="middle" fill="#F7931A" fontSize="8" fontWeight="900" fontFamily="Arial,sans-serif" letterSpacing="0.3">CRYPTO</text></svg></span>;
+    default:
+      return <PaymentChip label={method} />;
+  }
 }
 
 /** 5-star rating using arena-neon colour. */
@@ -201,6 +255,9 @@ function AnimatedBorder({ badge }: { badge: "NEW" | "HOT" | "ELITE" }) {
 export function OfferCard({ offer }: { offer: CasinoOffer }) {
   const [flipped, setFlipped] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [backPage, setBackPage] = useState(0);
+  const hasNotes = (offer.notes?.length ?? 0) > 0;
+  const totalBackPages = hasNotes ? 2 : 1;
 
   const externalUrl = offer.affiliate_url?.startsWith("http")
     ? offer.affiliate_url
@@ -425,7 +482,29 @@ export function OfferCard({ offer }: { offer: CasinoOffer }) {
             </div>
           </div>
 
-          {/* ── Action buttons ────────────────────────────────────── */}
+          {/* ── KYC / VPN indicators ─────────────────────────────────────── */}
+          {(offer.kyc_required != null || offer.vpn_friendly != null) && (
+            <div style={{ display: "flex", gap: 10, padding: "6px 13px 2px", alignItems: "center" }}>
+              {offer.kyc_required != null && (
+                <span style={{ display: "inline-flex", alignItems: "center", gap: 3 }}>
+                  <span style={{ fontSize: "0.56rem", color: "#555", textTransform: "uppercase", letterSpacing: "0.08em", fontWeight: 700 }}>KYC</span>
+                  <span style={{ fontSize: "0.72rem", fontWeight: 800, color: offer.kyc_required ? "#ef4444" : "#22c55e" }}>
+                    {offer.kyc_required ? "✗" : "✓"}
+                  </span>
+                </span>
+              )}
+              {offer.vpn_friendly != null && (
+                <span style={{ display: "inline-flex", alignItems: "center", gap: 3 }}>
+                  <span style={{ fontSize: "0.56rem", color: "#555", textTransform: "uppercase", letterSpacing: "0.08em", fontWeight: 700 }}>VPN</span>
+                  <span style={{ fontSize: "0.72rem", fontWeight: 800, color: offer.vpn_friendly ? "#22c55e" : "#ef4444" }}>
+                    {offer.vpn_friendly ? "✓" : "✗"}
+                  </span>
+                </span>
+              )}
+            </div>
+          )}
+
+          {/* ── Action buttons ──────────────────────────────────────────── */}
           <div style={{ display: "flex", gap: 8, padding: "12px 12px 8px" }}>
             <button onClick={handleClaim} style={claimBtn}>CLAIM OFFER</button>
             <button onClick={(e) => { e.stopPropagation(); setFlipped(true); }} style={infoBtn}>
@@ -436,7 +515,7 @@ export function OfferCard({ offer }: { offer: CasinoOffer }) {
           {/* ── Payment methods ───────────────────────────────────── */}
           {offer.payment_methods?.length > 0 && (
             <div style={{ display: "flex", gap: 5, flexWrap: "wrap", padding: "0 12px 10px", alignItems: "center" }}>
-              {offer.payment_methods.map((pm) => <PaymentChip key={pm} label={pm} />)}
+              {offer.payment_methods.map((pm) => <PaymentLogo key={pm} method={pm} />)}
             </div>
           )}
 
@@ -498,6 +577,20 @@ export function OfferCard({ offer }: { offer: CasinoOffer }) {
                   {offer.name}
                 </p>
                 <Stars rating={offer.rating ?? 4.5} />
+                {(offer.kyc_required != null || offer.vpn_friendly != null) && (
+                  <div style={{ display: "flex", gap: 8, marginTop: 3 }}>
+                    {offer.kyc_required != null && (
+                      <span style={{ fontSize: "0.55rem", fontWeight: 700, color: offer.kyc_required ? "#ef4444" : "#22c55e", letterSpacing: "0.05em" }}>
+                        KYC {offer.kyc_required ? "✗" : "✓"}
+                      </span>
+                    )}
+                    {offer.vpn_friendly != null && (
+                      <span style={{ fontSize: "0.55rem", fontWeight: 700, color: offer.vpn_friendly ? "#22c55e" : "#ef4444", letterSpacing: "0.05em" }}>
+                        VPN {offer.vpn_friendly ? "✓" : "✗"}
+                      </span>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
             {badge && badgeCfg && (
@@ -513,80 +606,78 @@ export function OfferCard({ offer }: { offer: CasinoOffer }) {
             )}
           </div>
 
-          {/* Scrollable back body */}
-          <div style={{ flex: 1, overflowY: "auto", padding: "14px 16px" }}>
+          {/* Paginated back body */}
+          <div style={{ flex: 1, position: "relative", minHeight: 0 }}>
 
-            {/* Exclusive / Welcome label */}
-            <p style={{ margin: "0 0 3px", fontSize: "0.58rem", fontWeight: 700, color: "rgba(255,85,0,0.6)", textTransform: "uppercase", letterSpacing: "0.12em" }}>
-              {offer.is_exclusive !== false ? "✦ OFERTA EXCLUSIVA ✦" : "WELCOME BONUS"}
-            </p>
-
-            {/* Headline — only if set */}
-            {hv(offer.headline) && (
-              <p style={{ margin: "0 0 14px", fontSize: "clamp(0.9rem,3vw,1.2rem)", fontWeight: 900, color: "#fff", lineHeight: 1.25, letterSpacing: "-0.01em" }}>
-                {offer.headline}
+            {/* ── Slide 0 : Info ─────────────────────────────────── */}
+            <div style={{
+              position: "absolute", inset: 0, padding: "14px 16px", overflowY: "auto",
+              opacity: backPage === 0 ? 1 : 0,
+              pointerEvents: backPage === 0 ? "auto" : "none",
+              transition: "opacity 0.25s ease",
+            }}>
+              <p style={{ margin: "0 0 3px", fontSize: "0.58rem", fontWeight: 700, color: "rgba(255,85,0,0.6)", textTransform: "uppercase", letterSpacing: "0.12em" }}>
+                {offer.is_exclusive !== false ? "✦ OFERTA EXCLUSIVA ✦" : "WELCOME BONUS"}
               </p>
-            )}
+              {hv(offer.headline) && (
+                <p style={{ margin: "0 0 14px", fontSize: "clamp(0.9rem,3vw,1.2rem)", fontWeight: 900, color: "#fff", lineHeight: 1.25, letterSpacing: "-0.01em" }}>
+                  {offer.headline}
+                </p>
+              )}
+              {backStats.length > 0 && (
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(130px, 1fr))", gap: 5, marginBottom: 12 }}>
+                  {backStats.map((s) => <StatCell key={s.label} icon={s.icon} label={s.label} value={s.value} />)}
+                </div>
+              )}
+              {hv(offer.code) && (
+                <div onClick={handleCopy} role="button" tabIndex={0} style={{ display: "flex", alignItems: "center", gap: 8, background: "rgba(255,85,0,0.05)", border: "1px dashed rgba(255,85,0,0.25)", borderRadius: 7, padding: "9px 13px", cursor: "pointer", marginBottom: 12, transition: "background 0.15s" }}>
+                  <span style={{ fontSize: "0.58rem", color: "#666", textTransform: "uppercase", letterSpacing: "0.09em", fontWeight: 700 }}>CÓDIGO:</span>
+                  <span style={{ fontSize: "0.85rem", fontWeight: 800, color: "#fff", letterSpacing: "0.04em" }}>{offer.code}</span>
+                  <span style={{ marginLeft: "auto", fontSize: "0.62rem", color: copied ? "#22c55e" : "#555", fontWeight: 700, transition: "color 0.2s" }}>
+                    {copied ? "✓ COPIADO" : "COPIAR"}
+                  </span>
+                </div>
+              )}
+              {offer.payment_methods?.length > 0 && (
+                <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
+                  {offer.payment_methods.map((pm) => <PaymentLogo key={pm} method={pm} />)}
+                </div>
+              )}
+            </div>
 
-            {/* Stats grid */}
-            {backStats.length > 0 && (
+            {/* ── Slide 1 : Notes / Terms ────────────────────────── */}
+            {hasNotes && (
               <div style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(auto-fill, minmax(130px, 1fr))",
-                gap: 5,
-                marginBottom: 12,
+                position: "absolute", inset: 0, padding: "14px 16px", overflowY: "auto",
+                opacity: backPage === 1 ? 1 : 0,
+                pointerEvents: backPage === 1 ? "auto" : "none",
+                transition: "opacity 0.25s ease",
               }}>
-                {backStats.map((s) => (
-                  <StatCell key={s.label} icon={s.icon} label={s.label} value={s.value} />
-                ))}
-              </div>
-            )}
-
-            {/* Code — copy row */}
-            {hv(offer.code) && (
-              <div
-                onClick={handleCopy}
-                role="button"
-                tabIndex={0}
-                style={{
-                  display: "flex", alignItems: "center", gap: 8,
-                  background: "rgba(255,85,0,0.05)",
-                  border: "1px dashed rgba(255,85,0,0.25)",
-                  borderRadius: 7, padding: "9px 13px",
-                  cursor: "pointer", marginBottom: 12,
-                  transition: "background 0.15s",
-                }}
-              >
-                <span style={{ fontSize: "0.58rem", color: "#666", textTransform: "uppercase", letterSpacing: "0.09em", fontWeight: 700 }}>
-                  CÓDIGO:
-                </span>
-                <span style={{ fontSize: "0.85rem", fontWeight: 800, color: "#fff", letterSpacing: "0.04em" }}>
-                  {offer.code}
-                </span>
-                <span style={{ marginLeft: "auto", fontSize: "0.62rem", color: copied ? "#22c55e" : "#555", fontWeight: 700, transition: "color 0.2s" }}>
-                  {copied ? "✓ COPIADO" : "COPIAR"}
-                </span>
-              </div>
-            )}
-
-            {/* Notes */}
-            {offer.notes?.length > 0 && (
-              <div style={{ marginBottom: 12 }}>
+                <p style={{ margin: "0 0 10px", fontSize: "0.58rem", fontWeight: 700, color: "rgba(255,85,0,0.6)", textTransform: "uppercase", letterSpacing: "0.12em" }}>
+                  DETALHES & TERMOS
+                </p>
                 {offer.notes.map((note, i) => (
-                  <p key={i} style={{ margin: "3px 0", fontSize: "0.7rem", color: "rgba(255,255,255,0.42)", lineHeight: 1.5 }}>
-                    • {note}
+                  <p key={i} style={{ margin: "6px 0", fontSize: "0.73rem", color: "rgba(255,255,255,0.55)", lineHeight: 1.6, display: "flex", gap: 7 }}>
+                    <span style={{ color: "#FF5500", flexShrink: 0 }}>•</span>
+                    <span>{note}</span>
                   </p>
                 ))}
               </div>
             )}
-
-            {/* Payment methods */}
-            {offer.payment_methods?.length > 0 && (
-              <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
-                {offer.payment_methods.map((pm) => <PaymentChip key={pm} label={pm} />)}
-              </div>
-            )}
           </div>
+
+          {/* Pagination dots */}
+          {totalBackPages > 1 && (
+            <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 6, padding: "6px 0 2px" }}>
+              {Array.from({ length: totalBackPages }, (_, i) => (
+                <button
+                  key={i}
+                  onClick={(e) => { e.stopPropagation(); setBackPage(i); }}
+                  style={{ width: i === backPage ? 18 : 6, height: 6, borderRadius: 3, background: i === backPage ? "#FF5500" : "rgba(255,255,255,0.2)", border: "none", cursor: "pointer", padding: 0, transition: "all 0.25s ease" }}
+                />
+              ))}
+            </div>
+          )}
 
           {/* Back footer */}
           <div style={{
@@ -597,7 +688,7 @@ export function OfferCard({ offer }: { offer: CasinoOffer }) {
             <button onClick={handleClaim} style={{ ...claimBtn, fontSize: "0.76rem" }}>
               CLAIM OFFER →
             </button>
-            <button onClick={(e) => { e.stopPropagation(); setFlipped(false); }} style={backBtn}>
+            <button onClick={(e) => { e.stopPropagation(); setFlipped(false); setBackPage(0); }} style={backBtn}>
               ← BACK
             </button>
           </div>
@@ -652,6 +743,8 @@ export function OfferCards({ emptyClassName = "" }: { emptyClassName?: string })
             rating:          r.rating          ?? 4.5,
             is_exclusive:    r.is_exclusive    ?? true,
             payment_methods: r.payment_methods ?? [],
+            kyc_required:    r.kyc_required    != null ? r.kyc_required : undefined,
+            vpn_friendly:    r.vpn_friendly    != null ? r.vpn_friendly : undefined,
           }))
         );
       }
