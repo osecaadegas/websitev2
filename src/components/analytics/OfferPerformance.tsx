@@ -46,6 +46,12 @@ interface ClickEvent {
     screen_height: number | null;
     language: string | null;
     timezone: string | null;
+    gpu_fingerprint: string | null;
+    gpu_renderer: string | null;
+    device_fingerprint: string | null;
+    connection_type: string | null;
+    ip_v4: string | null;
+    ip_v6: string | null;
     users: {
       display_name: string;
       login: string;
@@ -514,19 +520,54 @@ function OfferClickLog({ period }: { period: string }) {
                 {/* Expanded details */}
                 {isExpanded && (
                   <div className="px-4 pb-4 pt-0 border-t border-white/5">
-                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 mt-3">
-                      <DetailItem label="IP" value={session?.ip_address || "—"} />
+                    {/* ── Network & Identity ── */}
+                    <p className="text-[10px] text-arena-gold/60 uppercase tracking-widest mt-3 mb-2">Rede &amp; Identidade</p>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+                      <DetailItem label="IPv4" value={session?.ip_v4 || session?.ip_address || "—"} mono />
+                      <DetailItem label="IPv6" value={session?.ip_v6 || "—"} mono />
+                      <DetailItem label="ISP" value={session?.isp || "—"} />
                       <DetailItem label="País" value={session?.country || "—"} />
                       <DetailItem label="Cidade" value={session?.city || "—"} />
                       <DetailItem label="Região" value={session?.region || "—"} />
-                      <DetailItem label="ISP" value={session?.isp || "—"} />
                       <DetailItem label="Origem" value={referrerLabel(session?.referrer_source || null)} />
+                      <DetailItem label="Ligação" value={session?.connection_type || "—"} />
+                    </div>
+
+                    {/* ── Device & Browser ── */}
+                    <p className="text-[10px] text-arena-gold/60 uppercase tracking-widest mt-4 mb-2">Dispositivo &amp; Browser</p>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
                       <DetailItem label="Browser" value={session?.browser || getBrowser(session?.user_agent || null)} />
                       <DetailItem label="Dispositivo" value={session?.device_type || getDevice(session?.user_agent || null)} />
                       <DetailItem label="OS" value={session?.os || "—"} />
                       <DetailItem label="Ecrã" value={session?.screen_width && session?.screen_height ? `${session.screen_width}×${session.screen_height}` : "—"} />
                       <DetailItem label="Idioma" value={session?.language || "—"} />
                       <DetailItem label="Timezone" value={session?.timezone || "—"} />
+                    </div>
+
+                    {/* ── Fingerprints ── */}
+                    <p className="text-[10px] text-arena-gold/60 uppercase tracking-widest mt-4 mb-2">Impressão Digital</p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <DetailItem
+                        label="GPU"
+                        value={session?.gpu_renderer || (session?.gpu_fingerprint ? session.gpu_fingerprint.split("::")[1] || "—" : "—")}
+                      />
+                      <DetailItem
+                        label="GPU Fingerprint"
+                        value={session?.gpu_fingerprint ? `${session.gpu_fingerprint.slice(0, 32)}…` : "—"}
+                        mono
+                      />
+                      <DetailItem
+                        label="Device Fingerprint"
+                        value={session?.device_fingerprint || "—"}
+                        mono
+                        copyable
+                      />
+                      <DetailItem label="Session ID" value={session?.id ? `${session.id.slice(0, 16)}…` : "—"} mono />
+                    </div>
+
+                    {/* ── Offer & Status ── */}
+                    <p className="text-[10px] text-arena-gold/60 uppercase tracking-widest mt-4 mb-2">Oferta &amp; Estado</p>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
                       <DetailItem label="Oferta" value={offer?.name || "—"} />
                       <DetailItem label="Slug" value={offer?.slug || "—"} />
                       <DetailItem
@@ -535,17 +576,19 @@ function OfferClickLog({ period }: { period: string }) {
                         valueClass={click.is_suspicious ? "text-red-400" : "text-green-400"}
                       />
                       <DetailItem label="Sessão Suspeita" value={session?.is_suspicious ? "Sim" : "Não"} />
-                      {session?.referrer && (
-                        <div className="col-span-full">
-                          <DetailItem label="Referrer" value={session.referrer} />
-                        </div>
-                      )}
-                      {session?.user_agent && (
-                        <div className="col-span-full">
-                          <DetailItem label="User Agent" value={session.user_agent} mono />
-                        </div>
-                      )}
                     </div>
+
+                    {/* ── Raw strings ── */}
+                    {session?.referrer && (
+                      <div className="mt-4">
+                        <DetailItem label="Referrer" value={session.referrer} mono />
+                      </div>
+                    )}
+                    {session?.user_agent && (
+                      <div className="mt-2">
+                        <DetailItem label="User Agent" value={session.user_agent} mono />
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
@@ -595,16 +638,21 @@ function OfferClickLog({ period }: { period: string }) {
 }
 
 /* ── Detail item helper ────────────────────────────────────── */
-function DetailItem({ label, value, valueClass, mono }: {
+function DetailItem({ label, value, valueClass, mono, copyable }: {
   label: string;
   value: string;
   valueClass?: string;
   mono?: boolean;
+  copyable?: boolean;
 }) {
   return (
     <div>
       <span className="text-[10px] text-arena-ash uppercase tracking-wider block mb-0.5">{label}</span>
-      <span className={`text-sm ${valueClass || "text-arena-smoke"} ${mono ? "font-mono text-xs break-all" : ""}`}>
+      <span
+        className={`text-sm ${valueClass || "text-arena-smoke"} ${mono ? "font-mono text-xs break-all" : ""} ${copyable ? "cursor-pointer hover:text-arena-gold transition-colors" : ""}`}
+        onClick={copyable ? () => navigator.clipboard?.writeText(value) : undefined}
+        title={copyable ? "Clica para copiar" : undefined}
+      >
         {value}
       </span>
     </div>

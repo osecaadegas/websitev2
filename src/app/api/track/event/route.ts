@@ -37,7 +37,9 @@ export async function POST(request: Request) {
       timezone: clientTimezone,
       language: clientLanguage,
       gpu_fingerprint,
+      gpu_renderer,
       device_fingerprint,
+      connection_type,
     } = body;
 
     // Validate event_type
@@ -56,6 +58,24 @@ export async function POST(request: Request) {
       headerStore.get("x-forwarded-for")?.split(",")[0]?.trim() ||
       headerStore.get("x-real-ip")?.trim() ||
       "unknown";
+
+    // Split IPv4 / IPv6 for separate storage
+    const ipv4Regex = /^(\d{1,3}\.){3}\d{1,3}$/;
+    const ipv6Regex = /:/;
+    let ip_v4: string | null = null;
+    let ip_v6: string | null = null;
+    if (ipv4Regex.test(ip)) {
+      ip_v4 = ip;
+      const cfv6 = headerStore.get("cf-connecting-ipv6")?.trim();
+      if (cfv6 && ipv6Regex.test(cfv6)) ip_v6 = cfv6;
+    } else if (ipv6Regex.test(ip)) {
+      ip_v6 = ip;
+      // Try to find an IPv4 in the forwarded chain
+      const forwarded = headerStore.get("x-forwarded-for");
+      if (forwarded) {
+        ip_v4 = forwarded.split(",").map((s) => s.trim()).find((s) => ipv4Regex.test(s)) || null;
+      }
+    }
 
     // ── Accept-Language ───────────────────────────────────────────────────────
     // Use client-reported language first (most accurate), fall back to header.
@@ -118,7 +138,11 @@ export async function POST(request: Request) {
         if (userId) updateData.user_id = userId;
         if (userEmail) updateData.user_email = userEmail;
         if (gpu_fingerprint && typeof gpu_fingerprint === "string") updateData.gpu_fingerprint = gpu_fingerprint;
+        if (gpu_renderer && typeof gpu_renderer === "string") updateData.gpu_renderer = gpu_renderer;
         if (device_fingerprint && typeof device_fingerprint === "string") updateData.device_fingerprint = device_fingerprint;
+        if (connection_type && typeof connection_type === "string") updateData.connection_type = connection_type;
+        if (ip_v4) updateData.ip_v4 = ip_v4;
+        if (ip_v6) updateData.ip_v6 = ip_v6;
 
         await supabase.from("analytics_sessions").update(updateData).eq("id", sessionId);
       }
@@ -149,8 +173,12 @@ export async function POST(request: Request) {
           timezone,
           // GPU fingerprint
           gpu_fingerprint: (gpu_fingerprint && typeof gpu_fingerprint === "string") ? gpu_fingerprint : null,
+          // GPU renderer string (human-readable, e.g. "NVIDIA GeForce RTX 3080")
+          gpu_renderer: (gpu_renderer && typeof gpu_renderer === "string") ? gpu_renderer : null,
           // Device fingerprint (canvas + screen + touch, survives cookie clearing)
           device_fingerprint: (device_fingerprint && typeof device_fingerprint === "string") ? device_fingerprint : null,
+          // Network connection type (wifi/cellular/ethernet)
+          connection_type: (connection_type && typeof connection_type === "string") ? connection_type : null,
           // Geo
           country: geo.country,
           country_code: geo.country_code,
@@ -160,6 +188,9 @@ export async function POST(request: Request) {
           latitude: geo.latitude,
           longitude: geo.longitude,
           zip: geo.zip,
+          // IPv4/IPv6 split
+          ip_v4,
+          ip_v6,
           // Referrer
           referrer,
           referrer_source: referrerSource,
@@ -181,6 +212,7 @@ export async function POST(request: Request) {
       userId,
       offerId: offer_id || null,
       eventType: event_type,
+      isp: geo.isp || null,
       gpuFingerprint: (gpu_fingerprint && typeof gpu_fingerprint === "string") ? gpu_fingerprint : null,
       deviceFingerprint: (device_fingerprint && typeof device_fingerprint === "string") ? device_fingerprint : null,
     });

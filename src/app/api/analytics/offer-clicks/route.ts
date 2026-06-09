@@ -66,6 +66,12 @@ export async function GET(request: Request) {
         screen_height,
         language,
         timezone,
+        gpu_fingerprint,
+        gpu_renderer,
+        device_fingerprint,
+        connection_type,
+        ip_v4,
+        ip_v6,
         users (
           display_name,
           login,

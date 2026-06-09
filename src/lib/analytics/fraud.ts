@@ -33,6 +33,7 @@ export async function detectFraud(params: {
   userId?: string | null;
   offerId?: string | null;
   eventType: string;
+  isp?: string | null;
   gpuFingerprint?: string | null;
   deviceFingerprint?: string | null;
 }): Promise<FraudCheckResult> {
@@ -40,14 +41,15 @@ export async function detectFraud(params: {
   const reasons: string[] = [];
   let riskScore = 0;
 
-  const maxClicksPer10s = config["max_clicks_per_10s"] ?? 10;
-  const maxSameOfferPerHour = config["max_same_offer_clicks_per_hour"] ?? 5;
-  const maxSessionsPerIpPerHour = config["max_sessions_per_ip_per_hour"] ?? 10;
-  const maxUsersPerIp24h = config["max_users_per_ip_24h"] ?? 3;
-  const maxUsersPerGpu7d = config["max_users_per_gpu_7d"] ?? 2;
-  const maxUsersPerDevice7d = config["max_users_per_device_7d"] ?? 2;
+  const maxClicksPer10s        = config["max_clicks_per_10s"]                ?? 10;
+  const maxSameOfferPerHour    = config["max_same_offer_clicks_per_hour"]    ?? 5;
+  const maxSessionsPerIpPerHour= config["max_sessions_per_ip_per_hour"]     ?? 10;
+  const maxUsersPerIp24h       = config["max_users_per_ip_24h"]              ?? 3;
+  const maxUsersPerGpu7d       = config["max_users_per_gpu_7d"]              ?? 2;
+  const maxUsersPerDevice7d    = config["max_users_per_device_7d"]           ?? 2;
+  const maxOfferSessionsPerIp24h = config["max_offer_sessions_per_ip_24h"]  ?? 2;
 
-  // 1. Too many clicks in 10 seconds from this session
+  // ── 1. Too many clicks in 10 seconds from this session ───────────────────
   if (params.eventType !== "pageview") {
     const tenSecondsAgo = new Date(Date.now() - 10_000).toISOString();
     const { count: recentClicks } = await supabase
@@ -63,7 +65,7 @@ export async function detectFraud(params: {
     }
   }
 
-  // 2. Repeated clicks on same offer
+  // ── 2. Repeated clicks on same offer ─────────────────────────────────────
   if (params.offerId) {
     const oneHourAgo = new Date(Date.now() - 3_600_000).toISOString();
     const { count: offerClicks } = await supabase
@@ -79,7 +81,7 @@ export async function detectFraud(params: {
     }
   }
 
-  // 3. Multiple sessions from same IP
+  // ── 3. Multiple sessions from same IP ────────────────────────────────────
   const oneHourAgo = new Date(Date.now() - 3_600_000).toISOString();
   const { count: ipSessions } = await supabase
     .from("analytics_sessions")
@@ -92,7 +94,7 @@ export async function detectFraud(params: {
     riskScore += 25;
   }
 
-  // 4. Abnormal behavior: many clicks but no pageviews
+  // ── 4. Bot-like: events with zero pageviews ───────────────────────────────
   const { count: totalEvents } = await supabase
     .from("analytics_events")
     .select("id", { count: "exact", head: true })
@@ -109,8 +111,9 @@ export async function detectFraud(params: {
     riskScore += 20;
   }
 
-  // 5. Multiple distinct logged-in users from the same IP in the last 24h
-  if (params.userId) {
+  // ── 5. Multiple distinct logged-in users from same IP in 24h ─────────────
+  // NOTE: runs even for anonymous sessions — detects when anon + logged-in share IP
+  {
     const oneDayAgo = new Date(Date.now() - 86_400_000).toISOString();
     const { data: ipUsers } = await supabase
       .from("analytics_sessions")
@@ -119,15 +122,17 @@ export async function detectFraud(params: {
       .not("user_id", "is", null)
       .gte("created_at", oneDayAgo);
 
-    const distinctIpUsers = new Set((ipUsers ?? []).map((r) => r.user_id)).size;
-    if (distinctIpUsers >= maxUsersPerIp24h) {
-      reasons.push(`Multi-account IP: ${distinctIpUsers} distinct users from same IP in 24h (threshold: ${maxUsersPerIp24h})`);
+    const distinctIpUsers = new Set((ipUsers ?? []).map((r) => r.user_id));
+    if (params.userId) distinctIpUsers.add(params.userId);
+
+    if (distinctIpUsers.size >= maxUsersPerIp24h) {
+      reasons.push(`Multi-account IP: ${distinctIpUsers.size} distinct users from IP ${params.ipAddress} in 24h (threshold: ${maxUsersPerIp24h})`);
       riskScore += 35;
     }
   }
 
-  // 6. Multiple distinct logged-in users sharing the same GPU fingerprint in the last 7 days
-  if (params.userId && params.gpuFingerprint) {
+  // ── 6. Multiple users on same GPU fingerprint in 7 days ──────────────────
+  if (params.gpuFingerprint) {
     const sevenDaysAgo = new Date(Date.now() - 7 * 86_400_000).toISOString();
     const { data: gpuUsers } = await supabase
       .from("analytics_sessions")
@@ -136,14 +141,16 @@ export async function detectFraud(params: {
       .not("user_id", "is", null)
       .gte("created_at", sevenDaysAgo);
 
-    const distinctGpuUsers = new Set((gpuUsers ?? []).map((r) => r.user_id)).size;
-    if (distinctGpuUsers >= maxUsersPerGpu7d) {
-      reasons.push(`Multi-account GPU: ${distinctGpuUsers} distinct users on same GPU in 7 days (threshold: ${maxUsersPerGpu7d})`);
+    const distinctGpuUsers = new Set((gpuUsers ?? []).map((r) => r.user_id));
+    if (params.userId) distinctGpuUsers.add(params.userId);
+
+    if (distinctGpuUsers.size >= maxUsersPerGpu7d) {
+      reasons.push(`Multi-account GPU: ${distinctGpuUsers.size} distinct users on same GPU in 7 days (threshold: ${maxUsersPerGpu7d})`);
       riskScore += 40;
     }
   }
 
-  // 7. Same device fingerprint used by multiple accounts to click /ofertas links (mobile fraud)
+  // ── 7. Same device fingerprint, multiple accounts clicking /ofertas ───────
   if (params.deviceFingerprint && params.eventType === "offer_click") {
     const sevenDaysAgo = new Date(Date.now() - 7 * 86_400_000).toISOString();
     const { data: deviceSessions } = await supabase
@@ -154,12 +161,48 @@ export async function detectFraud(params: {
       .gte("created_at", sevenDaysAgo);
 
     const distinctDeviceUsers = new Set((deviceSessions ?? []).map((r) => r.user_id));
-    // Include current userId if present
     if (params.userId) distinctDeviceUsers.add(params.userId);
 
     if (distinctDeviceUsers.size >= maxUsersPerDevice7d) {
       reasons.push(`Mobile multi-account: ${distinctDeviceUsers.size} distinct accounts used same device to click /ofertas in 7 days (threshold: ${maxUsersPerDevice7d})`);
       riskScore += 55;
+    }
+  }
+
+  // ── 8. Same IP, multiple sessions clicking offers in 24h ─────────────────
+  // KEY CHECK: catches the same-household multi-device affiliate abuse scenario.
+  if (params.eventType === "offer_click") {
+    const oneDayAgo = new Date(Date.now() - 86_400_000).toISOString();
+    const { data: sameIpOfferClicks } = await supabase
+      .from("analytics_events")
+      .select("session_id")
+      .eq("event_type", "offer_click")
+      .eq("ip_address", params.ipAddress)
+      .gte("created_at", oneDayAgo);
+
+    const distinctOfferSessions = new Set([
+      ...(sameIpOfferClicks ?? []).map((r) => r.session_id),
+      params.sessionId,
+    ]);
+
+    if (distinctOfferSessions.size > maxOfferSessionsPerIp24h) {
+      reasons.push(`Multi-session IP offer abuse: ${distinctOfferSessions.size} distinct sessions from IP ${params.ipAddress} clicked offers in 24h (threshold: ${maxOfferSessionsPerIp24h})`);
+      riskScore += 50;
+    }
+  }
+
+  // ── 9. VPN / Proxy / Datacenter ISP detection ────────────────────────────
+  if (params.isp) {
+    const vpnKeywords = [
+      "vpn", "proxy", "tor ", "cloudflare", "amazon", "digitalocean",
+      "linode", "ovh", "hetzner", "vultr", "datacenter", "hosting",
+      " vps", "azure", "google cloud", "oracle cloud", "ibm cloud",
+      "datacamp", "m247", "quadranet", "psychz", "serverius",
+    ];
+    const ispLower = params.isp.toLowerCase();
+    if (vpnKeywords.some((k) => ispLower.includes(k))) {
+      reasons.push(`Suspicious ISP: "${params.isp}" matches VPN/datacenter pattern`);
+      riskScore += 20;
     }
   }
 

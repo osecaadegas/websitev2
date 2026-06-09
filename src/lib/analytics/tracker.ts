@@ -14,7 +14,9 @@ type EventPayload = {
   timezone?: string;
   language?: string;
   gpu_fingerprint?: string;
+  gpu_renderer?: string;
   device_fingerprint?: string;
+  connection_type?: string;
 };
 
 let queue: EventPayload[] = [];
@@ -69,21 +71,46 @@ function scheduleFlush() {
  * Read WebGL GPU renderer string for device fingerprinting.
  * Returns null if WebGL is unavailable or blocked (privacy mode).
  */
-function getGpuFingerprint(): string | undefined {
+function getGpuInfo(): { fingerprint: string | undefined; renderer: string | undefined } {
   try {
     const canvas = document.createElement("canvas");
     const gl =
       (canvas.getContext("webgl") as WebGLRenderingContext | null) ||
       (canvas.getContext("experimental-webgl") as WebGLRenderingContext | null);
-    if (!gl) return undefined;
+    if (!gl) return { fingerprint: undefined, renderer: undefined };
     const ext = gl.getExtension("WEBGL_debug_renderer_info");
-    if (!ext) return undefined;
+    if (!ext) return { fingerprint: undefined, renderer: undefined };
     const vendor = gl.getParameter(ext.UNMASKED_VENDOR_WEBGL) as string;
     const renderer = gl.getParameter(ext.UNMASKED_RENDERER_WEBGL) as string;
-    return `${vendor}::${renderer}`;
+    return {
+      fingerprint: `${vendor}::${renderer}`,
+      renderer: renderer || vendor || undefined,
+    };
+  } catch {
+    return { fingerprint: undefined, renderer: undefined };
+  }
+}
+
+/** Detect network connection type (wifi/cellular/ethernet/4g/etc.) */
+function getConnectionType(): string | undefined {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const conn = (navigator as any).connection || (navigator as any).mozConnection || (navigator as any).webkitConnection;
+    if (!conn) return undefined;
+    return conn.effectiveType || conn.type || undefined;
   } catch {
     return undefined;
   }
+}
+
+/** Detect color gamut capability. */
+function getColorGamut(): string {
+  try {
+    if (window.matchMedia("(color-gamut: rec2020)").matches) return "rec2020";
+    if (window.matchMedia("(color-gamut: p3)").matches) return "p3";
+    if (window.matchMedia("(color-gamut: srgb)").matches) return "srgb";
+  } catch { /* */ }
+  return "unknown";
 }
 
 /**
@@ -115,7 +142,7 @@ function getCanvasFingerprint(): string {
 
 /**
  * Generate or retrieve a persistent device fingerprint stored in localStorage.
- * Combines canvas, screen, touch, pixel ratio and platform signals.
+ * Combines canvas, screen, touch, pixel ratio, platform, memory, gamut, and orientation.
  * Survives cookie clearing — tied to the device/browser profile.
  */
 const DEVICE_FP_KEY = "__arena_dfp";
@@ -129,19 +156,28 @@ function getDeviceFingerprint(): string {
       getCanvasFingerprint(),
       String(window.screen.width),
       String(window.screen.height),
+      String(window.screen.availWidth),
+      String(window.screen.availHeight),
       String(window.screen.colorDepth),
       String(window.devicePixelRatio ?? 1),
       String(navigator.maxTouchPoints ?? 0),
       navigator.platform ?? "",
       navigator.hardwareConcurrency != null ? String(navigator.hardwareConcurrency) : "",
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (navigator as any).deviceMemory != null ? String((navigator as any).deviceMemory) : "",
+      navigator.cookieEnabled ? "1" : "0",
+      typeof window.indexedDB !== "undefined" ? "1" : "0",
+      navigator.pdfViewerEnabled ? "1" : "0",
+      getColorGamut(),
+      window.screen.orientation?.type ?? "",
       Intl.DateTimeFormat().resolvedOptions().timeZone ?? "",
     ].join("|");
 
-    // Simple djb2-style hash to a hex string
+    // djb2-style hash → 8-char hex
     let hash = 5381;
     for (let i = 0; i < components.length; i++) {
       hash = ((hash << 5) + hash) ^ components.charCodeAt(i);
-      hash = hash & hash; // Convert to 32-bit integer
+      hash = hash & hash;
     }
     const fp = (hash >>> 0).toString(16).padStart(8, "0");
     localStorage.setItem(DEVICE_FP_KEY, fp);
@@ -155,14 +191,17 @@ function getDeviceFingerprint(): string {
  * Collect client-side enrichment data (screen, timezone, language).
  * Only called in browser context.
  */
-function getClientEnrichment(): Pick<EventPayload, "screen_width" | "screen_height" | "timezone" | "language" | "gpu_fingerprint" | "device_fingerprint"> {
+function getClientEnrichment(): Pick<EventPayload, "screen_width" | "screen_height" | "timezone" | "language" | "gpu_fingerprint" | "gpu_renderer" | "device_fingerprint" | "connection_type"> {
+  const gpu = getGpuInfo();
   return {
     screen_width: window.screen?.width ?? undefined,
     screen_height: window.screen?.height ?? undefined,
     timezone: Intl.DateTimeFormat().resolvedOptions().timeZone ?? undefined,
     language: navigator.language ?? undefined,
-    gpu_fingerprint: getGpuFingerprint(),
+    gpu_fingerprint: gpu.fingerprint,
+    gpu_renderer: gpu.renderer,
     device_fingerprint: getDeviceFingerprint() || undefined,
+    connection_type: getConnectionType(),
   };
 }
 
