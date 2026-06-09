@@ -31,8 +31,8 @@ export function StreamerHub() {
   const [hostname, setHostname] = useState("localhost");
   const [clips, setClips] = useState<TwitchClip[]>([]);
   const [activeClip, setActiveClip] = useState<TwitchClip | null>(null);
-  const liveContainerRef = useRef<HTMLDivElement>(null);
-  const twitchEmbedRef = useRef<any>(null);
+  const playerContainerRef = useRef<HTMLDivElement>(null);
+  const twitchPlayerRef = useRef<any>(null);
 
   useEffect(() => {
     setHostname(window.location.hostname);
@@ -82,65 +82,77 @@ export function StreamerHub() {
     setActiveClip(clips[(idx - 1 + clips.length) % clips.length]);
   }, [clips, activeClip]);
 
-  /* ── Twitch JS Embed with quality control ─────────────────── */
+  /* ── Twitch.Player with quality control — handles live + clips ── */
   useEffect(() => {
-    if (!isLive || loading || !hostname || hostname === "localhost") return;
-    const container = liveContainerRef.current;
+    if (loading || !hostname || hostname === "localhost") return;
+    if (!isLive && !activeClip) return; // nothing to play yet
+
+    const container = playerContainerRef.current;
     if (!container) return;
 
-    function initEmbed() {
-      if (!window.Twitch || !container) return;
-      // Destroy previous embed if any
+    function initPlayer() {
+      if (!window.Twitch?.Player || !container) return;
       container.innerHTML = "";
-      twitchEmbedRef.current = null;
+      twitchPlayerRef.current = null;
 
-      const embed = new window.Twitch.Embed(container, {
-        channel: TWITCH_CHANNEL,
+      // Twitch.Player needs a real DOM id, not a ref
+      const wrapperId = `twitch-player-${Date.now()}`;
+      const wrapper = document.createElement("div");
+      wrapper.id = wrapperId;
+      wrapper.style.cssText = "width:100%;height:100%";
+      container.appendChild(wrapper);
+
+      const playerOpts = {
         width: "100%",
         height: "100%",
-        layout: "video",
         autoplay: true,
-        theme: "dark",
         parent: [hostname],
-      });
+        ...(isLive
+          ? { channel: TWITCH_CHANNEL }
+          : { clip: activeClip!.id }),
+      };
 
-      embed.addEventListener(window.Twitch.Embed.VIDEO_READY, () => {
-        const player = embed.getPlayer();
+      const player = new window.Twitch.Player(wrapperId, playerOpts);
+      twitchPlayerRef.current = player;
+
+      let qualitySet = false;
+      const trySetQuality = () => {
+        if (qualitySet) return;
         try {
-          const qualities: Array<{ name: string }> = player.getQualities();
-          const preferred =
-            qualities.find((q) => /^1080/.test(q.name)) ||
-            qualities.find((q) => /^720/.test(q.name));
-          if (preferred) player.setQuality(preferred.name);
-        } catch {
-          // getQualities may not be available yet; player stays on auto
-        }
-      });
+          const qs: Array<{ name: string }> = player.getQualities();
+          if (!qs || qs.length === 0) return;
+          const pick =
+            qs.find((q) => /1080/.test(q.name)) ||
+            qs.find((q) => /720/.test(q.name));
+          if (pick) { player.setQuality(pick.name); qualitySet = true; }
+        } catch { /* not available yet */ }
+      };
 
-      twitchEmbedRef.current = embed;
+      // Try on READY, then again on each PLAY (guard prevents repeated sets)
+      player.addEventListener(window.Twitch.Player.READY, trySetQuality);
+      player.addEventListener(window.Twitch.Player.PLAY, trySetQuality);
     }
 
-    if (window.Twitch) {
-      initEmbed();
+    if (window.Twitch?.Player) {
+      initPlayer();
     } else if (!window._twitchScriptLoaded) {
       window._twitchScriptLoaded = true;
       const script = document.createElement("script");
       script.src = "https://player.twitch.tv/js/embed/v1.js";
-      script.onload = initEmbed;
+      script.onload = initPlayer;
       document.head.appendChild(script);
     } else {
-      // Script tag already injected but not yet loaded — poll until ready
       const poll = setInterval(() => {
-        if (window.Twitch) { clearInterval(poll); initEmbed(); }
+        if (window.Twitch?.Player) { clearInterval(poll); initPlayer(); }
       }, 100);
       return () => clearInterval(poll);
     }
 
     return () => {
       if (container) container.innerHTML = "";
-      twitchEmbedRef.current = null;
+      twitchPlayerRef.current = null;
     };
-  }, [isLive, loading, hostname]);
+  }, [isLive, loading, hostname, activeClip]);
 
   return (
     <section
@@ -175,53 +187,36 @@ export function StreamerHub() {
           <div className={`grid grid-cols-1 gap-4 ${isLive ? "lg:grid-cols-[1fr_380px]" : "max-w-5xl mx-auto"}`}>
             {/* Stream / Clip player */}
             <div className="relative w-full aspect-video bg-arena-black rounded-2xl overflow-hidden arena-border-crimson metal-frame-glow shadow-2xl shadow-black/60">
-              {/* Live: Twitch JS Embed (quality-controlled) */}
-              {isLive && !loading && (
+              {/* Twitch.Player container — live + clips, quality-controlled */}
+              {!loading && (isLive || activeClip) && (
                 <div
-                  ref={liveContainerRef}
+                  ref={playerContainerRef}
                   className="absolute inset-0 w-full h-full z-10"
                 />
               )}
-              {/* Loading state: fallback iframe while status resolves */}
-              {loading && (
-                <iframe
-                  src={`https://player.twitch.tv/?channel=${TWITCH_CHANNEL}&parent=${hostname}`}
-                  className="absolute inset-0 w-full h-full z-10"
-                  allowFullScreen
-                  title={`${TWITCH_CHANNEL} live stream`}
-                />
-              )}
 
-              {!isLive && !loading && activeClip && (
-                <>
-                  <iframe
-                    key={activeClip.id}
-                    src={`https://clips.twitch.tv/embed?clip=${activeClip.id}&parent=${hostname}&autoplay=true&muted=false`}
-                    className="absolute inset-0 w-full h-full z-10"
-                    allow="autoplay; encrypted-media"
-                    allowFullScreen
-                    title={activeClip.title}
-                  />
-                  <div className="absolute bottom-0 left-0 right-0 z-20 bg-gradient-to-t from-black/90 via-black/50 to-transparent p-4">
-                    <div className="min-w-0">
-                      <p className="text-white text-sm font-medium truncate">
-                        {activeClip.title}
-                      </p>
-                      <p className="text-arena-smoke text-xs">
-                        Clipped by {activeClip.creator_name} · {activeClip.view_count.toLocaleString()} views
-                      </p>
-                    </div>
-                  </div>
-                </>
-              )}
-
-              {!isLive && !loading && !activeClip && (
+              {/* Fallback: loading or offline with no clips yet */}
+              {(loading || (!isLive && !activeClip)) && (
                 <iframe
                   src={`https://player.twitch.tv/?channel=${TWITCH_CHANNEL}&parent=${hostname}`}
                   className="absolute inset-0 w-full h-full z-10"
                   allowFullScreen
                   title={`${TWITCH_CHANNEL} channel`}
                 />
+              )}
+
+              {/* Offline clip info overlay */}
+              {!isLive && !loading && activeClip && (
+                <div className="absolute bottom-0 left-0 right-0 z-20 bg-gradient-to-t from-black/90 via-black/50 to-transparent p-4">
+                  <div className="min-w-0">
+                    <p className="text-white text-sm font-medium truncate">
+                      {activeClip.title}
+                    </p>
+                    <p className="text-arena-smoke text-xs">
+                      Clipped by {activeClip.creator_name} · {activeClip.view_count.toLocaleString()} views
+                    </p>
+                  </div>
+                </div>
               )}
             </div>
 
